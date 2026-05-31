@@ -1,0 +1,65 @@
+from __future__ import annotations
+
+import logging
+
+import openai
+from openai import OpenAI
+
+from src.config import settings
+from src.engines.base import BaseEngine
+
+__all__ = ["OpenAIEngine"]
+
+logger = logging.getLogger(__name__)
+
+MODEL = "gpt-4o"
+
+
+class OpenAIEngine(BaseEngine):
+    """OpenAI GPT-4o engine.
+
+    Loads the API key from ``OPENAI_API_KEY``. ``query`` returns the response
+    text, or ``None`` on any error (rate limit, timeout, API failure). Never
+    raises from ``query``.
+    """
+
+    ENGINE_NAME: str = "openai"
+
+    def __init__(self) -> None:
+        if not settings.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY is not set. Add it to your .env (see .env.example).")
+        self._client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+    def query(self, prompt: str) -> str | None:
+        try:
+            response = self._client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except openai.RateLimitError:
+            logger.warning("OpenAI rate limit hit for model %s", MODEL)
+            return None
+        except openai.APITimeoutError:
+            logger.warning("OpenAI request timed out for model %s", MODEL)
+            return None
+        except openai.APIError as exc:
+            logger.warning("OpenAI API error: %s", exc)
+            return None
+        except Exception as exc:  # never let an engine crash the pipeline
+            logger.warning("OpenAI unexpected error: %s", exc)
+            return None
+
+        content = response.choices[0].message.content
+        return content
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    try:
+        engine = OpenAIEngine()
+    except ValueError as exc:
+        print(f"Cannot run OpenAI engine test: {exc}")
+        raise SystemExit(0) from None
+
+    result = engine.query("In one sentence, what is the capital of France?")
+    print(f"[{OpenAIEngine.ENGINE_NAME}] response: {result}")
