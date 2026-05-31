@@ -59,6 +59,17 @@ def _has_recommendation_language(response: str) -> bool:
     return _RECOMMENDATION_RE.search(response) is not None
 
 
+def _classify(present: bool, recommended: bool) -> MentionType:
+    """Map (brand present?, recommendation language present?) to a MentionType.
+
+    Single source of truth for the classification rule, shared by
+    ``detect_mention`` and ``extract_competitor_mentions``.
+    """
+    if not present:
+        return MentionType.NOT_MENTIONED
+    return MentionType.RECOMMENDED if recommended else MentionType.MENTIONED
+
+
 def detect_mention(brand: str, response: str) -> MentionType:
     """Classify how ``brand`` appears in ``response``.
 
@@ -66,11 +77,10 @@ def detect_mention(brand: str, response: str) -> MentionType:
     present and explicit recommendation language is present, ``MENTIONED`` if
     the brand is present without it, otherwise ``NOT_MENTIONED``.
     """
-    if not _mentions_brand(brand, response):
-        return MentionType.NOT_MENTIONED
-    if _has_recommendation_language(response):
-        return MentionType.RECOMMENDED
-    return MentionType.MENTIONED
+    present = _mentions_brand(brand, response)
+    # `and` short-circuits, so recommendation language is only scanned when the
+    # brand is actually present.
+    return _classify(present, present and _has_recommendation_language(response))
 
 
 def extract_competitors(competitors: list[str], response: str) -> list[str]:
@@ -85,12 +95,8 @@ def extract_competitor_mentions(competitors: list[str], response: str) -> dict[s
     recommended = _has_recommendation_language(response)
     result: dict[str, MentionType] = {}
     for competitor in competitors:
-        if not _mentions_brand(competitor, response):
-            result[competitor] = MentionType.NOT_MENTIONED
-        elif recommended:
-            result[competitor] = MentionType.RECOMMENDED
-        else:
-            result[competitor] = MentionType.MENTIONED
+        present = _mentions_brand(competitor, response)
+        result[competitor] = _classify(present, present and recommended)
     return result
 
 

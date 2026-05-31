@@ -4,6 +4,39 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## Maintenance — Code-Review Follow-up Fixes — 2026-05-31
+
+Applied fixes for findings from the high-effort code review of the hardening
+pass. All 18 src files still pass mypy (strict) + ruff; every `__main__` runs;
+parser verified behavior-identical across 3,500 randomized cases; never-raise
+invariant re-confirmed; no-leak logging confirmed (a simulated sensitive value
+did not reach the logs).
+
+- **`src/storage/db.py`** — added a single `_execute(op_label, operation)` helper
+  that owns the storage try/except, logs only `type(exc).__name__`, and raises
+  `StorageError`. All four writes **and the read path** (`_select_rows`) now route
+  through it. Fixes the read-path leak (it previously still logged the raw
+  exception) and removes the 4× copy-pasted error blocks.
+- **`src/config/settings.py`** — added `ENGINE_TIMEOUT_SECONDS` (default 60s, was a
+  per-engine 30s) and `ENGINE_MAX_RETRIES`, env-overridable. The three engine
+  files now import these instead of duplicating constants — one home for the
+  bounded-run policy. The 60s default reduces spurious timeouts on slow-but-valid
+  generations while still preventing a stall.
+- **`src/engines/perplexity_engine.py`** — added `close()` and a best-effort
+  `__del__` so the persistent `httpx.Client` releases its pooled connection
+  instead of leaking it.
+- **`src/pipeline/parser.py`** — extracted `_classify(present, recommended)` shared
+  by `detect_mention` and `extract_competitor_mentions`, removing the duplicated
+  classification ladder while preserving the once-per-response scan optimization
+  and the present-gated short-circuit.
+
+Not changed: the "cached broken Supabase client" finding was re-examined and
+dropped — credentials come from module-level `settings.*` read once at import, so
+the old per-call `create_client` used the same static values; caching introduces
+no regression and the "recover after credential rotation" path is unreachable here.
+
+---
+
 ## Maintenance — Efficiency & Security Hardening Pass — 2026-05-31
 
 Cross-cutting pass (not a chunk). No new features; scope locks respected — the

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import httpx
@@ -14,7 +15,6 @@ logger = logging.getLogger(__name__)
 API_BASE_URL = "https://api.perplexity.ai"
 ENDPOINT = "/chat/completions"
 MODEL = "sonar"
-TIMEOUT_SECONDS = 30.0
 
 
 class PerplexityEngine(BaseEngine):
@@ -42,8 +42,22 @@ class PerplexityEngine(BaseEngine):
                 "Authorization": f"Bearer {settings.PERPLEXITY_API_KEY}",
                 "Content-Type": "application/json",
             },
-            timeout=TIMEOUT_SECONDS,
+            timeout=settings.ENGINE_TIMEOUT_SECONDS,
         )
+
+    def close(self) -> None:
+        """Close the underlying HTTP client and release pooled connections."""
+        self._client.close()
+
+    def __del__(self) -> None:
+        # Best-effort cleanup if a caller forgets to call close(): release the
+        # pooled connection instead of leaking it until GC finalizes the socket.
+        # __del__ must never raise, and the client may not exist if __init__
+        # failed before assigning it.
+        client = getattr(self, "_client", None)
+        if client is not None:
+            with contextlib.suppress(Exception):
+                client.close()
 
     def query(self, prompt: str) -> str | None:
         text, _citations = self.query_with_citations(prompt)

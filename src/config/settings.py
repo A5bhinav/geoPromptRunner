@@ -16,3 +16,11 @@ PERPLEXITY_API_KEY: str | None = os.getenv("PERPLEXITY_API_KEY")
 GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
 SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
+
+# --- Engine request tuning (shared by every engine adapter) ---
+# Centralized here so the bounded-run policy lives in one place instead of being
+# duplicated per engine. Generous enough not to time out legitimate slow
+# generations, but far below the SDK defaults (~10 min) so one stuck request
+# cannot stall the synchronous pipeline run. Overridable via env for tuning.
+ENGINE_TIMEOUT_SECONDS: float = float(os.getenv("ENGINE_TIMEOUT_SECONDS", "60"))
+ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, TypeVar
 
 from supabase import Client, create_client
 
@@ -23,6 +24,8 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 TABLE_RUNS = "prompt_runs"
 TABLE_RESULTS = "prompt_results"
@@ -63,6 +66,26 @@ def _client() -> Client:
     return _cached_client
 
 
+def _execute(op_label: str, operation: Callable[[Client], _T]) -> _T:
+    """Run a Supabase operation against the cached client, normalizing errors.
+
+    Single owner of the storage try/except: on failure it logs only the
+    exception **type** (a Supabase/Postgres message can echo back row values or
+    connection detail) and raises ``StorageError``; the original exception still
+    chains via ``from exc`` for callers that want full detail. ``op_label`` is a
+    caller-controlled string (never the exception), safe to log.
+
+    ``_client()`` is called outside the try so a "not configured" ``StorageError``
+    propagates unchanged rather than being re-wrapped.
+    """
+    client = _client()
+    try:
+        return operation(client)
+    except Exception as exc:
+        logger.warning("%s failed: %s", op_label, type(exc).__name__)
+        raise StorageError(f"{op_label} failed") from exc
+
+
 def create_run(client_name: str, prompt_count: int) -> str:
     """Insert a new run row and return its generated ``run_id``."""
     run_id = str(uuid.uuid4())
@@ -73,13 +96,9 @@ def create_run(client_name: str, prompt_count: int) -> str:
         "created_at": _now(),
         "archived_at": None,
     }
-    try:
-        _client().table(TABLE_RUNS).insert(row).execute()
-    except StorageError:
-        raise
-    except Exception as exc:
-        logger.warning("create_run failed for client %s: %s", client_name, type(exc).__name__)
-        raise StorageError("create_run failed") from exc
+    _execute(
+        f"create_run for client {client_name}", lambda c: c.table(TABLE_RUNS).insert(row).execute()
+    )
     return run_id
 
 
@@ -98,13 +117,9 @@ def save_results(run_id: str, results: list[PromptResult]) -> None:
     ]
     if not rows:
         return
-    try:
-        _client().table(TABLE_RESULTS).insert(rows).execute()
-    except StorageError:
-        raise
-    except Exception as exc:
-        logger.warning("save_results failed for run %s: %s", run_id, type(exc).__name__)
-        raise StorageError("save_results failed") from exc
+    _execute(
+        f"save_results for run {run_id}", lambda c: c.table(TABLE_RESULTS).insert(rows).execute()
+    )
 
 
 def save_mentions(run_id: str, mentions: list[BrandMention]) -> None:
@@ -122,13 +137,9 @@ def save_mentions(run_id: str, mentions: list[BrandMention]) -> None:
     ]
     if not rows:
         return
-    try:
-        _client().table(TABLE_MENTIONS).insert(rows).execute()
-    except StorageError:
-        raise
-    except Exception as exc:
-        logger.warning("save_mentions failed for run %s: %s", run_id, type(exc).__name__)
-        raise StorageError("save_mentions failed") from exc
+    _execute(
+        f"save_mentions for run {run_id}", lambda c: c.table(TABLE_MENTIONS).insert(rows).execute()
+    )
 
 
 def save_citations(run_id: str, citations: list[Citation]) -> None:
@@ -145,23 +156,17 @@ def save_citations(run_id: str, citations: list[Citation]) -> None:
     ]
     if not rows:
         return
-    try:
-        _client().table(TABLE_CITATIONS).insert(rows).execute()
-    except StorageError:
-        raise
-    except Exception as exc:
-        logger.warning("save_citations failed for run %s: %s", run_id, type(exc).__name__)
-        raise StorageError("save_citations failed") from exc
+    _execute(
+        f"save_citations for run {run_id}",
+        lambda c: c.table(TABLE_CITATIONS).insert(rows).execute(),
+    )
 
 
 def _select_rows(table: str, run_id: str, key: str = "run_id") -> list[dict[str, object]]:
-    try:
-        response = _client().table(table).select("*").eq(key, run_id).execute()
-    except StorageError:
-        raise
-    except Exception as exc:
-        logger.warning("read from %s failed for %s=%s: %s", table, key, run_id, exc)
-        raise StorageError(f"read from {table} failed") from exc
+    response = _execute(
+        f"read from {table} ({key}={run_id})",
+        lambda c: c.table(table).select("*").eq(key, run_id).execute(),
+    )
     data = getattr(response, "data", None) or []
     return list(data)
 
