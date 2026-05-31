@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 MODEL = "claude-3-5-sonnet-20241022"
 MAX_TOKENS = 1024
+TIMEOUT_SECONDS = 30.0
+MAX_RETRIES = 2
 
 
 class AnthropicEngine(BaseEngine):
@@ -31,7 +33,13 @@ class AnthropicEngine(BaseEngine):
             raise ValueError(
                 "ANTHROPIC_API_KEY is not set. Add it to your .env (see .env.example)."
             )
-        self._client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        # Bounded timeout + retries so one slow request can't stall the whole
+        # synchronous run.
+        self._client = Anthropic(
+            api_key=settings.ANTHROPIC_API_KEY,
+            timeout=TIMEOUT_SECONDS,
+            max_retries=MAX_RETRIES,
+        )
 
     def query(self, prompt: str) -> str | None:
         try:

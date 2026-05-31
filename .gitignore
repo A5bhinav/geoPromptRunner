@@ -1,14 +1,59 @@
-# Secrets
+# --- Secrets / environment ---
+# Ignore every .env variant, but keep the committed example template.
 .env
+.env.*
+*.env
+!.env.example
+# Other common secret-bearing files
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+credentials.*
+service-account*.json
+.netrc
 
-# Python
+# --- Python bytecode / build artifacts ---
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+build/
+dist/
 *.egg-info/
+.eggs/
+wheels/
+
+# --- Virtual environments ---
 .venv/
 venv/
+env/
+ENV/
+.python-version
 
-# Tooling caches
+# --- Tooling caches ---
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+.dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache/
+
+# --- Editor / OS ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Project runtime output ---
+# Local audit artifacts / scratch data that should never be committed.
+*.log
+reports/
+output/
+tmp/

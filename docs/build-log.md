@@ -4,6 +4,48 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## Maintenance — Efficiency & Security Hardening Pass — 2026-05-31
+
+Cross-cutting pass (not a chunk). No new features; scope locks respected — the
+pipeline stays **synchronous** (async remains a non-goal) and no API key is
+logged. All 18 src files pass mypy (strict) + ruff; every `__main__` block runs;
+invariant #1 (engines never raise) re-verified with dummy keys.
+
+### Efficiency
+
+- `src/pipeline/parser.py` — precompiled the recommendation-term regex once at
+  import; cache compiled per-brand patterns via `lru_cache`;
+  `extract_competitor_mentions` now scans for recommendation language once per
+  response instead of once per competitor (≈5k→≈k regex ops for k competitors).
+  Verified behavior-identical to per-brand `detect_mention`.
+- `src/engines/perplexity_engine.py` — reuse one persistent pooled `httpx.Client`
+  across all prompts instead of a fresh TCP/TLS handshake per call.
+- `src/storage/db.py` — cache the Supabase client (lazy singleton) instead of
+  reconstructing it on every read/write.
+- `src/engines/openai_engine.py`, `anthropic_engine.py` — explicit 30s timeout +
+  2 bounded retries so one hung request can't stall the synchronous run.
+- `src/audit/report.py` — sort the share-of-model rows once, not twice.
+
+### Security / leak prevention
+
+- `.gitignore` — now ignores all `.env*` variants (keeps `.env.example`) plus
+  `*.pem/*.key/secrets.*/service-account*.json/.netrc`, venvs, caches, logs, and
+  local output dirs. Verified with `git check-ignore`: secrets ignored,
+  committable files not.
+- `src/storage/db.py` — write-failure logs now record the exception **type** only
+  (Postgres errors can echo back inserted row values); full detail still chains
+  to the caller via `StorageError`.
+- `src/pipeline/parser.py` — empty/whitespace brand now returns `NOT_MENTIONED`
+  (previously an empty pattern could false-positive as a mention).
+
+### Recommendation (not applied)
+
+- `requirements.txt` uses `>=` lower bounds. Consider a pinned lockfile
+  (`pip-compile`/`uv lock`) for reproducible, supply-chain-safe installs. Left
+  as-is to avoid changing install behavior without sign-off.
+
+---
+
 ## Chunk 11 — Technical accessibility checker — Completed 2026-05-31
 
 ### What was built

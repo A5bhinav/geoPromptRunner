@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
+from functools import lru_cache
 
 __all__ = [
     "MentionType",
@@ -23,11 +24,39 @@ class MentionType(StrEnum):
 # mentions the brand, the brand is treated as RECOMMENDED.
 RECOMMENDATION_TERMS: tuple[str, ...] = ("best", "recommend", "suggest", "top choice")
 
+# Compiled once at import: matches any recommendation term on a word boundary.
+# Precompiling avoids rebuilding the pattern on every response we parse.
+_RECOMMENDATION_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(term) for term in RECOMMENDATION_TERMS) + r")\b",
+    re.IGNORECASE,
+)
 
-def _contains(needle: str, haystack: str) -> bool:
-    """Case-insensitive, word-boundary-aware substring test."""
-    pattern = r"\b" + re.escape(needle.strip()) + r"\b"
-    return re.search(pattern, haystack, flags=re.IGNORECASE) is not None
+
+@lru_cache(maxsize=512)
+def _brand_pattern(brand: str) -> re.Pattern[str]:
+    """Return (and cache) a word-boundary, case-insensitive pattern for ``brand``.
+
+    A run reuses the same handful of brand names across many responses, so
+    caching the compiled patterns avoids recompiling per call.
+    """
+    return re.compile(r"\b" + re.escape(brand) + r"\b", re.IGNORECASE)
+
+
+def _mentions_brand(brand: str, response: str) -> bool:
+    """Case-insensitive, word-boundary brand presence test.
+
+    An empty or whitespace-only brand never matches (guards against an empty
+    pattern matching every response).
+    """
+    brand = brand.strip()
+    if not brand:
+        return False
+    return _brand_pattern(brand).search(response) is not None
+
+
+def _has_recommendation_language(response: str) -> bool:
+    """True if ``response`` contains any explicit recommendation term."""
+    return _RECOMMENDATION_RE.search(response) is not None
 
 
 def detect_mention(brand: str, response: str) -> MentionType:
@@ -37,21 +66,32 @@ def detect_mention(brand: str, response: str) -> MentionType:
     present and explicit recommendation language is present, ``MENTIONED`` if
     the brand is present without it, otherwise ``NOT_MENTIONED``.
     """
-    if not _contains(brand, response):
+    if not _mentions_brand(brand, response):
         return MentionType.NOT_MENTIONED
-    if any(_contains(term, response) for term in RECOMMENDATION_TERMS):
+    if _has_recommendation_language(response):
         return MentionType.RECOMMENDED
     return MentionType.MENTIONED
 
 
 def extract_competitors(competitors: list[str], response: str) -> list[str]:
     """Return the competitors that appear in ``response`` (case-insensitive)."""
-    return [c for c in competitors if _contains(c, response)]
+    return [c for c in competitors if _mentions_brand(c, response)]
 
 
 def extract_competitor_mentions(competitors: list[str], response: str) -> dict[str, MentionType]:
     """Map each competitor to how it appears in ``response`` (case-insensitive)."""
-    return {c: detect_mention(c, response) for c in competitors}
+    # Recommendation language is a property of the response, not of any single
+    # brand — scan for it once rather than re-running it for every competitor.
+    recommended = _has_recommendation_language(response)
+    result: dict[str, MentionType] = {}
+    for competitor in competitors:
+        if not _mentions_brand(competitor, response):
+            result[competitor] = MentionType.NOT_MENTIONED
+        elif recommended:
+            result[competitor] = MentionType.RECOMMENDED
+        else:
+            result[competitor] = MentionType.MENTIONED
+    return result
 
 
 if __name__ == "__main__":

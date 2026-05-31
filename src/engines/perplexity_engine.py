@@ -11,7 +11,8 @@ __all__ = ["PerplexityEngine"]
 
 logger = logging.getLogger(__name__)
 
-API_URL = "https://api.perplexity.ai/chat/completions"
+API_BASE_URL = "https://api.perplexity.ai"
+ENDPOINT = "/chat/completions"
 MODEL = "sonar"
 TIMEOUT_SECONDS = 30.0
 
@@ -32,23 +33,29 @@ class PerplexityEngine(BaseEngine):
             raise ValueError(
                 "PERPLEXITY_API_KEY is not set. Add it to your .env (see .env.example)."
             )
-        self._api_key = settings.PERPLEXITY_API_KEY
+        # Persistent client: one pooled TCP/TLS connection is reused across
+        # every prompt in a run instead of reconnecting on each call. The auth
+        # header is set once here and is never logged.
+        self._client = httpx.Client(
+            base_url=API_BASE_URL,
+            headers={
+                "Authorization": f"Bearer {settings.PERPLEXITY_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            timeout=TIMEOUT_SECONDS,
+        )
 
     def query(self, prompt: str) -> str | None:
         text, _citations = self.query_with_citations(prompt)
         return text
 
     def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
         payload = {
             "model": MODEL,
             "messages": [{"role": "user", "content": prompt}],
         }
         try:
-            response = httpx.post(API_URL, headers=headers, json=payload, timeout=TIMEOUT_SECONDS)
+            response = self._client.post(ENDPOINT, json=payload)
             response.raise_for_status()
         except httpx.TimeoutException:
             logger.warning("Perplexity request timed out for model %s", MODEL)

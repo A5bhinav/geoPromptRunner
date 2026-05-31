@@ -79,7 +79,8 @@ def render_report(data: ReportData) -> str:
             if m["brand"].lower() == brand.lower() and _is_present(m["mention_type"])
         )
         share_rows.append((brand, appearances))
-    for brand, appearances in sorted(share_rows, key=lambda x: x[1], reverse=True):
+    ranked = sorted(share_rows, key=lambda x: x[1], reverse=True)
+    for brand, appearances in ranked:
         marker = " (client)" if brand.lower() == client else ""
         lines.append(f"| {brand}{marker} | {appearances} | {_pct(appearances, total_responses)} |")
     lines.append("")
@@ -105,10 +106,7 @@ def render_report(data: ReportData) -> str:
         f"- {data['client_brand']} was mentioned in {overall} of responses across "
         f"{len(data['engine_names'])} engine(s)."
     )
-    top_competitor = next(
-        (b for b, _ in sorted(share_rows, key=lambda x: x[1], reverse=True) if b.lower() != client),
-        None,
-    )
+    top_competitor = next((b for b, _ in ranked if b.lower() != client), None)
     if top_competitor is not None:
         lines.append(f"- Most-visible competitor: **{top_competitor}**.")
     lines.append(f"- {len(domain_counts)} distinct domain(s) cited across the run.")

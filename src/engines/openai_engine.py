@@ -13,6 +13,8 @@ __all__ = ["OpenAIEngine"]
 logger = logging.getLogger(__name__)
 
 MODEL = "gpt-4o"
+TIMEOUT_SECONDS = 30.0
+MAX_RETRIES = 2
 
 
 class OpenAIEngine(BaseEngine):
@@ -28,7 +30,13 @@ class OpenAIEngine(BaseEngine):
     def __init__(self) -> None:
         if not settings.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is not set. Add it to your .env (see .env.example).")
-        self._client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        # Bounded timeout + retries so one slow request can't stall the whole
+        # synchronous run (the SDK default timeout is 10 minutes).
+        self._client = OpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            timeout=TIMEOUT_SECONDS,
+            max_retries=MAX_RETRIES,
+        )
 
     def query(self, prompt: str) -> str | None:
         try:

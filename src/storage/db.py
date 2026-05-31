@@ -38,17 +38,29 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+_cached_client: Client | None = None
+
+
 def _client() -> Client:
-    """Build a Supabase client, or raise StorageError if not configured."""
+    """Return a cached Supabase client, or raise StorageError if not configured.
+
+    The client (and its underlying HTTP session) is built once and reused for
+    every read and write rather than reconstructed per call.
+    """
+    global _cached_client
+    if _cached_client is not None:
+        return _cached_client
     if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
         raise StorageError(
             "Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY (see .env.example)."
         )
     try:
-        return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        _cached_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
     except Exception as exc:
-        logger.warning("Failed to create Supabase client: %s", exc)
+        # Log the type only — the message can echo connection details.
+        logger.warning("Failed to create Supabase client: %s", type(exc).__name__)
         raise StorageError("Failed to create Supabase client") from exc
+    return _cached_client
 
 
 def create_run(client_name: str, prompt_count: int) -> str:
@@ -66,7 +78,7 @@ def create_run(client_name: str, prompt_count: int) -> str:
     except StorageError:
         raise
     except Exception as exc:
-        logger.warning("create_run failed for client %s: %s", client_name, exc)
+        logger.warning("create_run failed for client %s: %s", client_name, type(exc).__name__)
         raise StorageError("create_run failed") from exc
     return run_id
 
@@ -91,7 +103,7 @@ def save_results(run_id: str, results: list[PromptResult]) -> None:
     except StorageError:
         raise
     except Exception as exc:
-        logger.warning("save_results failed for run %s: %s", run_id, exc)
+        logger.warning("save_results failed for run %s: %s", run_id, type(exc).__name__)
         raise StorageError("save_results failed") from exc
 
 
@@ -115,7 +127,7 @@ def save_mentions(run_id: str, mentions: list[BrandMention]) -> None:
     except StorageError:
         raise
     except Exception as exc:
-        logger.warning("save_mentions failed for run %s: %s", run_id, exc)
+        logger.warning("save_mentions failed for run %s: %s", run_id, type(exc).__name__)
         raise StorageError("save_mentions failed") from exc
 
 
@@ -138,7 +150,7 @@ def save_citations(run_id: str, citations: list[Citation]) -> None:
     except StorageError:
         raise
     except Exception as exc:
-        logger.warning("save_citations failed for run %s: %s", run_id, exc)
+        logger.warning("save_citations failed for run %s: %s", run_id, type(exc).__name__)
         raise StorageError("save_citations failed") from exc
 
 
