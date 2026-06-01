@@ -4,6 +4,7 @@ from typing import TypedDict
 
 __all__ = [
     "PromptResult",
+    "QueryResult",
     "PromptRun",
     "BrandMention",
     "Citation",
@@ -17,6 +18,24 @@ class PromptResult(TypedDict):
     prompt: str
     engine_name: str
     response: str | None
+    timestamp: str  # ISO-8601 UTC
+
+
+class QueryResult(TypedDict):
+    """One engine's answer to one intent-tagged query on one run.
+
+    Richer than PromptResult: carries the query id, funnel-stage intent, the
+    run index (queries are run multiple times per cycle to average out LLM
+    nondeterminism), and any citation URLs the engine surfaced.
+    """
+
+    query_id: str
+    intent: str  # IntentBucket value
+    prompt: str
+    engine_name: str
+    run_index: int
+    response: str | None
+    citations: list[str]
     timestamp: str  # ISO-8601 UTC
 
 

@@ -41,3 +41,12 @@ class BaseEngine(ABC):
         raise NotImplementedError(
             "not implemented: BaseEngine.query must be overridden by subclasses"
         )
+
+    def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
+        """Return the response text plus any citation URLs the engine surfaced.
+
+        Default implementation returns no citations, so the pipeline can call
+        this uniformly on every engine. Engines that expose citations (e.g.
+        Perplexity) override this. Like ``query``, it must never raise.
+        """
+        return self.query(prompt), []

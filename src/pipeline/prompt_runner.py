@@ -4,9 +4,10 @@ import logging
 from datetime import UTC, datetime
 
 from src.engines.base import BaseEngine
-from src.storage.models import PromptResult
+from src.prompts.query_set import Query
+from src.storage.models import PromptResult, QueryResult
 
-__all__ = ["run_prompts"]
+__all__ = ["run_prompts", "run_query_set"]
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,42 @@ def run_prompts(prompts: list[str], engines: list[BaseEngine]) -> list[PromptRes
                     timestamp=datetime.now(UTC).isoformat(),
                 )
             )
+    return results
+
+
+def run_query_set(
+    queries: list[Query],
+    engines: list[BaseEngine],
+    runs_per_query: int = 3,
+) -> list[QueryResult]:
+    """Run every query against every engine ``runs_per_query`` times.
+
+    Synchronous and order-stable. Each query is run multiple times per cycle to
+    average out LLM nondeterminism; every result carries its query id, intent,
+    and run index so downstream metrics can aggregate per bucket and per run.
+    Citations are captured via ``BaseEngine.query_with_citations`` (empty for
+    engines that don't expose them). One failing engine never aborts the run.
+    """
+    if runs_per_query < 1:
+        raise ValueError(f"runs_per_query must be >= 1, got {runs_per_query}")
+
+    results: list[QueryResult] = []
+    for query in queries:
+        for engine in engines:
+            for run_index in range(runs_per_query):
+                response, citations = engine.query_with_citations(query.text)
+                results.append(
+                    QueryResult(
+                        query_id=query.query_id,
+                        intent=query.intent.value,
+                        prompt=query.text,
+                        engine_name=engine.ENGINE_NAME,
+                        run_index=run_index,
+                        response=response,
+                        citations=citations,
+                        timestamp=datetime.now(UTC).isoformat(),
+                    )
+                )
     return results
 
 

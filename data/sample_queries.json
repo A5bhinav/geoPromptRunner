@@ -1,0 +1,24 @@
+{
+  "version": "v1",
+  "locked_at": "2026-05-31",
+  "category": "CRM software",
+  "client": "Acme",
+  "competitors": ["Salesforce", "HubSpot", "Pipedrive"],
+  "queries": [
+    { "query_id": "pa-01", "intent": "problem_aware", "text": "How do I stop leads from falling through the cracks at my startup?" },
+    { "query_id": "pa-02", "intent": "problem_aware", "text": "Why does my sales team keep losing track of follow-ups?" },
+    { "query_id": "pa-03", "intent": "problem_aware", "text": "What's the best way to manage a sales pipeline as a non-technical founder?" },
+    { "query_id": "cat-01", "intent": "category", "text": "What are the best CRM tools for early-stage B2B SaaS startups?" },
+    { "query_id": "cat-02", "intent": "category", "text": "Best CRM for a small startup sales team" },
+    { "query_id": "cat-03", "intent": "category", "text": "What software should I use to track deals and contacts at a seed-stage company?" },
+    { "query_id": "cat-04", "intent": "category", "text": "Top CRM options in 2026 for startups" },
+    { "query_id": "cat-05", "intent": "category", "text": "Affordable CRM for a 10-person B2B team" },
+    { "query_id": "cmp-01", "intent": "comparison", "text": "HubSpot alternatives for small teams" },
+    { "query_id": "cmp-02", "intent": "comparison", "text": "Salesforce alternatives for startups on a budget" },
+    { "query_id": "cmp-03", "intent": "comparison", "text": "Acme vs HubSpot for an early-stage startup" },
+    { "query_id": "cmp-04", "intent": "comparison", "text": "More affordable options than Salesforce for a small sales team" },
+    { "query_id": "brd-01", "intent": "brand", "text": "Is Acme effective for an early-stage B2B SaaS startup?" },
+    { "query_id": "brd-02", "intent": "brand", "text": "Acme breakdown: costs, benefits, and drawbacks" },
+    { "query_id": "adj-01", "intent": "adjacent_authority", "text": "How should a startup founder set up a sales process from scratch?" }
+  ]
+}
