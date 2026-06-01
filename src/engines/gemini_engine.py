@@ -12,7 +12,7 @@ __all__ = ["GeminiEngine"]
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gemini-1.5-pro"
+MODEL = "gemini-2.5-flash"
 
 
 class GeminiEngine(BaseEngine):

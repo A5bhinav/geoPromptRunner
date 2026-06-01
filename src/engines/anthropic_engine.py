@@ -13,7 +13,7 @@ __all__ = ["AnthropicEngine"]
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-3-5-sonnet-20241022"
+MODEL = "claude-sonnet-4-5-20250929"
 MAX_TOKENS = 1024
 
 
