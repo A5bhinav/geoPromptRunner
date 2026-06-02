@@ -17,6 +17,10 @@ GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
 SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
 
+# Google AI Overviews has no official API; capture it via a SERP provider
+# (SerpApi). Without this key the AI-Overviews surface is skipped.
+SERPAPI_API_KEY: str | None = os.getenv("SERPAPI_API_KEY")
+
 # --- Engine request tuning (shared by every engine adapter) ---
 # Centralized here so the bounded-run policy lives in one place instead of being
 # duplicated per engine. Generous enough not to time out legitimate slow

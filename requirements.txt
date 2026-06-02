@@ -4,7 +4,8 @@
 # AI engine SDKs
 openai>=1.30.0
 anthropic>=0.34.0
-google-generativeai>=0.7.0
+google-generativeai>=0.7.0  # legacy: parametric Gemini engine
+google-genai>=0.3.0  # current SDK: Gemini grounding (google_search tool)
 
 # HTTP client for technical audit checks (and Perplexity REST calls)
 httpx>=0.27.0

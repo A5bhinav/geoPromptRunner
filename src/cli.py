@@ -6,11 +6,16 @@ import logging
 from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
 from src.audit.technical_audit import render_technical, run_competitive
+from src.engines.ai_overviews_engine import AIOverviewsEngine
 from src.engines.anthropic_engine import AnthropicEngine
+from src.engines.anthropic_search_engine import AnthropicSearchEngine
 from src.engines.base import BaseEngine
 from src.engines.gemini_engine import GeminiEngine
+from src.engines.gemini_grounded_engine import GeminiGroundedEngine
 from src.engines.openai_engine import OpenAIEngine
+from src.engines.openai_search_engine import OpenAISearchEngine
 from src.engines.perplexity_engine import PerplexityEngine
+from src.pipeline.discovery import discover_competitors
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, render_comparison
 from src.prompts.query_set import load_query_set
@@ -20,13 +25,24 @@ __all__ = ["main"]
 
 logger = logging.getLogger(__name__)
 
-_ENGINE_CLASSES = (OpenAIEngine, AnthropicEngine, GeminiEngine, PerplexityEngine)
+# "memory" = parametric (training-data) surfaces; "search" = live-retrieval
+# surfaces (ChatGPT-with-search, Claude-with-search, Gemini grounding, Perplexity,
+# Google AI Overviews). They measure different channels — keep them distinct.
+_MEMORY_CLASSES = (OpenAIEngine, AnthropicEngine, GeminiEngine, PerplexityEngine)
+_SEARCH_CLASSES = (
+    OpenAISearchEngine,
+    AnthropicSearchEngine,
+    GeminiGroundedEngine,
+    PerplexityEngine,
+    AIOverviewsEngine,
+)
 
 
-def _load_engines() -> list[BaseEngine]:
+def _load_engines(surface: str = "memory") -> list[BaseEngine]:
     """Instantiate every engine whose API key is configured; skip the rest."""
+    classes = _SEARCH_CLASSES if surface == "search" else _MEMORY_CLASSES
     engines: list[BaseEngine] = []
-    for cls in _ENGINE_CLASSES:
+    for cls in classes:
         try:
             engines.append(cls())
         except ValueError as exc:
@@ -58,7 +74,7 @@ def _outcome_from_run(run_id: str) -> AuditOutcome | None:
 
 def _cmd_audit(args: argparse.Namespace) -> int:
     qs = load_query_set(args.query_set)
-    engines = _load_engines()
+    engines = _load_engines(args.surface)
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
@@ -76,13 +92,32 @@ def _cmd_audit(args: argparse.Namespace) -> int:
 
 def _cmd_teaser(args: argparse.Namespace) -> int:
     qs = load_query_set(args.query_set)
-    engines = _load_engines()
+    engines = _load_engines(args.surface)
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
     outcome = run_teaser(qs, engines, client_domains=_split(args.domains), max_queries=args.max)
     print()
     print(render_audit_report(outcome))
+    return 0
+
+
+def _cmd_discover(args: argparse.Namespace) -> int:
+    outcome = _outcome_from_run(args.run_id)
+    if outcome is None:
+        print(f"Run {args.run_id} not found.")
+        return 1
+    engines = _load_engines("memory")
+    if not engines:
+        print("No engines configured for extraction (set API keys in .env).")
+        return 1
+    known = [outcome.client_name, *outcome.competitors]
+    discovered = discover_competitors(outcome.results, known, extractor=engines[0])
+    print(f"Competitors discovered in answers (excluding {known}):")
+    if not discovered:
+        print("  none")
+    for name, count in discovered:
+        print(f"  {count:3d}  {name}")
     return 0
 
 
@@ -141,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("query_set")
     p_audit.add_argument("--domains", help="comma-separated client domains")
     p_audit.add_argument("--runs", type=int, default=3)
+    p_audit.add_argument("--surface", choices=("memory", "search"), default="memory")
     p_audit.add_argument("--no-persist", action="store_true")
     p_audit.set_defaults(func=_cmd_audit)
 
@@ -148,7 +184,12 @@ def main(argv: list[str] | None = None) -> int:
     p_teaser.add_argument("query_set")
     p_teaser.add_argument("--domains")
     p_teaser.add_argument("--max", type=int, default=5)
+    p_teaser.add_argument("--surface", choices=("memory", "search"), default="memory")
     p_teaser.set_defaults(func=_cmd_teaser)
+
+    p_discover = sub.add_parser("discover", help="find competitors mentioned in a stored run")
+    p_discover.add_argument("run_id")
+    p_discover.set_defaults(func=_cmd_discover)
 
     p_report = sub.add_parser("report", help="render the report for a stored run")
     p_report.add_argument("run_id")
