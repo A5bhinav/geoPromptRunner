@@ -19,6 +19,8 @@ __all__ = [
     "citation_rate_by_bucket",
     "share_of_voice",
     "top_cited_domains",
+    "LosingQuery",
+    "losing_queries",
 ]
 
 
@@ -178,6 +180,52 @@ def share_of_voice(
     if total == 0:
         return {name: 0.0 for name in names}
     return {name: counts[name] / total for name in names}
+
+
+@dataclass(frozen=True)
+class LosingQuery:
+    """A (query, engine) cell where the client is absent but a competitor isn't."""
+
+    query_id: str
+    intent: str
+    engine_name: str
+    competitors_present: list[str]
+
+
+def losing_queries(
+    results: list[QueryResult], brand: str, competitors: list[str]
+) -> list[LosingQuery]:
+    """The exact (query, engine) cells the client loses — absent while a rival shows.
+
+    The methodology's connective tissue: never present a rate in isolation, name
+    the specific queries it's costing them. A cell is "losing" when the client is
+    not mentioned (per the aggregated verdict) but at least one competitor is.
+    """
+    brand_by_cell = {(v.query_id, v.engine_name): v for v in brand_verdicts(results, brand)}
+    competitor_verdicts = {
+        comp: {(v.query_id, v.engine_name): v for v in brand_verdicts(results, comp)}
+        for comp in competitors
+    }
+
+    losses: list[LosingQuery] = []
+    for cell, bv in brand_by_cell.items():
+        if bv.hit:  # client present -> not a loss
+            continue
+        present = [
+            comp
+            for comp in competitors
+            if (cv := competitor_verdicts[comp].get(cell)) is not None and cv.hit
+        ]
+        if present:
+            losses.append(
+                LosingQuery(
+                    query_id=cell[0],
+                    intent=bv.intent,
+                    engine_name=cell[1],
+                    competitors_present=present,
+                )
+            )
+    return sorted(losses, key=lambda x: (x.query_id, x.engine_name))
 
 
 def top_cited_domains(results: list[QueryResult], limit: int = 10) -> list[tuple[str, int]]:

@@ -9,7 +9,8 @@ from typing import Any, TypeVar
 from supabase import Client, create_client
 
 from src.config import settings
-from src.storage.models import BrandMention, Citation, PromptResult
+from src.pipeline.metrics import domain_of
+from src.storage.models import BrandMention, Citation, PromptResult, QueryResult
 
 __all__ = [
     "StorageError",
@@ -21,6 +22,9 @@ __all__ = [
     "get_results",
     "get_mentions",
     "get_citations",
+    "create_audit_run",
+    "save_query_results",
+    "get_query_results",
 ]
 
 logger = logging.getLogger(__name__)
@@ -31,6 +35,11 @@ TABLE_RUNS = "prompt_runs"
 TABLE_RESULTS = "prompt_results"
 TABLE_MENTIONS = "brand_mentions"
 TABLE_CITATIONS = "citations"
+
+# Query-level (intent-aware) audit tables.
+TABLE_AUDIT_RUNS = "audit_runs"
+TABLE_QUERY_RESULTS = "query_results"
+TABLE_QUERY_CITATIONS = "query_citations"
 
 
 class StorageError(Exception):
@@ -190,6 +199,116 @@ def get_mentions(run_id: str) -> list[dict[str, object]]:
 def get_citations(run_id: str) -> list[dict[str, object]]:
     """Fetch all stored citations for a run."""
     return _select_rows(TABLE_CITATIONS, run_id)
+
+
+# --- Query-level (intent-aware) audit storage --------------------------------
+
+
+def create_audit_run(
+    client_name: str,
+    client_domains: list[str],
+    competitors: list[str],
+    category: str,
+    query_set_version: str,
+    query_set_locked_at: str,
+    runs_per_query: int,
+) -> str:
+    """Insert an audit-run row (client identity + locked query-set version)."""
+    run_id = str(uuid.uuid4())
+    row: dict[str, Any] = {
+        "id": run_id,
+        "client_name": client_name,
+        "client_domains": client_domains,
+        "competitors": competitors,
+        "category": category,
+        "query_set_version": query_set_version,
+        "query_set_locked_at": query_set_locked_at,
+        "runs_per_query": runs_per_query,
+        "created_at": _now(),
+        "archived_at": None,
+    }
+    _execute(
+        f"create_audit_run for client {client_name}",
+        lambda c: c.table(TABLE_AUDIT_RUNS).insert(row).execute(),
+    )
+    return run_id
+
+
+def save_query_results(run_id: str, results: list[QueryResult]) -> None:
+    """Persist a batch of QueryResults (and their citations) for an audit run.
+
+    Safe to call incrementally (e.g. once per query) so a long run is resumable
+    and partial progress survives a mid-run failure.
+    """
+    result_rows = [
+        {
+            "id": str(uuid.uuid4()),
+            "run_id": run_id,
+            "query_id": r["query_id"],
+            "intent": r["intent"],
+            "prompt": r["prompt"],
+            "engine_name": r["engine_name"],
+            "run_index": r["run_index"],
+            "response": r["response"],
+            "timestamp": r["timestamp"],
+        }
+        for r in results
+    ]
+    citation_rows = [
+        {
+            "id": str(uuid.uuid4()),
+            "run_id": run_id,
+            "query_id": r["query_id"],
+            "engine_name": r["engine_name"],
+            "url": url,
+            "domain": domain_of(url),
+        }
+        for r in results
+        for url in r["citations"]
+    ]
+    if result_rows:
+        _execute(
+            f"save_query_results for run {run_id}",
+            lambda c: c.table(TABLE_QUERY_RESULTS).insert(result_rows).execute(),
+        )
+    if citation_rows:
+        _execute(
+            f"save_query_citations for run {run_id}",
+            lambda c: c.table(TABLE_QUERY_CITATIONS).insert(citation_rows).execute(),
+        )
+
+
+def get_query_results(run_id: str) -> list[QueryResult]:
+    """Reconstruct stored QueryResults for a run (citations re-attached per row)."""
+    result_rows = _select_rows(TABLE_QUERY_RESULTS, run_id)
+    citation_rows = _select_rows(TABLE_QUERY_CITATIONS, run_id)
+
+    cites_by_cell: dict[tuple[str, str], list[str]] = {}
+    for c in citation_rows:
+        key = (str(c.get("query_id", "")), str(c.get("engine_name", "")))
+        cites_by_cell.setdefault(key, []).append(str(c.get("url", "")))
+
+    results: list[QueryResult] = []
+    for r in result_rows:
+        query_id = str(r.get("query_id", ""))
+        engine_name = str(r.get("engine_name", ""))
+        run_index = int(str(r.get("run_index") or 0))
+        # Citations are stored per (query, engine), not per run; attach to run 0
+        # so they aren't duplicated across the run rows of one cell.
+        citations = cites_by_cell.get((query_id, engine_name), []) if run_index == 0 else []
+        results.append(
+            QueryResult(
+                query_id=query_id,
+                intent=str(r.get("intent", "")),
+                prompt=str(r.get("prompt", "")),
+                engine_name=engine_name,
+                run_index=run_index,
+                response=None if r.get("response") is None else str(r.get("response")),
+                citations=citations,
+                timestamp=str(r.get("timestamp", "")),
+            )
+        )
+    return results
 
 
 if __name__ == "__main__":

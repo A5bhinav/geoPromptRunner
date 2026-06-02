@@ -25,22 +25,25 @@ Put bluntly: today the engine is an **AI-answer mention tracker with four techni
 
 ## The deliverable test: can the engine fill the report?
 
-The report template is the engine's real spec. Sections 2, 3, and 6 are supposed to run on the software, and the audit method says the software powers Steps 1 and 5 (the free teaser is *"essentially Steps 1 and 5 on a handful of queries — the demo that books the meeting"*). So here's the honest scorecard of what the engine can and can't produce **right now**:
+The final audit deliverable is the engine's real spec — the most precise version yet. The engine-powered cells live in Sections 1, 2, 3, 4.4, and 6. Here's the cell-by-cell test of what the engine can produce **right now**:
 
-| Report element (the spec) | Needs | Engine today |
+| Deliverable cell | Needs | Engine today |
 |---|---|---|
-| **§2 Engine column** — ChatGPT, Perplexity, **Google AI Overviews**, Claude, Gemini | 5 named surfaces | ❌ Only 4 adapters, and **none is Google AI Overviews** (the Gemini API ≠ AI Overviews). Two of the five rows can't be produced. |
-| **§2 Mention rate** per engine | per-engine mention rate | 🟡 Computable, but inflated by the broken "recommended" logic (Tier 2.1). |
-| **§2 "Cited with link?"** per engine | citations from every engine | ❌ Only Perplexity captures citations; the other columns are blank by construction (Tier 2.3). |
-| **§2 "Accuracy of how it describes you"** | judge the substance of the answer | ❌ Not captured at all (Tier 2.2). Entire column unfillable. |
-| **§3 Competitive matrix** — *absent / cited #1 / mentioned* per query × brand | **prominence/rank** per brand per query | ❌ Engine only has mentioned/recommended/not-mentioned. "Cited #1" (rank) doesn't exist (Tier 2.1). |
-| **§3** run for client **and** competitors | competitor-side runs | 🟡 Detects competitor *names* in client answers, but doesn't run the set *for* competitors or rank them (Tier 2.6 / 3.3). |
-| **§4 Diagnosis** — Cat 1–6 rollup | rubric scores stored | 🟡 Cat 1 only (4/6 checks); Cat 2–6 are **intentionally human for now** — but there's nowhere to *record* those human scores to render §4. |
-| **§5 Prioritized roadmap** — impact/effort, sequenced | gap scoring + weighting | ❌ Not built (Tier 3.2). This is the retainer scope. |
-| **§6 Tracking over time** | stable client identity + locked query-set version | ❌ Schema can't do trend or versioning (Tier 1.3). |
-| **§6 GA4 attribution** | referral/conversion tracking | ❌ Not built (out of scope today, but it's in the template). |
+| **§1 AI Visibility Grade (A–F)** | a grade function over the metrics | ❌ No grading logic exists. New requirement. |
+| **§1 Share-of-model / Mention / Citation rate** for client · top competitor · **category leader** | per-brand rates + rank *all* competitors to find the leader | 🟡 SoV + mention exist; citation is Perplexity-only (and no key right now); "category leader" needs running the set *for every competitor* and ranking — today it's only name-detection in the client's answers (Tier 2.6 / 3.3). |
+| **§1 Accuracy (correct when mentioned)** + **§2.3 accuracy-flags table** (claim / reality / severity) | LLM judge + client fact sheet | ❌ Not captured at all (Tier 2.2). Both unfillable. |
+| **§2.2 Mention / Citation rate by intent bucket** | by-bucket metrics | ✅ `mention_rate_by_bucket` / `citation_rate_by_bucket` exist (citation data Perplexity-only). |
+| **§2.2 Avg. prominence** (top / mid / buried / absent) | prominence/rank per answer | ❌ Prominence isn't captured — judge work (Tier 2.1). Whole column missing. |
+| **§3 Leaderboard** — share-of-voice + mention rate per brand | per-brand rates over *all* competitors | 🟡 `share_of_voice` exists but over the known list and double-counts across runs (Tier 2.6). |
+| **§3 Trend column** | versioned re-runs over time | ❌ Schema can't version/trend (Tier 1.3). First cycle is "baseline," so OK once — but the column is the moat (Step 8). |
+| **§3 "closest to winning" / "structurally behind"** | per-query/bucket loss analysis | ❌ Needs the losing-queries view (v2 principle #1). |
+| **§4.1 Technical accessibility** status + impact | Cat 1 checks, tied to queries | 🟡 4 of 6 checks (missing WAF/UA + gating); "impact → which queries" link not built. |
+| **§4.4 Sources behind the category** (rank / domain / n answers) | cross-engine citations | 🟡 `top_cited_domains` gives rank+domain+count, but Perplexity-only → empty with no key (Tier 2.3). "Influenceable?" is an analyst tag. |
+| **§6.1 Query set** with a **Persona / modifier** column | persona field per query | ❌ The `Query` model has only `query_id` / `text` / `intent` — no persona/modifier field. New requirement. |
+| **§6.2 Per-query capture: mention · citation+URL · prominence · framing · accuracy · competitors · sources** | all six fields recorded | ❌ Captures mention + (Perplexity) citation + competitor names + sources; **prominence, framing, and accuracy are missing.** The appendix would advertise fields the engine doesn't record. |
+| **§6.3 Raw per-query × per-engine data** | persist `QueryResult` | ❌ `QueryResult` can't be stored at all (Tier 1.2). |
 
-The takeaway: **the engine cannot currently fill a single section of the report completely.** The two sections it's supposed to own outright — §2 and §3, the visceral "here's what ChatGPT says about you vs. your competitor" demo that is the highest-converting sales move in this whole plan — each have blank or wrong columns. Fixing §2/§3 is the highest-business-value work in the codebase, ahead of automating the rubric.
+The takeaway is unchanged but sharper: **the engine can't fill a single section of this deliverable completely**, and the gaps cluster on three things — the **LLM judge** (prominence, framing, accuracy: it feeds §1, §2.1, §2.2, §2.3, and three of the six §6.2 capture fields), **cross-engine citations** (§1, §2.2, §4.4), and **storage/versioning** (§3 trend, §6.3). The judge is the highest-leverage single build: it lights up cells across four sections. Three genuinely new asks this deliverable introduces, all small: an **A–F grade** function, a **category-leader** ranking (falls out of running the set for all competitors), and a **persona/modifier** field on the query model.
 
 ### The teaser/demo path doesn't exist as a distinct mode
 
@@ -209,10 +212,10 @@ Re-prioritized around the deliverable: the engine's job is Steps 1 & 5 (the §2/
 3. **Emit the "losing queries" view** — per cause/engine, the exact queries where the client is absent and a competitor is cited #1. This is core principle #1 (symptom → cause) and the connective tissue of the whole report; it's a view over the per-query judge output. *(v2 core principle #1)*
 4. **Run the set for client *and* competitors** and rank them — makes §3 and Step 5 real, not name-detection. *(Tier 2.6, 3.3)*
 5. **Stand up a teaser/demo mode** — client + 1 competitor, ~5 queries, render the §2/§3 comparison fast. The highest-converting sales artifact; no code path today. *(deliverable lens)*
-6. **Schema redesign + unify on `QueryResult`** (clients, competitors, **locked/versioned query sets**, per-query **commercial-value weights**, query_id/intent/run_index/citation linkage). Unblocks §6 trend, Step 6's Impact formula, and Step 8 comparability. *(Tier 1.2, 1.3, v2 Step 6)*
+6. **Schema redesign + unify on `QueryResult`** (clients, competitors, **locked/versioned query sets**, per-query **commercial-value weights** and **persona/modifier**, query_id/intent/run_index/citation linkage). Unblocks §6 trend, §6.1 persona column, Step 6's Impact formula, and Step 8 comparability. *(Tier 1.2, 1.3, v2 Step 6, deliverable §6.1)*
 7. **Build the orchestrator + Chunk 12 dry run**, persisting incrementally. Wire runner → judge → metrics → storage → report end-to-end. *(Tier 1.1, 5)*
 8. **Cadence re-run + comparison (Step 8, "the moat")** — re-run an identical locked set on a schedule and diff against the prior run to show the named metric move. *(v2 Step 8)*
-9. **Rubric data capture + Step-6 roadmap rollup** — store the *human* Cat 1–6 scores, weights, and controllable/influenceable/out-of-reach tags; render §4/§5. Defer rubric *automation*. *(Tier 3.1, 3.2)*
+9. **Rubric data capture + Step-6 roadmap rollup** — store the *human* Cat 1–6 scores, weights, and controllable/influenceable/out-of-reach tags; render §4/§5. Defer rubric *automation*. Add the small derived outputs here too: the **§1 A–F grade** function and the **§3 "closest to winning / structurally behind"** framing (both roll up from data already produced). *(Tier 3.1, 3.2, deliverable §1)*
 10. **Fix the WAF/UA blind spot** in the technical checker. *(Tier 4.1)*
 11. **Add `tests/` with real regression coverage**, starting with the parser/judge. *(Tier 5)*
 
