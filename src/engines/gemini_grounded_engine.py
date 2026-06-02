@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 
+import httpx
 from google import genai
 from google.genai import types
 
@@ -13,6 +15,12 @@ __all__ = ["GeminiGroundedEngine"]
 logger = logging.getLogger(__name__)
 
 MODEL = "gemini-2.5-flash"
+
+# Gemini returns grounded sources as opaque redirect URLs on this host rather
+# than the real page; we follow the redirect to recover the actual domain so
+# citation/domain analytics aren't all bucketed under Google's redirector.
+_REDIRECT_HOST = "vertexaisearch.cloud.google.com"
+_RESOLVE_TIMEOUT = 10.0
 
 
 class GeminiGroundedEngine(BaseEngine):
@@ -34,6 +42,34 @@ class GeminiGroundedEngine(BaseEngine):
             tools=[types.Tool(google_search=types.GoogleSearch())],
             temperature=settings.ENGINE_TEMPERATURE,
         )
+        # Persistent client (pooled) for resolving grounding redirect URLs.
+        self._http = httpx.Client(timeout=_RESOLVE_TIMEOUT, follow_redirects=True)
+
+    def close(self) -> None:
+        """Close the redirect-resolver HTTP client."""
+        self._http.close()
+
+    def __del__(self) -> None:
+        client = getattr(self, "_http", None)
+        if client is not None:
+            with contextlib.suppress(Exception):
+                client.close()
+
+    def _resolve(self, url: str) -> str:
+        """Follow a Gemini grounding redirect to its real URL; best-effort.
+
+        Non-redirect URLs and any failure return the input unchanged, so the
+        citation is never lost — at worst it stays the redirect URL.
+        """
+        if _REDIRECT_HOST not in url:
+            return url
+        try:
+            # stream so we resolve the redirect chain without downloading the body
+            with self._http.stream("GET", url) as response:
+                final = str(response.url)
+        except httpx.HTTPError:
+            return url
+        return final if _REDIRECT_HOST not in final else url
 
     def query(self, prompt: str) -> str | None:
         text, _citations = self.query_with_citations(prompt)
@@ -57,7 +93,7 @@ class GeminiGroundedEngine(BaseEngine):
                 web = getattr(chunk, "web", None)
                 uri = getattr(web, "uri", None)
                 if uri:
-                    urls.append(str(uri))
+                    urls.append(self._resolve(str(uri)))
         if not text:
             return None, urls
         return text, urls
