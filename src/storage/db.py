@@ -10,7 +10,7 @@ from supabase import Client, create_client
 
 from src.config import settings
 from src.pipeline.metrics import domain_of
-from src.storage.models import BrandMention, Citation, PromptResult, QueryResult
+from src.storage.models import BrandMention, Citation, PromptResult, QueryResult, RubricScore
 
 __all__ = [
     "StorageError",
@@ -25,6 +25,10 @@ __all__ = [
     "create_audit_run",
     "save_query_results",
     "get_query_results",
+    "list_audit_runs",
+    "get_audit_run",
+    "save_rubric_scores",
+    "get_rubric_scores",
 ]
 
 logger = logging.getLogger(__name__)
@@ -40,6 +44,7 @@ TABLE_CITATIONS = "citations"
 TABLE_AUDIT_RUNS = "audit_runs"
 TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
+TABLE_RUBRIC_SCORES = "rubric_scores"
 
 
 class StorageError(Exception):
@@ -309,6 +314,57 @@ def get_query_results(run_id: str) -> list[QueryResult]:
             )
         )
     return results
+
+
+def get_audit_run(run_id: str) -> dict[str, object] | None:
+    """Fetch a single audit-run row by id, or None if absent."""
+    rows = _select_rows(TABLE_AUDIT_RUNS, run_id, key="id")
+    return rows[0] if rows else None
+
+
+def list_audit_runs(client_name: str) -> list[dict[str, object]]:
+    """All audit runs for a client, oldest first — the basis for trend/cadence."""
+    rows = _select_rows(TABLE_AUDIT_RUNS, client_name, key="client_name")
+    return sorted(rows, key=lambda r: str(r.get("created_at", "")))
+
+
+def save_rubric_scores(run_id: str | None, scores: list[RubricScore]) -> None:
+    """Persist human rubric Pass/Partial/Fail judgments for a run."""
+    rows = [
+        {
+            "id": str(uuid.uuid4()),
+            "run_id": run_id,
+            "subject": s["subject"],
+            "category": s["category"],
+            "check_name": s["check_name"],
+            "status": s["status"],
+            "weight": s["weight"],
+            "note": s["note"],
+        }
+        for s in scores
+    ]
+    if not rows:
+        return
+    _execute(
+        f"save_rubric_scores for run {run_id}",
+        lambda c: c.table(TABLE_RUBRIC_SCORES).insert(rows).execute(),
+    )
+
+
+def get_rubric_scores(run_id: str) -> list[RubricScore]:
+    """Fetch stored rubric scores for a run."""
+    rows = _select_rows(TABLE_RUBRIC_SCORES, run_id)
+    return [
+        RubricScore(
+            subject=str(r.get("subject", "")),
+            category=str(r.get("category", "")),
+            check_name=str(r.get("check_name", "")),
+            status=str(r.get("status", "")),
+            weight=float(str(r.get("weight") or 1)),
+            note=str(r.get("note") or ""),
+        )
+        for r in rows
+    ]
 
 
 if __name__ == "__main__":

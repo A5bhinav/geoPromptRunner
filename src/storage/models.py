@@ -9,6 +9,7 @@ __all__ = [
     "BrandMention",
     "Citation",
     "ReportData",
+    "RubricScore",
 ]
 
 
@@ -64,6 +65,17 @@ class Citation(TypedDict):
     url: str
     engine_name: str
     prompt: str
+
+
+class RubricScore(TypedDict):
+    """One human Pass/Partial/Fail judgment for a rubric check on a subject."""
+
+    subject: str  # client or competitor name
+    category: str  # RubricCategory value
+    check_name: str
+    status: str  # CheckStatus value: pass / partial / fail
+    weight: float
+    note: str
 
 
 class ReportData(TypedDict):
