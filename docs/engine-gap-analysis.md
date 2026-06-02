@@ -3,6 +3,8 @@
 **Date:** 2026-05-31
 **Scope:** What the AEO/GEO roadmap + methodology require, vs. what the engine in `src/` actually does today — and what still needs building or fixing.
 
+> **Resolution update (2026-06-01):** A correctness/quality pass fixed the defects that don't depend on pending product decisions or external surfaces. **Fixed:** 2.1 (recommendation now scoped to the brand's own segment + negative-framing downgrade — interim heuristic, not the full judge), 2.5 (runs aggregated to a per-(query,engine) majority verdict; `temperature` pinned via `settings.ENGINE_TEMPERATURE`), 2.6 (share-of-voice de-dups per cell), 4.1 (new `check_crawler_access` probes AI-UA CDN/WAF blocking), 4.2 (added `check_gated_content` + sitemap `<lastmod>` freshness), 5.4 (report denominator now excludes failed responses, matching metrics), 5.5 (`domain_of` centralized in `metrics`), 5.6 (engine docstrings), 5.1 (added `tests/` — 14 passing regression tests for parser/metrics/technical-check). **Deferred (need inputs/decisions or are large builds):** the full LLM-judge for sentiment/accuracy/prominence + typed hallucination flags (2.1 full, 2.2 — needs the client fact sheet), cross-engine citations + Google AI Overviews/browsing surfaces (2.3, 2.4 — no first-class API), competitor *discovery* (2.6), the schema redesign + `QueryResult` unification + orchestrator + Chunk 12 (1.1–1.3), the rubric capture / Step-6 roadmap / competitor-side runs / teaser mode / cadence re-run (3.x, Step 8), and cost/checkpointing (5.2, 5.3). These are sequenced in "Suggested build order" and should be built deliberately, not crammed in.
+
 > **Updated** with the strategy/delivery context (the audit method + report template). Key reframe: the audit method states **the software powers only Steps 1 (baseline measurement) and 5 (competitive benchmark)** — Steps 2–4 (on-site/off-site rubric scoring) are explicitly *human judgment for now*. So the engine's real job is the **measurement and demo layer**, and that's exactly where today's gaps bite hardest. The report template is, in effect, the engine's output spec — so the sharpest test is: *can the engine fill the report?*
 
 ---
@@ -47,6 +49,32 @@ The method leans on a fast, mostly-automated teaser (Steps 1 + 5, a handful of q
 ### Query-set sourcing is fully manual
 
 The methodology's per-client SOP (Scope → Gather → Map/clean → Modify → Trim → Validate → Lock) and its raw-material sources (client intake, search data, community, competitive, LLM-assisted expansion) have **no tooling**. `load_query_set` reads a hand-authored JSON; building the 40–50-query set per client is entirely manual. Fine for v0, but it's the per-client setup cost that will throttle how many audits you can run, so it's an early productization candidate.
+
+---
+
+## What the refined method (v2) newly demands of the engine
+
+The v2 audit method adds five requirements that land squarely on the runner — beyond what the earlier version asked for:
+
+### Core principle #1 (symptom → cause) requires a "losing queries" output that doesn't exist
+
+*"Never present a score in isolation. Tie every finding back to a specific query the client loses."* This is the connective tissue of the whole report and of Steps 2–5 ("name the queries it's costing them, not just the score"). It requires the engine to emit, per cause, **the exact list of queries where the client is absent and a competitor is cited #1.** Today `metrics.py` aggregates everything to rates and bucket averages — it computes *how often* the client loses, never *which specific queries* it loses. There's no "losing queries" list, and nothing links a query to the technical/content gap that explains the loss. This is the single most-used artifact in the v2 method and it's unbuilt. (The per-query `QueryResult` data is there; the loss-attribution view over it is not.)
+
+### Step 1 now mandates citation-source analysis as a *routing input*, not a report nicety
+
+v2 makes "what the models actually cite" a decision: *"if it's Reddit, Quora, or a competitor's comparison page, the battleground isn't the client's own site, and that determines where the work goes"* — and Step 4 explicitly cross-references it. So `top_cited_domains` is no longer a table at the bottom of the report; it **routes the entire off-site audit.** That makes the Perplexity-only citation capture (Tier 2.3) much more damaging than I first framed: if 4 of 5 engines contribute no sources, the analysis that's supposed to direct the work is running on a quarter of the data. This elevates "capture citations from all engines" toward the top of the list.
+
+### Hallucination flags get a concrete spec for the judge
+
+v2 calls accuracy errors *"the most visceral material"* and names the categories: **wrong pricing, a missing-but-real feature, confusion with a competitor, stale info.** That's a sharper spec for the LLM-judge than "accuracy: ok/bad" — the judge should classify *which kind* of error, because "ChatGPT thinks you still don't have SSO / thinks you're owned by [competitor]" is the demo line. Feed the judge a client fact sheet and have it return typed hallucination flags.
+
+### Step 6's Impact formula needs query weights and gap→query links the data model doesn't have
+
+Impact = (queries touched) × (commercial value of those queries) × (fixability). To compute that you need (a) a **commercial-value weight per query** and (b) a **mapping from each gap to the queries it touches.** The `Query` model (`query_id`, `text`, `intent`) has no weight/value field, and nothing links gaps to queries. Step 6 is analyst work "for now," but these two *inputs* come from the runner/query bank, so the schema should carry them even before the scoring is automated.
+
+### Step 8 — "the entire moat" — is the least-supported thing in the codebase
+
+v2 is explicit that the moat is *proving it worked*: re-run **the exact same locked query set** on a ~4–6 week cadence and show the named metric move. This needs two things the engine doesn't have: (1) locked, versioned query sets tied to a stable client identity so two runs are comparable (the Tier 1.3 schema gap — this is *why* it matters), and (2) some **scheduling/cadence** mechanism; the runner is a synchronous one-shot with no re-run or comparison logic. The part of the method described as the entire moat is the part the engine supports least.
 
 ---
 
@@ -176,16 +204,18 @@ The rubric explicitly calls out *"Not blocked at the CDN/WAF layer — confirm A
 
 Re-prioritized around the deliverable: the engine's job is Steps 1 & 5 (the §2/§3 demo that books meetings), and Steps 2–4 stay human for now. So the order chases *a fillable §2/§3 demo* first, then trend/versioning, then the rest.
 
-1. **Replace regex detection with an LLM-judge extraction** returning, per brand: present? · sentiment · accuracy-vs-fact-sheet · **prominence/rank**. This single change unblocks the §2 "accuracy" column and the §3 "cited #1 / mentioned / absent" matrix — the heart of the demo. Aggregate the 3 runs into one per-query verdict; pin temperature. *(Tier 2.1, 2.2, 2.5, 2.6)*
-2. **Fix citations + surfaces**: capture sources from *all* engines (not just Perplexity), add browsing/grounding, and add a real **Google AI Overviews** path (or honestly drop it from the report column until covered). Unblocks §2 "cited with link" and the 5-engine row set. *(Tier 2.3, 2.4)*
-3. **Run the set for client *and* competitors** and rank them — makes §3 and Step 5 real, not name-detection. *(Tier 2.6, 3.3)*
-4. **Stand up a teaser/demo mode** — client + 1 competitor, ~5 queries, render the §2/§3 comparison fast. This is the highest-converting sales artifact and has no code path today. *(deliverable lens)*
-5. **Schema redesign + unify on `QueryResult`** (clients, competitors, query-set versions; query_id/intent/run_index/citation linkage). Unblocks §6 trend + versioning. *(Tier 1.2, 1.3)*
-6. **Build the orchestrator + Chunk 12 dry run**, persisting incrementally. Wire runner → judge → metrics → storage → report end-to-end. *(Tier 1.1, 5)*
-7. **Rubric data capture + Step-6 roadmap rollup** — store the *human* Cat 1–6 scores and weights, and render §4/§5. Defer rubric *automation*. *(Tier 3.1, 3.2)*
-8. **Fix the WAF/UA blind spot** in the technical checker. *(Tier 4.1)*
-9. **Add `tests/` with real regression coverage**, starting with the parser/judge. *(Tier 5)*
+1. **Replace regex detection with an LLM-judge extraction** returning, per brand: present? · sentiment · accuracy-vs-fact-sheet (with **typed hallucination flags**: pricing / missing-feature / competitor-confusion / stale) · **prominence/rank**. Unblocks the §2 "accuracy" column and the §3 "cited #1 / mentioned / absent" matrix — the heart of the demo. Aggregate the 3 runs into one per-query verdict; pin temperature. *(Tier 2.1, 2.2, 2.5, 2.6)*
+2. **Fix citations + surfaces**: capture sources from *all* engines (not just Perplexity), add browsing/grounding, and add a real **Google AI Overviews** path (or honestly drop it from the report column until covered). This isn't just a §2 column — v2 makes citation-source analysis the input that *routes the off-site audit* (Step 1 → Step 4), so it's higher-leverage than its size suggests. *(Tier 2.3, 2.4)*
+3. **Emit the "losing queries" view** — per cause/engine, the exact queries where the client is absent and a competitor is cited #1. This is core principle #1 (symptom → cause) and the connective tissue of the whole report; it's a view over the per-query judge output. *(v2 core principle #1)*
+4. **Run the set for client *and* competitors** and rank them — makes §3 and Step 5 real, not name-detection. *(Tier 2.6, 3.3)*
+5. **Stand up a teaser/demo mode** — client + 1 competitor, ~5 queries, render the §2/§3 comparison fast. The highest-converting sales artifact; no code path today. *(deliverable lens)*
+6. **Schema redesign + unify on `QueryResult`** (clients, competitors, **locked/versioned query sets**, per-query **commercial-value weights**, query_id/intent/run_index/citation linkage). Unblocks §6 trend, Step 6's Impact formula, and Step 8 comparability. *(Tier 1.2, 1.3, v2 Step 6)*
+7. **Build the orchestrator + Chunk 12 dry run**, persisting incrementally. Wire runner → judge → metrics → storage → report end-to-end. *(Tier 1.1, 5)*
+8. **Cadence re-run + comparison (Step 8, "the moat")** — re-run an identical locked set on a schedule and diff against the prior run to show the named metric move. *(v2 Step 8)*
+9. **Rubric data capture + Step-6 roadmap rollup** — store the *human* Cat 1–6 scores, weights, and controllable/influenceable/out-of-reach tags; render §4/§5. Defer rubric *automation*. *(Tier 3.1, 3.2)*
+10. **Fix the WAF/UA blind spot** in the technical checker. *(Tier 4.1)*
+11. **Add `tests/` with real regression coverage**, starting with the parser/judge. *(Tier 5)*
 
-Items 1–4 make the **sales demo** real and trustworthy (highest business value). 5–6 make it persistable and trendable. 7 produces the paid deliverable's diagnosis/roadmap. 8–9 harden it.
+Items 1–5 make the **sales demo** real and trustworthy (highest business value). 6–8 make it persistable, trendable, and re-runnable — which is what powers Step 8, the part v2 calls the entire moat. 9 produces the paid deliverable's diagnosis/roadmap. 10–11 harden it.
 
 > The thing to internalize: the rubric (Cat 2–6) being unautomated is *fine* — the method says so. What's **not** fine is that the two sections the engine is supposed to own, §2 and §3, can't be filled today. That's where the next sprint should go.

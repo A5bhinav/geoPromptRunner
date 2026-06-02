@@ -24,3 +24,6 @@ SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
 # cannot stall the synchronous pipeline run. Overridable via env for tuning.
 ENGINE_TIMEOUT_SECONDS: float = float(os.getenv("ENGINE_TIMEOUT_SECONDS", "60"))
 ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))
+# Pin sampling low so repeated runs of the same query are reproducible — the
+# methodology runs each query multiple times to average noise, not to amplify it.
+ENGINE_TEMPERATURE: float = float(os.getenv("ENGINE_TEMPERATURE", "0"))

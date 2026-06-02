@@ -31,6 +31,25 @@ _RECOMMENDATION_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Negative-framing cues. A brand in a segment carrying one of these is not
+# treated as recommended even if a recommendation word is nearby ("avoid X",
+# "X is weak"). Full sentiment is a job for the LLM judge; this just stops the
+# crudest false positives.
+_NEGATION_RE = re.compile(
+    r"\b(?:avoid|not|never|no longer|worst|weak|weaker|lacks?|lacking|poor|"
+    r"limited|don't|doesn't|isn't|steer clear|stay away|overrated|overpriced)\b",
+    re.IGNORECASE,
+)
+
+# Segment boundaries: sentence enders plus contrastive conjunctions. We classify
+# recommendation at the *segment containing the brand*, not the whole response,
+# so "The best CRM is Salesforce, but Acme also exists" does not mark Acme as
+# recommended just because "best" appears elsewhere in the answer.
+_SEGMENT_RE = re.compile(
+    r"[.!?;]|\bbut\b|\bhowever\b|\bwhereas\b|\balthough\b|\bthough\b|\byet\b",
+    re.IGNORECASE,
+)
+
 
 @lru_cache(maxsize=512)
 def _brand_pattern(brand: str) -> re.Pattern[str]:
@@ -54,33 +73,31 @@ def _mentions_brand(brand: str, response: str) -> bool:
     return _brand_pattern(brand).search(response) is not None
 
 
-def _has_recommendation_language(response: str) -> bool:
-    """True if ``response`` contains any explicit recommendation term."""
-    return _RECOMMENDATION_RE.search(response) is not None
-
-
-def _classify(present: bool, recommended: bool) -> MentionType:
-    """Map (brand present?, recommendation language present?) to a MentionType.
-
-    Single source of truth for the classification rule, shared by
-    ``detect_mention`` and ``extract_competitor_mentions``.
-    """
-    if not present:
-        return MentionType.NOT_MENTIONED
-    return MentionType.RECOMMENDED if recommended else MentionType.MENTIONED
-
-
 def detect_mention(brand: str, response: str) -> MentionType:
     """Classify how ``brand`` appears in ``response``.
 
-    Pure function. Case-insensitive. Returns ``RECOMMENDED`` if the brand is
-    present and explicit recommendation language is present, ``MENTIONED`` if
-    the brand is present without it, otherwise ``NOT_MENTIONED``.
+    Pure function, case-insensitive. ``RECOMMENDED`` when the brand appears in a
+    segment (sentence/clause) that also carries explicit recommendation language
+    and no negative framing; ``MENTIONED`` when present otherwise;
+    ``NOT_MENTIONED`` when absent.
+
+    Scoping recommendation to the brand's own segment avoids the systematic
+    over-counting of pure response-level matching. This is still a heuristic —
+    sentiment, accuracy, and rank/prominence are the LLM judge's job.
     """
-    present = _mentions_brand(brand, response)
-    # `and` short-circuits, so recommendation language is only scanned when the
-    # brand is actually present.
-    return _classify(present, present and _has_recommendation_language(response))
+    brand = brand.strip()
+    if not brand or not _mentions_brand(brand, response):
+        return MentionType.NOT_MENTIONED
+
+    pattern = _brand_pattern(brand)
+    for segment in _SEGMENT_RE.split(response):
+        if not pattern.search(segment):
+            continue
+        if _NEGATION_RE.search(segment):
+            continue  # brand present but negatively framed here — not a rec
+        if _RECOMMENDATION_RE.search(segment):
+            return MentionType.RECOMMENDED
+    return MentionType.MENTIONED
 
 
 def extract_competitors(competitors: list[str], response: str) -> list[str]:
@@ -90,14 +107,7 @@ def extract_competitors(competitors: list[str], response: str) -> list[str]:
 
 def extract_competitor_mentions(competitors: list[str], response: str) -> dict[str, MentionType]:
     """Map each competitor to how it appears in ``response`` (case-insensitive)."""
-    # Recommendation language is a property of the response, not of any single
-    # brand — scan for it once rather than re-running it for every competitor.
-    recommended = _has_recommendation_language(response)
-    result: dict[str, MentionType] = {}
-    for competitor in competitors:
-        present = _mentions_brand(competitor, response)
-        result[competitor] = _classify(present, present and recommended)
-    return result
+    return {competitor: detect_mention(competitor, response) for competitor in competitors}
 
 
 if __name__ == "__main__":

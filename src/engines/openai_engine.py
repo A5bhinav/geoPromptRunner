@@ -41,6 +41,7 @@ class OpenAIEngine(BaseEngine):
             response = self._client.chat.completions.create(
                 model=MODEL,
                 messages=[{"role": "user", "content": prompt}],
+                temperature=settings.ENGINE_TEMPERATURE,
             )
         except openai.RateLimitError:
             logger.warning("OpenAI rate limit hit for model %s", MODEL)

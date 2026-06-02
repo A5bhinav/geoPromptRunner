@@ -67,6 +67,7 @@ class PerplexityEngine(BaseEngine):
         payload = {
             "model": MODEL,
             "messages": [{"role": "user", "content": prompt}],
+            "temperature": settings.ENGINE_TEMPERATURE,
         }
         try:
             response = self._client.post(ENDPOINT, json=payload)

@@ -16,7 +16,7 @@ MODEL = "gemini-2.5-flash"
 
 
 class GeminiEngine(BaseEngine):
-    """Google Gemini 1.5 Pro engine.
+    """Google Gemini engine (gemini-2.5-flash).
 
     Loads the API key from ``GEMINI_API_KEY``. ``query`` returns the response
     text, or ``None`` on any error. Never raises from ``query``.
@@ -33,7 +33,10 @@ class GeminiEngine(BaseEngine):
 
     def query(self, prompt: str) -> str | None:
         try:
-            response = self._model.generate_content(prompt)
+            response = self._model.generate_content(
+                prompt,
+                generation_config={"temperature": settings.ENGINE_TEMPERATURE},
+            )
         except google_exceptions.ResourceExhausted:
             logger.warning("Gemini rate limit hit for model %s", MODEL)
             return None

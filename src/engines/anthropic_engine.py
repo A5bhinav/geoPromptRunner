@@ -18,7 +18,7 @@ MAX_TOKENS = 1024
 
 
 class AnthropicEngine(BaseEngine):
-    """Anthropic Claude 3.5 Sonnet engine.
+    """Anthropic Claude (Sonnet 4.5) engine.
 
     Loads the API key from ``ANTHROPIC_API_KEY``. ``query`` returns the
     response text, or ``None`` on any error. Never raises from ``query``.
@@ -44,6 +44,7 @@ class AnthropicEngine(BaseEngine):
             response = self._client.messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
+                temperature=settings.ENGINE_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
             )
         except anthropic.RateLimitError:

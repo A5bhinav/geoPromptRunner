@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from datetime import UTC, datetime
-from urllib.parse import urlparse
 
+from src.pipeline.metrics import domain_of
 from src.pipeline.parser import MentionType
 from src.storage import db
 from src.storage.models import BrandMention, Citation, PromptResult, ReportData
@@ -16,11 +16,6 @@ logger = logging.getLogger(__name__)
 
 def _is_present(mention_type: str) -> bool:
     return mention_type != MentionType.NOT_MENTIONED.value
-
-
-def _domain_of(url: str) -> str:
-    netloc = urlparse(url).netloc
-    return netloc[4:] if netloc.startswith("www.") else netloc
 
 
 def _pct(part: int, whole: int) -> str:
@@ -51,7 +46,11 @@ def render_report(data: ReportData) -> str:
     total_client_mentions = 0
     total_prompts = 0
     for engine in data["engine_names"]:
-        prompts = sum(1 for r in data["results"] if r["engine_name"] == engine)
+        # Denominator excludes engine failures (None) — a failed call is missing
+        # data, not a "not mentioned". Keeps this consistent with metrics.py.
+        prompts = sum(
+            1 for r in data["results"] if r["engine_name"] == engine and r["response"] is not None
+        )
         mentions = sum(
             1
             for m in data["mentions"]
@@ -88,7 +87,7 @@ def render_report(data: ReportData) -> str:
     # --- Top cited domains ---
     lines.append("## Top Cited Domains")
     lines.append("")
-    domain_counts = Counter(_domain_of(c["url"]) for c in data["citations"] if c["url"])
+    domain_counts = Counter(domain_of(c["url"]) for c in data["citations"] if c["url"])
     if domain_counts:
         lines.append("| Domain | Citations |")
         lines.append("| --- | --- |")
