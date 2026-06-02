@@ -76,6 +76,7 @@ class RubricScore(TypedDict):
     status: str  # CheckStatus value: pass / partial / fail
     weight: float
     note: str
+    query_ids: list[str]  # gap->query link: which queries this gap touches
 
 
 class ReportData(TypedDict):

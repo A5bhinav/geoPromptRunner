@@ -28,9 +28,17 @@ def test_compare_runs_detects_won_and_lost() -> None:
     assert cmp.mention_rate_delta == 0.0
 
 
-def _score(category: str, check: str, status: str, weight: float = 1.0) -> RubricScore:
+def _score(
+    category: str, check: str, status: str, weight: float = 1.0, query_ids: list[str] | None = None
+) -> RubricScore:
     return RubricScore(
-        subject="Acme", category=category, check_name=check, status=status, weight=weight, note=""
+        subject="Acme",
+        category=category,
+        check_name=check,
+        status=status,
+        weight=weight,
+        note="",
+        query_ids=query_ids or [],
     )
 
 
@@ -47,4 +55,24 @@ def test_build_roadmap_drops_passes_and_sequences_by_phase() -> None:
     # Accessibility (phase 1) sequenced before off-site (phase 3).
     assert roadmap[0].phase == 1
     assert roadmap[0].category == RubricCategory.TECHNICAL_ACCESSIBILITY.value
-    assert roadmap[0].impact_label == "High"  # 1.0 severity * 1.5 weight = 1.5
+    # WAF: weight 1.5 * severity 1.0 * fixability(low=1.0) = 1.5 -> High.
+    assert roadmap[0].impact_label == "High"
+
+
+def test_build_roadmap_uses_query_weights_when_linked() -> None:
+    # Same check, but linked to two high-value queries -> impact uses their weights.
+    scores = [
+        _score(
+            RubricCategory.CONTENT_SUBSTANCE.value,
+            "comparison pages",
+            CheckStatus.FAIL.value,
+            weight=1.0,
+            query_ids=["q1", "q2"],
+        )
+    ]
+    roadmap = build_roadmap(scores, query_weights={"q1": 2.0, "q2": 3.0})
+    item = roadmap[0]
+    assert item.queries_touched == 2
+    # touched_value 5.0 * severity 1.0 * fixability(high=0.3) = 1.5 -> High.
+    assert item.impact_label == "High"
+    assert round(item.impact, 2) == 1.5

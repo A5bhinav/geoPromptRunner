@@ -5,7 +5,7 @@
     { "category": "technical_accessibility", "check_name": "not blocked at CDN/WAF", "status": "fail", "weight": 1.5, "note": "Cloudflare returns 403 to GPTBot/ClaudeBot" },
     { "category": "technical_accessibility", "check_name": "llms.txt present", "status": "fail", "weight": 0.5 },
     { "category": "content_structure", "check_name": "answer-first direct answers", "status": "partial", "weight": 1, "note": "intros bury the answer" },
-    { "category": "content_substance", "check_name": "comparison content (X vs Y, alternatives)", "status": "fail", "weight": 1.5, "note": "no vs/alternatives pages" },
+    { "category": "content_substance", "check_name": "comparison content (X vs Y, alternatives)", "status": "fail", "weight": 1.5, "note": "no vs/alternatives pages", "query_ids": ["cmp-01", "cmp-02", "cmp-03"] },
     { "category": "structured_data", "check_name": "schema.org markup present and valid", "status": "partial", "weight": 1 },
     { "category": "offsite_authority", "check_name": "reviews on G2/Capterra", "status": "fail", "weight": 1, "note": "thin G2 presence vs competitors" },
     { "category": "offsite_authority", "check_name": "presence on Reddit/forums", "status": "fail", "weight": 1 }

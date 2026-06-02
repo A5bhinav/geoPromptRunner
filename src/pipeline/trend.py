@@ -1,11 +1,34 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from src.pipeline import metrics
 from src.storage.models import QueryResult
 
-__all__ = ["RunComparison", "compare_runs", "render_comparison"]
+__all__ = ["RunComparison", "compare_runs", "render_comparison", "due_for_rerun"]
+
+# Methodology re-runs the locked set on a ~4-6 week cadence (Step 8).
+DEFAULT_CADENCE_DAYS = 42
+
+
+def due_for_rerun(
+    last_run_iso: str, cadence_days: int = DEFAULT_CADENCE_DAYS, now: datetime | None = None
+) -> bool:
+    """True if the last run is at least ``cadence_days`` old (so a re-run is due).
+
+    An unparseable/empty timestamp is treated as due.
+    """
+    if not last_run_iso:
+        return True
+    try:
+        last = datetime.fromisoformat(last_run_iso)
+    except ValueError:
+        return True
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=UTC)
+    now = now or datetime.now(UTC)
+    return (now - last) >= timedelta(days=cadence_days)
 
 
 @dataclass(frozen=True)

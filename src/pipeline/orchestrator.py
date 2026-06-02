@@ -4,6 +4,7 @@ import dataclasses
 import logging
 
 from src.engines.base import BaseEngine
+from src.pipeline.cost import CostBudgetExceeded, estimate_cost
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.intent import IntentBucket
 from src.prompts.query_set import Query, QuerySet
@@ -40,26 +41,46 @@ def run_audit(
     runs_per_query: int = 3,
     persist: bool = True,
     progress: bool = True,
+    max_cost: float | None = None,
+    resume_run_id: str | None = None,
 ) -> AuditOutcome:
     """Run a full audit cycle: query set -> engines -> persisted results.
 
     Synchronous and order-stable. Persists incrementally (one query at a time)
-    so a failure mid-run keeps prior progress and the run is resumable. If
-    storage isn't configured, the run continues in-memory and ``run_id`` is None.
+    so a failure mid-run keeps prior progress. Pass ``resume_run_id`` to continue
+    an interrupted run — queries already stored are skipped. ``max_cost`` aborts
+    before any calls if the rough estimate exceeds the budget. If storage isn't
+    configured, the run continues in-memory and ``run_id`` is None.
     """
     client_domains = client_domains or []
     queries = query_set.queries
-    total_calls = len(queries) * len(engines) * runs_per_query
+    estimated, total_calls = estimate_cost(len(queries), engines, runs_per_query)
     if progress:
         engine_names = ", ".join(e.ENGINE_NAME for e in engines) or "none"
         print(
             f"Audit: {query_set.client} ({query_set.version}) — "
             f"{len(queries)} queries x {len(engines)} engines [{engine_names}] "
-            f"x {runs_per_query} runs = {total_calls} calls"
+            f"x {runs_per_query} runs = {total_calls} calls (~${estimated:.2f} est.)"
+        )
+    if max_cost is not None and estimated > max_cost:
+        raise CostBudgetExceeded(
+            f"estimated ~${estimated:.2f} exceeds budget ${max_cost:.2f} "
+            f"({total_calls} calls). Lower --runs, trim the query set, or raise the budget."
         )
 
-    run_id: str | None = None
-    if persist:
+    run_id: str | None = resume_run_id
+    done_query_ids: set[str] = set()
+    if resume_run_id is not None:
+        try:
+            done_query_ids = {r["query_id"] for r in db.get_query_results(resume_run_id)}
+            if progress:
+                print(
+                    f"  Resuming run {resume_run_id}: {len(done_query_ids)} queries already stored"
+                )
+        except StorageError as exc:
+            logger.warning("Could not load run to resume (%s); starting fresh", exc)
+            run_id = None
+    elif persist:
         try:
             run_id = db.create_audit_run(
                 client_name=query_set.client,
@@ -76,6 +97,10 @@ def run_audit(
 
     results: list[QueryResult] = []
     for index, query in enumerate(queries, start=1):
+        if query.query_id in done_query_ids:
+            if progress:
+                print(f"  [{index}/{len(queries)}] {query.query_id}: skipped (already stored)")
+            continue
         cell = run_query_set([query], engines, runs_per_query)
         results.extend(cell)
         if run_id is not None:

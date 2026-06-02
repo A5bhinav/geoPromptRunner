@@ -102,10 +102,19 @@ _EFFORT: dict[RubricCategory, str] = {
 
 _SEVERITY = {CheckStatus.FAIL: 1.0, CheckStatus.PARTIAL: 0.5, CheckStatus.PASS: 0.0}
 
+# Fixability is the inverse of effort — easy fixes are higher-leverage (Step 6).
+_FIXABILITY = {"low": 1.0, "medium": 0.6, "high": 0.3}
+
 
 @dataclass(frozen=True)
 class RoadmapItem:
-    """A prioritized gap: a non-passing rubric check, scored and sequenced."""
+    """A prioritized gap: a non-passing rubric check, scored and sequenced.
+
+    impact = queries_touched_value x severity x fixability (Step-6 formula),
+    where queries_touched_value sums the commercial-value weights of the queries
+    the gap touches (falls back to the check's own weight when no queries are
+    linked).
+    """
 
     category: str
     check_name: str
@@ -114,6 +123,7 @@ class RoadmapItem:
     impact_label: str
     effort: str
     phase: int
+    queries_touched: int
     note: str
 
 
@@ -132,6 +142,7 @@ def load_rubric_scores(path: str | Path) -> list[RubricScore]:
                 status=status.value,
                 weight=float(item.get("weight", 1)),
                 note=str(item.get("note", "")),
+                query_ids=[str(q) for q in item.get("query_ids", [])],
             )
         )
     return scores
@@ -140,17 +151,25 @@ def load_rubric_scores(path: str | Path) -> list[RubricScore]:
 def _impact_label(impact: float) -> str:
     if impact >= 1.0:
         return "High"
-    if impact >= 0.5:
+    if impact >= 0.4:
         return "Medium"
     return "Low"
 
 
-def build_roadmap(scores: list[RubricScore], subject: str | None = None) -> list[RoadmapItem]:
+def build_roadmap(
+    scores: list[RubricScore],
+    subject: str | None = None,
+    query_weights: dict[str, float] | None = None,
+) -> list[RoadmapItem]:
     """Turn non-passing rubric checks into a prioritized, sequenced roadmap.
 
-    Impact = status severity x weight; sequenced accessibility -> content ->
-    off-site, then by impact within a phase. Passing checks aren't gaps.
+    Step-6 impact = queries_touched_value x severity x fixability, where
+    queries_touched_value sums the commercial-value weights (``query_weights``)
+    of the queries each gap is linked to (falls back to the check's own weight
+    when no queries are linked). Sequenced accessibility -> content -> off-site,
+    then by impact within a phase. Passing checks aren't gaps.
     """
+    query_weights = query_weights or {}
     items: list[RoadmapItem] = []
     for s in scores:
         if subject is not None and s["subject"] != subject:
@@ -160,7 +179,12 @@ def build_roadmap(scores: list[RubricScore], subject: str | None = None) -> list
         if severity == 0.0:
             continue
         category = RubricCategory(s["category"])
-        impact = severity * s["weight"]
+        effort = _EFFORT[category]
+        linked = s["query_ids"]
+        touched_value = (
+            sum(query_weights.get(qid, 1.0) for qid in linked) if linked else s["weight"]
+        )
+        impact = touched_value * severity * _FIXABILITY[effort]
         items.append(
             RoadmapItem(
                 category=category.value,
@@ -168,15 +192,21 @@ def build_roadmap(scores: list[RubricScore], subject: str | None = None) -> list
                 status=status.value,
                 impact=impact,
                 impact_label=_impact_label(impact),
-                effort=_EFFORT[category],
+                effort=effort,
                 phase=_PHASE[category],
+                queries_touched=len(linked),
                 note=s["note"],
             )
         )
     return sorted(items, key=lambda i: (i.phase, -i.impact, i.category))
 
 
-def render_roadmap(scores: list[RubricScore], brand: str, subject: str | None = None) -> str:
+def render_roadmap(
+    scores: list[RubricScore],
+    brand: str,
+    subject: str | None = None,
+    query_weights: dict[str, float] | None = None,
+) -> str:
     """Render report §4 (category rollup) and §5 (prioritized roadmap)."""
     subj_scores = [s for s in scores if subject is None or s["subject"] == subject]
     lines: list[str] = [f"# Diagnosis & Roadmap — {brand}", ""]
@@ -200,7 +230,7 @@ def render_roadmap(scores: list[RubricScore], brand: str, subject: str | None = 
     # §5 — prioritized roadmap
     lines.append("## §5 Prioritized Roadmap")
     lines.append("")
-    roadmap = build_roadmap(subj_scores, subject)
+    roadmap = build_roadmap(subj_scores, subject, query_weights)
     if not roadmap:
         lines.append("_No gaps — every scored check passes._")
         return "\n".join(lines) + "\n"
@@ -210,9 +240,12 @@ def render_roadmap(scores: list[RubricScore], brand: str, subject: str | None = 
             current_phase = item.phase
             lines.append(f"### Phase {item.phase} — {_PHASE_LABEL[item.phase]}")
             lines.append("")
-            lines.append("| Gap | Status | Impact | Effort |")
-            lines.append("| --- | --- | --- | --- |")
-        lines.append(f"| {item.check_name} | {item.status} | {item.impact_label} | {item.effort} |")
+            lines.append("| Gap | Status | Impact | Effort | Queries touched |")
+            lines.append("| --- | --- | --- | --- | --- |")
+        lines.append(
+            f"| {item.check_name} | {item.status} | {item.impact_label} | "
+            f"{item.effort} | {item.queries_touched} |"
+        )
     lines.append("")
     return "\n".join(lines)
 

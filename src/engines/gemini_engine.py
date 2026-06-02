@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 
-import google.generativeai as genai
-from google.api_core import exceptions as google_exceptions
+from google import genai
+from google.genai import types
 
 from src.config import settings
 from src.engines.base import BaseEngine
@@ -16,10 +16,12 @@ MODEL = "gemini-2.5-flash"
 
 
 class GeminiEngine(BaseEngine):
-    """Google Gemini engine (gemini-2.5-flash).
+    """Google Gemini engine (parametric memory, no grounding).
 
-    Loads the API key from ``GEMINI_API_KEY``. ``query`` returns the response
-    text, or ``None`` on any error. Never raises from ``query``.
+    Uses the current ``google-genai`` SDK. Loads the API key from
+    ``GEMINI_API_KEY``. ``query`` returns the response text, or ``None`` on any
+    error. Never raises from ``query``. For the live-retrieval surface see
+    ``GeminiGroundedEngine``.
     """
 
     ENGINE_NAME: str = "gemini"
@@ -27,27 +29,16 @@ class GeminiEngine(BaseEngine):
     def __init__(self) -> None:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is not set. Add it to your .env (see .env.example).")
-        # google-generativeai ships incomplete re-exports; these names exist at runtime.
-        genai.configure(api_key=settings.GEMINI_API_KEY)  # type: ignore[attr-defined]
-        self._model = genai.GenerativeModel(MODEL)  # type: ignore[attr-defined]
+        self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self._config = types.GenerateContentConfig(temperature=settings.ENGINE_TEMPERATURE)
 
     def query(self, prompt: str) -> str | None:
         try:
-            response = self._model.generate_content(
-                prompt,
-                generation_config={"temperature": settings.ENGINE_TEMPERATURE},
+            response = self._client.models.generate_content(
+                model=MODEL, contents=prompt, config=self._config
             )
-        except google_exceptions.ResourceExhausted:
-            logger.warning("Gemini rate limit hit for model %s", MODEL)
-            return None
-        except google_exceptions.DeadlineExceeded:
-            logger.warning("Gemini request timed out for model %s", MODEL)
-            return None
-        except google_exceptions.GoogleAPIError as exc:
-            logger.warning("Gemini API error: %s", exc)
-            return None
-        except Exception as exc:  # never let an engine crash the pipeline
-            logger.warning("Gemini unexpected error: %s", exc)
+        except Exception as exc:  # google-genai raises varied API errors; never crash the run
+            logger.warning("Gemini error: %s", type(exc).__name__)
             return None
 
         text: str | None = getattr(response, "text", None)

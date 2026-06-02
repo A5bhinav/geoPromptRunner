@@ -55,6 +55,11 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _as_str_list(value: object) -> list[str]:
+    """Coerce a JSON value to list[str] (narrows mypy on dict[str, object] rows)."""
+    return [str(v) for v in value] if isinstance(value, list) else []
+
+
 _cached_client: Client | None = None
 
 
@@ -340,6 +345,7 @@ def save_rubric_scores(run_id: str | None, scores: list[RubricScore]) -> None:
             "status": s["status"],
             "weight": s["weight"],
             "note": s["note"],
+            "query_ids": s["query_ids"],
         }
         for s in scores
     ]
@@ -362,6 +368,7 @@ def get_rubric_scores(run_id: str) -> list[RubricScore]:
             status=str(r.get("status", "")),
             weight=float(str(r.get("weight") or 1)),
             note=str(r.get("note") or ""),
+            query_ids=_as_str_list(r.get("query_ids")),
         )
         for r in rows
     ]

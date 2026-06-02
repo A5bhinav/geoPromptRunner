@@ -12,11 +12,17 @@ __all__ = ["Query", "QuerySet", "load_query_set", "bucket_counts"]
 
 @dataclass(frozen=True)
 class Query:
-    """One buyer query, tagged with its funnel-stage intent."""
+    """One buyer query, tagged with its funnel-stage intent.
+
+    ``weight`` is the query's commercial value (a high-intent decision query is
+    worth more than an awareness one) — an input to the Step-6 impact formula.
+    Defaults to 1.0 so existing query sets load unchanged.
+    """
 
     query_id: str
     text: str
     intent: IntentBucket
+    weight: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -57,7 +63,14 @@ def load_query_set(path: str | Path) -> QuerySet:
             raise ValueError(
                 f"unknown intent {item['intent']!r} for query {query_id}; expected one of: {valid}"
             ) from None
-        queries.append(Query(query_id=query_id, text=str(item["text"]), intent=intent))
+        queries.append(
+            Query(
+                query_id=query_id,
+                text=str(item["text"]),
+                intent=intent,
+                weight=float(item.get("weight", 1.0)),
+            )
+        )
 
     if not queries:
         raise ValueError("query set is empty")

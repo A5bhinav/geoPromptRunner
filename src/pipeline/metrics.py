@@ -18,6 +18,7 @@ __all__ = [
     "citation_rate",
     "citation_rate_by_bucket",
     "share_of_voice",
+    "competitive_ranking",
     "top_cited_domains",
     "LosingQuery",
     "losing_queries",
@@ -180,6 +181,15 @@ def share_of_voice(
     if total == 0:
         return {name: 0.0 for name in names}
     return {name: counts[name] / total for name in names}
+
+
+def competitive_ranking(results: list[QueryResult], brands: list[str]) -> list[tuple[str, float]]:
+    """Each brand's mention rate, ranked highest first — the standing table."""
+    return sorted(
+        ((brand, mention_rate(results, brand)) for brand in brands),
+        key=lambda x: x[1],
+        reverse=True,
+    )
 
 
 @dataclass(frozen=True)

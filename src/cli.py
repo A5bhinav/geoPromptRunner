@@ -15,9 +15,10 @@ from src.engines.gemini_grounded_engine import GeminiGroundedEngine
 from src.engines.openai_engine import OpenAIEngine
 from src.engines.openai_search_engine import OpenAISearchEngine
 from src.engines.perplexity_engine import PerplexityEngine
+from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
-from src.pipeline.trend import compare_runs, render_comparison
+from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
 from src.storage import db
 
@@ -78,13 +79,19 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
-    outcome = run_audit(
-        qs,
-        engines,
-        client_domains=_split(args.domains),
-        runs_per_query=args.runs,
-        persist=not args.no_persist,
-    )
+    try:
+        outcome = run_audit(
+            qs,
+            engines,
+            client_domains=_split(args.domains),
+            runs_per_query=args.runs,
+            persist=not args.no_persist,
+            max_cost=args.max_cost,
+            resume_run_id=args.resume,
+        )
+    except CostBudgetExceeded as exc:
+        print(f"Aborted: {exc}")
+        return 1
     print()
     print(render_audit_report(outcome))
     return 0
@@ -164,7 +171,25 @@ def _cmd_technical(args: argparse.Namespace) -> int:
 
 def _cmd_roadmap(args: argparse.Namespace) -> int:
     scores = load_rubric_scores(args.rubric)
-    print(render_roadmap(scores, brand=args.brand or "client"))
+    query_weights: dict[str, float] | None = None
+    if args.query_set:
+        qs = load_query_set(args.query_set)
+        query_weights = {q.query_id: q.weight for q in qs.queries}
+    print(render_roadmap(scores, brand=args.brand or "client", query_weights=query_weights))
+    return 0
+
+
+def _cmd_due(args: argparse.Namespace) -> int:
+    runs = db.list_audit_runs(args.client)
+    if not runs:
+        print(f"{args.client}: no prior runs — due for a baseline.")
+        return 0
+    last = str(runs[-1].get("created_at", ""))
+    due = due_for_rerun(last, cadence_days=args.cadence)
+    print(
+        f"{args.client}: last run {last} — {'DUE for re-run' if due else 'not yet due'} "
+        f"(cadence {args.cadence}d)"
+    )
     return 0
 
 
@@ -177,6 +202,10 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("--domains", help="comma-separated client domains")
     p_audit.add_argument("--runs", type=int, default=3)
     p_audit.add_argument("--surface", choices=("memory", "search"), default="memory")
+    p_audit.add_argument(
+        "--max-cost", type=float, default=None, help="abort if est. $ exceeds this"
+    )
+    p_audit.add_argument("--resume", default=None, help="resume an interrupted run by id")
     p_audit.add_argument("--no-persist", action="store_true")
     p_audit.set_defaults(func=_cmd_audit)
 
@@ -211,7 +240,13 @@ def main(argv: list[str] | None = None) -> int:
     p_roadmap = sub.add_parser("roadmap", help="render §4/§5 from a rubric JSON")
     p_roadmap.add_argument("rubric")
     p_roadmap.add_argument("--brand")
+    p_roadmap.add_argument("--query-set", help="query set JSON for commercial-value weights")
     p_roadmap.set_defaults(func=_cmd_roadmap)
+
+    p_due = sub.add_parser("due", help="check if a client is due for a cadence re-run")
+    p_due.add_argument("client")
+    p_due.add_argument("--cadence", type=int, default=42)
+    p_due.set_defaults(func=_cmd_due)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING)
