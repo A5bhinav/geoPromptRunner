@@ -6,7 +6,7 @@
 
 GEO stands for Generative Engine Optimization — the practice of optimizing a brand's visibility in AI-generated answers, analogous to SEO for Google.
 
-This tool powers a manual audit service sold to funded early-stage B2B SaaS startups. The service finds why competitors are being recommended by AI systems instead of the client, and tells the client exactly what to fix.
+This tool powers a manual audit service sold to early-stage **B2C consumer startups in the Berkeley / Silicon Valley ecosystem**. The service finds why competitors are being recommended by AI systems instead of the client, and tells the client exactly what to fix.
 
 The software starts as internal tooling. It becomes a standalone SaaS product once the service proves what clients actually need.
 
@@ -18,9 +18,9 @@ The software starts as internal tooling. It becomes a standalone SaaS product on
 - Abhi — technical founder, building the software and audit pipeline
 - Josh — business founder (Haas), running sales and client relationships
 
-**Target customer:** Growth or marketing lead at a seed/Series A B2B SaaS startup who is losing visibility in AI-generated buyer recommendations and has no way to measure or fix it.
+**Target customer:** Founder or growth lead at an early-stage B2C consumer startup who is losing visibility in AI-generated consumer recommendations and has no way to measure or fix it.
 
-**The problem they feel:** When their buyers ask ChatGPT or Perplexity "best tool for X," competitors show up and they don't. They have no analytics for this. They don't know why it's happening. They don't know if their fixes are working.
+**The problem they feel:** When their customers ask ChatGPT or Perplexity "best app for X," competitors show up and they don't. They have no analytics for this. They don't know why it's happening. They don't know if their fixes are working.
 
 **What this tool does for the business:**
 1. Runs the audit pipeline automatically instead of manually
@@ -28,7 +28,7 @@ The software starts as internal tooling. It becomes a standalone SaaS product on
 3. Tracks visibility changes over time
 4. Eventually becomes the product clients pay for directly
 
-**Niche:** Berkeley/SV ecosystem, funded seed/Series A B2B SaaS startups. Entry point is through one accelerator or VC portfolio for warm distribution.
+**Niche:** Berkeley/SV ecosystem, early-stage B2C consumer startups. Entry point is through one accelerator or VC portfolio for warm distribution.
 
 ---
 
@@ -36,13 +36,13 @@ The software starts as internal tooling. It becomes a standalone SaaS product on
 
 AI systems recommend brands based on:
 
-1. **Training data frequency** — brands mentioned often and positively in the data the model was trained on get baked into its memory. Reddit, G2, Capterra, Product Hunt, Hacker News, major publications, and industry blogs are disproportionately represented.
+1. **Training data frequency** — brands mentioned often and positively in the data the model was trained on get baked into its memory. For consumer products, Reddit, YouTube, TikTok, App Store / Play Store, Amazon, Trustpilot, "best [category] app" listicles, and lifestyle/consumer media are disproportionately represented.
 
 2. **Retrieval (for live-search models)** — Perplexity, Bing Copilot, and Google AI Mode fetch pages at query time. They retrieve content, extract relevant passages, and synthesize an answer. Citations appear because a specific page was retrieved and used.
 
 3. **Content extractability** — AI systems favor pages with clear definitions, comparison tables, FAQ sections, and direct answers. Vague marketing copy is ignored.
 
-4. **Co-occurrence with category terms** — if a brand consistently appears alongside "best CRM for startups," the model learns that association.
+4. **Co-occurrence with category terms** — if a brand consistently appears alongside "best budgeting app for students," the model learns that association.
 
 5. **Source authority** — a mention on a trusted domain carries more weight than a random site.
 
@@ -52,8 +52,8 @@ AI systems recommend brands based on:
 - Building comparison pages ("X vs Y")
 - Building alternative pages ("best alternatives to X")
 - Building use-case specific pages
-- Getting listed on G2, Capterra, Reddit, Product Hunt
-- Getting cited by industry blogs and newsletters
+- Earning presence on Reddit / consumer forums, and strong App Store / Play Store reviews
+- Getting creator coverage (YouTube, TikTok, influencers) and named in "best [category] app" listicles
 - Writing clear, question-answering content with direct answers first
 
 ---
@@ -72,7 +72,7 @@ Check whether AI crawlers can even reach the site. This often explains a bad Ste
 Score the client's website across: content coverage and question-space mapping, content structure and extractability, content substance and E-E-A-T, structured data and schema.
 
 **Step 4 — Off-site audit**
-Score the client's external presence: brand entity consistency, community presence (Reddit, forums), review platform profiles (G2, Capterra), third-party citations and press, comparison content that names the client.
+Score the client's external presence: brand entity consistency, community presence (Reddit, consumer forums), App Store / Play Store reviews, Trustpilot, creator/influencer coverage (YouTube, TikTok), "best [category] app" listicles that name the client, and third-party citations/press.
 
 **Step 5 — Competitive benchmark**
 Run the same rubric categories on competitors. Produce a "here's where they beat you" gap map. Absolute scores persuade no one — gaps against a rival they're losing to do.
@@ -127,11 +127,11 @@ Each item is scored Pass / Partial / Fail.
 
 ### Category 6 — Offsite Authority and Entity Consensus
 - Brand entity consistent across the web: same name, description, and category everywhere
-- Presence on community sources models lean on: Reddit, industry forums, Q&A threads
-- (B2B SaaS) Profiles and reviews on G2, Capterra, Trustpilot; presence on comparison pages
-- Third-party citations, press, co-citations from credible outlets
+- Presence on community sources models lean on: Reddit, consumer forums, Q&A threads
+- App Store / Play Store ratings & reviews; reviews on Trustpilot; YouTube/TikTok/influencer coverage
+- Third-party citations, press, co-citations from credible consumer/lifestyle outlets
 - Wikipedia/Wikidata entity where the brand legitimately qualifies
-- "Best [category] tool" comparison content exists naming the client
+- "Best [category] app" listicles / roundups exist naming the client
 
 ### Category 7 — Baseline Measurement
 - Representative buyer-query set built for their category

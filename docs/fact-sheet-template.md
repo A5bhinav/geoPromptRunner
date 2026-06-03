@@ -48,7 +48,7 @@
 
 - **Core features they DO have:** {the real, current capability set — bullet them}
 - **Recently shipped (last ~6–12 months):** {newest features / latest model or version — the #1 staleness hotspot, since training data lags}
-- **Things they explicitly do NOT do / common misconceptions:** {the false-positive guards — e.g., "not a CRM", "no free tier", "no on-device screen"}
+- **Things they explicitly do NOT do / common misconceptions:** {the false-positive guards — e.g., "no free tier", "iOS only (no Android yet)", "not owned by [competitor]"}
 - **Key integrations / ecosystem:** {the integrations worth naming}
 - **Notable limitations or requirements:** {anything material a buyer should know that models distort}
 

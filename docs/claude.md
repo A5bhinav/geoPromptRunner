@@ -8,15 +8,15 @@ This file is the authoritative guide for all AI-assisted development on this cod
 
 **GEO Measurement Platform** is a data pipeline and audit tool that measures how often a company appears in AI-generated answers across ChatGPT, Claude, Gemini, and Perplexity.
 
-GEO = Generative Engine Optimization. When a buyer asks an AI system "best tool for X," this platform measures whether the client appears, whether competitors appear instead, and which external sources are driving those recommendations.
+GEO = Generative Engine Optimization. When a consumer asks an AI system "best app for X," this platform measures whether the client appears, whether competitors appear instead, and which external sources are driving those recommendations.
 
-This tool powers a manual GEO audit service sold to funded early-stage B2B SaaS startups. The software starts as internal tooling for two founders running client audits. It becomes a standalone SaaS product once the service proves what clients actually need.
+This tool powers a manual GEO audit service sold to early-stage **B2C consumer startups in the Berkeley / Silicon Valley ecosystem**. The software starts as internal tooling for two founders running client audits. It becomes a standalone SaaS product once the service proves what clients actually need.
 
 **Founders:**
 - Abhi — technical founder, builds the pipeline
 - Josh — business founder (Haas), runs sales and client relationships
 
-**Target customer:** Growth or marketing lead at a seed/Series A B2B SaaS startup who is losing visibility in AI-generated buyer recommendations and has no way to measure or fix it.
+**Target customer:** Founder or growth lead at an early-stage B2C consumer startup (Berkeley/SV ecosystem) who is losing visibility in AI-generated consumer recommendations and has no way to measure or fix it.
 
 ---
 
