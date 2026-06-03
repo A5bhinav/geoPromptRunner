@@ -256,20 +256,28 @@ When starting a new chunk, follow this order:
 
 ## 8. Domain Knowledge
 
+> **Niche:** B2C consumer startups in the Berkeley / Silicon Valley ecosystem
+> (early-stage, accelerator-adjacent consumer brands and apps). The "buyer" is a
+> **consumer** — a person choosing an app/product for themselves — not a B2B
+> procurement or growth lead. This reframes which sources matter and how queries
+> are phrased; the measurement mechanics are unchanged.
+
 ### How AI systems generate recommendations
 
-1. **Training data frequency** — brands mentioned often and positively in training data get baked into the model's memory. Reddit, G2, Capterra, Product Hunt, Hacker News, and major publications appear disproportionately.
-2. **Retrieval (live-search models)** — Perplexity, Bing Copilot, and Google AI Mode fetch pages at query time. They retrieve content, extract relevant passages, and synthesize an answer. Citations appear because a specific page was retrieved and used.
+1. **Training data frequency** — brands mentioned often and positively in training data get baked into the model's memory. For consumer products, **Reddit, YouTube, TikTok, App Store / Play Store, Amazon, Trustpilot, "best [category] app" listicles, and lifestyle/consumer media** appear disproportionately.
+2. **Retrieval (live-search models)** — Perplexity, Bing Copilot, and Google AI Mode/Overviews fetch pages at query time. They retrieve content, extract relevant passages, and synthesize an answer. Citations appear because a specific page was retrieved and used.
 3. **Content extractability** — AI systems favor pages with clear definitions, comparison tables, FAQ sections, and direct answers. Vague marketing copy is ignored.
-4. **Co-occurrence** — if a brand consistently appears alongside "best CRM for startups," the model learns that association.
-5. **Source authority** — a mention on a trusted domain carries more weight than a random site.
+4. **Co-occurrence** — if a brand consistently appears alongside "best budgeting app for students," the model learns that association.
+5. **Source authority** — a mention on a trusted, high-traffic consumer source (a big subreddit, a popular creator, a major review roundup) carries more weight than a random site.
 
 ### What moves visibility
 
-- Adding statistics and data to content
+- Earning presence in **Reddit / consumer-forum threads** where buyers ask for recommendations (the single highest-leverage B2C source)
+- **App Store / Play Store** rating volume, recency, and review quality (ASO)
+- **Creator coverage** — YouTube reviews, TikTok, Instagram, and influencer roundups
+- Getting named in **"best [category] app" listicles** and consumer media roundups
 - Building comparison pages ("X vs Y") and alternative pages ("best alternatives to X")
-- Getting listed on G2, Capterra, Reddit, Product Hunt
-- Getting cited by industry blogs and newsletters
+- Reviews on **Trustpilot** and other consumer review platforms
 - Writing clear, question-answering content with direct answers first
 - Ensuring AI crawlers can reach the site (robots.txt, Cloudflare WAF)
 
@@ -277,13 +285,13 @@ When starting a new chunk, follow this order:
 
 Every client audit follows this exact sequence:
 
-**Step 1 — Baseline measurement:** Run prompt set across all engines for client and top 2-3 competitors. Capture mention rate, share-of-model, brand description accuracy, and cited pages. Output: date-stamped before-snapshot.
+**Step 1 — Baseline measurement:** Run the query set across all engines for the client and top 2-3 competitors. Capture mention rate, share-of-voice, brand description accuracy, and cited sources. Output: date-stamped before-snapshot.
 
 **Step 2 — Technical accessibility:** Check crawler access, WAF/Cloudflare blocking, rendering, llms.txt, sitemap, gating. Often explains a bad Step 1 result immediately.
 
 **Step 3 — On-site audit:** Score content coverage, structure and extractability, substance/E-E-A-T, and schema.
 
-**Step 4 — Off-site audit:** Score entity consistency, community presence, review platforms, third-party citations.
+**Step 4 — Off-site audit:** Score entity consistency, community presence (Reddit/forums), app-store reviews, creator/influencer coverage, listicle inclusion, and third-party citations — the consumer channels that drive the answers.
 
 **Step 5 — Competitive benchmark:** Run the same rubric on competitors. Produce the gap map. Absolute scores don't persuade — gaps against rivals they're losing to do.
 
@@ -296,51 +304,52 @@ Every client audit follows this exact sequence:
 **Category 1 — Technical Accessibility**
 - robots.txt allows: GPTBot, ChatGPT-User, OAI-SearchBot, ClaudeBot, PerplexityBot, Google-Extended, Bingbot
 - Not blocked at CDN/WAF (Cloudflare blocks AI bots by default)
-- Core content server-rendered or static, not JS-only
+- Core content server-rendered or static, not JS-only (consumer marketing sites are often SPA shells)
 - llms.txt present and valid
 - XML sitemap present and current
-- Target content not gated
+- Target content not gated behind sign-up/app-download walls
 
 **Category 2 — Content Coverage / Question-Space Mapping**
-- Topic clusters map buyer question space: awareness → consideration → decision
+- Topic clusters map the consumer journey: problem-aware → comparison → decision
 - Internal linking establishes topical authority
 
 **Category 3 — Content Structure and Extractability**
 - Answer-first: 40-60 word direct answer before elaborating
-- Headings written as real buyer questions
+- Headings written as real consumer questions
 - Self-contained chunks per section
 - Definition-first sentences for key terms
 - Scannable formatting: short paragraphs, lists, tables
 - TL;DR block near top of long pages
 
 **Category 4 — Content Substance and Credibility (E-E-A-T)**
-- Fact density: statistics every ~150-200 words
+- Fact density: concrete specifics (pricing, features, limits) over vague claims
 - Citations to authoritative external sources
-- Expert quotes and original commentary
-- Original data or real case studies
+- Real user outcomes / testimonials / case studies
 - Named authors with credible bios
 - Visible last-updated date
-- On-site comparison content: "X vs Y", "X alternatives"
+- On-site comparison content: "X vs Y", "X alternatives", "best [category] app"
 
 **Category 5 — Structured Data / Schema**
 - Schema.org markup present and valid
-- Relevant types: Organization, Product/SoftwareApplication, Article, FAQPage, HowTo
+- Relevant types: Organization, Product, **MobileApplication/SoftwareApplication**, **Review/AggregateRating**, Article, FAQPage, HowTo
 - Schema matches visible content
 - Entity identifiers consistent across the web
 
-**Category 6 — Offsite Authority and Entity Consensus**
+**Category 6 — Offsite Authority and Entity Consensus** (the B2C battleground)
 - Brand entity consistent everywhere: name, description, category
-- Presence on Reddit, industry forums, Q&A threads
-- Profiles and reviews on G2, Capterra, Trustpilot
+- Presence on **Reddit and consumer forums / Q&A threads**
+- **App Store / Play Store** ratings & reviews (volume, recency, sentiment)
+- **YouTube / TikTok / influencer** coverage
+- Reviews on **Trustpilot** and consumer review platforms
+- Named in **"best [category] app" listicles** and consumer-media roundups
 - Third-party citations and press
-- "Best [category] tool" comparison content naming the client
 
 **Category 7 — Baseline Measurement**
-- Representative buyer-query set built for their category
+- Representative consumer-query set built for the category
 - Mention/citation rate recorded across all 4 engines
-- Competitor presence mapped on same queries
-- Baseline share-of-model date-stamped
-- Accuracy of model's brand description verified
+- Competitor presence mapped on the same queries
+- Baseline share-of-voice date-stamped
+- Accuracy of the model's brand description verified
 - AI-referral traffic tracked in GA4
 
 ---
