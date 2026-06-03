@@ -1,13 +1,14 @@
 {
-  "subject": "Acme",
+  "subject": "Centsible",
   "scores": [
     { "category": "technical_accessibility", "check_name": "robots.txt allows AI crawlers", "status": "pass", "weight": 1 },
     { "category": "technical_accessibility", "check_name": "not blocked at CDN/WAF", "status": "fail", "weight": 1.5, "note": "Cloudflare returns 403 to GPTBot/ClaudeBot" },
-    { "category": "technical_accessibility", "check_name": "llms.txt present", "status": "fail", "weight": 0.5 },
-    { "category": "content_structure", "check_name": "answer-first direct answers", "status": "partial", "weight": 1, "note": "intros bury the answer" },
-    { "category": "content_substance", "check_name": "comparison content (X vs Y, alternatives)", "status": "fail", "weight": 1.5, "note": "no vs/alternatives pages", "query_ids": ["cmp-01", "cmp-02", "cmp-03"] },
-    { "category": "structured_data", "check_name": "schema.org markup present and valid", "status": "partial", "weight": 1 },
-    { "category": "offsite_authority", "check_name": "reviews on G2/Capterra", "status": "fail", "weight": 1, "note": "thin G2 presence vs competitors" },
-    { "category": "offsite_authority", "check_name": "presence on Reddit/forums", "status": "fail", "weight": 1 }
+    { "category": "technical_accessibility", "check_name": "core content server-rendered", "status": "partial", "weight": 1, "note": "marketing site is a JS SPA; app content gated" },
+    { "category": "content_structure", "check_name": "answer-first direct answers", "status": "partial", "weight": 1 },
+    { "category": "content_substance", "check_name": "comparison content (X vs Y, alternatives)", "status": "fail", "weight": 1.5, "note": "no 'vs YNAB' / 'alternatives' pages", "query_ids": ["cmp-01", "cmp-02", "cmp-03"] },
+    { "category": "offsite_authority", "check_name": "App Store / Play Store ratings & reviews", "status": "partial", "weight": 1.5, "note": "few reviews vs competitors", "query_ids": ["cat-01", "cat-04", "brd-01"] },
+    { "category": "offsite_authority", "check_name": "presence on Reddit / consumer forums", "status": "fail", "weight": 1.5, "note": "absent from r/personalfinance budgeting threads", "query_ids": ["pa-01", "cat-01", "cmp-01"] },
+    { "category": "offsite_authority", "check_name": "YouTube / TikTok / influencer coverage", "status": "fail", "weight": 1, "note": "no creator coverage" },
+    { "category": "offsite_authority", "check_name": "named in 'best [category] app' listicles / roundups", "status": "fail", "weight": 1.5, "note": "missing from 2026 best-budgeting-app roundups", "query_ids": ["cat-01", "cat-03", "cat-05"] }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "version": "smoke-v1",
+  "locked_at": "2026-06-02",
+  "category": "personal budgeting app",
+  "client": "Centsible",
+  "competitors": ["YNAB", "Copilot", "Rocket Money"],
+  "queries": [
+    { "query_id": "cat-01", "intent": "category", "text": "best budgeting app for college students", "weight": 1.5 },
+    { "query_id": "cmp-01", "intent": "comparison", "text": "YNAB alternatives", "weight": 1.8 },
+    { "query_id": "brd-01", "intent": "brand", "text": "is Centsible worth it for budgeting?", "weight": 2.0 }
+  ]
+}

@@ -66,10 +66,14 @@ DEFAULT_CHECKLIST: dict[RubricCategory, tuple[str, ...]] = {
         "relevant types (Organization/Product/FAQ)",
     ),
     RubricCategory.OFFSITE_AUTHORITY: (
+        # B2C consumer channels (Berkeley/SV consumer-startup niche): the sources
+        # that actually drive AI answers for consumer brands.
         "entity consistent across the web",
-        "presence on Reddit/forums",
-        "reviews on G2/Capterra",
-        "third-party citations and press",
+        "presence on Reddit / consumer forums",
+        "App Store / Play Store ratings & reviews",
+        "YouTube / TikTok / influencer coverage",
+        "reviews on Trustpilot",
+        "named in 'best [category] app' listicles / roundups",
     ),
     RubricCategory.BASELINE_MEASUREMENT: (
         "buyer-query set built for category",
