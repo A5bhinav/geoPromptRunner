@@ -1,0 +1,43 @@
+{
+  "_comment": "Illustrative gold set. Replace with ~20-40 hand-labeled REAL answers from a proxy run. Labels are human judgments of present/prominence/framing per brand.",
+  "items": [
+    {
+      "query": "best budgeting app for college students",
+      "answer": "For students, YNAB is the top recommendation thanks to its planning features. Rocket Money is a solid runner-up. Centsible is a newer option but pricier and only on iOS.",
+      "client": "Centsible",
+      "competitors": ["YNAB", "Rocket Money"],
+      "fact_sheet": "Centsible pricing: free tier + $5/month premium. Platforms: iOS and Android.",
+      "labels": {
+        "Centsible": { "present": true, "prominence": "also_ran", "framing": "negative" },
+        "YNAB": { "present": true, "prominence": "recommended_first", "framing": "positive" },
+        "Rocket Money": { "present": true, "prominence": "mid_pack", "framing": "positive" }
+      },
+      "expect_accuracy_flags": true
+    },
+    {
+      "query": "YNAB alternatives",
+      "answer": "Good YNAB alternatives include Monarch Money and Copilot. Both offer strong budgeting and syncing.",
+      "client": "Centsible",
+      "competitors": ["Monarch Money", "Copilot"],
+      "fact_sheet": null,
+      "labels": {
+        "Centsible": { "present": false, "prominence": "absent", "framing": "neutral" },
+        "Monarch Money": { "present": true, "prominence": "recommended_first", "framing": "positive" },
+        "Copilot": { "present": true, "prominence": "mid_pack", "framing": "positive" }
+      },
+      "expect_accuracy_flags": false
+    },
+    {
+      "query": "is Centsible worth it for budgeting?",
+      "answer": "Centsible is a capable budgeting app with a clean interface and a free tier. Many users find it worth trying, though it has fewer integrations than YNAB.",
+      "client": "Centsible",
+      "competitors": ["YNAB"],
+      "fact_sheet": "Centsible pricing: free tier + $5/month premium. Platforms: iOS and Android.",
+      "labels": {
+        "Centsible": { "present": true, "prominence": "recommended_first", "framing": "positive" },
+        "YNAB": { "present": true, "prominence": "also_ran", "framing": "neutral" }
+      },
+      "expect_accuracy_flags": false
+    }
+  ]
+}

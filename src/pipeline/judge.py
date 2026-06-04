@@ -80,6 +80,7 @@ class AnswerJudgment:
 
     query_id: str
     engine_name: str
+    intent: str
     run_index: int
     assessed: bool  # False = judge failed -> "not assessed", never crashes
     brands: list[BrandJudgment]
@@ -235,6 +236,7 @@ class Judge:
                 AnswerJudgment(
                     query_id=r["query_id"],
                     engine_name=r["engine_name"],
+                    intent=r["intent"],
                     run_index=r["run_index"],
                     assessed=assessed,
                     brands=brands,

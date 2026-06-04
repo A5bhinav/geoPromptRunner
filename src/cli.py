@@ -16,9 +16,11 @@ from src.engines.gemini_grounded_engine import GeminiGroundedEngine
 from src.engines.openai_engine import OpenAIEngine
 from src.engines.openai_search_engine import OpenAISearchEngine
 from src.engines.perplexity_engine import PerplexityEngine
+from src.pipeline.calibration import calibrate, load_gold_set, render_calibration
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
-from src.pipeline.judge import Judge, summarize_judgments
+from src.pipeline.judge import Judge
+from src.pipeline.judge_metrics import render_judge_report
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
@@ -144,7 +146,18 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     judgments = judge.judge_results(
         outcome.results, outcome.client_name, outcome.competitors, fact_sheet
     )
-    print(summarize_judgments(judgments, outcome.client_name, outcome.competitors))
+    print(render_judge_report(judgments, outcome.client_name, outcome.competitors))
+    return 0
+
+
+def _cmd_calibrate(args: argparse.Namespace) -> int:
+    gold = load_gold_set(args.gold)
+    try:
+        judge = Judge()
+    except ValueError as exc:
+        print(exc)
+        return 1
+    print(render_calibration(calibrate(judge, gold)))
     return 0
 
 
@@ -248,6 +261,10 @@ def main(argv: list[str] | None = None) -> int:
     p_judge.add_argument("run_id")
     p_judge.add_argument("--fact-sheet", help="path to the client fact sheet (enables accuracy)")
     p_judge.set_defaults(func=_cmd_judge)
+
+    p_cal = sub.add_parser("calibrate", help="check the judge against a hand-labeled gold set")
+    p_cal.add_argument("gold")
+    p_cal.set_defaults(func=_cmd_calibrate)
 
     p_compare = sub.add_parser("compare", help="diff two runs (cadence/trend)")
     p_compare.add_argument("before")
