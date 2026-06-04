@@ -8,16 +8,16 @@
     { "query_id": "pa-01", "intent": "problem_aware", "text": "how do I stop overspending every month?", "weight": 1.0 },
     { "query_id": "pa-02", "intent": "problem_aware", "text": "why can't I ever save money even on a decent salary?", "weight": 1.0 },
     { "query_id": "pa-03", "intent": "problem_aware", "text": "what's the best way to track where my money goes?", "weight": 1.0 },
-    { "query_id": "cat-01", "intent": "category", "text": "best budgeting app for college students", "weight": 1.5 },
-    { "query_id": "cat-02", "intent": "category", "text": "best budgeting app for couples", "weight": 1.5 },
+    { "query_id": "cat-01", "intent": "category", "text": "best budgeting app for college students", "weight": 1.5, "persona": "college student" },
+    { "query_id": "cat-02", "intent": "category", "text": "best budgeting app for couples", "weight": 1.5, "persona": "couple" },
     { "query_id": "cat-03", "intent": "category", "text": "what app should I use to manage my money in 2026?", "weight": 1.5 },
-    { "query_id": "cat-04", "intent": "category", "text": "easiest budgeting app for beginners", "weight": 1.5 },
+    { "query_id": "cat-04", "intent": "category", "text": "easiest budgeting app for beginners", "weight": 1.5, "persona": "beginner" },
     { "query_id": "cat-05", "intent": "category", "text": "best free budgeting app", "weight": 1.5 },
     { "query_id": "cmp-01", "intent": "comparison", "text": "YNAB alternatives", "weight": 1.8 },
     { "query_id": "cmp-02", "intent": "comparison", "text": "Copilot vs YNAB for budgeting", "weight": 1.8 },
     { "query_id": "cmp-03", "intent": "comparison", "text": "cheaper alternatives to Rocket Money", "weight": 1.8 },
     { "query_id": "brd-01", "intent": "brand", "text": "is Centsible worth it for budgeting?", "weight": 2.0 },
     { "query_id": "brd-02", "intent": "brand", "text": "Centsible app review: pros and cons", "weight": 2.0 },
-    { "query_id": "adj-01", "intent": "adjacent_authority", "text": "how should a recent grad set up a monthly budget?", "weight": 0.8 }
+    { "query_id": "adj-01", "intent": "adjacent_authority", "text": "how should a recent grad set up a monthly budget?", "weight": 0.8, "persona": "recent grad" }
   ]
 }

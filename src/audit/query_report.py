@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from src.pipeline import judge_metrics, metrics
 from src.pipeline.orchestrator import AuditOutcome
+from src.prompts.query_set import QuerySet
 from src.storage.models import AnswerJudgment, QueryResult
 
 __all__ = ["render_audit_report"]
@@ -11,6 +12,12 @@ __all__ = ["render_audit_report"]
 
 def _pct(value: float) -> str:
     return f"{value * 100:.0f}%"
+
+
+def _delta(before: float, after: float) -> str:
+    pts = (after - before) * 100
+    arrow = "▲" if pts > 0 else ("▼" if pts < 0 else "—")
+    return f"{_pct(before)} → {_pct(after)} ({arrow}{abs(pts):.0f} pts)"
 
 
 def _engine_names(results: list[QueryResult]) -> list[str]:
@@ -124,17 +131,64 @@ def _regex_body(
     lines.append("")
 
 
+def _trend_section(
+    lines: list[str],
+    previous: list[QueryResult],
+    current: list[QueryResult],
+    brand: str,
+    competitors: list[str],
+    label: str,
+) -> None:
+    """§3 movement: per-brand mention-rate delta vs a prior run of the same set.
+
+    Results-based (not judge-based) so it renders on either detection path; valid
+    only if the query set was held constant — the caller passes the prior run.
+    """
+    lines.append(f"## Trend vs {label}")
+    lines.append("")
+    lines.append("| Brand | Mention rate (before → after) |")
+    lines.append("| --- | --- |")
+    for name in [brand, *competitors]:
+        marker = " (client)" if name == brand else ""
+        before = metrics.mention_rate(previous, name)
+        after = metrics.mention_rate(current, name)
+        lines.append(f"| {name}{marker} | {_delta(before, after)} |")
+    lines.append("")
+
+
+def _query_appendix(lines: list[str], query_set: QuerySet) -> None:
+    """§6.1 appendix: the locked query set with the Persona/modifier column."""
+    lines.append("## Query Set (Appendix)")
+    lines.append("")
+    lines.append(f"_Version {query_set.version}, locked {query_set.locked_at}._")
+    lines.append("")
+    lines.append("| Query | Intent | Persona / modifier | Weight |")
+    lines.append("| --- | --- | --- | --- |")
+    for q in query_set.queries:
+        persona = q.persona or "—"
+        lines.append(f"| {q.text} | {q.intent.value} | {persona} | {q.weight:g} |")
+    lines.append("")
+
+
 def render_audit_report(
     outcome: AuditOutcome,
     run_date: str | None = None,
     judgments: list[AnswerJudgment] | None = None,
+    previous: list[QueryResult] | None = None,
+    previous_label: str = "previous run",
+    query_set: QuerySet | None = None,
 ) -> str:
     """Render the §2/§3 markdown audit report.
 
     Judge-aware: when ``judgments`` are supplied (and any were assessed) the
-    report is powered by the LLM judge — visibility/prominence leaderboard,
-    framing, and accuracy flags. Otherwise it falls back to regex detection
-    (mention only). Citations always come from the answers. Pure/deterministic.
+    report is powered by the LLM judge — the §1 A-F grade plus the
+    visibility/prominence leaderboard, framing, and accuracy flags. Otherwise it
+    falls back to regex detection (mention only). Citations always come from the
+    answers.
+
+    Optional: ``previous`` (a prior run's results for the *same* locked set) adds
+    the §3 trend column; ``query_set`` adds the §6.1 query appendix with the
+    Persona/modifier column. Pure/deterministic.
     """
     brand = outcome.client_name
     results = outcome.results
@@ -161,7 +215,13 @@ def render_audit_report(
     else:
         _regex_body(lines, results, brand, competitors, engines, outcome.client_domains)
 
+    if previous is not None:
+        _trend_section(lines, previous, results, brand, competitors, previous_label)
+
     _cited_domains_section(lines, results)
+
+    if query_set is not None:
+        _query_appendix(lines, query_set)
     return "\n".join(lines)
 
 

@@ -7,6 +7,7 @@ from src.pipeline.judge_metrics import (
     leaderboard,
     losing_cells,
     mention_rate,
+    visibility_grade,
     visibility_score,
 )
 
@@ -57,6 +58,25 @@ def test_losing_cells_flags_client_absent_competitor_first() -> None:
     losses = losing_cells(_judgments(), client="Centsible", competitors=["YNAB"])
     # q1: Centsible absent, YNAB recommended_first -> a loss. q2: YNAB only mid_pack.
     assert [(c.query_id, c.brand) for c in losses] == [("q1", "YNAB")]
+
+
+def test_visibility_grade_rewards_prominence() -> None:
+    # YNAB is recommended_first / mid_pack -> high visibility -> top grade.
+    strong = visibility_grade(_judgments(), "YNAB")
+    # Centsible is absent / buried -> low visibility -> low grade.
+    weak = visibility_grade(_judgments(), "Centsible")
+    assert strong.score > weak.score
+    assert strong.letter == "A"
+    assert weak.letter in {"C", "D", "F"}
+
+
+def test_visibility_grade_penalized_by_accuracy_flags() -> None:
+    flag = AccuracyFlag("wrong_pricing", "$20/mo", "free", "high")
+    clean = [_aj("q1", "openai", [_bj("Centsible", True, "recommended_first")])]
+    flagged = [_aj("q1", "openai", [_bj("Centsible", True, "recommended_first")], [flag])]
+    # Same visibility, but the high-severity flag drags the graded score down.
+    assert visibility_grade(flagged, "Centsible").score < visibility_grade(clean, "Centsible").score
+    assert visibility_grade(flagged, "Centsible").n_flags == 1
 
 
 def test_collect_accuracy_flags_dedupes() -> None:

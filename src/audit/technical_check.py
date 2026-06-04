@@ -47,6 +47,20 @@ AI_CRAWLER_UAS: dict[str, str] = {
     "Google-Extended": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 }
 
+# Mount-point markers left by client-rendered SPA frameworks. Their presence
+# alongside little server-rendered text means the real content is assembled by
+# JS in the browser — which AI crawlers that don't execute JS never see.
+_SPA_SHELL_MARKERS: tuple[str, ...] = (
+    'id="root"',
+    "id='root'",
+    'id="__next"',
+    'id="app"',
+    'id="__nuxt"',
+    "data-reactroot",
+    "ng-app",
+    'ng-version="',
+)
+
 # Markers that suggest target content is gated behind a login/paywall/form.
 _GATING_MARKERS: tuple[str, ...] = (
     "subscribe to read",
@@ -200,8 +214,64 @@ def check_sitemap(domain: str) -> CheckResult:
     )
 
 
+_SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
+_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_TAG_RE = re.compile(r"<[^>]+>")
+_WS_RE = re.compile(r"\s+")
+
+
+def _visible_text(html: str) -> str:
+    """Approximate the text a non-JS crawler would see: drop script/style/comments
+    and tags, collapse whitespace. Counting raw HTML length over-counts inlined
+    JS bundles and misses SPA shells; counting visible text is the real signal.
+    """
+    stripped = _SCRIPT_STYLE_RE.sub(" ", html)
+    stripped = _COMMENT_RE.sub(" ", stripped)
+    stripped = _TAG_RE.sub(" ", stripped)
+    return _WS_RE.sub(" ", stripped).strip()
+
+
+def _classify_rendering(visible_chars: int, spa_shell: bool) -> CheckResult:
+    """Pure verdict logic for the rendering heuristic (separated for testability)."""
+    if visible_chars >= 1500:
+        return CheckResult(
+            status="pass",
+            details=f"Homepage returns substantial server-rendered text (~{visible_chars} chars).",
+        )
+    if spa_shell and visible_chars < 500:
+        return CheckResult(
+            status="fail",
+            details=(
+                f"SPA shell detected (client-render mount point) with only ~{visible_chars} "
+                "chars of server-rendered text; AI crawlers that don't run JS will see little."
+            ),
+        )
+    if visible_chars < 200:
+        return CheckResult(
+            status="fail",
+            details=f"Almost no server-rendered text (~{visible_chars} chars); likely JS-only.",
+        )
+    if visible_chars < 600:
+        return CheckResult(
+            status="partial",
+            details=(
+                f"Thin server-rendered text (~{visible_chars} chars); "
+                "key content may rely on client-side rendering."
+            ),
+        )
+    return CheckResult(
+        status="pass",
+        details=f"Homepage returns adequate server-rendered text (~{visible_chars} chars).",
+    )
+
+
 def check_rendering(domain: str) -> CheckResult:
-    """Heuristically check whether core content is server-rendered, not JS-only."""
+    """Heuristically check whether core content is server-rendered, not JS-only.
+
+    Measures *visible* text (script/style/tags stripped) rather than raw HTML
+    length, and flags SPA shells (a framework mount point with little text) — the
+    React/Next hydration-only case that a raw-length check misses.
+    """
     base = _base_url(domain)
     response = _get(base + "/")
     if response is None:
@@ -211,24 +281,9 @@ def check_rendering(domain: str) -> CheckResult:
 
     html = response.text
     lowered = html.lower()
-    # Strip script/style-heavy markers is overkill; use a coarse text-length heuristic.
-    has_paragraphs = "<p" in lowered or "<article" in lowered or "<main" in lowered
-    text_len = len(html)
-
-    if text_len > 2000 and has_paragraphs:
-        return CheckResult(
-            status="pass",
-            details="Homepage returns substantial server-rendered HTML content.",
-        )
-    if text_len > 500:
-        return CheckResult(
-            status="partial",
-            details="Homepage HTML is thin; content may rely on client-side rendering.",
-        )
-    return CheckResult(
-        status="fail",
-        details="Homepage returns almost no HTML; likely JS-only rendering.",
-    )
+    visible_chars = len(_visible_text(html))
+    spa_shell = any(marker in lowered for marker in _SPA_SHELL_MARKERS)
+    return _classify_rendering(visible_chars, spa_shell)
 
 
 def check_crawler_access(domain: str) -> CheckResult:

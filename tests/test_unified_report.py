@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from src.audit.query_report import render_audit_report
 from src.pipeline.orchestrator import AuditOutcome
+from src.prompts.intent import IntentBucket
+from src.prompts.query_set import Query, QuerySet
 from src.storage.models import AnswerJudgment, BrandJudgment, QueryResult
 
 
@@ -52,6 +54,7 @@ def test_report_uses_judge_when_judgments_present() -> None:
     ]
     out = render_audit_report(_outcome(), judgments=judgments)
     assert "Detection:** LLM judge" in out
+    assert "AI Visibility Grade" in out  # §1 grade header present
     assert "Visibility Leaderboard" in out  # judge section present
     assert "Client Framing" in out
     assert "Share of Voice" not in out  # regex section not used
@@ -63,3 +66,42 @@ def test_unassessed_judgments_fall_back_to_regex() -> None:
     ]
     out = render_audit_report(_outcome(), judgments=judgments)
     assert "Detection:** regex" in out
+
+
+def test_trend_section_renders_when_previous_supplied() -> None:
+    previous = [
+        QueryResult(
+            query_id="cat-01",
+            intent="category",
+            prompt="best budgeting app?",
+            engine_name="openai",
+            run_index=0,
+            response="YNAB is best.",  # Centsible absent before
+            citations=[],
+            timestamp="t",
+        )
+    ]
+    out = render_audit_report(_outcome(), previous=previous, previous_label="run abc12345")
+    assert "Trend vs run abc12345" in out
+    assert "before → after" in out
+    # No previous -> no trend section.
+    assert "Trend vs" not in render_audit_report(_outcome())
+
+
+def test_query_appendix_renders_persona_column() -> None:
+    qs = QuerySet(
+        version="v1",
+        locked_at="2026-06-02",
+        category="budgeting app",
+        client="Centsible",
+        competitors=["YNAB"],
+        queries=[
+            Query("cat-01", "best budgeting app", IntentBucket.CATEGORY, persona="college student"),
+        ],
+    )
+    out = render_audit_report(_outcome(), query_set=qs)
+    assert "Query Set (Appendix)" in out
+    assert "Persona / modifier" in out
+    assert "college student" in out
+    # No query set -> no appendix.
+    assert "Query Set (Appendix)" not in render_audit_report(_outcome())

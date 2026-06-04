@@ -4,14 +4,17 @@ from collections import Counter
 from dataclasses import dataclass
 
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, Framing, Prominence
+from src.storage.models import Severity
 
 __all__ = [
     "BrandCell",
+    "VisibilityGrade",
     "mention_rate",
     "visibility_score",
     "leaderboard",
     "framing_breakdown",
     "collect_accuracy_flags",
+    "visibility_grade",
     "losing_cells",
     "judge_sections",
     "render_judge_report",
@@ -123,6 +126,62 @@ def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag
     return out
 
 
+# How much each distinct client accuracy flag drags the grade down. A confident
+# wrong claim ("it's $20/mo" when it's free) erodes trust even when visibility is
+# fine, so the grade is visibility *discounted* by what the model gets wrong.
+_FLAG_PENALTY: dict[str, float] = {
+    Severity.HIGH.value: 0.15,
+    Severity.MED.value: 0.07,
+    Severity.LOW.value: 0.03,
+}
+# Penalized-score thresholds, best first. Below the last band is an F.
+_GRADE_BANDS: tuple[tuple[float, str], ...] = (
+    (0.70, "A"),
+    (0.50, "B"),
+    (0.30, "C"),
+    (0.15, "D"),
+)
+
+
+@dataclass(frozen=True)
+class VisibilityGrade:
+    """The §1 A-F headline: prominence-weighted visibility, discounted by the
+    client accuracy flags the judge raised."""
+
+    letter: str
+    score: float  # visibility after the accuracy penalty, 0..1
+    raw_score: float  # prominence-weighted visibility before the penalty
+    accuracy_penalty: float
+    n_flags: int
+    rationale: str
+
+
+def visibility_grade(judgments: list[AnswerJudgment], client: str) -> VisibilityGrade:
+    """Roll the client's judge metrics up into an A-F grade.
+
+    Base is the prominence-weighted ``visibility_score`` (recommended-first beats
+    buried); each distinct client accuracy flag subtracts a severity-weighted
+    penalty, floored at 0. Pure — derives entirely from data already produced.
+    """
+    raw = visibility_score(judgments, client)
+    flags = collect_accuracy_flags(judgments)
+    penalty = sum(_FLAG_PENALTY.get(f.severity, _FLAG_PENALTY[Severity.LOW.value]) for f in flags)
+    score = max(0.0, raw - penalty)
+    letter = next((g for threshold, g in _GRADE_BANDS if score >= threshold), "F")
+
+    rationale = f"visibility {raw:.2f}"
+    if flags:
+        rationale += f" − {penalty:.2f} for {len(flags)} accuracy flag(s) → {score:.2f}"
+    return VisibilityGrade(
+        letter=letter,
+        score=score,
+        raw_score=raw,
+        accuracy_penalty=penalty,
+        n_flags=len(flags),
+        rationale=rationale,
+    )
+
+
 def losing_cells(
     judgments: list[AnswerJudgment], client: str, competitors: list[str]
 ) -> list[BrandCell]:
@@ -156,6 +215,12 @@ def judge_sections(
     report: visibility leaderboard, framing, losing queries, and accuracy flags.
     """
     lines: list[str] = []
+    grade = visibility_grade(judgments, client)
+    lines.append("## AI Visibility Grade")
+    lines.append("")
+    lines.append(f"**{grade.letter}** — {grade.rationale}")
+    lines.append("")
+
     lines.append("## Visibility Leaderboard")
     lines.append("")
     lines.append("| Brand | Visibility | Mention rate |")

@@ -17,12 +17,17 @@ class Query:
     ``weight`` is the query's commercial value (a high-intent decision query is
     worth more than an awareness one) — an input to the Step-6 impact formula.
     Defaults to 1.0 so existing query sets load unchanged.
+
+    ``persona`` is the optional buyer modifier the query is phrased for (e.g.
+    "college student", "couple") — the deliverable §6.1 Persona/modifier column.
+    Defaults to None so existing query sets load unchanged.
     """
 
     query_id: str
     text: str
     intent: IntentBucket
     weight: float = 1.0
+    persona: str | None = None
 
 
 @dataclass(frozen=True)
@@ -69,6 +74,7 @@ def load_query_set(path: str | Path) -> QuerySet:
                 text=str(item["text"]),
                 intent=intent,
                 weight=float(item.get("weight", 1.0)),
+                persona=(str(item["persona"]) if item.get("persona") else None),
             )
         )
 

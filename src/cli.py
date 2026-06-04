@@ -111,8 +111,24 @@ def _cmd_audit(args: argparse.Namespace) -> int:
                     print(f"(warning: could not persist judgments: {exc})")
         except ValueError as exc:
             print(f"(judge skipped: {exc})")
+
+    previous = None
+    if args.compare:
+        prior = _outcome_from_run(args.compare)
+        if prior is None:
+            print(f"(trend skipped: run {args.compare} not found)")
+        else:
+            previous = prior.results
     print()
-    print(render_audit_report(outcome, judgments=judgments))
+    print(
+        render_audit_report(
+            outcome,
+            judgments=judgments,
+            previous=previous,
+            previous_label=f"run {args.compare[:8]}" if args.compare else "previous run",
+            query_set=qs,
+        )
+    )
     return 0
 
 
@@ -200,7 +216,22 @@ def _cmd_report(args: argparse.Namespace) -> int:
         judgments = db.get_judgments(args.run_id)
     except db.StorageError:
         judgments = []
-    print(render_audit_report(outcome, judgments=judgments or None))
+
+    previous = None
+    if args.previous:
+        prior = _outcome_from_run(args.previous)
+        if prior is None:
+            print(f"(trend skipped: run {args.previous} not found)")
+        else:
+            previous = prior.results
+    print(
+        render_audit_report(
+            outcome,
+            judgments=judgments or None,
+            previous=previous,
+            previous_label=f"run {args.previous[:8]}" if args.previous else "previous run",
+        )
+    )
     return 0
 
 
@@ -275,6 +306,9 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("--resume", default=None, help="resume an interrupted run by id")
     p_audit.add_argument("--judge", action="store_true", help="LLM-judge the answers inline")
     p_audit.add_argument("--fact-sheet", help="client fact sheet for --judge accuracy")
+    p_audit.add_argument(
+        "--compare", default=None, help="prior run id to show the §3 trend column against"
+    )
     p_audit.add_argument("--no-persist", action="store_true")
     p_audit.set_defaults(func=_cmd_audit)
 
@@ -291,6 +325,9 @@ def main(argv: list[str] | None = None) -> int:
 
     p_report = sub.add_parser("report", help="render the report for a stored run")
     p_report.add_argument("run_id")
+    p_report.add_argument(
+        "--previous", default=None, help="prior run id to show the §3 trend column against"
+    )
     p_report.set_defaults(func=_cmd_report)
 
     p_judge = sub.add_parser("judge", help="LLM-judge a stored run (prominence/framing/accuracy)")
