@@ -31,3 +31,9 @@ ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))
 # Pin sampling low so repeated runs of the same query are reproducible — the
 # methodology runs each query multiple times to average noise, not to amplify it.
 ENGINE_TEMPERATURE: float = float(os.getenv("ENGINE_TEMPERATURE", "0"))
+
+# The LLM judge — ONE held-constant model scores every answer from every engine,
+# so cross-engine comparisons stay valid. Held constant > which model. For
+# stricter neutrality set this to a model that isn't one of the measured
+# surfaces. Uses OPENAI_API_KEY.
+JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "gpt-4o")

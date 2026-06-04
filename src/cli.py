@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from pathlib import Path
 
 from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
@@ -17,6 +18,7 @@ from src.engines.openai_search_engine import OpenAISearchEngine
 from src.engines.perplexity_engine import PerplexityEngine
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
+from src.pipeline.judge import Judge, summarize_judgments
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
@@ -128,6 +130,24 @@ def _cmd_discover(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_judge(args: argparse.Namespace) -> int:
+    outcome = _outcome_from_run(args.run_id)
+    if outcome is None:
+        print(f"Run {args.run_id} not found.")
+        return 1
+    fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
+    try:
+        judge = Judge()
+    except ValueError as exc:
+        print(exc)
+        return 1
+    judgments = judge.judge_results(
+        outcome.results, outcome.client_name, outcome.competitors, fact_sheet
+    )
+    print(summarize_judgments(judgments, outcome.client_name, outcome.competitors))
+    return 0
+
+
 def _cmd_report(args: argparse.Namespace) -> int:
     outcome = _outcome_from_run(args.run_id)
     if outcome is None:
@@ -223,6 +243,11 @@ def main(argv: list[str] | None = None) -> int:
     p_report = sub.add_parser("report", help="render the report for a stored run")
     p_report.add_argument("run_id")
     p_report.set_defaults(func=_cmd_report)
+
+    p_judge = sub.add_parser("judge", help="LLM-judge a stored run (prominence/framing/accuracy)")
+    p_judge.add_argument("run_id")
+    p_judge.add_argument("--fact-sheet", help="path to the client fact sheet (enables accuracy)")
+    p_judge.set_defaults(func=_cmd_judge)
 
     p_compare = sub.add_parser("compare", help="diff two runs (cadence/trend)")
     p_compare.add_argument("before")
