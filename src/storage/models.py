@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import TypedDict
 
 __all__ = [
@@ -10,6 +12,13 @@ __all__ = [
     "Citation",
     "ReportData",
     "RubricScore",
+    "Prominence",
+    "Framing",
+    "AccuracyFlagType",
+    "Severity",
+    "BrandJudgment",
+    "AccuracyFlag",
+    "AnswerJudgment",
 ]
 
 
@@ -94,3 +103,69 @@ class ReportData(TypedDict):
     mentions: list[BrandMention]
     competitors: list[str]
     citations: list[Citation]
+
+
+# --- LLM judge output (moved here so the storage layer doesn't depend on the
+# pipeline/judge module — which pulls in the openai SDK — just to (de)serialize
+# rows). pipeline.judge re-exports these for back-compat. ---
+
+
+class Prominence(StrEnum):
+    RECOMMENDED_FIRST = "recommended_first"
+    MID_PACK = "mid_pack"
+    BURIED = "buried"
+    ALSO_RAN = "also_ran"
+    ABSENT = "absent"
+
+
+class Framing(StrEnum):
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    NEGATIVE = "negative"
+
+
+class AccuracyFlagType(StrEnum):
+    WRONG_PRICING = "wrong_pricing"
+    MISSING_OR_INVENTED_FEATURE = "missing_or_invented_feature"
+    COMPETITOR_CONFUSION = "competitor_confusion"
+    IDENTITY = "identity"
+    STALE = "stale"
+
+
+class Severity(StrEnum):
+    HIGH = "high"
+    MED = "med"
+    LOW = "low"
+
+
+@dataclass(frozen=True)
+class BrandJudgment:
+    """How one brand appears in one answer (present / prominence / framing)."""
+
+    brand: str
+    present: bool
+    prominence: str  # Prominence value
+    framing: str  # Framing value
+
+
+@dataclass(frozen=True)
+class AccuracyFlag:
+    """A client claim the answer got wrong, checked against the fact sheet."""
+
+    type: str  # AccuracyFlagType value
+    claim: str  # what the answer said
+    reality: str  # what the fact sheet says
+    severity: str  # Severity value
+
+
+@dataclass(frozen=True)
+class AnswerJudgment:
+    """The judge's structured read of one answer (all brands + client accuracy)."""
+
+    query_id: str
+    engine_name: str
+    intent: str
+    run_index: int
+    assessed: bool  # False = judge failed -> "not assessed", never crashes
+    brands: list[BrandJudgment]
+    accuracy_flags: list[AccuracyFlag]  # client only; empty without a fact sheet

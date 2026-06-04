@@ -9,9 +9,17 @@ from typing import Any, TypeVar
 from supabase import Client, create_client
 
 from src.config import settings
-from src.pipeline.judge import AccuracyFlag, AnswerJudgment, BrandJudgment
 from src.pipeline.metrics import domain_of
-from src.storage.models import BrandMention, Citation, PromptResult, QueryResult, RubricScore
+from src.storage.models import (
+    AccuracyFlag,
+    AnswerJudgment,
+    BrandJudgment,
+    BrandMention,
+    Citation,
+    PromptResult,
+    QueryResult,
+    RubricScore,
+)
 
 __all__ = [
     "StorageError",
@@ -421,10 +429,20 @@ def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
 
 
 def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
-    """Persist LLM-judge output for a run (one row per judged answer)."""
+    """Persist LLM-judge output for a run (one row per judged answer).
+
+    Replaces the run's existing judgments (delete-then-insert) so re-judging the
+    same run is idempotent — the judge is explicitly meant to be re-run, and
+    appending would accumulate duplicate rows. Expects the full judgment set for
+    the run in one call (not incremental).
+    """
     rows = [_judgment_to_row(run_id, j) for j in judgments]
     if not rows:
         return
+    _execute(
+        f"clear_judgments for run {run_id}",
+        lambda c: c.table(TABLE_JUDGMENTS).delete().eq("run_id", run_id).execute(),
+    )
     _execute(
         f"save_judgments for run {run_id}",
         lambda c: c.table(TABLE_JUDGMENTS).insert(rows).execute(),

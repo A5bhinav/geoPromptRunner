@@ -144,6 +144,7 @@ def calibrate(judge: Judge, gold: list[GoldItem]) -> CalibrationReport:
 
 def render_calibration(report: CalibrationReport) -> str:
     """Markdown agreement report — 'matches our human labels X% of the time'."""
+    flag_agree, flag_n = report.flag_detection_agreement, report.flag_detection_total
     return "\n".join(
         [
             "# Judge Calibration",
@@ -155,7 +156,7 @@ def render_calibration(report: CalibrationReport) -> str:
             f"| present | {report.present_agreement:.0%} | {report.present_total} |",
             f"| prominence | {report.prominence_agreement:.0%} | {report.prominence_total} |",
             f"| framing | {report.framing_agreement:.0%} | {report.framing_total} |",
-            f"| accuracy-flags | {report.flag_detection_agreement:.0%} | {report.flag_detection_total} |",
+            f"| accuracy-flags | {flag_agree:.0%} | {flag_n} |",
             "",
             "_Build the gold set by hand-labeling ~20–40 real answers; this is the_",
             "_honest check on an AI grading other AIs._",

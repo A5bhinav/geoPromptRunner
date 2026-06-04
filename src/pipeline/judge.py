@@ -2,15 +2,26 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
 from enum import StrEnum
 
 import openai
 from openai import OpenAI
 
 from src.config import settings
-from src.storage.models import QueryResult
+from src.storage.models import (
+    AccuracyFlag,
+    AccuracyFlagType,
+    AnswerJudgment,
+    BrandJudgment,
+    Framing,
+    Prominence,
+    QueryResult,
+    Severity,
+)
 
+# The judgment data types live in storage.models (the data layer) so the storage
+# module can (de)serialize them without importing this pipeline module (which
+# pulls in the openai SDK). Re-exported here for back-compat.
 __all__ = [
     "Prominence",
     "Framing",
@@ -24,67 +35,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-class Prominence(StrEnum):
-    RECOMMENDED_FIRST = "recommended_first"
-    MID_PACK = "mid_pack"
-    BURIED = "buried"
-    ALSO_RAN = "also_ran"
-    ABSENT = "absent"
-
-
-class Framing(StrEnum):
-    POSITIVE = "positive"
-    NEUTRAL = "neutral"
-    NEGATIVE = "negative"
-
-
-class AccuracyFlagType(StrEnum):
-    WRONG_PRICING = "wrong_pricing"
-    MISSING_OR_INVENTED_FEATURE = "missing_or_invented_feature"
-    COMPETITOR_CONFUSION = "competitor_confusion"
-    IDENTITY = "identity"
-    STALE = "stale"
-
-
-class Severity(StrEnum):
-    HIGH = "high"
-    MED = "med"
-    LOW = "low"
-
-
-@dataclass(frozen=True)
-class BrandJudgment:
-    """How one brand appears in one answer (present / prominence / framing)."""
-
-    brand: str
-    present: bool
-    prominence: str  # Prominence value
-    framing: str  # Framing value
-
-
-@dataclass(frozen=True)
-class AccuracyFlag:
-    """A client claim the answer got wrong, checked against the fact sheet."""
-
-    type: str  # AccuracyFlagType value
-    claim: str  # what the answer said
-    reality: str  # what the fact sheet says
-    severity: str  # Severity value
-
-
-@dataclass(frozen=True)
-class AnswerJudgment:
-    """The judge's structured read of one answer (all brands + client accuracy)."""
-
-    query_id: str
-    engine_name: str
-    intent: str
-    run_index: int
-    assessed: bool  # False = judge failed -> "not assessed", never crashes
-    brands: list[BrandJudgment]
-    accuracy_flags: list[AccuracyFlag]  # client only; empty without a fact sheet
 
 
 _SYSTEM = (
