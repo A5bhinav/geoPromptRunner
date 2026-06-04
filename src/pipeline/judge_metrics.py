@@ -13,6 +13,7 @@ __all__ = [
     "framing_breakdown",
     "collect_accuracy_flags",
     "losing_cells",
+    "judge_sections",
     "render_judge_report",
 ]
 
@@ -147,17 +148,14 @@ def _pct(value: float) -> str:
     return f"{value * 100:.0f}%"
 
 
-def render_judge_report(
+def judge_sections(
     judgments: list[AnswerJudgment], client: str, competitors: list[str]
-) -> str:
-    """§2/§3 from judge output: visibility leaderboard, framing, losing queries,
-    and the client accuracy flags (the demo-driving section).
+) -> list[str]:
+    """The judge-powered §2/§3 section lines (no document header) — the single
+    source of truth shared by the standalone judge report and the unified audit
+    report: visibility leaderboard, framing, losing queries, and accuracy flags.
     """
-    assessed = _assessed(judgments)
-    lines: list[str] = [f"# Judge Report — {client}", ""]
-    lines.append(f"Assessed {len(assessed)} of {len(judgments)} answers.")
-    lines.append("")
-
+    lines: list[str] = []
     lines.append("## Visibility Leaderboard")
     lines.append("")
     lines.append("| Brand | Visibility | Mention rate |")
@@ -198,4 +196,19 @@ def render_judge_report(
         for f in flags:
             lines.append(f"| {f.type} | {f.severity} | {f.claim} → {f.reality} |")
     lines.append("")
+    return lines
+
+
+def render_judge_report(
+    judgments: list[AnswerJudgment], client: str, competitors: list[str]
+) -> str:
+    """Standalone judge report: header + the shared judge sections."""
+    assessed = _assessed(judgments)
+    lines: list[str] = [
+        f"# Judge Report — {client}",
+        "",
+        f"Assessed {len(assessed)} of {len(judgments)} answers.",
+        "",
+    ]
+    lines.extend(judge_sections(judgments, client, competitors))
     return "\n".join(lines)

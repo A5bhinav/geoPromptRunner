@@ -20,7 +20,6 @@ from src.pipeline.calibration import calibrate, load_gold_set, render_calibratio
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
 from src.pipeline.judge import Judge
-from src.pipeline.judge_metrics import render_judge_report
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
@@ -96,8 +95,24 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     except CostBudgetExceeded as exc:
         print(f"Aborted: {exc}")
         return 1
+
+    judgments = None
+    if args.judge:
+        fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
+        try:
+            judge = Judge()
+            judgments = judge.judge_results(
+                outcome.results, outcome.client_name, outcome.competitors, fact_sheet
+            )
+            if outcome.run_id and not args.no_persist:
+                try:
+                    db.save_judgments(outcome.run_id, judgments)
+                except db.StorageError as exc:
+                    print(f"(warning: could not persist judgments: {exc})")
+        except ValueError as exc:
+            print(f"(judge skipped: {exc})")
     print()
-    print(render_audit_report(outcome))
+    print(render_audit_report(outcome, judgments=judgments))
     return 0
 
 
@@ -139,11 +154,11 @@ def _cmd_judge(args: argparse.Namespace) -> int:
         return 1
 
     if args.stored:
-        judgments = db.get_judgments(args.run_id)
-        if not judgments:
+        stored = db.get_judgments(args.run_id)
+        if not stored:
             print("No stored judgments for this run; run `judge` without --stored first.")
             return 1
-        print(render_judge_report(judgments, outcome.client_name, outcome.competitors))
+        print(render_audit_report(outcome, judgments=stored))
         return 0
 
     fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
@@ -160,7 +175,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
             db.save_judgments(args.run_id, judgments)
         except db.StorageError as exc:
             print(f"(warning: could not persist judgments: {exc})")
-    print(render_judge_report(judgments, outcome.client_name, outcome.competitors))
+    print(render_audit_report(outcome, judgments=judgments))
     return 0
 
 
@@ -180,7 +195,12 @@ def _cmd_report(args: argparse.Namespace) -> int:
     if outcome is None:
         print(f"Run {args.run_id} not found.")
         return 1
-    print(render_audit_report(outcome))
+    # Use stored judge output if this run was judged; else the regex fallback.
+    try:
+        judgments = db.get_judgments(args.run_id)
+    except db.StorageError:
+        judgments = []
+    print(render_audit_report(outcome, judgments=judgments or None))
     return 0
 
 
@@ -253,6 +273,8 @@ def main(argv: list[str] | None = None) -> int:
         "--max-cost", type=float, default=None, help="abort if est. $ exceeds this"
     )
     p_audit.add_argument("--resume", default=None, help="resume an interrupted run by id")
+    p_audit.add_argument("--judge", action="store_true", help="LLM-judge the answers inline")
+    p_audit.add_argument("--fact-sheet", help="client fact sheet for --judge accuracy")
     p_audit.add_argument("--no-persist", action="store_true")
     p_audit.set_defaults(func=_cmd_audit)
 
