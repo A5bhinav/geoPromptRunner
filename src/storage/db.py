@@ -9,6 +9,7 @@ from typing import Any, TypeVar
 from supabase import Client, create_client
 
 from src.config import settings
+from src.pipeline.judge import AccuracyFlag, AnswerJudgment, BrandJudgment
 from src.pipeline.metrics import domain_of
 from src.storage.models import BrandMention, Citation, PromptResult, QueryResult, RubricScore
 
@@ -29,6 +30,8 @@ __all__ = [
     "get_audit_run",
     "save_rubric_scores",
     "get_rubric_scores",
+    "save_judgments",
+    "get_judgments",
 ]
 
 logger = logging.getLogger(__name__)
@@ -45,6 +48,7 @@ TABLE_AUDIT_RUNS = "audit_runs"
 TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_RUBRIC_SCORES = "rubric_scores"
+TABLE_JUDGMENTS = "judgments"
 
 
 class StorageError(Exception):
@@ -355,6 +359,81 @@ def save_rubric_scores(run_id: str | None, scores: list[RubricScore]) -> None:
         f"save_rubric_scores for run {run_id}",
         lambda c: c.table(TABLE_RUBRIC_SCORES).insert(rows).execute(),
     )
+
+
+def _judgment_to_row(run_id: str, j: AnswerJudgment) -> dict[str, Any]:
+    return {
+        "id": str(uuid.uuid4()),
+        "run_id": run_id,
+        "query_id": j.query_id,
+        "engine_name": j.engine_name,
+        "intent": j.intent,
+        "run_index": j.run_index,
+        "assessed": j.assessed,
+        "brands": [
+            {
+                "brand": b.brand,
+                "present": b.present,
+                "prominence": b.prominence,
+                "framing": b.framing,
+            }
+            for b in j.brands
+        ],
+        "accuracy_flags": [
+            {"type": f.type, "claim": f.claim, "reality": f.reality, "severity": f.severity}
+            for f in j.accuracy_flags
+        ],
+    }
+
+
+def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
+    raw_brands = row.get("brands")
+    brands = [
+        BrandJudgment(
+            brand=str(b.get("brand", "")),
+            present=bool(b.get("present", False)),
+            prominence=str(b.get("prominence", "")),
+            framing=str(b.get("framing", "")),
+        )
+        for b in (raw_brands if isinstance(raw_brands, list) else [])
+        if isinstance(b, dict)
+    ]
+    raw_flags = row.get("accuracy_flags")
+    flags = [
+        AccuracyFlag(
+            type=str(f.get("type", "")),
+            claim=str(f.get("claim", "")),
+            reality=str(f.get("reality", "")),
+            severity=str(f.get("severity", "")),
+        )
+        for f in (raw_flags if isinstance(raw_flags, list) else [])
+        if isinstance(f, dict)
+    ]
+    return AnswerJudgment(
+        query_id=str(row.get("query_id", "")),
+        engine_name=str(row.get("engine_name", "")),
+        intent=str(row.get("intent", "")),
+        run_index=int(str(row.get("run_index") or 0)),
+        assessed=bool(row.get("assessed", False)),
+        brands=brands,
+        accuracy_flags=flags,
+    )
+
+
+def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
+    """Persist LLM-judge output for a run (one row per judged answer)."""
+    rows = [_judgment_to_row(run_id, j) for j in judgments]
+    if not rows:
+        return
+    _execute(
+        f"save_judgments for run {run_id}",
+        lambda c: c.table(TABLE_JUDGMENTS).insert(rows).execute(),
+    )
+
+
+def get_judgments(run_id: str) -> list[AnswerJudgment]:
+    """Reconstruct stored judge output for a run (no re-judging needed)."""
+    return [_row_to_judgment(r) for r in _select_rows(TABLE_JUDGMENTS, run_id)]
 
 
 def get_rubric_scores(run_id: str) -> list[RubricScore]:

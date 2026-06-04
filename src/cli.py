@@ -137,6 +137,15 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     if outcome is None:
         print(f"Run {args.run_id} not found.")
         return 1
+
+    if args.stored:
+        judgments = db.get_judgments(args.run_id)
+        if not judgments:
+            print("No stored judgments for this run; run `judge` without --stored first.")
+            return 1
+        print(render_judge_report(judgments, outcome.client_name, outcome.competitors))
+        return 0
+
     fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
     try:
         judge = Judge()
@@ -146,6 +155,11 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     judgments = judge.judge_results(
         outcome.results, outcome.client_name, outcome.competitors, fact_sheet
     )
+    if not args.no_persist:
+        try:
+            db.save_judgments(args.run_id, judgments)
+        except db.StorageError as exc:
+            print(f"(warning: could not persist judgments: {exc})")
     print(render_judge_report(judgments, outcome.client_name, outcome.competitors))
     return 0
 
@@ -260,6 +274,10 @@ def main(argv: list[str] | None = None) -> int:
     p_judge = sub.add_parser("judge", help="LLM-judge a stored run (prominence/framing/accuracy)")
     p_judge.add_argument("run_id")
     p_judge.add_argument("--fact-sheet", help="path to the client fact sheet (enables accuracy)")
+    p_judge.add_argument("--no-persist", action="store_true", help="don't save judgments")
+    p_judge.add_argument(
+        "--stored", action="store_true", help="render saved judgments (no re-judging)"
+    )
     p_judge.set_defaults(func=_cmd_judge)
 
     p_cal = sub.add_parser("calibrate", help="check the judge against a hand-labeled gold set")
