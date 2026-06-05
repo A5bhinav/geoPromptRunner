@@ -1,6 +1,17 @@
 "use client";
 
-import { Printer, Download, Trophy, Target, Quote, ShieldCheck, PieChart } from "lucide-react";
+import {
+  Printer,
+  Download,
+  Trophy,
+  Target,
+  Quote,
+  ShieldCheck,
+  PieChart as PieIcon,
+  BarChart3,
+  Globe,
+  TrendingDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { IntentBadge, SeverityBadge } from "@/components/badges";
-import { LeaderboardChart } from "@/components/leaderboard-chart";
+import { BucketChart, LeaderboardChart, ShareDonut, SourcesChart } from "@/components/charts";
 import { pct } from "@/lib/utils";
 import type { ReportPayload } from "@/lib/api";
 
@@ -58,6 +69,15 @@ function gradeColor(letter: string): string {
   return "text-destructive";
 }
 
+function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      {icon}
+      {children}
+    </h2>
+  );
+}
+
 export function ReportView({ report }: { report: ReportPayload }) {
   const s = report.scorecard;
   const topComp = s.top_competitor;
@@ -84,10 +104,15 @@ export function ReportView({ report }: { report: ReportPayload }) {
             {report.run_date} · query set {report.query_set_version} · {report.runs_per_query}{" "}
             run(s)/query · engines: {report.engines.join(", ") || "none"}
           </p>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant={report.detection === "judge" ? "default" : "secondary"}>
               {report.detection === "judge" ? "LLM judge" : "regex detection"}
             </Badge>
+            {report.competitors.map((c) => (
+              <Badge key={c} variant="outline">
+                {c}
+              </Badge>
+            ))}
           </div>
         </div>
         <div className="no-print flex gap-2">
@@ -102,9 +127,7 @@ export function ReportView({ report }: { report: ReportPayload }) {
 
       {/* §1 Scorecard */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Scorecard
-        </h2>
+        <SectionTitle icon={<Trophy className="h-3.5 w-3.5" />}>Scorecard</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard
             icon={<Trophy className="h-3.5 w-3.5" />}
@@ -122,33 +145,27 @@ export function ReportView({ report }: { report: ReportPayload }) {
             sub={s.visibility_grade ? s.visibility_grade.rationale : "needs the LLM judge"}
           />
           <MetricCard
-            icon={<PieChart className="h-3.5 w-3.5" />}
+            icon={<PieIcon className="h-3.5 w-3.5" />}
             label="Share of model"
             value={pct(s.share_of_model_client)}
             sub={
-              topComp
-                ? `vs ${topComp} ${pct(s.top_competitor_share)}`
-                : "no competitors configured"
+              topComp ? `vs ${topComp} ${pct(s.top_competitor_share)}` : "no competitors configured"
             }
           />
           <MetricCard
             icon={<Target className="h-3.5 w-3.5" />}
             label="Mention rate"
             value={pct(s.mention_rate_client)}
-            sub={
-              topComp
-                ? `vs ${topComp} ${pct(s.mention_rate_top_competitor)}`
-                : undefined
-            }
+            sub={topComp ? `vs ${topComp} ${pct(s.mention_rate_top_competitor)}` : undefined}
           />
           <MetricCard
             icon={<Quote className="h-3.5 w-3.5" />}
             label="Citation rate"
             muted={s.citation_rate_client === null}
-            value={
-              s.citation_rate_client === null ? "Not assessed" : pct(s.citation_rate_client)
+            value={s.citation_rate_client === null ? "Not assessed" : pct(s.citation_rate_client)}
+            sub={
+              s.citation_rate_client === null ? "no client domain provided" : "of cells cite client"
             }
-            sub={s.citation_rate_client === null ? "no client domain provided" : "client domains"}
           />
           <MetricCard
             icon={<ShieldCheck className="h-3.5 w-3.5" />}
@@ -160,16 +177,27 @@ export function ReportView({ report }: { report: ReportPayload }) {
         </div>
       </section>
 
-      {/* §3 Leaderboard */}
+      {/* §2 Competitive position — donut + bars */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Competitive leaderboard
-        </h2>
-        <Card>
-          <CardContent className="pt-6">
-            <LeaderboardChart rows={report.leaderboard} />
-          </CardContent>
-        </Card>
+        <SectionTitle icon={<PieIcon className="h-3.5 w-3.5" />}>Competitive position</SectionTitle>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Share of model</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ShareDonut rows={report.leaderboard} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Visibility leaderboard</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeaderboardChart rows={report.leaderboard} />
+            </CardContent>
+          </Card>
+        </div>
         <Card>
           <CardContent className="pt-6">
             <Table>
@@ -205,145 +233,154 @@ export function ReportView({ report }: { report: ReportPayload }) {
         </Card>
       </section>
 
-      {/* §2 By bucket + accuracy */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">By intent bucket</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Bucket</TableHead>
-                  <TableHead>Mention</TableHead>
-                  <TableHead>Citation</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {report.by_bucket.length === 0 ? (
+      {/* §3 Funnel stage + accuracy */}
+      <section className="space-y-3">
+        <SectionTitle icon={<BarChart3 className="h-3.5 w-3.5" />}>
+          Visibility by funnel stage
+        </SectionTitle>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Mention &amp; citation by intent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BucketChart rows={report.by_bucket} />
+              <Table className="mt-4">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={3} className="text-muted-foreground">
-                      No data.
-                    </TableCell>
+                    <TableHead>Bucket</TableHead>
+                    <TableHead>Mention</TableHead>
+                    <TableHead>Citation</TableHead>
                   </TableRow>
-                ) : (
-                  report.by_bucket.map((b) => (
-                    <TableRow key={b.bucket}>
-                      <TableCell>
-                        <IntentBadge intent={b.bucket} />
-                      </TableCell>
-                      <TableCell className="tabular-nums">{pct(b.mention_rate)}</TableCell>
-                      <TableCell className="tabular-nums">
-                        {b.citation_rate === null ? "—" : pct(b.citation_rate)}
+                </TableHeader>
+                <TableBody>
+                  {report.by_bucket.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        No data.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  ) : (
+                    report.by_bucket.map((b) => (
+                      <TableRow key={b.bucket}>
+                        <TableCell>
+                          <IntentBadge intent={b.bucket} />
+                        </TableCell>
+                        <TableCell className="tabular-nums">{pct(b.mention_rate)}</TableCell>
+                        <TableCell className="tabular-nums">
+                          {b.citation_rate === null ? "—" : pct(b.citation_rate)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Accuracy flags ({report.accuracy_flags.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {report.accuracy_flags.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {s.accuracy_assessed
-                  ? "None flagged — the models described the client accurately."
-                  : "Not assessed — provide a fact sheet and enable the judge."}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {report.accuracy_flags.map((f, i) => (
-                  <li key={i} className="rounded-lg border p-3">
-                    <div className="mb-1 flex items-center gap-2">
-                      <SeverityBadge severity={f.severity} />
-                      <span className="text-sm font-medium capitalize">
-                        {f.type.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                    <p className="text-sm">
-                      <span className="text-destructive">{f.claim}</span>
-                      <span className="text-muted-foreground"> → </span>
-                      <span>{f.reality}</span>
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Accuracy flags ({report.accuracy_flags.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {report.accuracy_flags.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {s.accuracy_assessed
+                    ? "None flagged — the models described the client accurately."
+                    : "Not assessed — provide a fact sheet and enable the judge (config,judge,true)."}
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {report.accuracy_flags.map((f, i) => (
+                    <li key={i} className="rounded-lg border p-3">
+                      <div className="mb-1 flex items-center gap-2">
+                        <SeverityBadge severity={f.severity} />
+                        <span className="text-sm font-medium capitalize">
+                          {f.type.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        <span className="text-destructive">{f.claim}</span>
+                        <span className="text-muted-foreground"> → </span>
+                        <span>{f.reality}</span>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       {/* §4 Sources + losing queries */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Sources behind the category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {report.sources.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No citations captured for this run.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Cited in cells</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report.sources.map((src) => (
-                    <TableRow key={src.domain}>
-                      <TableCell className="font-medium">{src.domain}</TableCell>
-                      <TableCell className="tabular-nums">{src.count}</TableCell>
+      <section className="space-y-3">
+        <SectionTitle icon={<Globe className="h-3.5 w-3.5" />}>Sources &amp; gaps</SectionTitle>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Sources behind the category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SourcesChart rows={report.sources} />
+              {report.sources.length > 0 && (
+                <Table className="mt-4">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Domain</TableHead>
+                      <TableHead>Cited in cells</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {report.sources.map((src) => (
+                      <TableRow key={src.domain}>
+                        <TableCell className="font-medium">{src.domain}</TableCell>
+                        <TableCell className="tabular-nums">{src.count}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Losing queries ({report.losing_queries.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {report.losing_queries.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                None — the client appears wherever a competitor does.
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Query</TableHead>
-                    <TableHead>Engine</TableHead>
-                    <TableHead>Competitor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report.losing_queries.map((l, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{l.query_id}</TableCell>
-                      <TableCell>{l.engine_name}</TableCell>
-                      <TableCell>{l.competitor}</TableCell>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                Losing queries ({report.losing_queries.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {report.losing_queries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  None — the client appears wherever a competitor does.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Query</TableHead>
+                      <TableHead>Engine</TableHead>
+                      <TableHead>Competitor</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {report.losing_queries.map((l, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium">{l.query_id}</TableCell>
+                        <TableCell>{l.engine_name}</TableCell>
+                        <TableCell>{l.competitor}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </section>
     </div>
   );
