@@ -4,6 +4,61 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## UI — CSV-Upload Audit UI (docs/ui-plan.md, Phases A–E) — Completed 2026-06-03
+
+Built the full front door from `docs/ui-plan.md`: drop CSV(s) → preview the
+merged audit → run across engines → read the report. Additive only — the API
+layer imports and calls the existing pipeline (`run_query_set`, the engine
+adapters, `metrics`, `judge_metrics`, the judge, `db`); no working module was
+rewritten. The two pre-existing source edits are purely additive (a `judge`
+field on `RunConfig`, unchanged elsewhere). All 65 existing tests still pass.
+
+### What was built
+
+- **`src/prompts/csv_loader.py`** (Phase A) — parses one or more CSVs on the
+  fixed `block,key,value,intent,persona` schema, merges them by block (queries
+  accumulate, facts concatenate, config keys merge with conflict detection),
+  and validates the merged result (required config keys, valid intents, unique
+  query ids across files, known engines, runs_per_query). Returns a `PreviewData`
+  that always renders (with per-file provenance + per-row validity) plus a
+  run-ready `ParsedAudit` when clean. Ships `build_template_csv()`.
+- **`tests/test_csv_loader.py`** — 15 tests: clean single file, split-file merge,
+  order-independence, duplicate-id / conflicting-config / bad-intent /
+  missing-required / no-queries / unknown-engine / bad-runs errors, template
+  round-trip.
+- **`src/api/`** (Phase B, FastAPI):
+  - `engine_registry.py` — name→adapter map + a keyless deterministic
+    `MockEngine` so the whole UI runs without API keys (`engines=mock`).
+  - `reports.py` — assembles the structured report the UI renders (scorecard,
+    leaderboard, by-bucket, accuracy flags, sources, losing queries); judge-aware
+    with regex fallback. Pure.
+  - `runner.py` — in-memory run registry + background thread per run; loops
+    `run_query_set` query-by-query for live progress; best-effort Supabase
+    persistence and best-effort judge (skipped, not fatal, when unconfigured).
+  - `app.py` — `GET /template.csv`, `POST /audits/preview`, `POST /audits`
+    (422 + structured errors on invalid), `GET /audits`, `GET /audits/{id}/status`,
+    `GET /audits/{id}/report`, `POST /audits/{id}/cancel`; CORS for the dev front end.
+- **`web/`** (Phases C–E) — Next.js App Router + TypeScript + Tailwind +
+  shadcn-style components + Recharts. Upload (multi-file drag-drop, file chips,
+  template link, recent audits), Preview (Config/Fact/Queries tabs with
+  provenance + inline errors, run gated on a clean set), Progress (live counter,
+  per-engine chips, elapsed, cancel), Report (scorecard cards, leaderboard bars,
+  per-bucket + accuracy, sources, losing queries, print/JSON export).
+- **`requirements.txt`** — added `fastapi`, `uvicorn[standard]`, `python-multipart`.
+
+### Acceptance criteria — all passed
+
+- ✅ CSV loader: mypy (strict) + ruff clean; `__main__` runs; 15 unit tests pass
+- ✅ API: mypy (strict) + ruff clean; `__main__` blocks run
+- ✅ End-to-end over HTTP (uvicorn): preview, create+run, status→done, report,
+  list, template, and 422-on-invalid all verified with the mock engine
+- ✅ "not assessed" degradation confirmed: no fact sheet → accuracy not assessed,
+  no client domain → citation not assessed, no judge → regex grade/visibility
+- ✅ Front end: `next build` compiles with no type errors; all routes serve
+- ✅ Full existing suite still green (65 passed)
+
+---
+
 ## Maintenance — Code-Review Follow-up Fixes — 2026-05-31
 
 Applied fixes for findings from the high-effort code review of the hardening

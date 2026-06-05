@@ -12,6 +12,11 @@ httpx>=0.27.0
 # Storage
 supabase>=2.5.0
 
+# API layer (UI backend) — thin FastAPI wrapper over the pipeline
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+
 # Environment management
 python-dotenv>=1.0.0
 
