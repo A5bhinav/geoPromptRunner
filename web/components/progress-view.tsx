@@ -47,12 +47,14 @@ export function ProgressView({
   const pctDone = status.total > 0 ? (status.completed / status.total) * 100 : 0;
   const cancelled = status.state === "cancelled";
   const failed = status.state === "failed";
+  const interrupted = status.state === "interrupted";
+  const stopped = cancelled || failed || interrupted;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          {cancelled ? (
+          {cancelled || interrupted ? (
             <Ban className="h-5 w-5 text-[hsl(var(--warning))]" />
           ) : failed ? (
             <XCircle className="h-5 w-5 text-destructive" />
@@ -61,13 +63,15 @@ export function ProgressView({
           )}
           {cancelled
             ? "Audit cancelled"
-            : failed
-              ? "Audit failed"
-              : `Running audit — ${status.client_name}`}
+            : interrupted
+              ? "Audit interrupted"
+              : failed
+                ? "Audit failed"
+                : `Running audit — ${status.client_name}`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        {failed && status.error && (
+        {stopped && status.error && (
           <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             {status.error}
           </p>

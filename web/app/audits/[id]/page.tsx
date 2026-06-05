@@ -39,7 +39,8 @@ export default function AuditPage({ params }: { params: { id: string } }) {
           if (active) setReport(rep);
           return;
         }
-        if (st.state === "failed" || st.state === "cancelled") return;
+        if (st.state === "failed" || st.state === "cancelled" || st.state === "interrupted")
+          return;
         timer = setTimeout(tick, POLL_MS);
       } catch {
         if (active) setError("Run not found, or the API is unreachable.");

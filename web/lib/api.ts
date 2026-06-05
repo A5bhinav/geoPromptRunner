@@ -75,7 +75,7 @@ export interface EngineStatus {
 export interface RunStatus {
   run_id: string;
   client_name: string;
-  state: "queued" | "running" | "done" | "failed" | "cancelled";
+  state: "queued" | "running" | "done" | "failed" | "cancelled" | "interrupted";
   completed: number;
   total: number;
   per_engine: EngineStatus[];

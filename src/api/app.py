@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import threading
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -19,10 +22,25 @@ __all__ = ["app"]
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """On startup, resume any runs a previous process left interrupted.
+
+    Done on a background thread so a slow/unreachable storage backend can't
+    delay the server coming up.
+    """
+    threading.Thread(
+        target=runner.resume_interrupted_runs, name="resume-scan", daemon=True
+    ).start()
+    yield
+
+
 app = FastAPI(
     title="GEO Audit API",
     version="1.0",
     description="Thin wrapper over the GEO audit pipeline: upload CSVs, run, report.",
+    lifespan=lifespan,
 )
 
 # Dev CORS: the Next.js frontend runs on a different origin (localhost:3000).

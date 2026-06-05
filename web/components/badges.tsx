@@ -48,6 +48,7 @@ export function StateBadge({ state }: { state: string }) {
     running: "default",
     queued: "secondary",
     cancelled: "warning",
+    interrupted: "warning",
     failed: "destructive",
   };
   return (

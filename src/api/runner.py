@@ -12,7 +12,9 @@ from src.engines.base import BaseEngine
 from src.pipeline.cost import estimate_cost
 from src.pipeline.orchestrator import AuditOutcome
 from src.pipeline.prompt_runner import run_query_set
-from src.prompts.csv_loader import ParsedAudit
+from src.prompts.csv_loader import ParsedAudit, RunConfig
+from src.prompts.intent import IntentBucket
+from src.prompts.query_set import Query, QuerySet
 from src.storage import db
 from src.storage.models import AnswerJudgment, QueryResult
 
@@ -25,6 +27,7 @@ __all__ = [
     "get_report",
     "list_runs",
     "request_cancel",
+    "resume_interrupted_runs",
 ]
 
 logger = logging.getLogger(__name__)
@@ -96,6 +99,20 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _serialize_queries(queries: list[Query]) -> list[dict[str, object]]:
+    """Persistable form of the locked query set (so a run can be rebuilt)."""
+    return [
+        {
+            "query_id": q.query_id,
+            "text": q.text,
+            "intent": q.intent.value,
+            "persona": q.persona,
+            "weight": q.weight,
+        }
+        for q in queries
+    ]
+
+
 def _outcome(state: _RunState) -> AuditOutcome:
     cfg = state.audit.config
     return AuditOutcome(
@@ -152,6 +169,9 @@ def start_run(audit: ParsedAudit) -> str:
             engines=[e.ENGINE_NAME for e in engines],
             n_queries=len(qs.queries),
             fact_sheet_present=audit.fact_sheet is not None,
+            queries=_serialize_queries(qs.queries),
+            fact_sheet=audit.fact_sheet,
+            judge=cfg.judge,
         )
         state.db_run_id = run_id
     except db.StorageError as exc:
@@ -191,8 +211,30 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
     state.state = "running"
     qs = state.audit.query_set
 
+    # Resume support: any per-query cells already persisted for this run are
+    # reloaded and skipped, so an interrupted run continues from where it
+    # stopped rather than re-paying for completed queries. (Empty for a fresh
+    # run — each query's whole cell is saved atomically, so a query is either
+    # fully stored or not at all.)
+    done_query_ids: set[str] = set()
+    if state.db_run_id is not None:
+        try:
+            prior = db.get_query_results(state.db_run_id)
+        except db.StorageError:
+            prior = []
+        if prior:
+            state.results.extend(prior)
+            state.completed_calls = len(prior)
+            done_query_ids = {r["query_id"] for r in prior}
+            for r in prior:
+                state.engine_completed[r["engine_name"]] = (
+                    state.engine_completed.get(r["engine_name"], 0) + 1
+                )
+
     try:
         for query in qs.queries:
+            if query.query_id in done_query_ids:
+                continue
             if state.cancel_requested:
                 state.state = "cancelled"
                 _persist_state(state)
@@ -407,3 +449,111 @@ def request_cancel(run_id: str) -> bool:
     if state.state in ("running", "queued"):
         state.cancel_requested = True
     return True
+
+
+def _rebuild_audit_from_row(row: dict[str, object]) -> ParsedAudit | None:
+    """Reconstruct the run input (config + query set + fact sheet) from a stored
+    row so an interrupted run can be resumed. Returns None if the query set
+    wasn't stored (a legacy row predating resume support — unrecoverable)."""
+    raw_queries = row.get("queries")
+    if not isinstance(raw_queries, list) or not raw_queries:
+        return None
+    queries: list[Query] = []
+    for q in raw_queries:
+        if not isinstance(q, dict):
+            continue
+        queries.append(
+            Query(
+                query_id=str(q.get("query_id", "")),
+                text=str(q.get("text", "")),
+                intent=IntentBucket(str(q.get("intent", ""))),
+                weight=float(q.get("weight", 1.0) or 1.0),
+                persona=(str(q["persona"]) if q.get("persona") else None),
+            )
+        )
+    if not queries:
+        return None
+    competitors = _str_list(row.get("competitors"))
+    config = RunConfig(
+        client_name=str(row.get("client_name", "")),
+        category=str(row.get("category", "")),
+        competitors=competitors,
+        engines=_str_list(row.get("engines")),
+        runs_per_query=int(str(row.get("runs_per_query") or 1)),
+        client_domains=_str_list(row.get("client_domains")),
+        judge=bool(row.get("judge")),
+    )
+    query_set = QuerySet(
+        version=str(row.get("query_set_version", "")),
+        locked_at=str(row.get("query_set_locked_at") or ""),
+        category=config.category,
+        client=config.client_name,
+        competitors=competitors,
+        queries=queries,
+    )
+    fact_sheet = row.get("fact_sheet")
+    return ParsedAudit(
+        config=config,
+        query_set=query_set,
+        fact_sheet=(str(fact_sheet) if fact_sheet else None),
+        facts=[],
+        provenance=[],
+    )
+
+
+def resume_interrupted_runs() -> int:
+    """Relaunch runs left non-terminal by a previous process (e.g. a restart).
+
+    Each resumed run skips its already-persisted queries and continues. Rows
+    with no stored query set (legacy, pre-resume) can't be rebuilt and are marked
+    ``interrupted`` so they stop showing as active. Returns how many were
+    relaunched. Best-effort — storage problems are swallowed, never fatal."""
+    try:
+        rows = db.list_resumable_runs()
+    except db.StorageError as exc:
+        logger.info("Could not list resumable runs: %s", exc)
+        return 0
+
+    resumed = 0
+    for row in rows:
+        run_id = str(row.get("id", ""))
+        if not run_id or _get(run_id) is not None:
+            continue
+        try:
+            audit = _rebuild_audit_from_row(row)
+        except (ValueError, TypeError) as exc:
+            logger.warning("Cannot rebuild run %s for resume: %s", run_id, exc)
+            audit = None
+        if audit is None:
+            try:
+                db.update_audit_run_progress(
+                    run_id,
+                    int(str(row.get("completed_calls") or 0)),
+                    "interrupted",
+                    "interrupted before resume support (no stored query set)",
+                )
+            except db.StorageError:
+                pass
+            continue
+
+        cfg = audit.config
+        engines, skipped = build_engines(cfg.engines, cfg.client_name, cfg.competitors)
+        state = _RunState(
+            run_id=run_id,
+            audit=audit,
+            created_at=str(row.get("created_at") or _now()),
+            total_calls=int(str(row.get("total_calls") or 0)),
+            db_run_id=run_id,
+            active_engines=[e.ENGINE_NAME for e in engines],
+            skipped_engines=skipped,
+            engine_completed={e.ENGINE_NAME: 0 for e in engines},
+        )
+        with _LOCK:
+            _RUNS[run_id] = state
+        threading.Thread(
+            target=_execute_run, args=(state, engines), name=f"resume-{run_id[:8]}", daemon=True
+        ).start()
+        resumed += 1
+        logger.info("Resuming interrupted run %s (%s)", run_id, cfg.client_name)
+
+    return resumed

@@ -24,6 +24,12 @@ create table if not exists public.audit_runs (
     engines jsonb not null default '[]'::jsonb,
     n_queries integer not null default 0,
     fact_sheet_present boolean not null default false,
+    -- The full run input, stored so an interrupted run can be rebuilt and
+    -- resumed (the query texts/intents/personas and fact sheet aren't otherwise
+    -- recoverable from the per-result rows alone).
+    queries jsonb not null default '[]'::jsonb,
+    fact_sheet text,
+    judge boolean not null default false,
     error text,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
@@ -39,6 +45,9 @@ alter table public.audit_runs add column if not exists n_queries integer not nul
 alter table public.audit_runs add column if not exists fact_sheet_present boolean not null default false;
 alter table public.audit_runs add column if not exists error text;
 alter table public.audit_runs add column if not exists updated_at timestamptz not null default now();
+alter table public.audit_runs add column if not exists queries jsonb not null default '[]'::jsonb;
+alter table public.audit_runs add column if not exists fact_sheet text;
+alter table public.audit_runs add column if not exists judge boolean not null default false;
 
 -- --- Per-(query, engine, run) answers ----------------------------------------
 create table if not exists public.query_results (

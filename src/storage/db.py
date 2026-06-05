@@ -37,6 +37,7 @@ __all__ = [
     "get_query_results",
     "list_audit_runs",
     "list_all_audit_runs",
+    "list_resumable_runs",
     "get_audit_run",
     "save_rubric_scores",
     "get_rubric_scores",
@@ -242,6 +243,9 @@ def create_audit_run(
     engines: list[str] | None = None,
     n_queries: int = 0,
     fact_sheet_present: bool = False,
+    queries: list[dict[str, Any]] | None = None,
+    fact_sheet: str | None = None,
+    judge: bool = False,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -267,6 +271,9 @@ def create_audit_run(
         "engines": engines or [],
         "n_queries": n_queries,
         "fact_sheet_present": fact_sheet_present,
+        "queries": queries or [],
+        "fact_sheet": fact_sheet,
+        "judge": judge,
         "created_at": _now(),
         "updated_at": _now(),
         "archived_at": None,
@@ -396,6 +403,19 @@ def list_all_audit_runs(limit: int = 100) -> list[dict[str, object]]:
         .select("*")
         .order("created_at", desc=True)
         .limit(limit)
+        .execute(),
+    )
+    data = getattr(response, "data", None) or []
+    return list(data)
+
+
+def list_resumable_runs() -> list[dict[str, object]]:
+    """Runs left in a non-terminal state — candidates to resume after a restart."""
+    response = _execute(
+        "list_resumable_runs",
+        lambda c: c.table(TABLE_AUDIT_RUNS)
+        .select("*")
+        .in_("status", ["running", "queued"])
         .execute(),
     )
     data = getattr(response, "data", None) or []
