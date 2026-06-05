@@ -32,9 +32,11 @@ __all__ = [
     "get_mentions",
     "get_citations",
     "create_audit_run",
+    "update_audit_run_progress",
     "save_query_results",
     "get_query_results",
     "list_audit_runs",
+    "list_all_audit_runs",
     "get_audit_run",
     "save_rubric_scores",
     "get_rubric_scores",
@@ -234,9 +236,22 @@ def create_audit_run(
     query_set_version: str,
     query_set_locked_at: str,
     runs_per_query: int,
+    run_id: str | None = None,
+    status: str = "running",
+    total_calls: int = 0,
+    engines: list[str] | None = None,
+    n_queries: int = 0,
+    fact_sheet_present: bool = False,
 ) -> str:
-    """Insert an audit-run row (client identity + locked query-set version)."""
-    run_id = str(uuid.uuid4())
+    """Insert an audit-run row (client identity + locked query-set version).
+
+    Accepts an explicit ``run_id`` so a caller (the API) can use one id for both
+    its in-memory state and the stored row — that single id is what the UI polls,
+    so a finished run can be read back from storage after a restart. The
+    progress/state columns (``status``/``completed_calls``/``total_calls``/
+    ``engines``) let the run survive a process restart as more than a bare row.
+    """
+    run_id = run_id or str(uuid.uuid4())
     row: dict[str, Any] = {
         "id": run_id,
         "client_name": client_name,
@@ -246,7 +261,14 @@ def create_audit_run(
         "query_set_version": query_set_version,
         "query_set_locked_at": query_set_locked_at,
         "runs_per_query": runs_per_query,
+        "status": status,
+        "completed_calls": 0,
+        "total_calls": total_calls,
+        "engines": engines or [],
+        "n_queries": n_queries,
+        "fact_sheet_present": fact_sheet_present,
         "created_at": _now(),
+        "updated_at": _now(),
         "archived_at": None,
     }
     _execute(
@@ -254,6 +276,27 @@ def create_audit_run(
         lambda c: c.table(TABLE_AUDIT_RUNS).insert(row).execute(),
     )
     return run_id
+
+
+def update_audit_run_progress(
+    run_id: str, completed_calls: int, status: str, error: str | None = None
+) -> None:
+    """Update a run's live progress/state so the UI can read it back from storage.
+
+    Called best-effort as a run advances and on its terminal state; a storage
+    failure here never aborts the run (the caller swallows ``StorageError``).
+    """
+    row: dict[str, Any] = {
+        "completed_calls": completed_calls,
+        "status": status,
+        "updated_at": _now(),
+    }
+    if error is not None:
+        row["error"] = error
+    _execute(
+        f"update_audit_run_progress for run {run_id}",
+        lambda c: c.table(TABLE_AUDIT_RUNS).update(row).eq("id", run_id).execute(),
+    )
 
 
 def save_query_results(run_id: str, results: list[QueryResult]) -> None:
@@ -343,6 +386,20 @@ def list_audit_runs(client_name: str) -> list[dict[str, object]]:
     """All audit runs for a client, oldest first — the basis for trend/cadence."""
     rows = _select_rows(TABLE_AUDIT_RUNS, client_name, key="client_name")
     return sorted(rows, key=lambda r: str(r.get("created_at", "")))
+
+
+def list_all_audit_runs(limit: int = 100) -> list[dict[str, object]]:
+    """The most recent audit runs across all clients — the UI's recent list."""
+    response = _execute(
+        "list_all_audit_runs",
+        lambda c: c.table(TABLE_AUDIT_RUNS)
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute(),
+    )
+    data = getattr(response, "data", None) or []
+    return list(data)
 
 
 def save_rubric_scores(run_id: str | None, scores: list[RubricScore]) -> None:

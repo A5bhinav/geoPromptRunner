@@ -110,7 +110,12 @@ def _outcome(state: _RunState) -> AuditOutcome:
 
 
 def start_run(audit: ParsedAudit) -> str:
-    """Register a run and kick it off on a background thread. Returns the run id."""
+    """Register a run and kick it off on a background thread. Returns the run id.
+
+    The run id is generated here and used as *both* the in-memory key and the
+    stored ``audit_runs`` row id, so a finished run can be read back from storage
+    by the same id the UI is polling — even after the API restarts.
+    """
     cfg = audit.config
     run_id = str(uuid.uuid4())
     # Cost/total are estimated against the engines that will actually build, so
@@ -128,6 +133,31 @@ def start_run(audit: ParsedAudit) -> str:
         skipped_engines=skipped,
         engine_completed={e.ENGINE_NAME: 0 for e in engines},
     )
+
+    # Best-effort: open the durable row up front, sharing run_id, so progress is
+    # persisted from the start. If Supabase isn't reachable, run in-memory only.
+    qs = audit.query_set
+    try:
+        db.create_audit_run(
+            client_name=cfg.client_name,
+            client_domains=cfg.client_domains,
+            competitors=cfg.competitors,
+            category=cfg.category,
+            query_set_version=qs.version,
+            query_set_locked_at=qs.locked_at,
+            runs_per_query=cfg.runs_per_query,
+            run_id=run_id,
+            status="running",
+            total_calls=total_calls,
+            engines=[e.ENGINE_NAME for e in engines],
+            n_queries=len(qs.queries),
+            fact_sheet_present=audit.fact_sheet is not None,
+        )
+        state.db_run_id = run_id
+    except db.StorageError as exc:
+        logger.info("Storage unavailable, running in-memory only: %s", exc)
+        state.db_run_id = None
+
     with _LOCK:
         _RUNS[run_id] = state
 
@@ -138,6 +168,16 @@ def start_run(audit: ParsedAudit) -> str:
     return run_id
 
 
+def _persist_state(state: _RunState, error: str | None = None) -> None:
+    """Best-effort: mirror the run's progress/state to storage. Never raises."""
+    if state.db_run_id is None:
+        return
+    try:
+        db.update_audit_run_progress(state.db_run_id, state.completed_calls, state.state, error)
+    except db.StorageError as exc:
+        logger.info("Failed to persist run progress (continuing): %s", exc)
+
+
 def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
     cfg = state.audit.config
     if not engines:
@@ -145,30 +185,17 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         state.error = (
             "no engines could be started — check API keys, or use engines=mock to demo without keys"
         )
+        _persist_state(state, state.error)
         return
 
     state.state = "running"
-
-    # Best-effort: open a persistent audit_run row if Supabase is configured.
     qs = state.audit.query_set
-    try:
-        state.db_run_id = db.create_audit_run(
-            client_name=cfg.client_name,
-            client_domains=cfg.client_domains,
-            competitors=cfg.competitors,
-            category=cfg.category,
-            query_set_version=qs.version,
-            query_set_locked_at=qs.locked_at,
-            runs_per_query=cfg.runs_per_query,
-        )
-    except db.StorageError as exc:
-        logger.info("Storage unavailable, running in-memory only: %s", exc)
-        state.db_run_id = None
 
     try:
         for query in qs.queries:
             if state.cancel_requested:
                 state.state = "cancelled"
+                _persist_state(state)
                 return
             cell = run_query_set([query], engines, cfg.runs_per_query)
             state.results.extend(cell)
@@ -182,19 +209,23 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
                     db.save_query_results(state.db_run_id, cell)
                 except db.StorageError as exc:
                     logger.info("Failed to persist a cell (continuing): %s", exc)
+            _persist_state(state)
 
         if state.cancel_requested:
             state.state = "cancelled"
+            _persist_state(state)
             return
 
         if cfg.judge:
             _run_judge(state)
 
         state.state = "done"
+        _persist_state(state)
     except Exception as exc:  # defensive: a run thread must never die silently
         logger.warning("Run %s failed: %s", state.run_id, type(exc).__name__)
         state.state = "failed"
         state.error = f"run failed: {type(exc).__name__}"
+        _persist_state(state, state.error)
 
 
 def _run_judge(state: _RunState) -> None:
@@ -225,10 +256,76 @@ def _get(run_id: str) -> _RunState | None:
         return _RUNS.get(run_id)
 
 
+def _str_list(value: object) -> list[str]:
+    return [str(v) for v in value] if isinstance(value, list) else []
+
+
+def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> AuditOutcome:
+    return AuditOutcome(
+        run_id=str(row.get("id", "")),
+        client_name=str(row.get("client_name", "")),
+        client_domains=_str_list(row.get("client_domains")),
+        competitors=_str_list(row.get("competitors")),
+        query_set_version=str(row.get("query_set_version", "")),
+        runs_per_query=int(str(row.get("runs_per_query") or 1)),
+        results=results,
+    )
+
+
+def _status_from_db(run_id: str) -> RunStatus | None:
+    """Rebuild a run's status from storage (a run not in this process's memory —
+    e.g. after a restart). Coarser than the live view: per-engine counts are
+    split evenly from the stored totals."""
+    try:
+        row = db.get_audit_run(run_id)
+    except db.StorageError:
+        return None
+    if row is None:
+        return None
+    engines = _str_list(row.get("engines"))
+    total = int(str(row.get("total_calls") or 0))
+    completed = int(str(row.get("completed_calls") or 0))
+    status = str(row.get("status") or "done")
+    n = len(engines) or 1
+    eng_state = "done" if status in ("done", "cancelled") else status
+    per_engine = [
+        EngineStatus(name=e, state=eng_state, completed=completed // n, total=total // n)
+        for e in engines
+    ]
+    return RunStatus(
+        run_id=run_id,
+        client_name=str(row.get("client_name", "")),
+        state=status,
+        completed=completed,
+        total=total,
+        per_engine=per_engine,
+        error=(str(row["error"]) if row.get("error") else None),
+    )
+
+
+def _report_from_db(run_id: str) -> ReportPayload | None:
+    """Rebuild the report from storage for a run not in this process's memory."""
+    try:
+        row = db.get_audit_run(run_id)
+        if row is None:
+            return None
+        results = db.get_query_results(run_id)
+        judgments = db.get_judgments(run_id)
+    except db.StorageError:
+        return None
+    outcome = _outcome_from_row(row, results)
+    return build_report(
+        outcome,
+        judgments=judgments or None,
+        fact_sheet_present=bool(row.get("fact_sheet_present")),
+        run_date=str(row.get("created_at", ""))[:10],
+    )
+
+
 def get_status(run_id: str) -> RunStatus | None:
     state = _get(run_id)
     if state is None:
-        return None
+        return _status_from_db(run_id)
     cfg = state.audit.config
     per_query_runs = len(state.audit.query_set.queries) * cfg.runs_per_query
     per_engine: list[EngineStatus] = []
@@ -261,7 +358,7 @@ def get_status(run_id: str) -> RunStatus | None:
 def get_report(run_id: str) -> ReportPayload | None:
     state = _get(run_id)
     if state is None:
-        return None
+        return _report_from_db(run_id)
     return build_report(
         _outcome(state),
         judgments=state.judgments or None,
@@ -271,11 +368,27 @@ def get_report(run_id: str) -> ReportPayload | None:
 
 
 def list_runs() -> list[RunSummary]:
+    """Recent runs: everything in storage, with live in-memory runs overlaid
+    (in-memory is authoritative for runs this process is actively driving)."""
+    summaries: dict[str, RunSummary] = {}
+    try:
+        for row in db.list_all_audit_runs():
+            rid = str(row.get("id", ""))
+            summaries[rid] = RunSummary(
+                run_id=rid,
+                client_name=str(row.get("client_name", "")),
+                state=str(row.get("status", "done")),
+                created_at=str(row.get("created_at", "")),
+                n_queries=int(str(row.get("n_queries") or 0)),
+                engines=_str_list(row.get("engines")),
+            )
+    except db.StorageError:
+        pass
+
     with _LOCK:
         states = list(_RUNS.values())
-    states.sort(key=lambda s: s.created_at, reverse=True)
-    return [
-        RunSummary(
+    for s in states:
+        summaries[s.run_id] = RunSummary(
             run_id=s.run_id,
             client_name=s.audit.config.client_name,
             state=s.state,
@@ -283,8 +396,8 @@ def list_runs() -> list[RunSummary]:
             n_queries=len(s.audit.query_set.queries),
             engines=s.active_engines,
         )
-        for s in states
-    ]
+
+    return sorted(summaries.values(), key=lambda x: x.created_at, reverse=True)
 
 
 def request_cancel(run_id: str) -> bool:
