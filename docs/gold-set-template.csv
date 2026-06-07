@@ -1,0 +1,6 @@
+item_id,engine,intent,query,answer_text,brand,is_client,present,prominence,framing,expect_accuracy_flags,notes
+i1,chatgpt,category,{verbatim buyer query},{paste the full raw answer},{Client},yes,yes,mid_pack,neutral,true,{expected flag e.g. stale price — for future type-level calibration}
+i1,chatgpt,category,{verbatim buyer query},(same answer),{Competitor A},no,yes,recommended_first,positive,,
+i1,chatgpt,category,{verbatim buyer query},(same answer),{Competitor B},no,no,absent,neutral,,
+i2,gemini,problem_aware,{verbatim buyer query},{paste the full raw answer},{Client},yes,no,absent,neutral,false,LOSING QUERY: client absent
+i2,gemini,problem_aware,{verbatim buyer query},(same answer),{Competitor A},no,yes,recommended_first,positive,,

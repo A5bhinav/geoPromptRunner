@@ -1,0 +1,42 @@
+{
+  "_comment": "Gold-set template — the canonical format read by src/pipeline/calibration.py (load_gold_set). Replace the skeleton items with ~20-40 REAL answers from a proxy run, hand-labeled by a human (never by a model — independence is the point). Run: python -m src.pipeline.calibration",
+  "_labeling_rules": [
+    "present: true/false — is the brand mentioned at all in the answer?",
+    "prominence: one of recommended_first | mid_pack | buried | also_ran | absent. Relative within the answer (who is named first vs. buried). absent if and only if present=false.",
+    "framing: one of positive | neutral | negative. NO 'n/a' — absent brands get 'neutral' (matches the judge's default).",
+    "labels: include one entry per brand for the client AND every competitor listed on the item, even when absent.",
+    "fact_sheet: inline text (paste the relevant facts) or null. Only items WITH a fact sheet count toward flag-detection agreement.",
+    "expect_accuracy_flags: boolean — should the judge flag at least one wrong claim about the CLIENT in this answer? (v1 calibration is binary: flagged-when-expected. Note specific expected flags in _notes for future type-level calibration.)",
+    "Freeze the file once judge testing starts; keep a few of the clearest items aside as judge-prompt examples and never calibrate on those."
+  ],
+  "items": [
+    {
+      "_notes": "Skeleton item 1 — replace every field. Example shape: client mentioned but with a wrong claim -> expect_accuracy_flags true.",
+      "query": "{verbatim buyer query}",
+      "answer": "{paste the FULL raw engine answer here}",
+      "client": "{Client}",
+      "competitors": ["{Competitor A}", "{Competitor B}"],
+      "fact_sheet": "{relevant ground-truth facts, or null}",
+      "labels": {
+        "{Client}": { "present": true, "prominence": "mid_pack", "framing": "neutral" },
+        "{Competitor A}": { "present": true, "prominence": "recommended_first", "framing": "positive" },
+        "{Competitor B}": { "present": false, "prominence": "absent", "framing": "neutral" }
+      },
+      "expect_accuracy_flags": true
+    },
+    {
+      "_notes": "Skeleton item 2 — a 'losing query': client absent, no fact sheet (accuracy not assessed for this item).",
+      "query": "{verbatim buyer query}",
+      "answer": "{paste the FULL raw engine answer here}",
+      "client": "{Client}",
+      "competitors": ["{Competitor A}", "{Competitor B}"],
+      "fact_sheet": null,
+      "labels": {
+        "{Client}": { "present": false, "prominence": "absent", "framing": "neutral" },
+        "{Competitor A}": { "present": true, "prominence": "recommended_first", "framing": "positive" },
+        "{Competitor B}": { "present": true, "prominence": "mid_pack", "framing": "neutral" }
+      },
+      "expect_accuracy_flags": false
+    }
+  ]
+}

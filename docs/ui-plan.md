@@ -1,6 +1,19 @@
 # GEO Audit — CSV Upload UI Plan
 
-*Plan for a front-end where you upload one CSV containing the prompts, the fact sheet, and the run config; the app parses it, runs the audit through the existing backend, and shows the report. Plan only — no build yet. Designed to wrap the current Python modules, not replace them.*
+> ## ✅ STATUS (2026-06-06): IMPLEMENTED
+>
+> Phases A–E were built (build-log entry 2026-06-03): `src/prompts/csv_loader.py` (the exact `block,key,value,intent,persona` schema with multi-file merge + conflict detection), `src/api/` (FastAPI), and `web/` (Next.js upload → preview → progress → report). Wired to Supabase for durable runs; interrupted runs auto-resume on API startup.
+>
+> **Deviations from this plan worth knowing:**
+> - Extra endpoints: `POST /audits/preview` (parse/validate without running) and `POST /audits/{id}/cancel`.
+> - `config,engines` accepts more than planned: `openai_search`, `anthropic_search`, `gemini_grounded`, `google_ai_overviews`, and a keyless **`mock`** engine for end-to-end UI testing without API spend.
+> - Extra config keys: `client_domains` (citation matching) and `judge` (run the LLM judge after the audit). Required keys are `client_name` + `category`.
+> - Background runs use an in-memory registry + thread per run (the planned v1 simple option), with best-effort Supabase persistence and best-effort judge.
+> - Auth/hosting remain open, as planned.
+>
+> Kept below as the design record; the CSV format section is still the accurate input contract.
+
+*Plan for a front-end where you upload one CSV containing the prompts, the fact sheet, and the run config; the app parses it, runs the audit through the existing backend, and shows the report. Designed to wrap the current Python modules, not replace them.*
 
 ---
 

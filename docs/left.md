@@ -1,6 +1,6 @@
 # What's Left
 
-**As of 2026-06-03.** The engine build order from `design-and-decisions.md` §8 (items 1–11)
+**As of 2026-06-03; front-end item updated 2026-06-06.** The engine build order from `design-and-decisions.md` §8 (items 1–11)
 is effectively done: LLM judge, cross-engine citations + AI Overviews, losing-queries view,
 teaser mode, orchestrator + dry run, cadence comparison, rubric capture + roadmap rollup,
 WAF/UA technical check, and a test suite all exist. The main audit report is now unified on
@@ -39,9 +39,11 @@ produce), **process/product work** (needs real inputs or a separate build), **de
   check and it's currently unfounded.
 - **Real client fact sheet.** Only the template (`docs/fact-sheet-template.md`) and Oura example
   exist. A real audit needs a real fact sheet so the judge's accuracy flags mean something.
-- **Front-end app.** None today — prompts are hand-authored JSON, the interface is the CLI.
-  The app (type prompts + paste the fact sheet) is a deliberate separate build, scoped *after*
-  the judge/runner loop is proven (it now is). This is the largest remaining piece.
+- **✅ Front-end app.** Done (2026-06-03, after this doc was first written) — the CSV-upload
+  web app per `docs/ui-plan.md`: Next.js (`web/`) + FastAPI (`src/api/`), multi-file CSV merge,
+  preview/validate, background runs with live progress + cancel, chart-rich report, durable runs
+  in Supabase with auto-resume of interrupted runs. Still open within it: auth/multi-user and
+  hosting/deploy (deliberately deferred until a client touches it).
 - **Schema normalization.** Storage is run-scoped tables only (`save_results`,
   `save_query_results`, `save_judgments`, `save_rubric_scores`, …). No first-class
   `clients` / `competitors` / locked-versioned `query_sets` tables with per-query persona/weight

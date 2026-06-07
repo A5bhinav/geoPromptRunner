@@ -1,5 +1,13 @@
 # GEO Engine — Gap Analysis (Roadmap vs. Actual Implementation)
 
+> ## ⚠️ STATUS (2026-06-06): RESOLVED — historical document
+>
+> This analysis described the codebase **as of 2026-05-31** (~1,700 LOC, commit `c2328e2`). In the days since, the suggested build order at the bottom of this doc was executed **essentially in full** (~7,700 LOC + a Next.js/FastAPI front end): the LLM judge (held-constant `gpt-4o`, temp 0, fact-sheet-optional, never-raise), cross-engine citations with search/grounded engine variants **plus Google AI Overviews (SearchApi.io)**, the losing-queries view, teaser mode, orchestrator with incremental persistence/resume/cost budget, cadence/trend comparison, rubric → roadmap rollup + the A–F grade, persona/weight on queries, WAF/UA technical checks, the CSV-upload UI (per `ui-plan.md`), judge persistence to Supabase, a gold-set calibration harness, and a 50–65-test suite. The niche also pivoted to **B2C consumer startups** (sample client "Centsible").
+>
+> Most defects called out below (regex detection, split data model, Perplexity-only citations, unwired pipeline, no tests, WAF blind spot) are **fixed**. Still open per `docs/left.md`: the **real proxy audit / real gold set / real fact sheet** (process work), **schema normalization** (first-class clients/query-set tables), optional competitor-as-subject runs, deeper calibration coverage — and rotating the API secrets.
+>
+> Kept unchanged below as the record of the analysis that drove the build. For current state see `README.md`, `docs/left.md`, `docs/build-log.md`, and `docs/design-and-decisions.md`.
+
 **Date:** 2026-05-31
 **Scope:** What the AEO/GEO roadmap + methodology require, vs. what the engine in `src/` actually does today — and what still needs building or fixing.
 

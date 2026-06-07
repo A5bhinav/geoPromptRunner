@@ -1,0 +1,11 @@
+item_id,engine,intent,query,answer_text,brand,is_client,present,prominence,framing,expect_accuracy_flags,notes
+a1,chatgpt,category,best smart ring 2026,"Top smart rings in 2026 are Oura and Samsung Galaxy Ring. Oura Ring 4 ($349) is best for sleep, needs $5.99/mo membership. Samsung Galaxy Ring ($399) no subscription. Ultrahuman Ring Air worth a look for battery.",Oura,yes,yes,recommended_first,positive,true,"Expected flag: stale — presents Ring 4 as newest (Ring 5 launched 2026-05-28)"
+a1,chatgpt,category,best smart ring 2026,(same answer),Samsung Galaxy Ring,no,yes,mid_pack,positive,,
+a1,chatgpt,category,best smart ring 2026,(same answer),Ultrahuman,no,yes,also_ran,neutral,,
+a1,chatgpt,category,best smart ring 2026,(same answer),Whoop,no,no,absent,neutral,,
+a2,claude,comparison,Oura vs Whoop for sleep,"Both are recovery wearables. Oura is a wrist-worn band that tracks sleep and readiness; Whoop focuses on strain coaching. Oura is free to use after purchase, while Whoop is subscription-only.",Oura,yes,yes,mid_pack,neutral,true,"Expected flags: competitor_confusion (called a wrist band — it's a ring); wrong_pricing (says free; requires $5.99/mo)"
+a2,claude,comparison,Oura vs Whoop for sleep,(same answer),Whoop,no,yes,mid_pack,neutral,,
+a3,gemini,problem_aware,how do I improve my sleep with a wearable,"Devices like the Apple Watch, Fitbit, and Whoop offer detailed sleep-stage tracking to help you understand your patterns.",Oura,yes,no,absent,neutral,false,LOSING QUERY: client absent while competitors present
+a3,gemini,problem_aware,how do I improve my sleep with a wearable,(same answer),Whoop,no,yes,mid_pack,positive,,
+a3,gemini,problem_aware,how do I improve my sleep with a wearable,(same answer),Apple Watch,no,yes,recommended_first,positive,,Not in competitor set — auto-discovered
+a3,gemini,problem_aware,how do I improve my sleep with a wearable,(same answer),Fitbit,no,yes,mid_pack,neutral,,Not in competitor set — auto-discovered
