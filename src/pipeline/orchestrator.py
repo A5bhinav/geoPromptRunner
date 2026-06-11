@@ -12,9 +12,19 @@ from src.storage import db
 from src.storage.db import StorageError
 from src.storage.models import QueryResult
 
-__all__ = ["AuditOutcome", "run_audit", "run_teaser"]
+__all__ = ["AuditOutcome", "engine_models", "run_audit", "run_teaser"]
 
 logger = logging.getLogger(__name__)
+
+
+def engine_models(engines: list[BaseEngine]) -> dict[str, str]:
+    """Exact model string per engine, recorded in run metadata (isolation L3).
+
+    Engines with no model parameter (SERP capture) are omitted rather than
+    recorded as empty strings.
+    """
+    return {e.ENGINE_NAME: e.MODEL_ID for e in engines if e.MODEL_ID}
+
 
 # Buckets used for the fast teaser demo — the category/comparison answers are the
 # visceral "here's what ChatGPT recommends instead of you" moment.
@@ -90,6 +100,7 @@ def run_audit(
                 query_set_version=query_set.version,
                 query_set_locked_at=query_set.locked_at,
                 runs_per_query=runs_per_query,
+                engine_models=engine_models(engines),
             )
         except StorageError as exc:
             logger.warning("Storage unavailable, continuing in-memory: %s", exc)

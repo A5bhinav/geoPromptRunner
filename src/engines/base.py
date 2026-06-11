@@ -23,12 +23,35 @@ class BaseEngine(ABC):
     - Subclasses must override the ``ENGINE_NAME`` class attribute with the
       provider's short identifier (e.g. ``"openai"``).
 
+    Statelessness rule (isolation plan, Layers 1–2)
+    -----------------------------------------------
+    Every call is a clean room. Each request carries **exactly one user
+    message** — the query text and nothing else — and never opts into
+    server-side state:
+
+    - no prior turns resent in ``messages``/``contents``
+    - no system prompt on a measured engine (only the judge has one)
+    - no stateful endpoint or params: no Assistants/threads, no
+      ``previous_response_id``, no ``store``, no conversation/session ids
+    - reused SDK/httpx clients are connection pools only, never conversations
+
+    This is what makes per-query results independent and cross-cycle
+    comparisons valid. ``tests/test_isolation.py`` asserts the outgoing payload
+    of every engine against this rule — if you change how a request is built,
+    those tests are the gate.
+
     Subclasses load their API key from the environment in ``__init__`` and
     raise ``ValueError`` if the key is missing. No API key is ever logged.
     """
 
     # Short provider identifier. Subclasses MUST override this.
     ENGINE_NAME: str = "base"
+
+    # The exact model string sent to the provider — pinned to a dated snapshot
+    # where the provider offers one, so a silent model update can't move the
+    # baseline between measurement cycles. Recorded in each run's metadata.
+    # Empty for surfaces with no model parameter (e.g. SERP capture).
+    MODEL_ID: str = ""
 
     @abstractmethod
     def query(self, prompt: str) -> str | None:

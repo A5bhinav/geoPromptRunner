@@ -9,11 +9,13 @@ from google.genai import types
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["GeminiGroundedEngine"]
 
 logger = logging.getLogger(__name__)
 
+# Stable GA name — Google offers no dated snapshots (isolation plan, L3).
 MODEL = "gemini-2.5-flash"
 
 # Gemini returns grounded sources as opaque redirect URLs on this host rather
@@ -33,11 +35,20 @@ class GeminiGroundedEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "gemini_grounded"
+    MODEL_ID: str = MODEL
 
     def __init__(self) -> None:
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY is not set. Add it to your .env (see .env.example).")
-        self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        # Bounded timeout (ms) + retries — Gemini intermittently 503s under load
+        # and the SDK doesn't retry unless asked.
+        self._client = genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            http_options=types.HttpOptions(
+                timeout=int(settings.ENGINE_TIMEOUT_SECONDS * 1000),
+                retry_options=types.HttpRetryOptions(attempts=settings.ENGINE_MAX_RETRIES + 1),
+            ),
+        )
         self._config = types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],
             temperature=settings.ENGINE_TEMPERATURE,
@@ -76,6 +87,17 @@ class GeminiGroundedEngine(BaseEngine):
         return text
 
     def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
+        # One isolated call: contents is the bare query string, config is fixed
+        # (google_search tool + temperature). No chat object is ever reused.
+        record_payload(
+            self.ENGINE_NAME,
+            {
+                "model": MODEL,
+                "contents": prompt,
+                "temperature": settings.ENGINE_TEMPERATURE,
+                "tools": ["google_search"],
+            },
+        )
         try:
             response = self._client.models.generate_content(
                 model=MODEL, contents=prompt, config=self._config

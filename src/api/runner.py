@@ -10,7 +10,7 @@ from src.api.engine_registry import build_engines
 from src.api.reports import ReportPayload, build_report
 from src.engines.base import BaseEngine
 from src.pipeline.cost import estimate_cost
-from src.pipeline.orchestrator import AuditOutcome
+from src.pipeline.orchestrator import AuditOutcome, engine_models
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.csv_loader import ParsedAudit, RunConfig
 from src.prompts.intent import IntentBucket
@@ -172,6 +172,7 @@ def start_run(audit: ParsedAudit) -> str:
             queries=_serialize_queries(qs.queries),
             fact_sheet=audit.fact_sheet,
             judge=cfg.judge,
+            engine_models=engine_models(engines),
         )
         state.db_run_id = run_id
     except db.StorageError as exc:

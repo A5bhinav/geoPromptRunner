@@ -52,6 +52,4 @@ def test_run_teaser_trims_to_category_comparison_buckets() -> None:
 def test_run_audit_aborts_when_over_budget() -> None:
     qs = _query_set()
     with pytest.raises(CostBudgetExceeded):
-        run_audit(
-            qs, [_Echo()], runs_per_query=3, persist=False, progress=False, max_cost=0.0001
-        )
+        run_audit(qs, [_Echo()], runs_per_query=3, persist=False, progress=False, max_cost=0.0001)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import anthropic
 from anthropic import Anthropic
@@ -8,11 +9,14 @@ from anthropic.types import TextBlock
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["AnthropicEngine"]
 
 logger = logging.getLogger(__name__)
 
+# Already a dated snapshot (isolation plan, L3): Anthropic model ids carry
+# their release date, so this pin can't drift under a silent provider update.
 MODEL = "claude-sonnet-4-5-20250929"
 MAX_TOKENS = 1024
 
@@ -25,6 +29,7 @@ class AnthropicEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "anthropic"
+    MODEL_ID: str = MODEL
 
     def __init__(self) -> None:
         if not settings.ANTHROPIC_API_KEY:
@@ -40,13 +45,17 @@ class AnthropicEngine(BaseEngine):
         )
 
     def query(self, prompt: str) -> str | None:
+        # One isolated call: exactly one user message, no system prompt, no
+        # state params. The recorded payload is the same dict that is sent.
+        payload: dict[str, Any] = {
+            "model": MODEL,
+            "max_tokens": MAX_TOKENS,
+            "temperature": settings.ENGINE_TEMPERATURE,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        record_payload(self.ENGINE_NAME, payload)
         try:
-            response = self._client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                temperature=settings.ENGINE_TEMPERATURE,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            response = self._client.messages.create(**payload)
         except anthropic.RateLimitError:
             logger.warning("Anthropic rate limit hit for model %s", MODEL)
             return None

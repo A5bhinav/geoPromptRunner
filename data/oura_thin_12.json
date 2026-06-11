@@ -1,0 +1,87 @@
+{
+  "version": "v1-draft-thin12",
+  "locked_at": "2026-06-11",
+  "category": "smart ring",
+  "client": "Oura",
+  "competitors": [
+    "Whoop",
+    "Ultrahuman",
+    "Samsung Galaxy Ring",
+    "RingConn"
+  ],
+  "queries": [
+    {
+      "query_id": "pa-01",
+      "intent": "problem_aware",
+      "text": "why do I wake up exhausted even after sleeping 8 hours?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "pa-03",
+      "intent": "problem_aware",
+      "text": "what's the best way to track my sleep and recovery without wearing a watch?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "cat-01",
+      "intent": "category",
+      "text": "best smart ring",
+      "weight": 1.5
+    },
+    {
+      "query_id": "cat-02",
+      "intent": "category",
+      "text": "best smart ring for sleep tracking",
+      "weight": 1.5,
+      "persona": "sleep-focused"
+    },
+    {
+      "query_id": "cat-09",
+      "intent": "category",
+      "text": "best smart ring 2026",
+      "weight": 1.6
+    },
+    {
+      "query_id": "cmp-01",
+      "intent": "comparison",
+      "text": "Oura Ring vs Whoop for recovery",
+      "weight": 1.8
+    },
+    {
+      "query_id": "cmp-02",
+      "intent": "comparison",
+      "text": "Oura vs Samsung Galaxy Ring \u2014 which is better?",
+      "weight": 1.8
+    },
+    {
+      "query_id": "cmp-08",
+      "intent": "comparison",
+      "text": "Whoop vs Ultrahuman for athletes",
+      "weight": 1.8
+    },
+    {
+      "query_id": "brd-01",
+      "intent": "brand",
+      "text": "is the Oura Ring worth it?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-03",
+      "intent": "brand",
+      "text": "does the Oura Ring require a subscription?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-04",
+      "intent": "brand",
+      "text": "what's the newest Oura Ring right now?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "adj-01",
+      "intent": "adjacent_authority",
+      "text": "how does heart rate variability relate to recovery?",
+      "weight": 1.0
+    }
+  ]
+}

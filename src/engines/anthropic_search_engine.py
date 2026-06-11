@@ -8,11 +8,13 @@ from anthropic import Anthropic
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["AnthropicSearchEngine"]
 
 logger = logging.getLogger(__name__)
 
+# Dated snapshot (Anthropic ids carry their release date) — isolation plan, L3.
 MODEL = "claude-sonnet-4-5-20250929"
 MAX_TOKENS = 1024
 WEB_SEARCH_TOOL: dict[str, Any] = {
@@ -30,6 +32,7 @@ class AnthropicSearchEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "anthropic_search"
+    MODEL_ID: str = MODEL
 
     def __init__(self) -> None:
         if not settings.ANTHROPIC_API_KEY:
@@ -47,13 +50,17 @@ class AnthropicSearchEngine(BaseEngine):
         return text
 
     def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
+        # One isolated call: exactly one user message, the web-search server
+        # tool, no state params. The recorded payload is the same dict sent.
+        payload: dict[str, Any] = {
+            "model": MODEL,
+            "max_tokens": MAX_TOKENS,
+            "messages": [{"role": "user", "content": prompt}],
+            "tools": [WEB_SEARCH_TOOL],
+        }
+        record_payload(self.ENGINE_NAME, payload)
         try:
-            response = self._client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                messages=[{"role": "user", "content": prompt}],
-                tools=[WEB_SEARCH_TOOL],  # type: ignore[list-item]
-            )
+            response = self._client.messages.create(**payload)
         except anthropic.RateLimitError:
             logger.warning("Anthropic search rate limit hit for model %s", MODEL)
             return None, []

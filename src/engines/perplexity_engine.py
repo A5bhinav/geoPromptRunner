@@ -7,6 +7,7 @@ import httpx
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["PerplexityEngine"]
 
@@ -14,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 API_BASE_URL = "https://api.perplexity.ai"
 ENDPOINT = "/chat/completions"
+# Perplexity offers no dated snapshots — `sonar` is the pin available. It's a
+# live-retrieval surface anyway, so run-to-run variance is dominated by the web
+# (isolation plan, L5), not by model drift.
 MODEL = "sonar"
 
 
@@ -27,6 +31,7 @@ class PerplexityEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "perplexity"
+    MODEL_ID: str = MODEL
 
     def __init__(self) -> None:
         if not settings.PERPLEXITY_API_KEY:
@@ -69,6 +74,9 @@ class PerplexityEngine(BaseEngine):
             "messages": [{"role": "user", "content": prompt}],
             "temperature": settings.ENGINE_TEMPERATURE,
         }
+        # The recorded payload is the exact JSON body posted (auth is a header
+        # on the pooled client and is never logged).
+        record_payload(self.ENGINE_NAME, payload)
         try:
             response = self._client.post(ENDPOINT, json=payload)
             response.raise_for_status()

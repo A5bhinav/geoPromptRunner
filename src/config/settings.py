@@ -31,6 +31,15 @@ ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))
 # Pin sampling low so repeated runs of the same query are reproducible — the
 # methodology runs each query multiple times to average noise, not to amplify it.
 ENGINE_TEMPERATURE: float = float(os.getenv("ENGINE_TEMPERATURE", "0"))
+# Best-effort reproducibility seed, sent to providers that accept one (OpenAI,
+# Gemini). Held constant across the query set and across cycles so two
+# measurement runs differ only by what the model/web changed, not our sampling.
+ENGINE_SEED: int = int(os.getenv("ENGINE_SEED", "42"))
+
+# Payload audit log (isolation plan, Test E). When set, every outgoing engine
+# request body (never auth headers or keys) is appended as one JSON line to this
+# file so any run is reconstructable. Unset = debug logging only.
+PAYLOAD_LOG_PATH: str | None = os.getenv("PAYLOAD_LOG_PATH")
 
 # The LLM judge — ONE held-constant model scores every answer from every engine,
 # so cross-engine comparisons stay valid. Held constant > which model. For

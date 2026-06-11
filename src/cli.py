@@ -24,6 +24,13 @@ from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
 from src.storage import db
+from src.verification.canary import render_canary_results, run_canaries
+from src.verification.determinism import (
+    DEFAULT_QUERY,
+    measure_determinism,
+    render_baseline,
+)
+from src.verification.shuffle import render_shuffle_results, run_order_shuffle
 
 __all__ = ["main"]
 
@@ -277,6 +284,36 @@ def _cmd_roadmap(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_verify(args: argparse.Namespace) -> int:
+    """Run an isolation/determinism probe (docs/isolation-determinism-plan.md)."""
+    if args.probe == "canary":
+        # Both surfaces, deduped (Perplexity appears in each list) — the canary
+        # is cheap (2 calls/engine) and the guarantee should hold everywhere.
+        by_name = {e.ENGINE_NAME: e for e in [*_load_engines("memory"), *_load_engines("search")]}
+        engines = list(by_name.values())
+    else:
+        engines = _load_engines(args.surface)
+    if not engines:
+        print("No engines configured (set API keys in .env).")
+        return 1
+
+    if args.probe == "canary":
+        print(render_canary_results(run_canaries(engines)))
+        return 0
+    if args.probe == "determinism":
+        print(f"Measuring {args.k} repeats of: {args.query!r}\n")
+        print(render_baseline([measure_determinism(e, args.query, args.k) for e in engines]))
+        return 0
+    # shuffle
+    if not args.query_set:
+        print("shuffle needs --query-set (the prompt list to run in both orders).")
+        return 1
+    prompts = [q.text for q in load_query_set(args.query_set).queries]
+    print(f"Shuffling {len(prompts)} queries (2 passes per engine)\n")
+    print(render_shuffle_results([run_order_shuffle(e, prompts) for e in engines]))
+    return 0
+
+
 def _cmd_due(args: argparse.Namespace) -> int:
     runs = db.list_audit_runs(args.client)
     if not runs:
@@ -361,6 +398,16 @@ def main(argv: list[str] | None = None) -> int:
     p_roadmap.add_argument("--brand")
     p_roadmap.add_argument("--query-set", help="query set JSON for commercial-value weights")
     p_roadmap.set_defaults(func=_cmd_roadmap)
+
+    p_verify = sub.add_parser(
+        "verify", help="prove isolation/determinism (canary, determinism, shuffle probes)"
+    )
+    p_verify.add_argument("probe", choices=("canary", "determinism", "shuffle"))
+    p_verify.add_argument("--surface", choices=("memory", "search"), default="memory")
+    p_verify.add_argument("--query", default=DEFAULT_QUERY, help="query for the determinism probe")
+    p_verify.add_argument("--k", type=int, default=10, help="repeats for the determinism probe")
+    p_verify.add_argument("--query-set", help="query set JSON for the shuffle probe")
+    p_verify.set_defaults(func=_cmd_verify)
 
     p_due = sub.add_parser("due", help="check if a client is due for a cadence re-run")
     p_due.add_argument("client")

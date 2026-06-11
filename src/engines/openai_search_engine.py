@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import openai
 from openai import OpenAI
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["OpenAISearchEngine"]
 
@@ -14,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 # Search-enabled chat model: live web retrieval + URL citations, i.e. the
 # ChatGPT-with-search surface a buyer actually sees, not GPT's training memory.
-MODEL = "gpt-4o-search-preview"
+# Dated snapshot, not the floating alias (isolation plan, L3) — retrieval still
+# varies run to run (L5), but the model under it stays fixed across cycles.
+MODEL = "gpt-4o-search-preview-2025-03-11"
 
 
 class OpenAISearchEngine(BaseEngine):
@@ -26,6 +30,7 @@ class OpenAISearchEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "openai_search"
+    MODEL_ID: str = MODEL
 
     def __init__(self) -> None:
         if not settings.OPENAI_API_KEY:
@@ -42,11 +47,16 @@ class OpenAISearchEngine(BaseEngine):
         return text
 
     def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
+        # One isolated call: exactly one user message, no state params. The
+        # search-preview models reject sampling params, so no temperature/seed.
+        # The recorded payload is the same dict that is sent.
+        payload: dict[str, Any] = {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        record_payload(self.ENGINE_NAME, payload)
         try:
-            response = self._client.chat.completions.create(
-                model=MODEL,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            response = self._client.chat.completions.create(**payload)
         except openai.RateLimitError:
             logger.warning("OpenAI search rate limit hit for model %s", MODEL)
             return None, []

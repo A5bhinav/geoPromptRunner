@@ -30,9 +30,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     Done on a background thread so a slow/unreachable storage backend can't
     delay the server coming up.
     """
-    threading.Thread(
-        target=runner.resume_interrupted_runs, name="resume-scan", daemon=True
-    ).start()
+    threading.Thread(target=runner.resume_interrupted_runs, name="resume-scan", daemon=True).start()
     yield
 
 

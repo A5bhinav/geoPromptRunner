@@ -4,6 +4,76 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## Isolation & Determinism — Engine isolation proven, pinned, and guarded (docs/isolation-determinism-plan.md) — Completed 2026-06-11
+
+Converted the implicit "every call is fresh" property into a proven, guarded
+one, per the plan's five build items. No measurement behavior changed — the
+calls were already stateless; this adds the proof, the anti-regression guard,
+and the model/seed pins that keep two measurement cycles comparable.
+
+### What was built
+
+- **`src/engines/base.py`** — the Layer-2 statelessness code rule is now part of
+  the `BaseEngine` contract docstring (one user message, no system prompt, no
+  state params, clients are pools not conversations), plus a `MODEL_ID` class
+  attribute: the exact model string sent to the provider, recorded per run.
+- **Dated model snapshots (Layer 3)** — `openai` pinned to `gpt-4o-2024-08-06`,
+  `openai_search` to `gpt-4o-search-preview-2025-03-11` (both confirmed live);
+  Anthropic ids were already dated; Gemini GA names and Perplexity `sonar` have
+  no dated variants — documented as the firmest pins those providers offer.
+- **`seed` (Layer 4)** — new `ENGINE_SEED` setting (default 42), sent on the
+  OpenAI and Gemini parametric engines (the providers that accept one).
+- **`src/engines/payload_log.py` (Test E)** — `record_payload()` logs every
+  outgoing request body at DEBUG and, when `PAYLOAD_LOG_PATH` is set, appends
+  it as JSONL (timestamp, engine, payload; secret keys scrubbed; never raises).
+  Wired into all 8 engine adapters; where possible the recorded dict *is* the
+  dict sent, so log and request can't drift.
+- **`engine_models` run metadata (Layer 3)** — new jsonb column on
+  `audit_runs` (Supabase migration `add_engine_models_to_audit_runs`),
+  populated by both run paths (`orchestrator.run_audit`, `api/runner.start_run`)
+  via the new `orchestrator.engine_models()` helper; round-trip verified.
+- **`src/verification/`** — the live probes:
+  - `canary.py` (Test A): two-call memory probe with an unguessable marker;
+    `leaked`/`isolated`/`inconclusive` verdicts (conservative: a failed setup
+    call can't produce a clean verdict).
+  - `determinism.py` (Test D): K fresh repeats → agreement profile
+    (`unique_answers`, `modal_agreement`, `identical`) + `suggest_runs_per_query`
+    bands calibrating whether K=3 is enough.
+  - `shuffle.py` (Test C): full set forward then reversed, per-query
+    normalized comparison — order must not matter beyond the Test D noise band.
+- **`geo verify {canary,determinism,shuffle}`** CLI subcommand (`src/cli.py`)
+  with `--surface/--query/--k/--query-set`.
+- **`tests/test_isolation.py` (Test B — the anti-regression guard)** — 14 tests
+  capturing every engine's outgoing payload at the client boundary: exactly one
+  user message, no system prompt, no state params (`store`,
+  `previous_response_id`, thread/conversation/session ids, ...), constant
+  inputs across calls, dated-snapshot model ids, second call carries nothing of
+  the first (Josh's smart-ring → Oura scenario, asserted directly), MODEL_ID
+  declared on every registered engine, payload-log JSONL + secret scrubbing.
+- **`tests/test_verification.py`** — 20 tests proving both probe verdict paths
+  with stateless/stateful/dead fake engines, plus the agreement math and
+  shuffle comparison logic.
+- **`.env.example`** — documents `ENGINE_SEED` and `PAYLOAD_LOG_PATH`.
+
+### Acceptance criteria — all passed
+
+- ✅ Full suite green: 99 passed (65 pre-existing + 34 new)
+- ✅ Guard verified to bite: with the engine changes reverted (stashed) the new
+  payload tests fail (8 failures) — a regression cannot pass silently
+- ✅ mypy (strict) clean on `src/` and both new test files; ruff check + format clean
+- ✅ Live canary run (Test A): openai, anthropic, gemini, perplexity,
+  openai_search, anthropic_search all `isolated` — no engine could recall the
+  prior call. gemini_grounded inconclusive (provider 500s during the run, not
+  an isolation finding); google_ai_overviews inconclusive (SERP surface returns
+  no overview for the probe — it has no chat state to leak)
+- ✅ Dated snapshots resolve on the live APIs (both OpenAI pins answered)
+- ✅ `engine_models` migration applied; write + read-back verified against
+  Supabase (smoke row soft-archived, never hard-deleted)
+- ✅ Keyless `__main__`/probe smoke: payload_log, orchestrator teaser, and all
+  three probes run against the mock engine
+
+---
+
 ## UI — CSV-Upload Audit UI (docs/ui-plan.md, Phases A–E) — Completed 2026-06-03
 
 Built the full front door from `docs/ui-plan.md`: drop CSV(s) → preview the

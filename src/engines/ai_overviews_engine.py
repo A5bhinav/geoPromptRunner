@@ -8,6 +8,7 @@ import httpx
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.payload_log import record_payload
 
 __all__ = ["AIOverviewsEngine"]
 
@@ -29,6 +30,9 @@ class AIOverviewsEngine(BaseEngine):
     """
 
     ENGINE_NAME: str = "google_ai_overviews"
+    # SERP capture, not a model API — there is no model string to pin. Variance
+    # here is the live Google surface itself (isolation plan, L5).
+    MODEL_ID: str = ""
 
     def __init__(self) -> None:
         if not settings.SEARCHAPI_API_KEY:
@@ -53,6 +57,9 @@ class AIOverviewsEngine(BaseEngine):
         return text
 
     def query_with_citations(self, prompt: str) -> tuple[str | None, list[str]]:
+        # One isolated GET: just the query string. The api_key param is scrubbed
+        # by record_payload and is never logged.
+        record_payload(self.ENGINE_NAME, {"engine": "google", "q": prompt})
         try:
             response = self._client.get(
                 SEARCHAPI_URL,

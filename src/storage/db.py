@@ -246,6 +246,7 @@ def create_audit_run(
     queries: list[dict[str, Any]] | None = None,
     fact_sheet: str | None = None,
     judge: bool = False,
+    engine_models: dict[str, str] | None = None,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -254,6 +255,10 @@ def create_audit_run(
     so a finished run can be read back from storage after a restart. The
     progress/state columns (``status``/``completed_calls``/``total_calls``/
     ``engines``) let the run survive a process restart as more than a bare row.
+
+    ``engine_models`` records the exact model string each engine sent (e.g.
+    ``{"openai": "gpt-4o-2024-08-06"}``) so two cycles are comparable — a
+    provider's silent model update shows up as a metadata diff, not a mystery.
     """
     run_id = run_id or str(uuid.uuid4())
     row: dict[str, Any] = {
@@ -274,6 +279,7 @@ def create_audit_run(
         "queries": queries or [],
         "fact_sheet": fact_sheet,
         "judge": judge,
+        "engine_models": engine_models or {},
         "created_at": _now(),
         "updated_at": _now(),
         "archived_at": None,
@@ -399,11 +405,13 @@ def list_all_audit_runs(limit: int = 100) -> list[dict[str, object]]:
     """The most recent audit runs across all clients — the UI's recent list."""
     response = _execute(
         "list_all_audit_runs",
-        lambda c: c.table(TABLE_AUDIT_RUNS)
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(limit)
-        .execute(),
+        lambda c: (
+            c.table(TABLE_AUDIT_RUNS)
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        ),
     )
     data = getattr(response, "data", None) or []
     return list(data)
@@ -413,10 +421,9 @@ def list_resumable_runs() -> list[dict[str, object]]:
     """Runs left in a non-terminal state — candidates to resume after a restart."""
     response = _execute(
         "list_resumable_runs",
-        lambda c: c.table(TABLE_AUDIT_RUNS)
-        .select("*")
-        .in_("status", ["running", "queued"])
-        .execute(),
+        lambda c: (
+            c.table(TABLE_AUDIT_RUNS).select("*").in_("status", ["running", "queued"]).execute()
+        ),
     )
     data = getattr(response, "data", None) or []
     return list(data)
