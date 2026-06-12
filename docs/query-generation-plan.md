@@ -21,31 +21,31 @@
 
 **b. Buyer-language sourcing (the part that keeps me honest).** The schema requires real phrasing and ≥1/3 verbatim/near-verbatim queries — and the methodology forbids LLM-*originated* queries. Since a proxy has no sales calls or support tickets, I source **public** buyer language via web search: Reddit (r/ouraring, r/smartrings, r/whoop), review-site language (Best Buy, Amazon, Wirecutter comments), community forums, and "people also ask" boxes. I collect real phrasings **with provenance** (URL + verbatim snippet) so each sourced query can be marked verbatim/near-verbatim/constructed. My role is **source → draft → format**, never originate from imagination, and a human validates before lock (§6).
 
-## 2 · Allocation plan (the §3 table, at N=45)
+## 2 · Allocation plan (roadmap example distribution, at N=45)
 
-| Bucket | Count | Share | Floor rule |
-|---|---|---|---|
-| 1 · Problem-aware | 8 | ~18% | — |
-| 2 · Category / solution-aware | 14 | ~31% | **2+3 together ≥ 55%** |
-| 3 · Comparison | 12 | ~27% | (held even when trimming) |
-| 4 · Brand / bottom-funnel | 7 | ~15% | kept small deliberately |
-| 5 · Adjacent-authority | 4 | ~9% | — |
+| Bucket | Count | Share |
+|---|---|---|
+| 1 · Problem-aware | 7 | ~15% |
+| 2 · Category / solution-aware | 13 | ~30% |
+| 3 · Comparison | 11 | ~25% |
+| 4 · Brand / bottom-funnel | 7 | ~15% |
+| 5 · Adjacent-authority | 7 | ~15% |
 
-Trim mode scales these proportionally but never lets 2+3 drop below 55% and never drops comparison coverage of a competitor (see §3.3).
+Per the AEO/GEO roadmap's example distribution (15 / 30 / 25 / 15 / 15). Trim mode (gold-set, ~15–18) scales these proportionally, keeping comparison coverage of every competitor (see §3.3). *(This supersedes the looser Question-Set Schema v1 allocation of 18/31/27/15/9 — the roadmap distribution is the source of truth as of 2026-06-10.)*
 
 ## 3 · Drafting procedure, per bucket
 
 Each query: fill `{slots}` only from the fact sheet + sourced language; obey the bucket's specific rules; tag exactly one intent.
 
-**3.1 Problem-aware (8).** First-person buyer voice; **never** name category, client, or any brand. Anchor heavily to verbatim Reddit/forum pain posts. Oura-world example shape: *"why do I wake up exhausted even after a full night's sleep?"* (the pain, no "smart ring" anywhere).
+**3.1 Problem-aware (7).** First-person buyer voice; **never** name category, client, or any brand. Anchor heavily to verbatim Reddit/forum pain posts. Oura-world example shape: *"why do I wake up exhausted even after a full night's sleep?"* (the pain, no "smart ring" anywhere).
 
-**3.2 Category / solution-aware (14).** One head query (*"best smart ring"*); every other carries a **qualifier drawn from the fact sheet's real segments** — sleep tracking, recovery/athletes, battery life, no-subscription, women's health, budget. Year-stamp 2–3 here (*"best smart ring 2026"*, *"newest smart ring 2026"*) to bait the Ring 5 freshness/staleness behavior.
+**3.2 Category / solution-aware (13).** One head query (*"best smart ring"*); every other carries a **qualifier drawn from the fact sheet's real segments** — sleep tracking, recovery/athletes, battery life, no-subscription, women's health, budget. Year-stamp 2–3 here (*"best smart ring 2026"*, *"newest smart ring 2026"*) to bait the Ring 5 freshness/staleness behavior.
 
-**3.3 Comparison (12).** Hard constraints from the schema: **every competitor appears in ≥1 comparison query**, and **≥2 queries leave the client (Oura) unnamed** (e.g. *"Whoop vs Ultrahuman for recovery"*, *"best alternative to the Samsung Galaxy Ring"*) — these test unprompted surfacing. Mix named head-to-heads (*"Oura vs Whoop"*) with "alternatives to {competitor}".
+**3.3 Comparison (11).** Hard constraints from the schema: **every competitor appears in ≥1 comparison query**, and **≥2 queries leave the client (Oura) unnamed** (e.g. *"Whoop vs Ultrahuman for recovery"*, *"best alternative to the Samsung Galaxy Ring"*) — these test unprompted surfacing. Mix named head-to-heads (*"Oura vs Whoop"*) with "alternatives to {competitor}".
 
 **3.4 Brand / bottom-funnel (7).** Probe the **claims most damaging if wrong** — for Oura: current price/tiers, the required membership, the flagship sleep capability, and the current model. Shapes: *"is the Oura Ring worth it?"*, *"how much does the Oura Ring cost?"*, *"does the Oura Ring need a subscription?"*, *"what's the newest Oura Ring?"*. This bucket is where accuracy flags surface.
 
-**3.5 Adjacent-authority (4).** No brand named; topic must map to expertise Oura could plausibly own (sleep science, HRV, recovery). Shape: *"how should I use HRV to guide my training?"*
+**3.5 Adjacent-authority (7).** No brand named; topic must map to expertise Oura could plausibly own (sleep science, HRV, recovery, readiness, temperature, stress). Shape: *"how should I use HRV to guide my training?"*
 
 ## 4 · Phrasing pass (the §5 cross-bucket rules)
 

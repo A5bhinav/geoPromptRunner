@@ -2,6 +2,7 @@
 
 **Status:** DRAFT for review. Not locked. — **Drafted:** 2026-06-10 · **Cycle:** v1
 **Client:** Oura · **Category:** smart ring · **Mode:** full instrument (N=45)
+**Allocation:** roadmap example distribution (15 / 30 / 25 / 15 / 15) = 7 / 13 / 11 / 7 / 7.
 **Engines:** ChatGPT · Claude · Gemini · Perplexity (+ Google AI Overviews). One set, run identically across all — never tuned per engine.
 
 > **Review gate (do this before lock):** read each query aloud — "would a real buyer actually type this to a chatbot?" Cut/fix any that fail, then we stamp `v1` + date and freeze. These are drafted in buyer voice from category knowledge; for a *real* client we'd source verbatim phrasing from their intake + Reddit/reviews with provenance URLs. For this proxy run, a light pass is fine.
@@ -22,7 +23,7 @@
 
 ---
 
-## Bucket 1 · Problem-aware (8) — ~18%
+## Bucket 1 · Problem-aware (7) — ~15%
 *First-person buyer voice. Names no category, client, or brand. Tests whether Oura is even in the conversation before the buyer knows smart rings exist.*
 
 | id | intent | query | weight | buyer-voice |
@@ -34,9 +35,8 @@
 | pa-05 | problem_aware | how can I actually improve my deep sleep? | 1.0 | ✓ |
 | pa-06 | problem_aware | is there a way to tell if my body is recovered enough to work out hard today? | 1.0 | ✓ |
 | pa-07 | problem_aware | how can I keep track of my stress levels during the day? | 1.0 | ✓ |
-| pa-08 | problem_aware | what should I look at to understand my overall health day to day? | 1.0 | |
 
-## Bucket 2 · Category / solution-aware (14) — ~31%
+## Bucket 2 · Category / solution-aware (13) — ~30%
 *One head query; every other carries a real-segment qualifier. 2 year-stamps (cat-09, cat-10) to bait freshness/Ring-5 staleness.*
 
 | id | intent | query | weight | persona | buyer-voice |
@@ -52,11 +52,10 @@
 | cat-09 | category | best smart ring 2026 | 1.6 | — | ✓ |
 | cat-10 | category | what's the newest smart ring in 2026? | 1.6 | — | ✓ |
 | cat-11 | category | best health tracker you don't wear on your wrist | 1.5 | — | ✓ |
-| cat-12 | category | what's a good smart ring for everyday health tracking? | 1.5 | — | |
 | cat-13 | category | best smart ring for beginners | 1.5 | beginner | |
 | cat-14 | category | top rated smart rings right now | 1.5 | — | |
 
-## Bucket 3 · Comparison (12) — ~27%
+## Bucket 3 · Comparison (11) — ~25%
 *Every competitor appears ≥1×. cmp-08/09/11 leave Oura unnamed (≥2 required) to test unprompted surfacing.*
 
 | id | intent | query | weight | buyer-voice |
@@ -72,7 +71,6 @@
 | cmp-09 | comparison | Samsung Galaxy Ring vs RingConn | 1.8 | |
 | cmp-10 | comparison | which is better value, Oura or Ultrahuman? | 1.8 | ✓ |
 | cmp-11 | comparison | cheaper alternatives to Whoop | 1.8 | ✓ |
-| cmp-12 | comparison | Oura Ring vs Apple Watch for sleep tracking | 1.8 | ✓ |
 
 ## Bucket 4 · Brand / bottom-funnel (7) — ~15%
 *Probes the claims most damaging if wrong: price, the required membership, current model, flagship capability. This is where accuracy flags surface.*
@@ -87,7 +85,7 @@
 | brd-06 | brand | is the Oura Ring good for sleep tracking? | 2.0 | flagship capability |
 | brd-07 | brand | is the Oura Ring membership worth paying for monthly? | 2.0 | membership + price |
 
-## Bucket 5 · Adjacent-authority (4) — ~9%
+## Bucket 5 · Adjacent-authority (7) — ~15%
 *No brand named. Topics Oura could plausibly own as the authority.*
 
 | id | intent | query | weight | buyer-voice |
@@ -96,21 +94,26 @@
 | adj-02 | adjacent_authority | what's a healthy resting heart rate during sleep? | 1.0 | ✓ |
 | adj-03 | adjacent_authority | how much deep sleep do I actually need each night? | 1.0 | ✓ |
 | adj-04 | adjacent_authority | how can I use body temperature to track my menstrual cycle? | 1.0 | |
+| adj-05 | adjacent_authority | what's a good HRV score and how do I improve it? | 1.0 | ✓ |
+| adj-06 | adjacent_authority | how do I know if I'm actually getting enough quality sleep? | 1.0 | ✓ |
+| adj-07 | adjacent_authority | how does alcohol affect sleep and recovery? | 1.0 | ✓ |
 
 ---
 
 ## Self-checked QA (vs. Question-Set Schema v1 §6)
 
-- ✅ **Counts** match allocation: 8 / 14 / 12 / 7 / 4 = 45. Buckets 2+3 = 26 (58% ≥ 55%).
+- ✅ **Counts** match roadmap allocation: 7 / 13 / 11 / 7 / 7 = 45 (15 / 30 / 25 / 15 / 15). Buckets 2+3 = 24 (~53%).
 - ✅ **One intent tag** per query; no unfilled `{slots}`.
 - ✅ **Every competitor** named ≥1×: Whoop (cmp-01/08/11), Ultrahuman (cmp-03/08/10), Samsung (cmp-02/07/09), RingConn (cmp-04/09).
 - ✅ **Client named only** in bucket 4 + client-named comparisons (problem-aware, category, adjacent name no brand).
 - ✅ **≥2 comparison queries leave Oura unnamed:** cmp-08, cmp-09, cmp-11 (3).
 - ✅ **Year-stamps:** cat-09, cat-10 (freshness/Ring-5 bait).
-- ✅ **≥1/3 verbatim/near-verbatim buyer voice:** ~26 flagged (≥15 needed).
+- ✅ **≥1/3 verbatim/near-verbatim buyer voice:** ~28 flagged (≥15 needed).
 - ⏳ **Read-aloud test:** pending your review.
 - ⚠️ **Near-dup note:** brd-02 (hardware cost) vs brd-07 (membership cost) and cat-02 (sleep) vs cat-07 (accuracy-for-sleep) are close but intentionally distinct — confirm you're OK keeping both.
 - ⏳ **Lock:** pending approval → then `v1` + date.
+
+> *Note on the 2+3 share:* under the roadmap's 30+25 distribution, buckets 2+3 land at ~53% (the roadmap's own rounding), below the Question-Set Schema v1's 55% floor. Per your 2026-06-10 call, the roadmap allocation is the source of truth and supersedes that floor.
 
 ---
 

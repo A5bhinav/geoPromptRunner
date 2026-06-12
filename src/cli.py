@@ -89,12 +89,22 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
+    # Resume must keep the original instrument: unless --runs is given
+    # explicitly, inherit runs_per_query from the stored run rather than the
+    # CLI default — mixed run counts within one run skew aggregation.
+    runs = args.runs
+    if runs is None:
+        runs = 3
+        if args.resume:
+            stored = db.get_audit_run(args.resume)
+            if stored is not None:
+                runs = int(str(stored.get("runs_per_query") or 3))
     try:
         outcome = run_audit(
             qs,
             engines,
             client_domains=_split(args.domains),
-            runs_per_query=args.runs,
+            runs_per_query=runs,
             persist=not args.no_persist,
             max_cost=args.max_cost,
             resume_run_id=args.resume,
@@ -335,7 +345,12 @@ def main(argv: list[str] | None = None) -> int:
     p_audit = sub.add_parser("audit", help="run a full audit from a query set")
     p_audit.add_argument("query_set")
     p_audit.add_argument("--domains", help="comma-separated client domains")
-    p_audit.add_argument("--runs", type=int, default=3)
+    p_audit.add_argument(
+        "--runs",
+        type=int,
+        default=None,
+        help="runs per query (default 3; a resumed run inherits its stored value)",
+    )
     p_audit.add_argument("--surface", choices=("memory", "search"), default="memory")
     p_audit.add_argument(
         "--max-cost", type=float, default=None, help="abort if est. $ exceeds this"

@@ -1,5 +1,5 @@
 {
-  "version": "v1-draft",
+  "version": "v1-draft-r2",
   "locked_at": "2026-06-11",
   "category": "smart ring",
   "client": "Oura",
@@ -12,7 +12,6 @@
     { "query_id": "pa-05", "intent": "problem_aware", "text": "how can I actually improve my deep sleep?", "weight": 1.0 },
     { "query_id": "pa-06", "intent": "problem_aware", "text": "is there a way to tell if my body is recovered enough to work out hard today?", "weight": 1.0 },
     { "query_id": "pa-07", "intent": "problem_aware", "text": "how can I keep track of my stress levels during the day?", "weight": 1.0 },
-    { "query_id": "pa-08", "intent": "problem_aware", "text": "what should I look at to understand my overall health day to day?", "weight": 1.0 },
     { "query_id": "cat-01", "intent": "category", "text": "best smart ring", "weight": 1.5 },
     { "query_id": "cat-02", "intent": "category", "text": "best smart ring for sleep tracking", "weight": 1.5, "persona": "sleep-focused" },
     { "query_id": "cat-03", "intent": "category", "text": "best smart ring for athletes and recovery", "weight": 1.5, "persona": "athlete" },
@@ -24,7 +23,6 @@
     { "query_id": "cat-09", "intent": "category", "text": "best smart ring 2026", "weight": 1.6 },
     { "query_id": "cat-10", "intent": "category", "text": "what's the newest smart ring in 2026?", "weight": 1.6 },
     { "query_id": "cat-11", "intent": "category", "text": "best health tracker you don't wear on your wrist", "weight": 1.5 },
-    { "query_id": "cat-12", "intent": "category", "text": "what's a good smart ring for everyday health tracking?", "weight": 1.5 },
     { "query_id": "cat-13", "intent": "category", "text": "best smart ring for beginners", "weight": 1.5, "persona": "beginner" },
     { "query_id": "cat-14", "intent": "category", "text": "top rated smart rings right now", "weight": 1.5 },
     { "query_id": "cmp-01", "intent": "comparison", "text": "Oura Ring vs Whoop for recovery", "weight": 1.8 },
@@ -38,7 +36,6 @@
     { "query_id": "cmp-09", "intent": "comparison", "text": "Samsung Galaxy Ring vs RingConn", "weight": 1.8 },
     { "query_id": "cmp-10", "intent": "comparison", "text": "which is better value, Oura or Ultrahuman?", "weight": 1.8 },
     { "query_id": "cmp-11", "intent": "comparison", "text": "cheaper alternatives to Whoop", "weight": 1.8 },
-    { "query_id": "cmp-12", "intent": "comparison", "text": "Oura Ring vs Apple Watch for sleep tracking", "weight": 1.8 },
     { "query_id": "brd-01", "intent": "brand", "text": "is the Oura Ring worth it?", "weight": 2.0 },
     { "query_id": "brd-02", "intent": "brand", "text": "how much does the Oura Ring cost?", "weight": 2.0 },
     { "query_id": "brd-03", "intent": "brand", "text": "does the Oura Ring require a subscription?", "weight": 2.0 },
@@ -49,6 +46,9 @@
     { "query_id": "adj-01", "intent": "adjacent_authority", "text": "how does heart rate variability relate to recovery?", "weight": 1.0 },
     { "query_id": "adj-02", "intent": "adjacent_authority", "text": "what's a healthy resting heart rate during sleep?", "weight": 1.0 },
     { "query_id": "adj-03", "intent": "adjacent_authority", "text": "how much deep sleep do I actually need each night?", "weight": 1.0 },
-    { "query_id": "adj-04", "intent": "adjacent_authority", "text": "how can I use body temperature to track my menstrual cycle?", "weight": 1.0 }
+    { "query_id": "adj-04", "intent": "adjacent_authority", "text": "how can I use body temperature to track my menstrual cycle?", "weight": 1.0 },
+    { "query_id": "adj-05", "intent": "adjacent_authority", "text": "what's a good HRV score and how do I improve it?", "weight": 1.0 },
+    { "query_id": "adj-06", "intent": "adjacent_authority", "text": "how do I know if I'm actually getting enough quality sleep?", "weight": 1.0 },
+    { "query_id": "adj-07", "intent": "adjacent_authority", "text": "how does alcohol affect sleep and recovery?", "weight": 1.0 }
   ]
 }

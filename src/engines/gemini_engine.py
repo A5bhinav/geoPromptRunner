@@ -35,12 +35,18 @@ class GeminiEngine(BaseEngine):
             raise ValueError("GEMINI_API_KEY is not set. Add it to your .env (see .env.example).")
         # Bounded timeout (ms) + retries to match the other engines — Gemini
         # intermittently 503s ("model experiencing high demand") and the SDK
-        # doesn't retry unless asked.
+        # doesn't retry unless asked. The long retry delays exist for the
+        # free-tier 429 windows: waiting ~10-20s rides out a per-minute quota
+        # blip instead of failing the call.
         self._client = genai.Client(
             api_key=settings.GEMINI_API_KEY,
             http_options=types.HttpOptions(
                 timeout=int(settings.ENGINE_TIMEOUT_SECONDS * 1000),
-                retry_options=types.HttpRetryOptions(attempts=settings.ENGINE_MAX_RETRIES + 1),
+                retry_options=types.HttpRetryOptions(
+                    attempts=settings.ENGINE_MAX_RETRIES + 1,
+                    initial_delay=10,
+                    max_delay=45,
+                ),
             ),
         )
         self._config = types.GenerateContentConfig(

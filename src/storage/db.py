@@ -357,9 +357,14 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
 
 
 def get_query_results(run_id: str) -> list[QueryResult]:
-    """Reconstruct stored QueryResults for a run (citations re-attached per row)."""
-    result_rows = _select_rows(TABLE_QUERY_RESULTS, run_id)
-    citation_rows = _select_rows(TABLE_QUERY_CITATIONS, run_id)
+    """Reconstruct stored QueryResults for a run (citations re-attached per row).
+
+    Archived rows (soft-deleted, e.g. cleaned-up duplicates) are excluded.
+    """
+    result_rows = [r for r in _select_rows(TABLE_QUERY_RESULTS, run_id) if not r.get("archived_at")]
+    citation_rows = [
+        c for c in _select_rows(TABLE_QUERY_CITATIONS, run_id) if not c.get("archived_at")
+    ]
 
     cites_by_cell: dict[tuple[str, str], list[str]] = {}
     for c in citation_rows:
