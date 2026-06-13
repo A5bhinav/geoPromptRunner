@@ -76,15 +76,30 @@ CLIENT FACT SHEET (ground truth — the ONLY allowed source for accuracy):
 {fact_sheet}
 \"\"\"
 
-For the CLIENT ONLY, compare what the answer claims about the client to the fact
-sheet. For each incorrect or invented claim, add a client_accuracy_flags entry with:
-- "type": one of: wrong_pricing, missing_or_invented_feature,
-  competitor_confusion, identity, stale
-- "claim": what the answer said
-- "reality": what the fact sheet says (the correct value)
-- "severity": high, med, or low
-Only flag claims checkable against the fact sheet — if a fact isn't in the sheet,
-do NOT flag it. If the answer doesn't discuss the client, return [].
+For the CLIENT ONLY, flag claims the answer makes that **directly contradict a
+specific line in the fact sheet above**. A flag requires a contradiction, not
+just a topic the sheet is silent on.
+
+THE TEST for each client claim, in order:
+1. Find the fact-sheet line it would contradict. If NO line addresses the topic,
+   the claim is UNVERIFIABLE — do NOT flag it (the sheet simply doesn't cover it;
+   silence is not disagreement). Example: the answer praises the client's privacy
+   and the sheet says nothing about privacy → NOT a flag.
+2. If a line addresses it AND the answer agrees → NOT a flag.
+3. Only if a line addresses it AND the answer contradicts it → add a flag.
+
+Each client_accuracy_flags entry:
+- "type": the dimension of the contradicted line — wrong_pricing (price/
+  subscription), stale (old model/version/date), missing_or_invented_feature
+  (a feature claim), competitor_confusion (mixed up with a rival), identity
+  (who/what the brand is). Pick the type that matches the contradicted line.
+- "claim": what the answer said (quote it)
+- "reality": the exact fact-sheet line it contradicts (quote/paraphrase that
+  line — if you can't point to a line, it is not a flag)
+- "severity": high (would change a buyer's decision — wrong price, wrong model),
+  med (misleading but not decisive), low (minor)
+If the answer doesn't discuss the client, or makes no claim that contradicts a
+sheet line, return [].
 """
 
 _NO_ACCURACY_BLOCK = (
