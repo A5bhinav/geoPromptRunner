@@ -1,7 +1,7 @@
 # Oura GEO Audit — Raw Answers + Judge Verdicts
 
 - **Run:** `204e7854-d4cc-4e9c-869e-81cdf594148e` · created 2026-06-12T06:15:53Z
-- **Query set:** v1-draft-r2 (45 queries) · client **Oura** · category smart ring
+- **Query set:** v1 (45 queries) · client **Oura** · category smart ring
 - **Competitors:** Whoop, Ultrahuman, Samsung Galaxy Ring, RingConn
 - **Runs per query:** 1
 - **Engine model pins:** gemini = `gemini-2.5-flash` · openai = `gpt-4o-2024-08-06` · anthropic = `claude-sonnet-4-5-20250929` · perplexity = `sonar`
@@ -708,76 +708,6 @@ Citations: https://www.sleepfoundation.org/best-sleep-trackers · https://www.no
 
 > **how do I know if I'm overtraining and need to rest?**
 
-### gemini
-
-Overtraining is a state where you've pushed your body beyond its ability to recover, leading to a decline in performance and various negative physical and mental symptoms. It's not just about feeling tired after a tough workout; it's a more chronic and systemic issue.
-
-Here's how to tell if you might be overtraining and need to rest:
-
-## Signs You Might Be Overtraining
-
-Look for a combination of these signs, not just one or two isolated incidents.
-
-### 1. Physical Signs
-
-*   **Persistent Fatigue:** You feel tired all the time, even after a full night's sleep. This isn't just muscle fatigue, but a deep, systemic tiredness.
-*   **Prolonged Muscle Soreness:** DOMS (Delayed Onset Muscle Soreness) is normal, but if your muscles are constantly sore for days on end, or if the soreness is more intense than usual, it's a red flag.
-*   **Joint Pain:** Aches and pains in your joints that don't go away.
-*   **Increased Injury Risk:** You find yourself getting minor strains, sprains, or niggles more frequently.
-*   **Frequent Illness:** Your immune system is suppressed, making you more susceptible to colds, flu, and other infections.
-*   **Sleep Disturbances:** Despite feeling exhausted, you might have trouble falling asleep, staying asleep, or experience restless sleep.
-*   **Elevated Resting Heart Rate (RHR):** Check your RHR first thing in the morning before getting out of bed. If it's consistently 5-10 beats per minute (or more) higher than your usual baseline, it's a strong indicator of overtraining.
-*   **Loss of Appetite:** You might not feel hungry, or food might not appeal to you as much.
-*   **Unexplained Weight Loss or Gain:** Hormonal imbalances can sometimes lead to changes in body composition.
-*   **Headaches:** More frequent or persistent headaches.
-
-### 2. Performance Signs
-
-*   **Decreased Performance:** Your strength, endurance, speed, or power is declining, or you're struggling to maintain your usual performance levels.
-*   **Stalled Progress/Plateau:** You're no longer making gains, or you're even regressing.
-*   **Difficulty Completing Workouts:** Workouts that used to be manageable now feel incredibly hard, or you can't finish them.
-*   **Increased Perceived Effort:** The same workout feels much harder than it used to.
-*   **Lack of Coordination:** You might feel clumsy or less precise in your movements.
-*   **Longer Recovery Times:** It takes you much longer to recover between sets or between workouts.
-
-### 3. Mental & Emotional Signs
-
-*   **Lack of Motivation/Dread:** You start to dread your workouts, or you have to force yourself to go. The joy of training is gone.
-*   **Irritability/Mood Swings:** You might feel more easily annoyed, frustrated, or experience unexplained mood changes.
-*   **Anxiety or Depression:** Feelings of anxiety, sadness, or general malaise can accompany overtraining.
-*   **Difficulty Concentrating:** You might find it harder to focus at work, school, or during other daily tasks.
-*   **Feeling "Burnt Out":** A general sense of mental and emotional exhaustion.
-
-### 4. Physiological Signs (More Subtle)
-
-*   **Hormonal Imbalances:** Overtraining can disrupt hormones like cortisol (stress hormone), testosterone, and growth hormone. (This is harder to self-diagnose without blood tests, but it's the underlying mechanism for many symptoms).
-*   **Changes in Blood Pressure:** Can sometimes be affected.
-
-## What to Do If You Suspect Overtraining
-
-If you're experiencing a cluster of these symptoms, it's time to take action.
-
-1.  **Rest Completely:** The most important step. Take 3-7 days (or even longer, up to 2 weeks) of complete rest from intense exercise. This means no gym, no running, no heavy lifting.
-2.  **Active Recovery (Lightly):** If you absolutely can't sit still, engage in very light activities like walking, gentle stretching, foam rolling, or yoga. Keep your heart rate low and focus on mobility, not exertion.
-3.  **Prioritize Sleep:** Aim for 7-9 hours of quality sleep per night. Create a relaxing bedtime routine.
-4.  **Optimize Nutrition:** Fuel your body with nutrient-dense foods. Ensure you're getting enough protein for muscle repair, complex carbohydrates for energy, and healthy fats. Stay well-hydrated.
-5.  **Manage Stress:** Overtraining isn't just physical; life stress adds to the burden. Practice relaxation techniques like meditation, deep breathing, or spending time in nature.
-6.  **Re-evaluate Your Training Program:**
-    *   **Volume & Intensity:** Are you doing too many sets/reps, or training too hard too often?
-    *   **Frequency:** Are you training too many days in a row without rest?
-    *   **Progressive Overload:** Are you increasing load too quickly?
-    *   **Deload Weeks:** Incorporate regular deload weeks (reducing volume and/or intensity) into your program to allow for recovery.
-7.  **Listen to Your Body:** This is the golden rule. Learn to distinguish between healthy fatigue and the warning signs of overtraining.
-
-**Key Takeaway:** It's better to take a few days off and come back stronger than to push through overtraining and risk injury, prolonged recovery, or burnout. Consistency over intensity is often the key to long-term progress.
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### openai
 
 Recognizing the signs of overtraining is crucial to maintaining a healthy balance in your fitness routine. Here are some indicators that you might be overtraining and need to rest:
@@ -855,6 +785,76 @@ Track your **morning resting heart rate**. If it's consistently elevated 5+ beat
 - Consider a deload week (50% volume/intensity)
 
 **Listen to your body** - it's better to take a few days off than be forced to take weeks off from injury.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### gemini
+
+Overtraining is a state where you've pushed your body beyond its ability to recover, leading to a decline in performance and various negative physical and mental symptoms. It's not just about feeling tired after a tough workout; it's a more chronic and systemic issue.
+
+Here's how to tell if you might be overtraining and need to rest:
+
+## Signs You Might Be Overtraining
+
+Look for a combination of these signs, not just one or two isolated incidents.
+
+### 1. Physical Signs
+
+*   **Persistent Fatigue:** You feel tired all the time, even after a full night's sleep. This isn't just muscle fatigue, but a deep, systemic tiredness.
+*   **Prolonged Muscle Soreness:** DOMS (Delayed Onset Muscle Soreness) is normal, but if your muscles are constantly sore for days on end, or if the soreness is more intense than usual, it's a red flag.
+*   **Joint Pain:** Aches and pains in your joints that don't go away.
+*   **Increased Injury Risk:** You find yourself getting minor strains, sprains, or niggles more frequently.
+*   **Frequent Illness:** Your immune system is suppressed, making you more susceptible to colds, flu, and other infections.
+*   **Sleep Disturbances:** Despite feeling exhausted, you might have trouble falling asleep, staying asleep, or experience restless sleep.
+*   **Elevated Resting Heart Rate (RHR):** Check your RHR first thing in the morning before getting out of bed. If it's consistently 5-10 beats per minute (or more) higher than your usual baseline, it's a strong indicator of overtraining.
+*   **Loss of Appetite:** You might not feel hungry, or food might not appeal to you as much.
+*   **Unexplained Weight Loss or Gain:** Hormonal imbalances can sometimes lead to changes in body composition.
+*   **Headaches:** More frequent or persistent headaches.
+
+### 2. Performance Signs
+
+*   **Decreased Performance:** Your strength, endurance, speed, or power is declining, or you're struggling to maintain your usual performance levels.
+*   **Stalled Progress/Plateau:** You're no longer making gains, or you're even regressing.
+*   **Difficulty Completing Workouts:** Workouts that used to be manageable now feel incredibly hard, or you can't finish them.
+*   **Increased Perceived Effort:** The same workout feels much harder than it used to.
+*   **Lack of Coordination:** You might feel clumsy or less precise in your movements.
+*   **Longer Recovery Times:** It takes you much longer to recover between sets or between workouts.
+
+### 3. Mental & Emotional Signs
+
+*   **Lack of Motivation/Dread:** You start to dread your workouts, or you have to force yourself to go. The joy of training is gone.
+*   **Irritability/Mood Swings:** You might feel more easily annoyed, frustrated, or experience unexplained mood changes.
+*   **Anxiety or Depression:** Feelings of anxiety, sadness, or general malaise can accompany overtraining.
+*   **Difficulty Concentrating:** You might find it harder to focus at work, school, or during other daily tasks.
+*   **Feeling "Burnt Out":** A general sense of mental and emotional exhaustion.
+
+### 4. Physiological Signs (More Subtle)
+
+*   **Hormonal Imbalances:** Overtraining can disrupt hormones like cortisol (stress hormone), testosterone, and growth hormone. (This is harder to self-diagnose without blood tests, but it's the underlying mechanism for many symptoms).
+*   **Changes in Blood Pressure:** Can sometimes be affected.
+
+## What to Do If You Suspect Overtraining
+
+If you're experiencing a cluster of these symptoms, it's time to take action.
+
+1.  **Rest Completely:** The most important step. Take 3-7 days (or even longer, up to 2 weeks) of complete rest from intense exercise. This means no gym, no running, no heavy lifting.
+2.  **Active Recovery (Lightly):** If you absolutely can't sit still, engage in very light activities like walking, gentle stretching, foam rolling, or yoga. Keep your heart rate low and focus on mobility, not exertion.
+3.  **Prioritize Sleep:** Aim for 7-9 hours of quality sleep per night. Create a relaxing bedtime routine.
+4.  **Optimize Nutrition:** Fuel your body with nutrient-dense foods. Ensure you're getting enough protein for muscle repair, complex carbohydrates for energy, and healthy fats. Stay well-hydrated.
+5.  **Manage Stress:** Overtraining isn't just physical; life stress adds to the burden. Practice relaxation techniques like meditation, deep breathing, or spending time in nature.
+6.  **Re-evaluate Your Training Program:**
+    *   **Volume & Intensity:** Are you doing too many sets/reps, or training too hard too often?
+    *   **Frequency:** Are you training too many days in a row without rest?
+    *   **Progressive Overload:** Are you increasing load too quickly?
+    *   **Deload Weeks:** Incorporate regular deload weeks (reducing volume and/or intensity) into your program to allow for recovery.
+7.  **Listen to Your Body:** This is the golden rule. Learn to distinguish between healthy fatigue and the warning signs of overtraining.
+
+**Key Takeaway:** It's better to take a few days off and come back stronger than to push through overtraining and risk injury, prolonged recovery, or burnout. Consistency over intensity is often the key to long-term progress.
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -978,64 +978,6 @@ Implementing these strategies consistently can help improve the quality of your 
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-To actually improve your deep sleep, you need to focus on **sleep hygiene**, **circadian rhythm alignment**, and **lifestyle habits**. While you cannot directly control your sleep stages, research shows that optimizing these factors significantly increases the time you spend in deep, restorative sleep.
-
-Here is a practical, science-backed guide:
-
-### 1. Master Your Sleep Schedule (Circadian Rhythm)
-Your body's internal clock works best with consistency.
-*   **Go to bed and wake up at the same time every day**, including weekends. This regulates your circadian rhythm.
-*   **Get morning light exposure:** Spend 10–20 minutes in natural sunlight within 30–60 minutes of waking. If sunlight isn't available, use a 10,000-lux light box. This signals your brain to start the day and helps set your sleep-wake cycle.
-*   **Avoid long naps:** If you sleep later than 60 minutes past your normal wake time, it can disrupt your rhythm.
-
-### 2. Optimize Your Bedroom Environment
-Deep sleep requires a sanctuary that is cool, dark, and quiet.
-*   **Temperature:** Keep your room between **60–67°F (15–19°C)**. A cooler body temperature is essential for triggering deep sleep.
-*   **Darkness:** Eliminate all light. Use blackout curtains, a sleep mask, or cover electronic lights. Even small amounts of light can disrupt sleep cycles.
-*   **Quiet:** Use earplugs or a white noise/pink noise machine to mask outside disturbances. Pink noise (lower frequencies) has been shown to specifically aid deep sleep.
-
-### 3. Adjust Exercise and Diet Timing
-*   **Exercise Regularly:** Aim for **150 minutes of moderate exercise** per week plus 2–3 strength-training sessions. Regular physical activity is one of the most reliable ways to increase deep sleep.
-*   **Timing Matters:** Finish intense workouts at least **3 hours before bed**. Vigorous exercise too close to bedtime can raise your body temperature and heart rate, making deep sleep harder.
-*   **Eat Earlier:** Finish eating **2–3 hours before bed**. Avoid heavy, greasy meals late at night. Digestion can interfere with falling asleep and staying in deep sleep.
-*   **Limit Alcohol & Caffeine:**
-    *   Avoid alcohol within **3–4 hours of bedtime**. While it may help you fall asleep, it suppresses deep and REM sleep.
-    *   Cut off caffeine in the early afternoon (it stays in your system for hours).
-
-### 4. Create a Wind-Down Routine
-Stress is a major barrier to deep sleep.
-*   **Digital Sunset:** Avoid screens for **60 minutes before bed**. If you must use them, enable "night mode" or use blue-light-blocking glasses.
-*   **Relaxation Techniques:** Practice 5–10 minutes of slow breathing (4–6 breaths per minute), gentle stretching, or meditation before bed.
-*   **Calming Activities:** Read a book, take a warm bath, or listen to soft music to signal your body that it's time to rest.
-
-### 5. Consider Sleep Restriction Therapy (If Struggling)
-If you have chronic sleep issues, **sleep restriction therapy** is the only scientifically proven method to increase deep sleep. This involves limiting your time in bed to only the hours you are actually sleeping, which builds "sleep drive" and consolidates deep sleep. *Note: This should be done under the guidance of a sleep specialist.*
-
-### What Usually Doesn't Work
-*   **Melatonin and L-Theanine:** While they may help you fall asleep, studies suggest they do not significantly increase deep sleep stages.
-*   **White Noise (as a supplement):** While helpful for masking noise, it is not a standalone solution for increasing deep sleep without the other habits listed above.
-
-**Summary Checklist for Tonight:**
-1.  Set a consistent wake time.
-2.  Cool your room to ~65°F.
-3.  Block all light.
-4.  Finish dinner 3 hours before bed.
-5.  No screens for the last hour.
-6.  Do 5 minutes of deep breathing.
-
-By consistently applying these habits, you will naturally shift your sleep architecture toward more deep, restorative rest.
-
-Citations: https://ubiehealth.com/doctors-note/increase-deep-sleep-naturally-boost-stage-truth-4741e3 · https://ouraring.com/blog/oura-members-share-their-top-tips-to-get-more-deep-sleep/ · https://www.healthcentral.com/sleep/how-to-increase-deep-sleep · https://womanshospital.com/blog/entry/what-is-deep-sleep-and-why-does-it-matter · https://dreemhealth.com/blog/sleep-basics/how-to-get-more-deep-sleep-a-sleep-clinics-guide · https://health.clevelandclinic.org/how-to-get-more-deep-sleep · https://www.sleepfoundation.org/stages-of-sleep/how-to-get-more-deep-sleep · https://www.health.harvard.edu/healthy-aging-and-longevity/rem-sleep-what-is-it-why-is-it-important-and-how-can-you-get-more-of-it
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Improving deep sleep is crucial for physical restoration, memory consolidation, and overall well-being. It's not just about getting enough sleep, but getting *quality* sleep. Here's how you can actually improve your deep sleep:
@@ -1102,6 +1044,64 @@ If you've consistently tried these strategies for several weeks and are still st
 *   A doctor can rule out medical conditions or medications that might be interfering with your sleep.
 
 Improving deep sleep is a journey that requires consistency and patience. Start with the foundational habits and gradually incorporate more changes. Your body and mind will thank you for it!
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+To actually improve your deep sleep, you need to focus on **sleep hygiene**, **circadian rhythm alignment**, and **lifestyle habits**. While you cannot directly control your sleep stages, research shows that optimizing these factors significantly increases the time you spend in deep, restorative sleep.
+
+Here is a practical, science-backed guide:
+
+### 1. Master Your Sleep Schedule (Circadian Rhythm)
+Your body's internal clock works best with consistency.
+*   **Go to bed and wake up at the same time every day**, including weekends. This regulates your circadian rhythm.
+*   **Get morning light exposure:** Spend 10–20 minutes in natural sunlight within 30–60 minutes of waking. If sunlight isn't available, use a 10,000-lux light box. This signals your brain to start the day and helps set your sleep-wake cycle.
+*   **Avoid long naps:** If you sleep later than 60 minutes past your normal wake time, it can disrupt your rhythm.
+
+### 2. Optimize Your Bedroom Environment
+Deep sleep requires a sanctuary that is cool, dark, and quiet.
+*   **Temperature:** Keep your room between **60–67°F (15–19°C)**. A cooler body temperature is essential for triggering deep sleep.
+*   **Darkness:** Eliminate all light. Use blackout curtains, a sleep mask, or cover electronic lights. Even small amounts of light can disrupt sleep cycles.
+*   **Quiet:** Use earplugs or a white noise/pink noise machine to mask outside disturbances. Pink noise (lower frequencies) has been shown to specifically aid deep sleep.
+
+### 3. Adjust Exercise and Diet Timing
+*   **Exercise Regularly:** Aim for **150 minutes of moderate exercise** per week plus 2–3 strength-training sessions. Regular physical activity is one of the most reliable ways to increase deep sleep.
+*   **Timing Matters:** Finish intense workouts at least **3 hours before bed**. Vigorous exercise too close to bedtime can raise your body temperature and heart rate, making deep sleep harder.
+*   **Eat Earlier:** Finish eating **2–3 hours before bed**. Avoid heavy, greasy meals late at night. Digestion can interfere with falling asleep and staying in deep sleep.
+*   **Limit Alcohol & Caffeine:**
+    *   Avoid alcohol within **3–4 hours of bedtime**. While it may help you fall asleep, it suppresses deep and REM sleep.
+    *   Cut off caffeine in the early afternoon (it stays in your system for hours).
+
+### 4. Create a Wind-Down Routine
+Stress is a major barrier to deep sleep.
+*   **Digital Sunset:** Avoid screens for **60 minutes before bed**. If you must use them, enable "night mode" or use blue-light-blocking glasses.
+*   **Relaxation Techniques:** Practice 5–10 minutes of slow breathing (4–6 breaths per minute), gentle stretching, or meditation before bed.
+*   **Calming Activities:** Read a book, take a warm bath, or listen to soft music to signal your body that it's time to rest.
+
+### 5. Consider Sleep Restriction Therapy (If Struggling)
+If you have chronic sleep issues, **sleep restriction therapy** is the only scientifically proven method to increase deep sleep. This involves limiting your time in bed to only the hours you are actually sleeping, which builds "sleep drive" and consolidates deep sleep. *Note: This should be done under the guidance of a sleep specialist.*
+
+### What Usually Doesn't Work
+*   **Melatonin and L-Theanine:** While they may help you fall asleep, studies suggest they do not significantly increase deep sleep stages.
+*   **White Noise (as a supplement):** While helpful for masking noise, it is not a standalone solution for increasing deep sleep without the other habits listed above.
+
+**Summary Checklist for Tonight:**
+1.  Set a consistent wake time.
+2.  Cool your room to ~65°F.
+3.  Block all light.
+4.  Finish dinner 3 hours before bed.
+5.  No screens for the last hour.
+6.  Do 5 minutes of deep breathing.
+
+By consistently applying these habits, you will naturally shift your sleep architecture toward more deep, restorative rest.
+
+Citations: https://ubiehealth.com/doctors-note/increase-deep-sleep-naturally-boost-stage-truth-4741e3 · https://ouraring.com/blog/oura-members-share-their-top-tips-to-get-more-deep-sleep/ · https://www.healthcentral.com/sleep/how-to-increase-deep-sleep · https://womanshospital.com/blog/entry/what-is-deep-sleep-and-why-does-it-matter · https://dreemhealth.com/blog/sleep-basics/how-to-get-more-deep-sleep-a-sleep-clinics-guide · https://health.clevelandclinic.org/how-to-get-more-deep-sleep · https://www.sleepfoundation.org/stages-of-sleep/how-to-get-more-deep-sleep · https://www.health.harvard.edu/healthy-aging-and-longevity/rem-sleep-what-is-it-why-is-it-important-and-how-can-you-get-more-of-it
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -1394,31 +1394,6 @@ What aspect of your day tends to be most stressful? That might help you focus yo
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-You can track your stress during the day by combining **real-time wearable data** with **quick self check-ins**. Many apps and wearables estimate stress from **heart rate variability (HRV)**, heart rate, motion, and sometimes skin response or body temperature, then show trends over the day in a dashboard or graph.[1][2][3][5][7]
-
-A practical way to do it is:
-
-- **Use a wearable or app** that shows a stress score or graph during the day, such as those that update continuously or every few minutes.[1][2][3][5]
-- **Log how you feel** at a few set times, since perceived stress and physiological stress do not always match.[1][3][6][7]
-- **Tag activities and triggers** like meetings, exercise, caffeine, commuting, or poor sleep so you can spot patterns later.[3][5][7]
-- **Review trends**, not just single readings, because several tools are designed to show whether stress is rising, falling, or tied to specific parts of the day.[1][3][5]
-- **Use breathing or movement prompts** when your tracker flags elevated stress, since many apps and trackers include guided breathing or recovery suggestions.[1][3][4]
-
-If you want a simple non-device option, the **Perceived Stress Scale (PSS)** is a questionnaire that helps you check in on how stressed you feel.[6] If you want a more objective option, a smartwatch or ring that uses **HRV-based stress tracking** is the most common approach.[1][2][5][7]
-
-If you tell me what devices you already use, I can suggest a specific setup that fits your phone and budget.
-
-Citations: https://mana.md/stress-control-apps/ · https://www.wareable.com/health-and-wellbeing/stress-monitoring-wearables-explained-7969 · https://www.whoop.com/us/en/thelocker/introducing-stress-monitor-a-new-way-to-monitor-manage-stress/ · https://www.henryford.com/blog/2021/10/managing-your-stress-levels-with-stress-trackers · https://support.ouraring.com/hc/en-us/articles/21205822135315-Daytime-Stress · https://www.healthline.com/health/stress/stress-measurement · https://pmc.ncbi.nlm.nih.gov/articles/PMC10486660/ · https://apps.apple.com/us/app/stress-monitor-for-watch/id1510429086
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Keeping track of your stress levels during the day is a fantastic way to build self-awareness and intervene before stress becomes overwhelming. Here's a comprehensive guide with various methods you can try:
@@ -1510,11 +1485,109 @@ By consistently tracking your stress levels, you'll gain invaluable insights int
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
+### perplexity
+
+You can track your stress during the day by combining **real-time wearable data** with **quick self check-ins**. Many apps and wearables estimate stress from **heart rate variability (HRV)**, heart rate, motion, and sometimes skin response or body temperature, then show trends over the day in a dashboard or graph.[1][2][3][5][7]
+
+A practical way to do it is:
+
+- **Use a wearable or app** that shows a stress score or graph during the day, such as those that update continuously or every few minutes.[1][2][3][5]
+- **Log how you feel** at a few set times, since perceived stress and physiological stress do not always match.[1][3][6][7]
+- **Tag activities and triggers** like meetings, exercise, caffeine, commuting, or poor sleep so you can spot patterns later.[3][5][7]
+- **Review trends**, not just single readings, because several tools are designed to show whether stress is rising, falling, or tied to specific parts of the day.[1][3][5]
+- **Use breathing or movement prompts** when your tracker flags elevated stress, since many apps and trackers include guided breathing or recovery suggestions.[1][3][4]
+
+If you want a simple non-device option, the **Perceived Stress Scale (PSS)** is a questionnaire that helps you check in on how stressed you feel.[6] If you want a more objective option, a smartwatch or ring that uses **HRV-based stress tracking** is the most common approach.[1][2][5][7]
+
+If you tell me what devices you already use, I can suggest a specific setup that fits your phone and budget.
+
+Citations: https://mana.md/stress-control-apps/ · https://www.wareable.com/health-and-wellbeing/stress-monitoring-wearables-explained-7969 · https://www.whoop.com/us/en/thelocker/introducing-stress-monitor-a-new-way-to-monitor-manage-stress/ · https://www.henryford.com/blog/2021/10/managing-your-stress-levels-with-stress-trackers · https://support.ouraring.com/hc/en-us/articles/21205822135315-Daytime-Stress · https://www.healthline.com/health/stress/stress-measurement · https://pmc.ncbi.nlm.nih.gov/articles/PMC10486660/ · https://apps.apple.com/us/app/stress-monitor-for-watch/id1510429086
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
 ---
 
 ## cat-01 · _category_ (weight 1.5)
 
 > **best smart ring**
+
+### openai
+
+As of the latest information available, several smart rings have gained popularity for their features and functionality. Here are some of the best smart rings you might consider:
+
+1. **Oura Ring**: The Oura Ring is one of the most well-known smart rings on the market. It focuses on health and wellness, offering features like sleep tracking, heart rate monitoring, and activity tracking. Its sleek design and comprehensive app make it a favorite among users interested in health metrics.
+
+2. **Motiv Ring**: The Motiv Ring is another popular choice, known for its slim design and focus on fitness tracking. It offers features such as heart rate monitoring, sleep tracking, and activity tracking. It also includes security features like two-factor authentication.
+
+3. **Circular Ring**: The Circular Ring is designed to provide insights into your sleep, activity, and overall wellness. It offers personalized recommendations and has a companion app that helps you understand your health data.
+
+4. **Go2Sleep Ring**: This ring is specifically designed for sleep tracking. It monitors sleep stages, heart rate, and blood oxygen levels, providing detailed insights into your sleep quality.
+
+5. **McLear RingPay**: While primarily a payment ring, the McLear RingPay also offers some basic activity tracking features. It's a good option if you're looking for a smart ring that can handle contactless payments.
+
+When choosing a smart ring, consider what features are most important to you, such as health tracking, design, battery life, and compatibility with your smartphone. Keep in mind that the market for smart rings is evolving, and new models with improved features may become available.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### anthropic
+
+# Best Smart Rings (2024)
+
+Here are the top smart rings currently available:
+
+## **Best Overall: Oura Ring Gen 3**
+- **Price:** $299-$549
+- **Pros:** Excellent sleep tracking, accurate heart rate, long battery life (4-7 days), comprehensive app
+- **Cons:** Requires $6/month subscription for full features
+- **Best for:** Sleep optimization and overall health tracking
+
+## **Best for Fitness: Ultrahuman Ring Air**
+- **Price:** ~$349
+- **Pros:** No subscription fee, lightweight, good activity tracking, movement index
+- **Cons:** Less polished app than Oura
+- **Best for:** Those avoiding subscriptions
+
+## **Best Budget: RingConn Smart Ring**
+- **Price:** ~$279
+- **Pros:** No subscription, good battery life, affordable
+- **Cons:** Less accurate than premium options, newer company
+- **Best for:** First-time smart ring users
+
+## **Best for Samsung Users: Samsung Galaxy Ring**
+- **Price:** $399
+- **Pros:** Seamless Samsung ecosystem integration, no subscription, FDA-cleared heart rate sensor
+- **Cons:** Limited to Samsung/Android devices
+- **Best for:** Samsung Galaxy phone owners
+
+## **Key Features to Consider:**
+- Battery life (most last 4-7 days)
+- Subscription costs
+- Sleep vs. activity tracking focus
+- Sizing (most offer sizing kits)
+- Water resistance
+
+**My recommendation:** Oura Gen 3 for most users, or Ultrahuman Ring Air if you want to avoid subscriptions.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
+  - RingConn: present · prominence=mid_pack · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “$299-$549” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $6/month subscription for full features” → reality — “$5.99/month or $69.99/year”
 
 ### gemini
 
@@ -1603,79 +1676,6 @@ Here's a breakdown of the top contenders and what they're best for:
   - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
   - 🚩 **missing_or_invented_feature** (low): claim — “period prediction” → reality — “cycle insights”
 
-### openai
-
-As of the latest information available, several smart rings have gained popularity for their features and functionality. Here are some of the best smart rings you might consider:
-
-1. **Oura Ring**: The Oura Ring is one of the most well-known smart rings on the market. It focuses on health and wellness, offering features like sleep tracking, heart rate monitoring, and activity tracking. Its sleek design and comprehensive app make it a favorite among users interested in health metrics.
-
-2. **Motiv Ring**: The Motiv Ring is another popular choice, known for its slim design and focus on fitness tracking. It offers features such as heart rate monitoring, sleep tracking, and activity tracking. It also includes security features like two-factor authentication.
-
-3. **Circular Ring**: The Circular Ring is designed to provide insights into your sleep, activity, and overall wellness. It offers personalized recommendations and has a companion app that helps you understand your health data.
-
-4. **Go2Sleep Ring**: This ring is specifically designed for sleep tracking. It monitors sleep stages, heart rate, and blood oxygen levels, providing detailed insights into your sleep quality.
-
-5. **McLear RingPay**: While primarily a payment ring, the McLear RingPay also offers some basic activity tracking features. It's a good option if you're looking for a smart ring that can handle contactless payments.
-
-When choosing a smart ring, consider what features are most important to you, such as health tracking, design, battery life, and compatibility with your smartphone. Keep in mind that the market for smart rings is evolving, and new models with improved features may become available.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
-### anthropic
-
-# Best Smart Rings (2024)
-
-Here are the top smart rings currently available:
-
-## **Best Overall: Oura Ring Gen 3**
-- **Price:** $299-$549
-- **Pros:** Excellent sleep tracking, accurate heart rate, long battery life (4-7 days), comprehensive app
-- **Cons:** Requires $6/month subscription for full features
-- **Best for:** Sleep optimization and overall health tracking
-
-## **Best for Fitness: Ultrahuman Ring Air**
-- **Price:** ~$349
-- **Pros:** No subscription fee, lightweight, good activity tracking, movement index
-- **Cons:** Less polished app than Oura
-- **Best for:** Those avoiding subscriptions
-
-## **Best Budget: RingConn Smart Ring**
-- **Price:** ~$279
-- **Pros:** No subscription, good battery life, affordable
-- **Cons:** Less accurate than premium options, newer company
-- **Best for:** First-time smart ring users
-
-## **Best for Samsung Users: Samsung Galaxy Ring**
-- **Price:** $399
-- **Pros:** Seamless Samsung ecosystem integration, no subscription, FDA-cleared heart rate sensor
-- **Cons:** Limited to Samsung/Android devices
-- **Best for:** Samsung Galaxy phone owners
-
-## **Key Features to Consider:**
-- Battery life (most last 4-7 days)
-- Subscription costs
-- Sleep vs. activity tracking focus
-- Sizing (most offer sizing kits)
-- Water resistance
-
-**My recommendation:** Oura Gen 3 for most users, or Ultrahuman Ring Air if you want to avoid subscriptions.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $6/month subscription for full features” → reality — “$5.99/month or $69.99/year”
-
 ### perplexity
 
 The **best smart ring overall** is the **Oura Ring 4** for most people, while the **best value/no-subscription pick** is the **RingConn Gen 2**.[1]
@@ -1706,71 +1706,6 @@ Citations: https://www.cnet.com/health/fitness/best-smart-ring/ · https://www.b
 ## cat-02 · _category_ (weight 1.5)
 
 > **best smart ring for sleep tracking**
-
-### gemini
-
-When it comes to the "best" smart ring for sleep tracking, two brands consistently rise to the top, with a clear leader and a very strong contender.
-
-**The Overall Best: Oura Ring Gen 3 (Horizon or Heritage)**
-
-The Oura Ring has long been considered the gold standard for sleep tracking in a ring form factor, and for good reason.
-
-**Why it's the best for sleep tracking:**
-
-1.  **Accuracy:** Oura is renowned for its accuracy in detecting sleep stages (REM, Deep, Light, Awake), sleep duration, and consistency. It uses advanced sensors (PPG for heart rate, NTC for skin temperature, accelerometer for movement) to provide a comprehensive picture.
-2.  **Detailed Metrics:** It tracks a wide array of sleep-related metrics:
-    *   Sleep Stages (REM, Deep, Light, Awake)
-    *   Total Sleep Time
-    *   Sleep Latency (time to fall asleep)
-    *   Sleep Efficiency
-    *   Resting Heart Rate (RHR)
-    *   Heart Rate Variability (HRV)
-    *   Respiratory Rate
-    *   Skin Temperature Variation (crucial for illness detection and menstrual cycle tracking)
-    *   Blood Oxygen (SpO2)
-    *   Sleep Disturbances
-3.  **Actionable Insights (Readiness Score):** Beyond just showing data, Oura provides a daily "Readiness Score" that combines your sleep, activity, and body signals (like HRV and temperature) to tell you how recovered you are and how much you should push yourself. It offers personalized guidance and insights to help you improve your sleep and overall well-being.
-4.  **Excellent App Experience:** The Oura app is intuitive, well-designed, and easy to navigate, presenting complex data in an understandable way.
-5.  **Comfort and Battery Life:** It's lightweight and comfortable enough to wear 24/7, including during sleep, and offers 4-7 days of battery life.
-6.  **Continuous Improvement:** Oura regularly updates its algorithms and adds new features, ensuring its tracking remains cutting-edge.
-
-**The Strongest Contender / Best Subscription-Free Alternative: Ultrahuman Ring AIR**
-
-The Ultrahuman Ring AIR is a formidable competitor to Oura, often praised for its similar feature set and, crucially, its **lack of a mandatory subscription fee** (at the time of writing).
-
-**Why it's a strong contender for sleep tracking:**
-
-1.  **Similar Accuracy and Metrics:** The Ultrahuman Ring AIR tracks many of the same key sleep metrics as Oura, including sleep stages, RHR, HRV, skin temperature, and SpO2. Many users find its accuracy comparable to Oura's.
-2.  **Comfort:** It's often cited as being even lighter and more comfortable than the Oura Ring, which is a significant advantage for sleep tracking.
-3.  **Actionable Insights (Movement Index & Recovery Score):** It provides a "Movement Index" and "Recovery Score" that function similarly to Oura's Readiness Score, helping you understand your body's state and optimize your day.
-4.  **No Subscription:** This is a major selling point. You get full access to all your data and insights without an ongoing monthly cost.
-5.  **Good App Experience:** The Ultrahuman app is also well-designed and provides clear visualizations of your sleep data.
-
----
-
-**Other Notable Mentions:**
-
-*   **RingConn Smart Ring:** A more budget-friendly option that offers solid basic sleep tracking without a subscription. It might not have the same depth of insights or refined algorithms as Oura or Ultrahuman, but it's a good entry point.
-*   **Movano Evie Ring:** Specifically designed for women, this ring is FDA-cleared for certain health metrics. While it tracks sleep, its primary focus is on women's health (menstrual cycle, ovulation, symptoms). It also has no subscription.
-*   **Circular Ring:** Offers a wide range of metrics and no subscription, but has historically faced criticism for software stability and accuracy compared to Oura and Ultrahuman.
-
----
-
-**Recommendation Summary:**
-
-*   **For the absolute best, most refined, and most insightful sleep tracking experience (and you don't mind a subscription):** Go with the **Oura Ring Gen 3**.
-*   **For a very close second, excellent comfort, and no ongoing subscription fee:** Choose the **Ultrahuman Ring AIR**.
-
-Both of these rings will provide you with a wealth of data and actionable insights to help you understand and improve your sleep. The choice often comes down to whether the subscription model is a deal-breaker for you.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “no mention of required subscription” → reality — “required $5.99/mo membership”
 
 ### openai
 
@@ -1850,6 +1785,71 @@ While the Oura Ring is highly recommended, it's always a good idea to consider y
   - 🚩 **wrong_pricing** (high): claim — “expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
   - 🚩 **missing_or_invented_feature** (high): claim — “requires subscription ($5.99/month)” → reality — “Membership is required for full features”
 
+### gemini
+
+When it comes to the "best" smart ring for sleep tracking, two brands consistently rise to the top, with a clear leader and a very strong contender.
+
+**The Overall Best: Oura Ring Gen 3 (Horizon or Heritage)**
+
+The Oura Ring has long been considered the gold standard for sleep tracking in a ring form factor, and for good reason.
+
+**Why it's the best for sleep tracking:**
+
+1.  **Accuracy:** Oura is renowned for its accuracy in detecting sleep stages (REM, Deep, Light, Awake), sleep duration, and consistency. It uses advanced sensors (PPG for heart rate, NTC for skin temperature, accelerometer for movement) to provide a comprehensive picture.
+2.  **Detailed Metrics:** It tracks a wide array of sleep-related metrics:
+    *   Sleep Stages (REM, Deep, Light, Awake)
+    *   Total Sleep Time
+    *   Sleep Latency (time to fall asleep)
+    *   Sleep Efficiency
+    *   Resting Heart Rate (RHR)
+    *   Heart Rate Variability (HRV)
+    *   Respiratory Rate
+    *   Skin Temperature Variation (crucial for illness detection and menstrual cycle tracking)
+    *   Blood Oxygen (SpO2)
+    *   Sleep Disturbances
+3.  **Actionable Insights (Readiness Score):** Beyond just showing data, Oura provides a daily "Readiness Score" that combines your sleep, activity, and body signals (like HRV and temperature) to tell you how recovered you are and how much you should push yourself. It offers personalized guidance and insights to help you improve your sleep and overall well-being.
+4.  **Excellent App Experience:** The Oura app is intuitive, well-designed, and easy to navigate, presenting complex data in an understandable way.
+5.  **Comfort and Battery Life:** It's lightweight and comfortable enough to wear 24/7, including during sleep, and offers 4-7 days of battery life.
+6.  **Continuous Improvement:** Oura regularly updates its algorithms and adds new features, ensuring its tracking remains cutting-edge.
+
+**The Strongest Contender / Best Subscription-Free Alternative: Ultrahuman Ring AIR**
+
+The Ultrahuman Ring AIR is a formidable competitor to Oura, often praised for its similar feature set and, crucially, its **lack of a mandatory subscription fee** (at the time of writing).
+
+**Why it's a strong contender for sleep tracking:**
+
+1.  **Similar Accuracy and Metrics:** The Ultrahuman Ring AIR tracks many of the same key sleep metrics as Oura, including sleep stages, RHR, HRV, skin temperature, and SpO2. Many users find its accuracy comparable to Oura's.
+2.  **Comfort:** It's often cited as being even lighter and more comfortable than the Oura Ring, which is a significant advantage for sleep tracking.
+3.  **Actionable Insights (Movement Index & Recovery Score):** It provides a "Movement Index" and "Recovery Score" that function similarly to Oura's Readiness Score, helping you understand your body's state and optimize your day.
+4.  **No Subscription:** This is a major selling point. You get full access to all your data and insights without an ongoing monthly cost.
+5.  **Good App Experience:** The Ultrahuman app is also well-designed and provides clear visualizations of your sleep data.
+
+---
+
+**Other Notable Mentions:**
+
+*   **RingConn Smart Ring:** A more budget-friendly option that offers solid basic sleep tracking without a subscription. It might not have the same depth of insights or refined algorithms as Oura or Ultrahuman, but it's a good entry point.
+*   **Movano Evie Ring:** Specifically designed for women, this ring is FDA-cleared for certain health metrics. While it tracks sleep, its primary focus is on women's health (menstrual cycle, ovulation, symptoms). It also has no subscription.
+*   **Circular Ring:** Offers a wide range of metrics and no subscription, but has historically faced criticism for software stability and accuracy compared to Oura and Ultrahuman.
+
+---
+
+**Recommendation Summary:**
+
+*   **For the absolute best, most refined, and most insightful sleep tracking experience (and you don't mind a subscription):** Go with the **Oura Ring Gen 3**.
+*   **For a very close second, excellent comfort, and no ongoing subscription fee:** Choose the **Ultrahuman Ring AIR**.
+
+Both of these rings will provide you with a wealth of data and actionable insights to help you understand and improve your sleep. The choice often comes down to whether the subscription model is a deal-breaker for you.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=also_ran · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “no mention of required subscription” → reality — “required $5.99/mo membership”
+
 ### perplexity
 
 The **Oura Ring 4** is the strongest overall choice for **sleep tracking** among smart rings in the results you provided, because it is ZDNET’s tested best smart ring overall and is highlighted for its comprehensive health data and health suite.[1]
@@ -1878,6 +1878,89 @@ Citations: https://www.facebook.com/groups/322829073580573/posts/722537603609716
 ## cat-03 · _category_ (weight 1.5)
 
 > **best smart ring for athletes and recovery**
+
+### openai
+
+As of the latest information available, several smart rings are popular among athletes for tracking performance and aiding in recovery. Here are some of the top options:
+
+1. **Oura Ring**:
+   - **Features**: The Oura Ring is renowned for its comprehensive health tracking capabilities, including sleep analysis, heart rate monitoring, and readiness scores. It provides insights into recovery by analyzing sleep quality and physiological data.
+   - **Pros**: Lightweight, long battery life, and offers detailed insights into sleep and recovery.
+   - **Cons**: Higher price point compared to some other options.
+
+2. **Motiv Ring**:
+   - **Features**: The Motiv Ring tracks activity, heart rate, and sleep. It is designed to be worn 24/7 and is water-resistant, making it suitable for athletes.
+   - **Pros**: Slim design, durable, and offers basic fitness tracking.
+   - **Cons**: Limited advanced metrics compared to the Oura Ring.
+
+3. **Circular Ring**:
+   - **Features**: The Circular Ring focuses on personalized health insights, including sleep, activity, and wellness tracking. It offers a subscription service for more detailed analytics.
+   - **Pros**: Customizable insights and a focus on personalized health data.
+   - **Cons**: Subscription model may not appeal to everyone.
+
+4. **Go2Sleep Ring**:
+   - **Features**: Primarily focused on sleep tracking, the Go2Sleep Ring monitors sleep stages, heart rate, and blood oxygen levels. It is particularly useful for athletes who want to optimize their recovery through better sleep.
+   - **Pros**: Affordable and provides detailed sleep analysis.
+   - **Cons**: Limited activity tracking features.
+
+When choosing a smart ring, consider factors such as the specific metrics you want to track, the design and comfort of the ring, battery life, and any additional subscription costs. Each of these rings offers unique features that can benefit athletes, so the best choice will depend on individual needs and preferences.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Higher price point compared to some other options.” → reality — “Current Ring 5 base is $399 with a required $5.99/mo membership.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life” → reality — “up to ~8-day battery (Ring 4 generation)”
+
+### anthropic
+
+# Best Smart Rings for Athletes & Recovery
+
+## Top Picks
+
+### **1. Oura Ring (Gen 3)** - Best Overall
+- **Strengths**: Gold standard for sleep & recovery tracking, accurate HRV, readiness scores, temperature sensing
+- **For Athletes**: Excellent recovery insights, training load balance
+- **Price**: ~$299 + $5.99/month membership
+- **Battery**: 4-7 days
+
+### **2. Ultrahuman Ring Air** - Best Value
+- **Strengths**: No subscription fee, lightweight, good recovery metrics
+- **For Athletes**: Movement index, circadian rhythm tracking, workout HR
+- **Price**: ~$349 (no subscription)
+- **Battery**: 4-6 days
+
+### **3. RingConn Smart Ring** - Budget Option
+- **Strengths**: No subscription, affordable, solid basics
+- **For Athletes**: Basic sleep, HRV, and activity tracking
+- **Price**: ~$279 (no subscription)
+- **Battery**: Up to 7 days
+
+### **4. Circular Ring** - Feature-Rich Alternative
+- **Strengths**: Detailed analytics, blood oxygen, guided sessions
+- **For Athletes**: Kira AI coach, energy predictions
+- **Price**: ~$259 + subscription
+- **Battery**: 2-4 days
+
+## Key Metrics for Athletes
+- **HRV** (Heart Rate Variability) - recovery indicator
+- **Resting Heart Rate** - fitness baseline
+- **Sleep Stages** - recovery quality
+- **Body Temperature** - overtraining detection
+- **Readiness/Recovery Scores** - training guidance
+
+**Recommendation**: Oura Ring Gen 3 remains the most proven choice for serious athletes, but Ultrahuman offers similar features without ongoing costs.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “~$299 + $5.99/month membership” → reality — “Current Ring 5 base is $399”
 
 ### gemini
 
@@ -1976,89 +2059,6 @@ The Ultrahuman Ring AIR has emerged as a strong competitor to Oura, often praise
   - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage)” → reality — “Oura Ring 5 is the newest model”
   - 🚩 **wrong_pricing** (low): claim — “Requires a monthly subscription ($5.99/month in the US)” → reality — “Membership is $5.99/month or $69.99/year”
 
-### openai
-
-As of the latest information available, several smart rings are popular among athletes for tracking performance and aiding in recovery. Here are some of the top options:
-
-1. **Oura Ring**:
-   - **Features**: The Oura Ring is renowned for its comprehensive health tracking capabilities, including sleep analysis, heart rate monitoring, and readiness scores. It provides insights into recovery by analyzing sleep quality and physiological data.
-   - **Pros**: Lightweight, long battery life, and offers detailed insights into sleep and recovery.
-   - **Cons**: Higher price point compared to some other options.
-
-2. **Motiv Ring**:
-   - **Features**: The Motiv Ring tracks activity, heart rate, and sleep. It is designed to be worn 24/7 and is water-resistant, making it suitable for athletes.
-   - **Pros**: Slim design, durable, and offers basic fitness tracking.
-   - **Cons**: Limited advanced metrics compared to the Oura Ring.
-
-3. **Circular Ring**:
-   - **Features**: The Circular Ring focuses on personalized health insights, including sleep, activity, and wellness tracking. It offers a subscription service for more detailed analytics.
-   - **Pros**: Customizable insights and a focus on personalized health data.
-   - **Cons**: Subscription model may not appeal to everyone.
-
-4. **Go2Sleep Ring**:
-   - **Features**: Primarily focused on sleep tracking, the Go2Sleep Ring monitors sleep stages, heart rate, and blood oxygen levels. It is particularly useful for athletes who want to optimize their recovery through better sleep.
-   - **Pros**: Affordable and provides detailed sleep analysis.
-   - **Cons**: Limited activity tracking features.
-
-When choosing a smart ring, consider factors such as the specific metrics you want to track, the design and comfort of the ring, battery life, and any additional subscription costs. Each of these rings offers unique features that can benefit athletes, so the best choice will depend on individual needs and preferences.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Higher price point compared to some other options.” → reality — “Current Ring 5 base is $399 with a required $5.99/mo membership.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life” → reality — “up to ~8-day battery (Ring 4 generation)”
-
-### anthropic
-
-# Best Smart Rings for Athletes & Recovery
-
-## Top Picks
-
-### **1. Oura Ring (Gen 3)** - Best Overall
-- **Strengths**: Gold standard for sleep & recovery tracking, accurate HRV, readiness scores, temperature sensing
-- **For Athletes**: Excellent recovery insights, training load balance
-- **Price**: ~$299 + $5.99/month membership
-- **Battery**: 4-7 days
-
-### **2. Ultrahuman Ring Air** - Best Value
-- **Strengths**: No subscription fee, lightweight, good recovery metrics
-- **For Athletes**: Movement index, circadian rhythm tracking, workout HR
-- **Price**: ~$349 (no subscription)
-- **Battery**: 4-6 days
-
-### **3. RingConn Smart Ring** - Budget Option
-- **Strengths**: No subscription, affordable, solid basics
-- **For Athletes**: Basic sleep, HRV, and activity tracking
-- **Price**: ~$279 (no subscription)
-- **Battery**: Up to 7 days
-
-### **4. Circular Ring** - Feature-Rich Alternative
-- **Strengths**: Detailed analytics, blood oxygen, guided sessions
-- **For Athletes**: Kira AI coach, energy predictions
-- **Price**: ~$259 + subscription
-- **Battery**: 2-4 days
-
-## Key Metrics for Athletes
-- **HRV** (Heart Rate Variability) - recovery indicator
-- **Resting Heart Rate** - fitness baseline
-- **Sleep Stages** - recovery quality
-- **Body Temperature** - overtraining detection
-- **Readiness/Recovery Scores** - training guidance
-
-**Recommendation**: Oura Ring Gen 3 remains the most proven choice for serious athletes, but Ultrahuman offers similar features without ongoing costs.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “~$299 + $5.99/month membership” → reality — “Current Ring 5 base is $399”
-
 ### perplexity
 
 For **athletes and recovery**, the strongest overall pick is usually the **Oura Ring 4** because it is consistently ranked as the best smart ring for health, recovery, sleep, and readiness tracking.[1][6][7]
@@ -2089,82 +2089,6 @@ Citations: https://www.wareable.com/fashion/best-smart-rings-1340 · https://www
 ## cat-04 · _category_ (weight 1.5)
 
 > **best smart ring for women's health and cycle tracking**
-
-### gemini
-
-When it comes to smart rings specifically for women's health and cycle tracking, there are a few standout options, each with unique strengths. The key features to look for are accurate temperature sensing, heart rate variability (HRV), sleep tracking, and a robust app that interprets this data for cycle insights.
-
-Here are the top contenders:
-
----
-
-### 1. Movano Evie Ring (Best for Dedicated Women's Health Focus & FDA Clearance)
-
-*   **Why it stands out:** The Evie Ring is *designed specifically for women's health*. It's the first and currently only smart ring that is **FDA-cleared** as a Class II medical device for measuring heart rate, blood oxygen saturation (SpO2), and resting respiration rate. This clearance gives it a significant edge in terms of data reliability for health insights.
-*   **Key Features for Women's Health:**
-    *   **Temperature Tracking:** Crucial for identifying menstrual cycle phases, predicting periods, and detecting ovulation.
-    *   **Period & Ovulation Prediction:** Uses your body temperature and other metrics to provide accurate predictions.
-    *   **Symptom Tracking:** Allows you to log mood, energy, and other symptoms to see how they correlate with your cycle.
-    *   **Heart Rate & SpO2:** Provides medical-grade data for overall health monitoring.
-    *   **Sleep Tracking:** Monitors sleep stages, duration, and quality.
-    *   **No Subscription:** All features are included with the purchase of the ring.
-*   **Design:** Features a unique "open" design that allows for slight adjustments in size, which can be helpful for daily fluctuations. It also comes in a closed design.
-*   **Considerations:** Being newer, its ecosystem and integrations might not be as extensive as Oura's yet.
-
----
-
-### 2. Oura Ring (Gen 3 Horizon/Heritage) (Best Overall & Most Established)
-
-*   **Why it stands out:** The Oura Ring is the most well-known and established smart ring on the market, often considered the gold standard for sleep and recovery tracking. Its Gen 3 models have significantly enhanced women's health features.
-*   **Key Features for Women's Health:**
-    *   **Advanced Temperature Tracking:** Measures skin temperature deviation 24/7, which is highly effective for period prediction and detecting temperature shifts related to ovulation.
-    *   **Period Prediction:** Uses your unique temperature patterns to predict your period with high accuracy.
-    *   **Cycle Insights:** Provides insights into how your body changes throughout your menstrual cycle, including how different phases might affect your sleep, readiness, and activity.
-    *   **Heart Rate Variability (HRV):** A key metric for stress and recovery, which can also be influenced by cycle phases.
-    *   **Exceptional Sleep Tracking:** Detailed insights into sleep stages, duration, and efficiency.
-    *   **Readiness Score:** Combines sleep, activity, and body temperature to give you an overall score of how ready you are for the day.
-*   **Design:** Available in various stylish finishes (Horizon is a seamless circle, Heritage has a flat top).
-*   **Considerations:** Requires a monthly subscription for full access to all features and historical data after the initial free trial.
-
----
-
-### 3. Ultrahuman Ring AIR (Best Subscription-Free Alternative to Oura)
-
-*   **Why it stands out:** The Ultrahuman Ring AIR is a strong competitor to Oura, offering a very similar sensor suite and robust tracking capabilities, but notably **without a subscription fee**. It's also incredibly lightweight.
-*   **Key Features for Women's Health:**
-    *   **Skin Temperature Tracking:** Monitors temperature changes, which can be used for cycle tracking and understanding your body's phases.
-    *   **Period Prediction:** While its dedicated cycle tracking features might not be as deeply integrated or visually prominent as Evie or Oura's, the underlying temperature data is there for you to interpret or for the app to use for predictions.
-    *   **HRV & Heart Rate:** Provides comprehensive data for recovery and overall health.
-    *   **Advanced Sleep Tracking:** Detailed analysis of sleep stages and quality.
-    *   **Movement Index & Recovery Score:** Similar to Oura's readiness score, helping you understand your body's state.
-*   **Design:** Extremely lightweight and sleek, making it very comfortable for continuous wear.
-*   **Considerations:** The app's focus is more on general wellness, recovery, and performance. While it has the data for cycle tracking, the specific insights and dedicated features might not be as tailored as Evie or Oura.
-
----
-
-### Other Notable Mentions:
-
-*   **Samsung Galaxy Ring:** This is highly anticipated and expected to launch in late 2024. Given Samsung's ecosystem and health focus, it's very likely to include advanced women's health and cycle tracking features, potentially becoming a major contender. Keep an eye out for its release.
-*   **Circular Ring:** Offers a wide range of metrics including temperature, but its software and accuracy for dedicated cycle tracking haven't received the same level of praise as Oura or Evie.
-
----
-
-### Which one is "best" for you?
-
-*   **For the most dedicated and FDA-cleared women's health focus:** Go with the **Movano Evie Ring**. Its specific design and regulatory clearance make it ideal if women's health is your primary concern.
-*   **For the most comprehensive and established overall health tracking with excellent cycle features:** Choose the **Oura Ring (Gen 3)**. Be prepared for the subscription.
-*   **For a strong Oura alternative without a subscription:** The **Ultrahuman Ring AIR** is an excellent choice, especially if you prioritize lightweight design and general wellness tracking.
-
-Consider your budget, whether you're willing to pay a subscription, and how important FDA clearance is to you. All three of these rings offer excellent capabilities for women's health and cycle tracking.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full access to all features and historical data after the initial free trial.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
 ### openai
 
@@ -2248,6 +2172,82 @@ While the Oura Ring is a leading choice, it's always a good idea to compare diff
   - 🚩 **missing_or_invented_feature** (low): claim — “Tracks temperature variations for cycle prediction” → reality — “Cycle insights are mentioned but not specifically temperature variations for cycle prediction”
   - 🚩 **missing_or_invented_feature** (low): claim — “Requires subscription ($5.99/month after 6 months)” → reality — “Membership is $5.99/month or $69.99/year with the first month free”
 
+### gemini
+
+When it comes to smart rings specifically for women's health and cycle tracking, there are a few standout options, each with unique strengths. The key features to look for are accurate temperature sensing, heart rate variability (HRV), sleep tracking, and a robust app that interprets this data for cycle insights.
+
+Here are the top contenders:
+
+---
+
+### 1. Movano Evie Ring (Best for Dedicated Women's Health Focus & FDA Clearance)
+
+*   **Why it stands out:** The Evie Ring is *designed specifically for women's health*. It's the first and currently only smart ring that is **FDA-cleared** as a Class II medical device for measuring heart rate, blood oxygen saturation (SpO2), and resting respiration rate. This clearance gives it a significant edge in terms of data reliability for health insights.
+*   **Key Features for Women's Health:**
+    *   **Temperature Tracking:** Crucial for identifying menstrual cycle phases, predicting periods, and detecting ovulation.
+    *   **Period & Ovulation Prediction:** Uses your body temperature and other metrics to provide accurate predictions.
+    *   **Symptom Tracking:** Allows you to log mood, energy, and other symptoms to see how they correlate with your cycle.
+    *   **Heart Rate & SpO2:** Provides medical-grade data for overall health monitoring.
+    *   **Sleep Tracking:** Monitors sleep stages, duration, and quality.
+    *   **No Subscription:** All features are included with the purchase of the ring.
+*   **Design:** Features a unique "open" design that allows for slight adjustments in size, which can be helpful for daily fluctuations. It also comes in a closed design.
+*   **Considerations:** Being newer, its ecosystem and integrations might not be as extensive as Oura's yet.
+
+---
+
+### 2. Oura Ring (Gen 3 Horizon/Heritage) (Best Overall & Most Established)
+
+*   **Why it stands out:** The Oura Ring is the most well-known and established smart ring on the market, often considered the gold standard for sleep and recovery tracking. Its Gen 3 models have significantly enhanced women's health features.
+*   **Key Features for Women's Health:**
+    *   **Advanced Temperature Tracking:** Measures skin temperature deviation 24/7, which is highly effective for period prediction and detecting temperature shifts related to ovulation.
+    *   **Period Prediction:** Uses your unique temperature patterns to predict your period with high accuracy.
+    *   **Cycle Insights:** Provides insights into how your body changes throughout your menstrual cycle, including how different phases might affect your sleep, readiness, and activity.
+    *   **Heart Rate Variability (HRV):** A key metric for stress and recovery, which can also be influenced by cycle phases.
+    *   **Exceptional Sleep Tracking:** Detailed insights into sleep stages, duration, and efficiency.
+    *   **Readiness Score:** Combines sleep, activity, and body temperature to give you an overall score of how ready you are for the day.
+*   **Design:** Available in various stylish finishes (Horizon is a seamless circle, Heritage has a flat top).
+*   **Considerations:** Requires a monthly subscription for full access to all features and historical data after the initial free trial.
+
+---
+
+### 3. Ultrahuman Ring AIR (Best Subscription-Free Alternative to Oura)
+
+*   **Why it stands out:** The Ultrahuman Ring AIR is a strong competitor to Oura, offering a very similar sensor suite and robust tracking capabilities, but notably **without a subscription fee**. It's also incredibly lightweight.
+*   **Key Features for Women's Health:**
+    *   **Skin Temperature Tracking:** Monitors temperature changes, which can be used for cycle tracking and understanding your body's phases.
+    *   **Period Prediction:** While its dedicated cycle tracking features might not be as deeply integrated or visually prominent as Evie or Oura's, the underlying temperature data is there for you to interpret or for the app to use for predictions.
+    *   **HRV & Heart Rate:** Provides comprehensive data for recovery and overall health.
+    *   **Advanced Sleep Tracking:** Detailed analysis of sleep stages and quality.
+    *   **Movement Index & Recovery Score:** Similar to Oura's readiness score, helping you understand your body's state.
+*   **Design:** Extremely lightweight and sleek, making it very comfortable for continuous wear.
+*   **Considerations:** The app's focus is more on general wellness, recovery, and performance. While it has the data for cycle tracking, the specific insights and dedicated features might not be as tailored as Evie or Oura.
+
+---
+
+### Other Notable Mentions:
+
+*   **Samsung Galaxy Ring:** This is highly anticipated and expected to launch in late 2024. Given Samsung's ecosystem and health focus, it's very likely to include advanced women's health and cycle tracking features, potentially becoming a major contender. Keep an eye out for its release.
+*   **Circular Ring:** Offers a wide range of metrics including temperature, but its software and accuracy for dedicated cycle tracking haven't received the same level of praise as Oura or Evie.
+
+---
+
+### Which one is "best" for you?
+
+*   **For the most dedicated and FDA-cleared women's health focus:** Go with the **Movano Evie Ring**. Its specific design and regulatory clearance make it ideal if women's health is your primary concern.
+*   **For the most comprehensive and established overall health tracking with excellent cycle features:** Choose the **Oura Ring (Gen 3)**. Be prepared for the subscription.
+*   **For a strong Oura alternative without a subscription:** The **Ultrahuman Ring AIR** is an excellent choice, especially if you prioritize lightweight design and general wellness tracking.
+
+Consider your budget, whether you're willing to pay a subscription, and how important FDA clearance is to you. All three of these rings offer excellent capabilities for women's health and cycle tracking.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full access to all features and historical data after the initial free trial.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+
 ### perplexity
 
 Based on the latest reviews and testing from 2026, the **best smart ring for women's health and cycle tracking** is the **Oura Ring 4**.
@@ -2293,6 +2293,67 @@ Citations: https://ringconn.com/blogs/news/track-temperature-shifts-cycle-smart-
 ## cat-05 · _category_ (weight 1.5)
 
 > **best smart ring with long battery life**
+
+### openai
+
+As of the latest information available, one of the best smart rings known for its long battery life is the Oura Ring. The Oura Ring is highly regarded for its comprehensive health and wellness tracking features, including sleep analysis, activity tracking, and readiness scores. It typically offers a battery life of about 4 to 7 days, depending on usage.
+
+Another option is the Motiv Ring, which also provides fitness and sleep tracking features. It generally offers a battery life of around 3 days.
+
+When choosing a smart ring, consider factors such as the specific features you need, comfort, design, and compatibility with your smartphone or other devices. It's also a good idea to check for the latest models and reviews, as technology in this space is rapidly evolving.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (med): claim — “It typically offers a battery life of about 4 to 7 days, depending on usage.” → reality — “up to ~8-day battery (Ring 4 generation)”
+
+### anthropic
+
+# Best Smart Rings with Long Battery Life
+
+Based on current options, here are the top picks:
+
+## **1. Oura Ring Gen 3** ⭐ Best Overall
+- **Battery life:** 4-7 days
+- **Features:** Sleep tracking, HRV, body temperature, activity tracking
+- **Pros:** Most accurate sensors, excellent app, comfortable
+- **Cons:** Requires subscription ($5.99/month)
+
+## **2. RingConn Smart Ring**
+- **Battery life:** 7-12 days (longest available)
+- **Features:** Sleep, heart rate, SpO2, steps
+- **Pros:** No subscription fee, excellent battery
+- **Cons:** Less refined app than Oura
+
+## **3. Ultrahuman Ring Air**
+- **Battery life:** 4-6 days
+- **Features:** Sleep, movement, heart rate, temperature
+- **Pros:** No subscription, lightweight (2.4-3.6g)
+- **Cons:** Newer to market, smaller user community
+
+## **4. Circular Ring Slim**
+- **Battery life:** 3-4 days
+- **Features:** Comprehensive health tracking
+- **Pros:** Sleek design
+- **Cons:** Shorter battery than competitors
+
+## **Best Choice:**
+For **longest battery + no subscription**: **RingConn**
+For **best overall experience**: **Oura Ring Gen 3** (if subscription is acceptable)
+
+All require charging every few days, which is standard for smart rings due to their small size.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (low): claim — “Requires subscription ($5.99/month)” → reality — “$5.99/month or $69.99/year”
 
 ### gemini
 
@@ -2383,67 +2444,6 @@ If you want the most **polished and accurate experience** and don't mind a month
   - RingConn: present · prominence=recommended_first · framing=positive
   - 🚩 **wrong_pricing** (high): claim — “A monthly subscription is necessary to access most of the advanced features after the initial trial period. This is a significant ongoing cost.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
-### openai
-
-As of the latest information available, one of the best smart rings known for its long battery life is the Oura Ring. The Oura Ring is highly regarded for its comprehensive health and wellness tracking features, including sleep analysis, activity tracking, and readiness scores. It typically offers a battery life of about 4 to 7 days, depending on usage.
-
-Another option is the Motiv Ring, which also provides fitness and sleep tracking features. It generally offers a battery life of around 3 days.
-
-When choosing a smart ring, consider factors such as the specific features you need, comfort, design, and compatibility with your smartphone or other devices. It's also a good idea to check for the latest models and reviews, as technology in this space is rapidly evolving.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (med): claim — “It typically offers a battery life of about 4 to 7 days, depending on usage.” → reality — “up to ~8-day battery (Ring 4 generation)”
-
-### anthropic
-
-# Best Smart Rings with Long Battery Life
-
-Based on current options, here are the top picks:
-
-## **1. Oura Ring Gen 3** ⭐ Best Overall
-- **Battery life:** 4-7 days
-- **Features:** Sleep tracking, HRV, body temperature, activity tracking
-- **Pros:** Most accurate sensors, excellent app, comfortable
-- **Cons:** Requires subscription ($5.99/month)
-
-## **2. RingConn Smart Ring**
-- **Battery life:** 7-12 days (longest available)
-- **Features:** Sleep, heart rate, SpO2, steps
-- **Pros:** No subscription fee, excellent battery
-- **Cons:** Less refined app than Oura
-
-## **3. Ultrahuman Ring Air**
-- **Battery life:** 4-6 days
-- **Features:** Sleep, movement, heart rate, temperature
-- **Pros:** No subscription, lightweight (2.4-3.6g)
-- **Cons:** Newer to market, smaller user community
-
-## **4. Circular Ring Slim**
-- **Battery life:** 3-4 days
-- **Features:** Comprehensive health tracking
-- **Pros:** Sleek design
-- **Cons:** Shorter battery than competitors
-
-## **Best Choice:**
-For **longest battery + no subscription**: **RingConn**
-For **best overall experience**: **Oura Ring Gen 3** (if subscription is acceptable)
-
-All require charging every few days, which is standard for smart rings due to their small size.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (low): claim — “Requires subscription ($5.99/month)” → reality — “$5.99/month or $69.99/year”
-
 ### perplexity
 
 Based on expert reviews and testing from 2026, the **RingConn Gen 2 Air** is widely considered the best smart ring for long battery life.
@@ -2474,6 +2474,79 @@ Citations: https://www.wareable.com/fashion/best-smart-rings-1340 · https://www
 ## cat-06 · _category_ (weight 1.5)
 
 > **best smart ring without a monthly subscription**
+
+### openai
+
+As of my last update, several smart rings do not require a monthly subscription. These devices typically offer features like fitness tracking, sleep monitoring, and sometimes even contactless payments. Here are a few options you might consider:
+
+1. **Oura Ring**: The Oura Ring is one of the most popular smart rings on the market. It offers comprehensive health tracking, including sleep analysis, activity tracking, and readiness scores. As of my last update, Oura did not require a subscription for basic features, but they introduced a membership for advanced insights and features.
+
+2. **Motiv Ring**: The Motiv Ring is designed for fitness enthusiasts, offering activity tracking, heart rate monitoring, and sleep tracking. It does not require a subscription for its core features.
+
+3. **Go2Sleep Ring**: This ring focuses on sleep tracking and provides insights into sleep quality, including metrics like blood oxygen levels and heart rate. It typically does not require a subscription.
+
+4. **McLear RingPay**: Primarily designed for contactless payments, the McLear RingPay does not require a subscription for its payment features. However, it may not offer extensive health tracking capabilities.
+
+5. **Circular Ring**: The Circular Ring is another option that focuses on health and wellness tracking, including sleep, activity, and heart rate monitoring. It does not require a subscription for its core features.
+
+When choosing a smart ring, consider what features are most important to you, such as health tracking, battery life, design, and compatibility with your smartphone. Always check the latest product details and reviews, as companies may update their offerings or introduce new subscription models.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Oura did not require a subscription for basic features” → reality — “Membership is required for full features, $5.99/month or $69.99/year”
+
+### anthropic
+
+# Best Smart Rings Without Monthly Subscriptions
+
+Here are the top options that don't require ongoing fees:
+
+## **1. Ultrahuman Ring Air**
+- **Price:** ~$349
+- **No subscription required** for any features
+- Sleep tracking, heart rate, HRV, temperature, activity
+- Lightweight titanium design
+- Good battery life (4-6 days)
+
+## **2. RingConn Smart Ring**
+- **Price:** ~$279
+- **Completely free app** - no subscription ever
+- Sleep, activity, heart rate monitoring
+- 7-day battery life
+- Budget-friendly option
+
+## **3. Circular Ring**
+- **Price:** ~$259
+- No mandatory subscription
+- Sleep, activity, HRV tracking
+- Kira AI coach included free
+- Good value proposition
+
+## **4. Amazfit Helio Ring**
+- **Price:** ~$299
+- No subscription fees
+- Works with Zepp app ecosystem
+- Sleep and readiness scores
+- Pairs well with Amazfit watches
+
+## **Avoid:**
+- **Oura Ring** - Requires $5.99/month subscription for most features (though hardware is excellent)
+
+**Best Overall:** **Ultrahuman Ring Air** offers the best combination of features, accuracy, and no subscription model.
+
+**Best Budget:** **RingConn** if you want to save money while getting solid tracking.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=also_ran · framing=negative
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=recommended_first · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **wrong_pricing** (med): claim — “Oura Ring requires $5.99/month subscription for most features” → reality — “Membership is $5.99/month or $69.99/year, with the first month free for new members”
 
 ### gemini
 
@@ -2555,79 +2628,6 @@ For most people seeking a reliable, comprehensive smart ring without a subscript
   - 🚩 **wrong_pricing** (low): claim — “Oura Ring requires a monthly subscription (currently $5.99/month) to access all its advanced features and historical data.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
   - 🚩 **missing_or_invented_feature** (med): claim — “Without the subscription, you only get basic metrics.” → reality — “Without membership the ring and app still work but insights are heavily limited.”
 
-### anthropic
-
-# Best Smart Rings Without Monthly Subscriptions
-
-Here are the top options that don't require ongoing fees:
-
-## **1. Ultrahuman Ring Air**
-- **Price:** ~$349
-- **No subscription required** for any features
-- Sleep tracking, heart rate, HRV, temperature, activity
-- Lightweight titanium design
-- Good battery life (4-6 days)
-
-## **2. RingConn Smart Ring**
-- **Price:** ~$279
-- **Completely free app** - no subscription ever
-- Sleep, activity, heart rate monitoring
-- 7-day battery life
-- Budget-friendly option
-
-## **3. Circular Ring**
-- **Price:** ~$259
-- No mandatory subscription
-- Sleep, activity, HRV tracking
-- Kira AI coach included free
-- Good value proposition
-
-## **4. Amazfit Helio Ring**
-- **Price:** ~$299
-- No subscription fees
-- Works with Zepp app ecosystem
-- Sleep and readiness scores
-- Pairs well with Amazfit watches
-
-## **Avoid:**
-- **Oura Ring** - Requires $5.99/month subscription for most features (though hardware is excellent)
-
-**Best Overall:** **Ultrahuman Ring Air** offers the best combination of features, accuracy, and no subscription model.
-
-**Best Budget:** **RingConn** if you want to save money while getting solid tracking.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=also_ran · framing=negative
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=recommended_first · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **wrong_pricing** (med): claim — “Oura Ring requires $5.99/month subscription for most features” → reality — “Membership is $5.99/month or $69.99/year, with the first month free for new members”
-
-### openai
-
-As of my last update, several smart rings do not require a monthly subscription. These devices typically offer features like fitness tracking, sleep monitoring, and sometimes even contactless payments. Here are a few options you might consider:
-
-1. **Oura Ring**: The Oura Ring is one of the most popular smart rings on the market. It offers comprehensive health tracking, including sleep analysis, activity tracking, and readiness scores. As of my last update, Oura did not require a subscription for basic features, but they introduced a membership for advanced insights and features.
-
-2. **Motiv Ring**: The Motiv Ring is designed for fitness enthusiasts, offering activity tracking, heart rate monitoring, and sleep tracking. It does not require a subscription for its core features.
-
-3. **Go2Sleep Ring**: This ring focuses on sleep tracking and provides insights into sleep quality, including metrics like blood oxygen levels and heart rate. It typically does not require a subscription.
-
-4. **McLear RingPay**: Primarily designed for contactless payments, the McLear RingPay does not require a subscription for its payment features. However, it may not offer extensive health tracking capabilities.
-
-5. **Circular Ring**: The Circular Ring is another option that focuses on health and wellness tracking, including sleep, activity, and heart rate monitoring. It does not require a subscription for its core features.
-
-When choosing a smart ring, consider what features are most important to you, such as health tracking, battery life, design, and compatibility with your smartphone. Always check the latest product details and reviews, as companies may update their offerings or introduce new subscription models.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura did not require a subscription for basic features” → reality — “Membership is required for full features, $5.99/month or $69.99/year”
-
 ### perplexity
 
 The **best smart ring without a monthly subscription** is usually the **Ultrahuman Ring Air** if you want the strongest all-around mix of fitness, sleep, and recovery tracking without recurring fees.[5][6] If you want the *most feature-complete* no-subscription option, the **Circular Ring 2** is another top pick, especially because it adds **ECG and AFib detection**.[1]
@@ -2658,6 +2658,63 @@ Citations: https://www.circular.xyz/post/best-smart-rings-without-subscription �
 ## cat-07 · _category_ (weight 1.5)
 
 > **most accurate smart ring for sleep**
+
+### openai
+
+As of the latest information available, the Oura Ring is often regarded as one of the most accurate smart rings for sleep tracking. The Oura Ring is designed to monitor various physiological signals, including heart rate, heart rate variability, body temperature, and movement, to provide detailed insights into sleep patterns and overall sleep quality. It offers comprehensive sleep stage tracking, including deep, light, and REM sleep, and provides a sleep score to help users understand their sleep health.
+
+The Oura Ring's accuracy in sleep tracking is supported by its use of advanced sensors and algorithms, and it has been validated in several studies. However, it's important to note that while the Oura Ring is highly regarded, individual experiences may vary, and other smart rings or wearable devices might also offer features that suit different needs or preferences.
+
+When choosing a smart ring for sleep tracking, consider factors such as comfort, battery life, app interface, and additional health metrics that may be important to you.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### anthropic
+
+# Most Accurate Smart Rings for Sleep (2024)
+
+Based on current testing and reviews, here are the top options:
+
+## **1. Oura Ring (Gen 3)** - Best Overall
+- **Sleep tracking**: Gold standard with detailed sleep stages, HRV, body temperature, and respiratory rate
+- **Accuracy**: Clinical-grade sensors; frequently used in sleep studies
+- **Downsides**: Requires $5.99/month subscription for full features
+- **Price**: ~$299-$549
+
+## **2. Ultrahuman Ring Air** - Best Value
+- **Sleep tracking**: Comprehensive sleep stages, HRV, movement index
+- **Accuracy**: Comparable to Oura in most metrics
+- **Downsides**: Smaller ecosystem, less refined app
+- **Price**: ~$349 (no subscription)
+
+## **3. RingConn Smart Ring** - Budget Option
+- **Sleep tracking**: Sleep stages, heart rate, SpO2
+- **Accuracy**: Good for the price, though slightly less precise than Oura
+- **Downsides**: Less polished software
+- **Price**: ~$279 (no subscription)
+
+## **Key Considerations:**
+- **Oura** has the most validated accuracy and best sleep insights
+- **Ultrahuman** offers similar features without subscription fees
+- All smart rings are more comfortable for sleep than watches
+- Accuracy depends on proper sizing (rings must fit snugly)
+
+**Bottom line**: If accuracy is your top priority and you don't mind the subscription, **Oura Gen 3** is the most proven option.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $5.99/month subscription for full features” → reality — “Membership is required for full features, but the first month is free for new members”
 
 ### gemini
 
@@ -2737,63 +2794,6 @@ However, the **Ultrahuman Ring AIR** is an incredibly close second and a very co
   - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
   - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “$5.99/month or $69.99/year membership required for full features”
 
-### openai
-
-As of the latest information available, the Oura Ring is often regarded as one of the most accurate smart rings for sleep tracking. The Oura Ring is designed to monitor various physiological signals, including heart rate, heart rate variability, body temperature, and movement, to provide detailed insights into sleep patterns and overall sleep quality. It offers comprehensive sleep stage tracking, including deep, light, and REM sleep, and provides a sleep score to help users understand their sleep health.
-
-The Oura Ring's accuracy in sleep tracking is supported by its use of advanced sensors and algorithms, and it has been validated in several studies. However, it's important to note that while the Oura Ring is highly regarded, individual experiences may vary, and other smart rings or wearable devices might also offer features that suit different needs or preferences.
-
-When choosing a smart ring for sleep tracking, consider factors such as comfort, battery life, app interface, and additional health metrics that may be important to you.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
-### anthropic
-
-# Most Accurate Smart Rings for Sleep (2024)
-
-Based on current testing and reviews, here are the top options:
-
-## **1. Oura Ring (Gen 3)** - Best Overall
-- **Sleep tracking**: Gold standard with detailed sleep stages, HRV, body temperature, and respiratory rate
-- **Accuracy**: Clinical-grade sensors; frequently used in sleep studies
-- **Downsides**: Requires $5.99/month subscription for full features
-- **Price**: ~$299-$549
-
-## **2. Ultrahuman Ring Air** - Best Value
-- **Sleep tracking**: Comprehensive sleep stages, HRV, movement index
-- **Accuracy**: Comparable to Oura in most metrics
-- **Downsides**: Smaller ecosystem, less refined app
-- **Price**: ~$349 (no subscription)
-
-## **3. RingConn Smart Ring** - Budget Option
-- **Sleep tracking**: Sleep stages, heart rate, SpO2
-- **Accuracy**: Good for the price, though slightly less precise than Oura
-- **Downsides**: Less polished software
-- **Price**: ~$279 (no subscription)
-
-## **Key Considerations:**
-- **Oura** has the most validated accuracy and best sleep insights
-- **Ultrahuman** offers similar features without subscription fees
-- All smart rings are more comfortable for sleep than watches
-- Accuracy depends on proper sizing (rings must fit snugly)
-
-**Bottom line**: If accuracy is your top priority and you don't mind the subscription, **Oura Gen 3** is the most proven option.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=buried · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $5.99/month subscription for full features” → reality — “Membership is required for full features, but the first month is free for new members”
-
 ### perplexity
 
 The **Oura Ring 4** is the most accurate smart ring for **sleep tracking** in the results you provided. It is described as having the **highest sleep staging accuracy** and **exceptional sleep-tracking accuracy**, with strong research backing and the most polished app among smart rings.[2][3]
@@ -2820,6 +2820,80 @@ Citations: https://www.runnersworld.com/uk/gear/a40459007/best-smart-rings/ · h
 ## cat-08 · _category_ (weight 1.5)
 
 > **best budget smart ring**
+
+### openai
+
+As of my last update, smart rings are becoming increasingly popular for their ability to track health metrics discreetly. When looking for a budget-friendly smart ring, consider the following options:
+
+1. **Oura Ring (Older Models)**: While the latest Oura models can be pricey, older versions might be available at a discount. They offer comprehensive health tracking, including sleep, activity, and readiness scores.
+
+2. **Motiv Ring**: Although it’s not the latest in the market, the Motiv Ring offers basic fitness tracking features like steps, calories, and sleep monitoring at a more affordable price point.
+
+3. **Go2Sleep Ring**: This ring focuses on sleep tracking and is generally more affordable. It monitors sleep stages, heart rate, and blood oxygen levels.
+
+4. **ArcX Smart Ring**: Primarily designed for controlling devices and apps, it’s a budget-friendly option for those interested in basic smart functionalities rather than extensive health tracking.
+
+5. **Pre-Order or Crowdfunding Options**: Sometimes, new companies offer smart rings at a lower price during pre-order or crowdfunding campaigns. However, this comes with the risk of delayed delivery or changes in product specifications.
+
+When choosing a smart ring, consider what features are most important to you, such as fitness tracking, sleep monitoring, or device control, and ensure the ring is compatible with your smartphone. Always check for the latest reviews and user feedback to ensure the product meets your expectations.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (low): claim — “older versions might be available at a discount” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches”
+
+### anthropic
+
+# Best Budget Smart Rings (2024)
+
+Here are the top affordable smart ring options:
+
+## **1. RingConn Smart Ring** (~$279)
+- **Best overall budget option**
+- Tracks sleep, heart rate, steps, blood oxygen
+- 7-day battery life
+- No subscription required
+- Waterproof (10ATM)
+
+## **2. Ultrahuman Ring Air** (~$349)
+- Lightweight titanium design
+- Excellent sleep tracking
+- Movement & workout tracking
+- No subscription fees
+- 6-day battery life
+
+## **3. Amazfit Helio Ring** (~$299)
+- Integrates with Amazfit watches
+- Sleep, readiness, heart rate tracking
+- 4-day battery life
+- No subscription required
+
+## **4. Circular Ring** (~$259-299)
+- Good feature set for the price
+- Sleep, activity, heart rate monitoring
+- Kira AI health assistant
+- Some users report durability issues
+
+## **Key Considerations:**
+- **Avoid** if possible: Most rings under $200 have accuracy/reliability issues
+- **Subscription costs**: Oura Ring ($299 + $6/month) has better features but ongoing costs
+- **Sizing**: Most brands offer free sizing kits - use them!
+
+**Best value**: **RingConn** offers the best balance of features, accuracy, and price without subscriptions.
+
+What features matter most to you?
+
+**Judge verdict:**
+  - **Oura**: present · prominence=also_ran · framing=negative
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=recommended_first · framing=positive
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring ($299 + $6/month)” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Oura Ring has better features but ongoing costs” → reality — “Membership is required for full features; without it, insights are limited”
 
 ### gemini
 
@@ -2890,56 +2964,6 @@ For the **best budget smart ring** that offers a solid feature set, good battery
   - 🚩 **wrong_pricing** (high): claim — “Oura Ring (which starts at $349 + $5.99/month subscription)” → reality — “Current Ring 5 base is $399”
   - 🚩 **missing_or_invented_feature** (med): claim — “Oura, which requires a monthly subscription to access all your data” → reality — “Membership is required for full features, but the ring and app still work without it, albeit with limited insights”
 
-### anthropic
-
-# Best Budget Smart Rings (2024)
-
-Here are the top affordable smart ring options:
-
-## **1. RingConn Smart Ring** (~$279)
-- **Best overall budget option**
-- Tracks sleep, heart rate, steps, blood oxygen
-- 7-day battery life
-- No subscription required
-- Waterproof (10ATM)
-
-## **2. Ultrahuman Ring Air** (~$349)
-- Lightweight titanium design
-- Excellent sleep tracking
-- Movement & workout tracking
-- No subscription fees
-- 6-day battery life
-
-## **3. Amazfit Helio Ring** (~$299)
-- Integrates with Amazfit watches
-- Sleep, readiness, heart rate tracking
-- 4-day battery life
-- No subscription required
-
-## **4. Circular Ring** (~$259-299)
-- Good feature set for the price
-- Sleep, activity, heart rate monitoring
-- Kira AI health assistant
-- Some users report durability issues
-
-## **Key Considerations:**
-- **Avoid** if possible: Most rings under $200 have accuracy/reliability issues
-- **Subscription costs**: Oura Ring ($299 + $6/month) has better features but ongoing costs
-- **Sizing**: Most brands offer free sizing kits - use them!
-
-**Best value**: **RingConn** offers the best balance of features, accuracy, and price without subscriptions.
-
-What features matter most to you?
-
-**Judge verdict:**
-  - **Oura**: present · prominence=also_ran · framing=negative
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring ($299 + $6/month)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura Ring has better features but ongoing costs” → reality — “Membership is required for full features; without it, insights are limited”
-
 ### perplexity
 
 The **best budget smart ring** right now is the **Amazfit Helio Ring** if you want the lowest-cost pick with no subscription; Tom’s Guide calls it the best wallet-friendly option and notes a **$199** price tag.[1]
@@ -2965,104 +2989,11 @@ Citations: https://www.tomsguide.com/wellness/fitness-trackers/best-smart-rings 
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
 
-### openai
-
-As of my last update, smart rings are becoming increasingly popular for their ability to track health metrics discreetly. When looking for a budget-friendly smart ring, consider the following options:
-
-1. **Oura Ring (Older Models)**: While the latest Oura models can be pricey, older versions might be available at a discount. They offer comprehensive health tracking, including sleep, activity, and readiness scores.
-
-2. **Motiv Ring**: Although it’s not the latest in the market, the Motiv Ring offers basic fitness tracking features like steps, calories, and sleep monitoring at a more affordable price point.
-
-3. **Go2Sleep Ring**: This ring focuses on sleep tracking and is generally more affordable. It monitors sleep stages, heart rate, and blood oxygen levels.
-
-4. **ArcX Smart Ring**: Primarily designed for controlling devices and apps, it’s a budget-friendly option for those interested in basic smart functionalities rather than extensive health tracking.
-
-5. **Pre-Order or Crowdfunding Options**: Sometimes, new companies offer smart rings at a lower price during pre-order or crowdfunding campaigns. However, this comes with the risk of delayed delivery or changes in product specifications.
-
-When choosing a smart ring, consider what features are most important to you, such as fitness tracking, sleep monitoring, or device control, and ensure the ring is compatible with your smartphone. Always check for the latest reviews and user feedback to ensure the product meets your expectations.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “older versions might be available at a discount” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches”
-
 ---
 
 ## cat-09 · _category_ (weight 1.6)
 
 > **best smart ring 2026**
-
-### gemini
-
-While it's impossible to definitively name the "best" smart ring for 2026 right now (technology evolves incredibly fast!), we can make some educated predictions based on current trends and what consumers are looking for.
-
-By 2026, the "best" smart ring will likely excel in several key areas:
-
-**Expected Key Features & Innovations by 2026:**
-
-1.  **Advanced Biometric Sensors:**
-    *   **Non-invasive Glucose Monitoring:** This is the holy grail for many and could be a game-changer if perfected and miniaturized for a ring.
-    *   **Continuous Blood Pressure Monitoring:** Another highly sought-after feature that could move from wrist to finger.
-    *   **Enhanced SpO2 & HRV:** More accurate and continuous readings, potentially with predictive analytics for illness or stress.
-    *   **Hydration Tracking:** New sensor tech might allow for more precise hydration monitoring.
-    *   **Advanced Stress & Recovery Metrics:** Deeper insights into mental and physical recovery, potentially integrating with AI for personalized interventions.
-
-2.  **Hyper-Personalized AI Insights:**
-    *   Moving beyond just data, smart rings will offer truly actionable, predictive, and personalized advice based on your unique physiology and lifestyle.
-    *   AI will be able to identify patterns you wouldn't notice, predict potential health issues, and recommend specific actions (e.g., "Your HRV is low, consider a lighter workout and earlier bedtime tonight").
-
-3.  **Extended Battery Life & Faster Charging:**
-    *   While current rings offer good battery life (4-7 days), 2026 models might push towards multi-week battery life or significantly faster charging (e.g., a full charge in minutes).
-
-4.  **Seamless Integration & Ecosystem:**
-    *   Better integration with other smart devices (smart home, other wearables, health apps).
-    *   Potentially acting as a central hub for your personal health data across various platforms.
-    *   More robust API access for developers to create innovative third-party applications.
-
-5.  **Enhanced Form Factor & Durability:**
-    *   Even sleeker, lighter designs with a wider range of premium materials (titanium, ceramic, advanced composites).
-    *   Improved water resistance and scratch resistance for everyday wear.
-    *   Potentially haptic feedback for discreet notifications or alerts.
-
-6.  **Beyond Health - Smart Features:**
-    *   **Gesture Controls:** Subtle hand gestures to control smart home devices, music, or presentations.
-    *   **Secure Digital Payments:** More widespread and secure NFC payment capabilities.
-    *   **Discreet Notifications:** Subtle vibrations for calls, texts, or calendar alerts without needing to look at your phone.
-
-7.  **Subscription Model Evolution:**
-    *   The value proposition of subscription models (like Oura's) will be crucial. Users will expect significant, continuous value from these subscriptions, likely in the form of advanced AI insights and premium features.
-
-**Current Leaders to Watch (and how they might evolve):**
-
-*   **Oura Ring:** Currently the market leader, known for its sleep and recovery tracking. By 2026, expect Oura to push further into predictive health, more advanced illness detection, and potentially expand its ecosystem.
-*   **Ultrahuman Ring AIR:** Focuses heavily on activity, recovery, and metabolic health. They might lead in real-time energy expenditure and more granular workout insights, potentially integrating with advanced coaching platforms.
-*   **RingConn Smart Ring:** Offers a strong feature set without a subscription. By 2026, they'll need to innovate significantly in sensor tech and AI to keep pace with subscription-based competitors.
-*   **Movano Evie Ring:** Designed specifically for women's health, with FDA-cleared data. By 2026, expect them to expand their health metrics and potentially integrate more deeply with fertility tracking and menopause management.
-*   **New Entrants:** Keep an eye out for tech giants (Apple, Samsung, Google) potentially entering the market, or innovative startups with breakthrough sensor technology.
-
-**How to Choose the "Best" Smart Ring in 2026:**
-
-When 2026 arrives, the "best" ring will still depend on **your individual needs and priorities**:
-
-*   **Health Focus:** Are you primarily interested in sleep, activity, stress, or specific health conditions (e.g., diabetes, heart health)?
-*   **Features:** Do you want payment capabilities, gesture controls, or just health tracking?
-*   **Budget:** Are you willing to pay a premium price and/or a monthly subscription?
-*   **Comfort & Style:** How important is the look and feel of the ring?
-*   **Ecosystem:** How well does it integrate with your existing devices and apps?
-
-In summary, the "best smart ring 2026" will likely be a highly sophisticated, AI-driven health companion that offers a blend of advanced biometric tracking, personalized insights, seamless integration, and potentially new smart features, all within an even more comfortable and durable form factor. Keep an eye on tech news and reviews as we get closer to that time!
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura to push further into predictive health, more advanced illness detection” → reality — “Oura focuses on sleep, activity, heart rate, and recovery tracking, not predictive health or illness detection”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Oura potentially expand its ecosystem” → reality — “Oura's key integrations are Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API”
 
 ### openai
 
@@ -3143,6 +3074,75 @@ What specific features matter most to you?
   - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
   - 🚩 **wrong_pricing** (low): claim — “Subscription: Required for full features (~$6/month)” → reality — “$5.99/month or $69.99/year”
 
+### gemini
+
+While it's impossible to definitively name the "best" smart ring for 2026 right now (technology evolves incredibly fast!), we can make some educated predictions based on current trends and what consumers are looking for.
+
+By 2026, the "best" smart ring will likely excel in several key areas:
+
+**Expected Key Features & Innovations by 2026:**
+
+1.  **Advanced Biometric Sensors:**
+    *   **Non-invasive Glucose Monitoring:** This is the holy grail for many and could be a game-changer if perfected and miniaturized for a ring.
+    *   **Continuous Blood Pressure Monitoring:** Another highly sought-after feature that could move from wrist to finger.
+    *   **Enhanced SpO2 & HRV:** More accurate and continuous readings, potentially with predictive analytics for illness or stress.
+    *   **Hydration Tracking:** New sensor tech might allow for more precise hydration monitoring.
+    *   **Advanced Stress & Recovery Metrics:** Deeper insights into mental and physical recovery, potentially integrating with AI for personalized interventions.
+
+2.  **Hyper-Personalized AI Insights:**
+    *   Moving beyond just data, smart rings will offer truly actionable, predictive, and personalized advice based on your unique physiology and lifestyle.
+    *   AI will be able to identify patterns you wouldn't notice, predict potential health issues, and recommend specific actions (e.g., "Your HRV is low, consider a lighter workout and earlier bedtime tonight").
+
+3.  **Extended Battery Life & Faster Charging:**
+    *   While current rings offer good battery life (4-7 days), 2026 models might push towards multi-week battery life or significantly faster charging (e.g., a full charge in minutes).
+
+4.  **Seamless Integration & Ecosystem:**
+    *   Better integration with other smart devices (smart home, other wearables, health apps).
+    *   Potentially acting as a central hub for your personal health data across various platforms.
+    *   More robust API access for developers to create innovative third-party applications.
+
+5.  **Enhanced Form Factor & Durability:**
+    *   Even sleeker, lighter designs with a wider range of premium materials (titanium, ceramic, advanced composites).
+    *   Improved water resistance and scratch resistance for everyday wear.
+    *   Potentially haptic feedback for discreet notifications or alerts.
+
+6.  **Beyond Health - Smart Features:**
+    *   **Gesture Controls:** Subtle hand gestures to control smart home devices, music, or presentations.
+    *   **Secure Digital Payments:** More widespread and secure NFC payment capabilities.
+    *   **Discreet Notifications:** Subtle vibrations for calls, texts, or calendar alerts without needing to look at your phone.
+
+7.  **Subscription Model Evolution:**
+    *   The value proposition of subscription models (like Oura's) will be crucial. Users will expect significant, continuous value from these subscriptions, likely in the form of advanced AI insights and premium features.
+
+**Current Leaders to Watch (and how they might evolve):**
+
+*   **Oura Ring:** Currently the market leader, known for its sleep and recovery tracking. By 2026, expect Oura to push further into predictive health, more advanced illness detection, and potentially expand its ecosystem.
+*   **Ultrahuman Ring AIR:** Focuses heavily on activity, recovery, and metabolic health. They might lead in real-time energy expenditure and more granular workout insights, potentially integrating with advanced coaching platforms.
+*   **RingConn Smart Ring:** Offers a strong feature set without a subscription. By 2026, they'll need to innovate significantly in sensor tech and AI to keep pace with subscription-based competitors.
+*   **Movano Evie Ring:** Designed specifically for women's health, with FDA-cleared data. By 2026, expect them to expand their health metrics and potentially integrate more deeply with fertility tracking and menopause management.
+*   **New Entrants:** Keep an eye out for tech giants (Apple, Samsung, Google) potentially entering the market, or innovative startups with breakthrough sensor technology.
+
+**How to Choose the "Best" Smart Ring in 2026:**
+
+When 2026 arrives, the "best" ring will still depend on **your individual needs and priorities**:
+
+*   **Health Focus:** Are you primarily interested in sleep, activity, stress, or specific health conditions (e.g., diabetes, heart health)?
+*   **Features:** Do you want payment capabilities, gesture controls, or just health tracking?
+*   **Budget:** Are you willing to pay a premium price and/or a monthly subscription?
+*   **Comfort & Style:** How important is the look and feel of the ring?
+*   **Ecosystem:** How well does it integrate with your existing devices and apps?
+
+In summary, the "best smart ring 2026" will likely be a highly sophisticated, AI-driven health companion that offers a blend of advanced biometric tracking, personalized insights, seamless integration, and potentially new smart features, all within an even more comfortable and durable form factor. Keep an eye on tech news and reviews as we get closer to that time!
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=neutral
+  - 🚩 **missing_or_invented_feature** (med): claim — “Oura to push further into predictive health, more advanced illness detection” → reality — “Oura focuses on sleep, activity, heart rate, and recovery tracking, not predictive health or illness detection”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura potentially expand its ecosystem” → reality — “Oura's key integrations are Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API”
+
 ### perplexity
 
 The **best smart ring in 2026 overall is the Oura Ring 4** according to multiple expert test roundups, especially for sleep and broad health tracking.[1][3][6] If you want the best *subscription-free* option, the **Samsung Galaxy Ring** is a leading pick, while **RingConn Gen 2** is frequently recommended for battery life and training/recovery-focused users.[4][6]
@@ -3178,6 +3178,42 @@ Citations: https://www.youtube.com/watch?v=VAkAAmvd0co · https://the-gadgeteer.
 ## cat-10 · _category_ (weight 1.6)
 
 > **what's the newest smart ring in 2026?**
+
+### openai
+
+I'm sorry, but I can't provide real-time or future-specific information as my training only includes data up to October 2023. For the latest information on smart rings in 2026, I recommend checking the latest tech news websites, manufacturer announcements, or online retailers for the most current products and reviews.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### anthropic
+
+I don't have information about smart rings in 2026, as my knowledge was last updated in April 2024. I can't provide details about products released after that date.
+
+As of early 2024, some of the notable smart rings included:
+- **Oura Ring (Generation 3)** - popular for sleep and health tracking
+- **Samsung Galaxy Ring** - announced in early 2024
+- **RingConn Smart Ring**
+- **Ultrahuman Ring Air**
+
+To find out about the newest smart rings in 2026, I'd recommend:
+- Checking tech news sites like The Verge, CNET, or Engadget
+- Visiting manufacturer websites directly
+- Looking at recent reviews on YouTube or tech blogs
+
+Is there something specific about smart rings you're interested in? I might be able to help with general information about their features or technology.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=also_ran · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
 
 ### gemini
 
@@ -3218,42 +3254,6 @@ In summary, while I can't name a specific product, the smart ring market in 2026
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: present · prominence=mid_pack · framing=neutral
 
-### openai
-
-I'm sorry, but I can't provide real-time or future-specific information as my training only includes data up to October 2023. For the latest information on smart rings in 2026, I recommend checking the latest tech news websites, manufacturer announcements, or online retailers for the most current products and reviews.
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
-### anthropic
-
-I don't have information about smart rings in 2026, as my knowledge was last updated in April 2024. I can't provide details about products released after that date.
-
-As of early 2024, some of the notable smart rings included:
-- **Oura Ring (Generation 3)** - popular for sleep and health tracking
-- **Samsung Galaxy Ring** - announced in early 2024
-- **RingConn Smart Ring**
-- **Ultrahuman Ring Air**
-
-To find out about the newest smart rings in 2026, I'd recommend:
-- Checking tech news sites like The Verge, CNET, or Engadget
-- Visiting manufacturer websites directly
-- Looking at recent reviews on YouTube or tech blogs
-
-Is there something specific about smart rings you're interested in? I might be able to help with general information about their features or technology.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-
 ### perplexity
 
 The **newest smart ring mentioned in the results is Ultrahuman Ring PRO**, which The Gadgeteer says was unveiled in late February 2026 and was shipping in the US from May 2026.[1]
@@ -3276,6 +3276,76 @@ Citations: https://the-gadgeteer.com/2026/05/15/best-smart-ring-2026-oura-isnt-t
 ## cat-11 · _category_ (weight 1.5)
 
 > **best health tracker you don't wear on your wrist**
+
+### openai
+
+If you're looking for a health tracker that you don't wear on your wrist, there are several options available that can effectively monitor various health metrics. Here are some popular alternatives:
+
+1. **Oura Ring**: The Oura Ring is a smart ring that tracks sleep, activity, heart rate, and body temperature. It's known for its accuracy in sleep tracking and provides insights into your readiness and recovery.
+
+2. **WHOOP Strap**: Although traditionally worn on the wrist, the WHOOP Strap can also be worn on other parts of the body using compatible clothing or accessories. It focuses on recovery, strain, and sleep metrics, providing detailed insights into your overall health and performance.
+
+3. **Fitbit Clip-On Trackers**: Some Fitbit models, like the Fitbit Inspire, can be worn as a clip-on device. These trackers monitor steps, distance, calories burned, and active minutes without needing to be worn on the wrist.
+
+4. **Biostrap**: This device can be worn on different parts of the body, such as the ankle, and provides detailed biometric data, including heart rate variability, respiratory rate, and sleep analysis.
+
+5. **Beddit Sleep Monitor**: Acquired by Apple, the Beddit Sleep Monitor is a thin strip that you place under your mattress. It tracks sleep patterns, heart rate, and breathing without requiring you to wear anything.
+
+6. **Withings Sleep Analyzer**: This is another under-mattress sleep tracker that monitors sleep cycles, heart rate, and snoring patterns. It provides a comprehensive sleep analysis without the need for a wearable device.
+
+7. **Lumen**: Lumen is a handheld device that measures your metabolism by analyzing your breath. It provides insights into your metabolic flexibility and helps you optimize your nutrition and fitness goals.
+
+These devices offer various features and benefits, so the best choice depends on your specific health tracking needs and preferences.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura Ring provides insights into your readiness and recovery.” → reality — “The Oura Ring provides Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.”
+
+### anthropic
+
+# Best Non-Wrist Health Trackers
+
+## **Oura Ring** (Top Pick)
+- **What it tracks**: Sleep stages, HRV, body temperature, activity, readiness score
+- **Pros**: Sleek, comfortable 24/7 wear; excellent sleep tracking; long battery life (4-7 days)
+- **Cons**: Subscription required for full features ($6/month); expensive ($299-$549)
+
+## **Whoop 4.0**
+- **What it tracks**: Strain, recovery, sleep, HRV, respiratory rate
+- **Pros**: Worn on upper arm, bicep, or clothing; great for athletes; no screen = no distractions
+- **Cons**: Subscription-only model ($239/year); no display
+
+## **Withings Body Comp Scale**
+- **What it tracks**: Weight, body composition, heart rate, vascular age
+- **Pros**: No wearing required; comprehensive metrics; syncs with apps
+- **Cons**: Only tracks when you step on it; $200+
+
+## **Tempdrop** (for women)
+- **What it tracks**: Basal body temperature for fertility tracking
+- **Pros**: Worn on upper arm during sleep only
+- **Cons**: Niche use case
+
+## **Smart Rings Alternative: RingConn or Ultrahuman**
+- More affordable Oura alternatives ($300 range)
+- Similar features, no subscription
+
+**Best for most people**: Oura Ring for comprehensive 24/7 tracking without wrist bulk.
+
+What's your main tracking goal? That would help narrow it down.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=also_ran · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=also_ran · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription required for full features ($6/month)” → reality — “required $5.99/mo membership”
 
 ### gemini
 
@@ -3378,76 +3448,6 @@ By considering these factors, you can pinpoint the best non-wrist health tracker
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **stale** (high): claim — “Oura Ring (Gen3)” → reality — “Oura Ring 5 launched 2026-05-28”
   - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “Membership is $5.99/month or $69.99/year”
-
-### openai
-
-If you're looking for a health tracker that you don't wear on your wrist, there are several options available that can effectively monitor various health metrics. Here are some popular alternatives:
-
-1. **Oura Ring**: The Oura Ring is a smart ring that tracks sleep, activity, heart rate, and body temperature. It's known for its accuracy in sleep tracking and provides insights into your readiness and recovery.
-
-2. **WHOOP Strap**: Although traditionally worn on the wrist, the WHOOP Strap can also be worn on other parts of the body using compatible clothing or accessories. It focuses on recovery, strain, and sleep metrics, providing detailed insights into your overall health and performance.
-
-3. **Fitbit Clip-On Trackers**: Some Fitbit models, like the Fitbit Inspire, can be worn as a clip-on device. These trackers monitor steps, distance, calories burned, and active minutes without needing to be worn on the wrist.
-
-4. **Biostrap**: This device can be worn on different parts of the body, such as the ankle, and provides detailed biometric data, including heart rate variability, respiratory rate, and sleep analysis.
-
-5. **Beddit Sleep Monitor**: Acquired by Apple, the Beddit Sleep Monitor is a thin strip that you place under your mattress. It tracks sleep patterns, heart rate, and breathing without requiring you to wear anything.
-
-6. **Withings Sleep Analyzer**: This is another under-mattress sleep tracker that monitors sleep cycles, heart rate, and snoring patterns. It provides a comprehensive sleep analysis without the need for a wearable device.
-
-7. **Lumen**: Lumen is a handheld device that measures your metabolism by analyzing your breath. It provides insights into your metabolic flexibility and helps you optimize your nutrition and fitness goals.
-
-These devices offer various features and benefits, so the best choice depends on your specific health tracking needs and preferences.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: present · prominence=mid_pack · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura Ring provides insights into your readiness and recovery.” → reality — “The Oura Ring provides Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.”
-
-### anthropic
-
-# Best Non-Wrist Health Trackers
-
-## **Oura Ring** (Top Pick)
-- **What it tracks**: Sleep stages, HRV, body temperature, activity, readiness score
-- **Pros**: Sleek, comfortable 24/7 wear; excellent sleep tracking; long battery life (4-7 days)
-- **Cons**: Subscription required for full features ($6/month); expensive ($299-$549)
-
-## **Whoop 4.0**
-- **What it tracks**: Strain, recovery, sleep, HRV, respiratory rate
-- **Pros**: Worn on upper arm, bicep, or clothing; great for athletes; no screen = no distractions
-- **Cons**: Subscription-only model ($239/year); no display
-
-## **Withings Body Comp Scale**
-- **What it tracks**: Weight, body composition, heart rate, vascular age
-- **Pros**: No wearing required; comprehensive metrics; syncs with apps
-- **Cons**: Only tracks when you step on it; $200+
-
-## **Tempdrop** (for women)
-- **What it tracks**: Basal body temperature for fertility tracking
-- **Pros**: Worn on upper arm during sleep only
-- **Cons**: Niche use case
-
-## **Smart Rings Alternative: RingConn or Ultrahuman**
-- More affordable Oura alternatives ($300 range)
-- Similar features, no subscription
-
-**Best for most people**: Oura Ring for comprehensive 24/7 tracking without wrist bulk.
-
-What's your main tracking goal? That would help narrow it down.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: present · prominence=mid_pack · framing=neutral
-  - Ultrahuman: present · prominence=also_ran · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription required for full features ($6/month)” → reality — “required $5.99/mo membership”
 
 ### perplexity
 
@@ -3556,51 +3556,6 @@ What's your main goal - sleep tracking, fitness, or general health monitoring?
   - 🚩 **wrong_pricing** (high): claim — “$299 + $5.99/month subscription” → reality — “Current Ring 5 base is $399”
   - 🚩 **stale** (high): claim — “Oura Ring Generation 3” → reality — “Ring 5 launched 2026-05-28”
 
-### perplexity
-
-For beginners looking to enter the world of smart rings, the **RingConn Gen 2** is widely considered the best choice in 2026.
-
-Here’s why it stands out for new users:
-
-### ✅ **No Subscription Required**
-Unlike many competitors (including the Samsung Galaxy Ring and Oura Ring 4), the RingConn Gen 2 offers **full functionality with zero ongoing fees**. This makes it ideal for beginners who want to avoid hidden costs.
-
-### ✅ **Excellent Battery Life**
-It boasts one of the longest battery lives in its class—often lasting **7–10 days** on a single charge—reducing the hassle of frequent charging.
-
-### ✅ **High Accuracy & Comprehensive Tracking**
-The RingConn Gen 2 delivers **90% of the performance of the premium Oura Ring 4**, tracking sleep, activity, heart rate, and more with high accuracy.
-
-### ✅ **Beginner-Friendly Price**
-It offers **premium features at a mid-range price**, making it a smart financial decision for those just starting out.
-
-### ✅ **Simple, Subscription-Free App**
-The companion app is intuitive, subscription-free, and provides clear insights without overwhelming new users.
-
----
-
-### Other Good Options for Beginners:
-- **Samsung Galaxy Ring**: Great if you already use a Samsung phone and want seamless integration, but requires a subscription.
-- **Oura Ring 4**: The most accurate overall, but expensive and subscription-based.
-- **Amazfit Ring**: A budget-friendly alternative with solid features, though slightly less refined.
-
----
-
-**Final Recommendation:**  
-If you're a beginner who wants **accuracy, no subscription, long battery life, and great value**, go with the **RingConn Gen 2**. It’s the most beginner-friendly smart ring available today.
-
-Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.techradar.com/health-fitness/fitness-trackers/best-smart-ring · https://www.bestbuy.com/site/wearable-technology/smart-rings/pcmcat1719950540059.c?id=pcmcat1719950540059 · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide · https://www.techadvisor.com/article/2471183/best-smart-ring.html
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “no subscription required” → reality — “required $5.99/mo membership”
-
 ### gemini
 
 For a beginner looking to dip their toes into the world of smart rings, the most important factors are **ease of use, reliable data, comfort, and a clear, intuitive app experience.**
@@ -3671,6 +3626,51 @@ For most beginners, the **Oura Ring Gen 3** offers the most polished, easy-to-un
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
   - 🚩 **wrong_pricing** (low): claim — “Oura Membership (currently $5.99/month)” → reality — “$5.99/month or $69.99/year”
+
+### perplexity
+
+For beginners looking to enter the world of smart rings, the **RingConn Gen 2** is widely considered the best choice in 2026.
+
+Here’s why it stands out for new users:
+
+### ✅ **No Subscription Required**
+Unlike many competitors (including the Samsung Galaxy Ring and Oura Ring 4), the RingConn Gen 2 offers **full functionality with zero ongoing fees**. This makes it ideal for beginners who want to avoid hidden costs.
+
+### ✅ **Excellent Battery Life**
+It boasts one of the longest battery lives in its class—often lasting **7–10 days** on a single charge—reducing the hassle of frequent charging.
+
+### ✅ **High Accuracy & Comprehensive Tracking**
+The RingConn Gen 2 delivers **90% of the performance of the premium Oura Ring 4**, tracking sleep, activity, heart rate, and more with high accuracy.
+
+### ✅ **Beginner-Friendly Price**
+It offers **premium features at a mid-range price**, making it a smart financial decision for those just starting out.
+
+### ✅ **Simple, Subscription-Free App**
+The companion app is intuitive, subscription-free, and provides clear insights without overwhelming new users.
+
+---
+
+### Other Good Options for Beginners:
+- **Samsung Galaxy Ring**: Great if you already use a Samsung phone and want seamless integration, but requires a subscription.
+- **Oura Ring 4**: The most accurate overall, but expensive and subscription-based.
+- **Amazfit Ring**: A budget-friendly alternative with solid features, though slightly less refined.
+
+---
+
+**Final Recommendation:**  
+If you're a beginner who wants **accuracy, no subscription, long battery life, and great value**, go with the **RingConn Gen 2**. It’s the most beginner-friendly smart ring available today.
+
+Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.techradar.com/health-fitness/fitness-trackers/best-smart-ring · https://www.bestbuy.com/site/wearable-technology/smart-rings/pcmcat1719950540059.c?id=pcmcat1719950540059 · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide · https://www.techadvisor.com/article/2471183/best-smart-ring.html
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=recommended_first · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (high): claim — “no subscription required” → reality — “required $5.99/mo membership”
 
 ---
 
@@ -3760,50 +3760,6 @@ The **Oura Ring** remains the market leader for accuracy and features, while **S
   - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
   - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “The Oura Ring 5 launched 2026-05-28”
 
-### perplexity
-
-Based on the latest reviews and testing from mid-2026, here are the top-rated smart rings right now, categorized by their best strengths:
-
-### 🏆 **Best Overall (Gold Standard)**
-**Oura Ring 4**
-*   **Why it wins:** It remains the undisputed leader for sleep staging accuracy, app polish, and extensive research backing.
-*   **Trade-off:** It requires a mandatory monthly subscription, making it the most expensive option long-term.
-*   **Price:** Starts at ~$349.
-
-### 🔋 **Best Value & Battery Life (No Subscription)**
-**RingConn Gen 2**
-*   **Why it wins:** A formidable alternative to Oura that offers incredible 10–12 day battery life, is lightweight, and has **zero monthly fees**.
-*   **Best for:** Users who want actionable health data without a subscription.
-*   **Price:** ~$299.
-
-### 📱 **Best for Android Users (Ecosystem Play)**
-**Samsung Galaxy Ring**
-*   **Why it wins:** Seamless integration with Galaxy phones and an innovative charging case. It is the top pick for workout tracking within the Android ecosystem.
-*   **Price:** ~$399.99.
-
-### 💪 **Best for Fitness Enthusiasts**
-**Ultrahuman Ring Air**
-*   **Why it wins:** Arguably the best ring for fitness tracking, delivering insights that rival dedicated devices like Garmin.
-*   **Best for:** Serious athletes and fitness-focused users.
-
-### **Quick Summary Verdict**
-*   If you want the **absolute best accuracy** and don't mind a subscription: Choose **Oura Ring 4**.
-*   If you want the **best value** with no subscription and great battery life: Choose **RingConn Gen 2**.
-*   If you are an **Android user**: Choose **Samsung Galaxy Ring**.
-*   If you are a **fitness enthusiast**: Choose **Ultrahuman Ring Air**.
-
-Citations: https://www.techadvisor.com/article/2471183/best-smart-ring.html · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=t9AFfQnV88w&vl=en-US · https://www.stuff.tv/features/best-smart-rings/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “The Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Starts at ~$349” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “It requires a mandatory monthly subscription” → reality — “Membership is required for full features, but the ring and app still work without it, albeit with limited insights”
-
 ### gemini
 
 The smart ring market is definitely heating up! While there are several players, a few consistently rise to the top in terms of features, accuracy, and user experience.
@@ -3875,6 +3831,50 @@ Here are the top-rated smart rings right now, along with some highly anticipated
   - 🚩 **stale** (high): claim — “Oura Ring (Gen3 Horizon / Heritage)” → reality — “Oura Ring 5 is the newest model”
   - 🚩 **wrong_pricing** (high): claim — “higher price point” → reality — “Current Ring 5 base is $399”
   - 🚩 **missing_or_invented_feature** (high): claim — “requires a monthly subscription for full features after the initial free period” → reality — “Membership is required for full features, $5.99/month or $69.99/year, first month free”
+
+### perplexity
+
+Based on the latest reviews and testing from mid-2026, here are the top-rated smart rings right now, categorized by their best strengths:
+
+### 🏆 **Best Overall (Gold Standard)**
+**Oura Ring 4**
+*   **Why it wins:** It remains the undisputed leader for sleep staging accuracy, app polish, and extensive research backing.
+*   **Trade-off:** It requires a mandatory monthly subscription, making it the most expensive option long-term.
+*   **Price:** Starts at ~$349.
+
+### 🔋 **Best Value & Battery Life (No Subscription)**
+**RingConn Gen 2**
+*   **Why it wins:** A formidable alternative to Oura that offers incredible 10–12 day battery life, is lightweight, and has **zero monthly fees**.
+*   **Best for:** Users who want actionable health data without a subscription.
+*   **Price:** ~$299.
+
+### 📱 **Best for Android Users (Ecosystem Play)**
+**Samsung Galaxy Ring**
+*   **Why it wins:** Seamless integration with Galaxy phones and an innovative charging case. It is the top pick for workout tracking within the Android ecosystem.
+*   **Price:** ~$399.99.
+
+### 💪 **Best for Fitness Enthusiasts**
+**Ultrahuman Ring Air**
+*   **Why it wins:** Arguably the best ring for fitness tracking, delivering insights that rival dedicated devices like Garmin.
+*   **Best for:** Serious athletes and fitness-focused users.
+
+### **Quick Summary Verdict**
+*   If you want the **absolute best accuracy** and don't mind a subscription: Choose **Oura Ring 4**.
+*   If you want the **best value** with no subscription and great battery life: Choose **RingConn Gen 2**.
+*   If you are an **Android user**: Choose **Samsung Galaxy Ring**.
+*   If you are a **fitness enthusiast**: Choose **Ultrahuman Ring Air**.
+
+Citations: https://www.techadvisor.com/article/2471183/best-smart-ring.html · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=t9AFfQnV88w&vl=en-US · https://www.stuff.tv/features/best-smart-rings/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “The Oura Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “Starts at ~$349” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (med): claim — “It requires a mandatory monthly subscription” → reality — “Membership is required for full features, but the ring and app still work without it, albeit with limited insights”
 
 ---
 
@@ -3996,30 +3996,6 @@ Both are excellent for recovery. **Oura** is better for sleep-focused recovery a
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “Lifetime (Gen 2) or $5.99/mo (Gen 3)” → reality — “$5.99/month or $69.99/year for membership, required for full features”
 
-### perplexity
-
-For **recovery tracking**, **WHOOP** is usually the better choice if you want the most *actionable* training guidance, while **Oura Ring** is often better if you want a broader, more comfortable view of recovery tied to sleep and overall wellness.[1][4]
-
-- **WHOOP** centers recovery around a daily **Recovery score** built from metrics like **HRV**, **resting heart rate**, **sleep performance**, and **respiratory rate**, and it pairs that with **strain targets** to tell you how hard to push that day.[1][3]
-- **Oura** uses a daily **Readiness score** that blends nightly data with longer-term trends, so it is more of a general “how recovered are you?” signal than a training-prescription tool.[1][3]
-- If you care most about **training load, pushing hard vs. backing off, and athlete-style guidance**, WHOOP is the stronger fit.[1][4]
-- If you care most about **sleep quality, comfort, and a recovery score that fits into a broader health picture**, Oura is often the better experience.[1][4]
-
-A practical way to choose:
-- Choose **WHOOP** if you want **deeper performance-focused recovery coaching** and don’t mind a subscription-heavy, training-oriented app.[1][3]
-- Choose **Oura** if you want **simpler daily recovery insight**, excellent **sleep tracking**, and a ring you can comfortably wear all day and night.[1][4]
-
-One important nuance: both devices can produce very similar HRV, heart-rate, and sleep-related recovery signals, but they *frame* that data differently—WHOOP is more about **what to do today**, while Oura is more about **how recovered you are overall**.[1][7]
-
-Citations: https://www.runnersworld.com/uk/gear/tech/a70325622/oura-ring-vs-whoop-tracker/ · https://www.youtube.com/watch?v=PjkuBgsNp7A&vl=en-US · https://ashleymateo.substack.com/p/whoop-vs-oura-ring-which-one-should · https://www.cosmopolitan.com/health-fitness/a61975698/oura-ring-vs-whoop-tracker/ · https://www.trainerroad.com/forum/t/whoop-or-oura-whats-everyone-using/23587 · https://www.mygenefood.com/blog/oura-ring-vs-whoop-strap-which-sleep-tracker-is-best/ · https://blog.melissau.com/p/whoop-vs-oura
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=positive
-  - Whoop: present · prominence=recommended_first · framing=positive
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Both the Oura Ring and Whoop are excellent devices for tracking recovery, but they approach it with slightly different philosophies and strengths. The "better" one depends on your specific needs, lifestyle, and how you prefer to interact with your data.
@@ -4116,6 +4092,30 @@ Both require a subscription, so factor that into your decision as well.
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “Both require a subscription, so factor that into your decision as well.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
+### perplexity
+
+For **recovery tracking**, **WHOOP** is usually the better choice if you want the most *actionable* training guidance, while **Oura Ring** is often better if you want a broader, more comfortable view of recovery tied to sleep and overall wellness.[1][4]
+
+- **WHOOP** centers recovery around a daily **Recovery score** built from metrics like **HRV**, **resting heart rate**, **sleep performance**, and **respiratory rate**, and it pairs that with **strain targets** to tell you how hard to push that day.[1][3]
+- **Oura** uses a daily **Readiness score** that blends nightly data with longer-term trends, so it is more of a general “how recovered are you?” signal than a training-prescription tool.[1][3]
+- If you care most about **training load, pushing hard vs. backing off, and athlete-style guidance**, WHOOP is the stronger fit.[1][4]
+- If you care most about **sleep quality, comfort, and a recovery score that fits into a broader health picture**, Oura is often the better experience.[1][4]
+
+A practical way to choose:
+- Choose **WHOOP** if you want **deeper performance-focused recovery coaching** and don’t mind a subscription-heavy, training-oriented app.[1][3]
+- Choose **Oura** if you want **simpler daily recovery insight**, excellent **sleep tracking**, and a ring you can comfortably wear all day and night.[1][4]
+
+One important nuance: both devices can produce very similar HRV, heart-rate, and sleep-related recovery signals, but they *frame* that data differently—WHOOP is more about **what to do today**, while Oura is more about **how recovered you are overall**.[1][7]
+
+Citations: https://www.runnersworld.com/uk/gear/tech/a70325622/oura-ring-vs-whoop-tracker/ · https://www.youtube.com/watch?v=PjkuBgsNp7A&vl=en-US · https://ashleymateo.substack.com/p/whoop-vs-oura-ring-which-one-should · https://www.cosmopolitan.com/health-fitness/a61975698/oura-ring-vs-whoop-tracker/ · https://www.trainerroad.com/forum/t/whoop-or-oura-whats-everyone-using/23587 · https://www.mygenefood.com/blog/oura-ring-vs-whoop-strap-which-sleep-tracker-is-best/ · https://blog.melissau.com/p/whoop-vs-oura
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=positive
+  - Whoop: present · prominence=recommended_first · framing=positive
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
 ---
 
 ## cmp-02 · _comparison_ (weight 1.8)
@@ -4195,39 +4195,6 @@ Oura is generally considered more refined with better analytics, but the Galaxy 
   - 🚩 **wrong_pricing** (high): claim — “more expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
   - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Ring 5 launched 2026-05-28”
   - 🚩 **missing_or_invented_feature** (med): claim — “longer battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-
-### perplexity
-
-**Overall, the better ring is usually the _Oura Ring 4_**, but **the Samsung Galaxy Ring is the better choice for many Samsung/Android users** because it has no subscription and is tightly integrated with Samsung phones.[1][4]
-
-- **Pick Oura Ring 4 if you want the best overall experience.** Reviewers consistently say Oura offers stronger software, more thoughtful health insights, and better sleep-focused tracking; it also works with both **iPhone and Android**.[1][2][4][6]
-- **Pick Samsung Galaxy Ring if you want the cheaper long-term option on Android.** It costs **$399**, has **no required subscription**, and is only compatible with **Android**, with the best fit for Samsung phone owners.[1][2][4]
-- **Oura is better for cross-platform flexibility and sleep insights.** Multiple reviews note Oura’s sleep tracking and wake/sleep detection are more accurate or more useful in practice, even if Samsung provides plenty of data.[1][3][6]
-- **Samsung is better if you value simplicity, thinner design, and no membership fee.** Reviewers describe the Galaxy Ring as slimmer/lighter and note its portable charging case is convenient.[2][3][6]
-
-A quick comparison:
-
-| Category | **Oura Ring 4** | **Samsung Galaxy Ring** |
-|---|---|---|
-| Phone compatibility | **iPhone + Android**[1][2][4] | **Android only**[1][2][4] |
-| Subscription | **Required** for full use, about **$5.99/month**[2][4][6] | **No subscription required**[2][4] |
-| Starting price | **$349**[1][4] | **$399**[1][4] |
-| Best strength | **Sleep insights / overall health app**[1][4][6] | **Samsung integration / simplicity**[1][4] |
-| Design | Attractive, but often described as bulkier[2][6] | Thinner/lighter, very sleek[1][2][6] |
-
-If you want a simple verdict: **Oura wins for most people**, especially if you use an iPhone or care most about sleep and health insights.[1][4][6] **Samsung wins if you already use a Samsung phone and want a ring with no monthly fee.**[1][4]
-
-Citations: https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-galaxy-ring.html · https://www.garagegymreviews.com/samsung-ring-vs-oura · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.tomsguide.com/wellness/fitness-trackers/samsung-galaxy-ring-vs-oura-ring-everything-we-know-so-far · https://www.youtube.com/watch?v=1g89tc-5TQE · https://timstevens.substack.com/p/galaxy-ring-vs-oura-horizon-gen3 · https://www.youtube.com/watch?v=oUeZXVCDbmY · https://www.facebook.com/groups/945310367310036/posts/1434630208378047/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Starting price $349” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “No subscription needed” → reality — “Required $5.99/mo membership”
 
 ### gemini
 
@@ -4335,6 +4302,39 @@ If you need a smart ring *now* and value a mature product, go with Oura. If you'
   - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
   - 🚩 **wrong_pricing** (high): claim — “~$299 - $549 (depending on style)” → reality — “Base finishes $399, Premium finishes $499”
   - 🚩 **missing_or_invented_feature** (low): claim — “Subscription required for full features ($5.99/month)” → reality — “$5.99/month or $69.99/year, first month free for new members”
+
+### perplexity
+
+**Overall, the better ring is usually the _Oura Ring 4_**, but **the Samsung Galaxy Ring is the better choice for many Samsung/Android users** because it has no subscription and is tightly integrated with Samsung phones.[1][4]
+
+- **Pick Oura Ring 4 if you want the best overall experience.** Reviewers consistently say Oura offers stronger software, more thoughtful health insights, and better sleep-focused tracking; it also works with both **iPhone and Android**.[1][2][4][6]
+- **Pick Samsung Galaxy Ring if you want the cheaper long-term option on Android.** It costs **$399**, has **no required subscription**, and is only compatible with **Android**, with the best fit for Samsung phone owners.[1][2][4]
+- **Oura is better for cross-platform flexibility and sleep insights.** Multiple reviews note Oura’s sleep tracking and wake/sleep detection are more accurate or more useful in practice, even if Samsung provides plenty of data.[1][3][6]
+- **Samsung is better if you value simplicity, thinner design, and no membership fee.** Reviewers describe the Galaxy Ring as slimmer/lighter and note its portable charging case is convenient.[2][3][6]
+
+A quick comparison:
+
+| Category | **Oura Ring 4** | **Samsung Galaxy Ring** |
+|---|---|---|
+| Phone compatibility | **iPhone + Android**[1][2][4] | **Android only**[1][2][4] |
+| Subscription | **Required** for full use, about **$5.99/month**[2][4][6] | **No subscription required**[2][4] |
+| Starting price | **$349**[1][4] | **$399**[1][4] |
+| Best strength | **Sleep insights / overall health app**[1][4][6] | **Samsung integration / simplicity**[1][4] |
+| Design | Attractive, but often described as bulkier[2][6] | Thinner/lighter, very sleek[1][2][6] |
+
+If you want a simple verdict: **Oura wins for most people**, especially if you use an iPhone or care most about sleep and health insights.[1][4][6] **Samsung wins if you already use a Samsung phone and want a ring with no monthly fee.**[1][4]
+
+Citations: https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-galaxy-ring.html · https://www.garagegymreviews.com/samsung-ring-vs-oura · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.tomsguide.com/wellness/fitness-trackers/samsung-galaxy-ring-vs-oura-ring-everything-we-know-so-far · https://www.youtube.com/watch?v=1g89tc-5TQE · https://timstevens.substack.com/p/galaxy-ring-vs-oura-horizon-gen3 · https://www.youtube.com/watch?v=oUeZXVCDbmY · https://www.facebook.com/groups/945310367310036/posts/1434630208378047/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **wrong_pricing** (high): claim — “Starting price $349” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No subscription needed” → reality — “Required $5.99/mo membership”
 
 ---
 
@@ -4460,38 +4460,6 @@ Both are excellent choices—your decision likely comes down to subscription pre
   - 🚩 **wrong_pricing** (high): claim — “$299-$549” → reality — “$399-$499”
   - 🚩 **missing_or_invented_feature** (low): claim — “Period prediction for women” → reality — “Cycle insights, but not specifically period prediction”
 
-### perplexity
-
-**Short answer:** **Oura Ring** is usually the safer pick if you want the most polished app, stronger battery life, and the better-known ecosystem; **Ultrahuman Ring Air** is attractive if you want more included features without a subscription and you value more actionable data in the app.[1][2][4]
-
-| Category | **Oura Ring** | **Ultrahuman Ring Air** |
-|---|---|---|
-| **Battery life** | Reported around **8 days** in one hands-on comparison.[1] | Reported around **5–6 days** in reviews, with some users charging more often.[1][2] |
-| **Subscription** | Typically requires a **membership** for full access to insights.[3][4] | **No subscription** according to review coverage.[3] |
-| **App experience** | Often described as **more navigable** and simpler to use.[2][4] | Often described as **more data-rich** and more actionable, but busier.[1][4] |
-| **Tracking accuracy** | Reviewers found it **more accurate in most cases**.[2] | Some testing found it slightly better for **resting heart rate during sleep**, but not by much.[1][2] |
-| **Comfort/design** | Slightly different ring geometry depending on model; generally praised for comfort.[1][4] | Lightweight, but some users notice the **sensor bumps** more.[1][4] |
-
-A few practical takeaways:
-
-- Choose **Oura** if you care most about **battery life, app simplicity, and overall polish**.[1][2][4]
-- Choose **Ultrahuman** if you want **no subscription** and are okay with an app that can feel more crowded in exchange for more on-screen guidance and metrics.[3][4]
-- If you’re sensitive to ring feel, some reviewers say **Ultrahuman’s interior sensor bumps** are more noticeable, while Oura can feel smoother on the finger.[1][4]
-
-There is not a single universally “better” ring here: reviews split, but the most common pattern is **Oura for usability and consistency**, **Ultrahuman for value and included features**.[1][2][4]
-
-If you want, I can also give you a **buying recommendation by use case**—sleep tracking, workout tracking, women’s health, or best value.
-
-Citations: https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://honehealth.com/edge/oura-vs-ultrahuman/ · https://www.youtube.com/watch?v=gFHaH4MwCUw&vl=en · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.youtube.com/shorts/9dsbPR26Mho?vl=en · https://www.facebook.com/groups/322829073580573/posts/536870162176462/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Typically requires a membership for full access to insights.” → reality — “Membership is required for full features, not just typically.”
-
 ### gemini
 
 Both the Oura Ring and the Ultrahuman Ring Air are excellent smart rings designed to track your health and wellness metrics, primarily focusing on sleep, recovery, and activity. While they share a similar form factor and core purpose, there are some key differences that might sway your decision.
@@ -4593,6 +4561,38 @@ Your decision will likely come down to whether the ongoing subscription cost of 
   - 🚩 **missing_or_invented_feature** (low): claim — “SpO2 (limited)” → reality — “blood-oxygen (SpO2) is a core feature”
   - 🚩 **stale** (high): claim — “Gen3: Late 2021” → reality — “Ring 5 launched 2026-05-28”
   - 🚩 **missing_or_invented_feature** (low): claim — “Battery Life: 4-7 days” → reality — “up to ~8-day battery (Ring 4 generation)”
+
+### perplexity
+
+**Short answer:** **Oura Ring** is usually the safer pick if you want the most polished app, stronger battery life, and the better-known ecosystem; **Ultrahuman Ring Air** is attractive if you want more included features without a subscription and you value more actionable data in the app.[1][2][4]
+
+| Category | **Oura Ring** | **Ultrahuman Ring Air** |
+|---|---|---|
+| **Battery life** | Reported around **8 days** in one hands-on comparison.[1] | Reported around **5–6 days** in reviews, with some users charging more often.[1][2] |
+| **Subscription** | Typically requires a **membership** for full access to insights.[3][4] | **No subscription** according to review coverage.[3] |
+| **App experience** | Often described as **more navigable** and simpler to use.[2][4] | Often described as **more data-rich** and more actionable, but busier.[1][4] |
+| **Tracking accuracy** | Reviewers found it **more accurate in most cases**.[2] | Some testing found it slightly better for **resting heart rate during sleep**, but not by much.[1][2] |
+| **Comfort/design** | Slightly different ring geometry depending on model; generally praised for comfort.[1][4] | Lightweight, but some users notice the **sensor bumps** more.[1][4] |
+
+A few practical takeaways:
+
+- Choose **Oura** if you care most about **battery life, app simplicity, and overall polish**.[1][2][4]
+- Choose **Ultrahuman** if you want **no subscription** and are okay with an app that can feel more crowded in exchange for more on-screen guidance and metrics.[3][4]
+- If you’re sensitive to ring feel, some reviewers say **Ultrahuman’s interior sensor bumps** are more noticeable, while Oura can feel smoother on the finger.[1][4]
+
+There is not a single universally “better” ring here: reviews split, but the most common pattern is **Oura for usability and consistency**, **Ultrahuman for value and included features**.[1][2][4]
+
+If you want, I can also give you a **buying recommendation by use case**—sleep tracking, workout tracking, women’s health, or best value.
+
+Citations: https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://honehealth.com/edge/oura-vs-ultrahuman/ · https://www.youtube.com/watch?v=gFHaH4MwCUw&vl=en · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.youtube.com/shorts/9dsbPR26Mho?vl=en · https://www.facebook.com/groups/322829073580573/posts/536870162176462/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Typically requires a membership for full access to insights.” → reality — “Membership is required for full features, not just typically.”
 
 ---
 
@@ -4705,34 +4705,6 @@ Ultimately, the choice between the Oura Ring and RingConn will depend on your sp
   - 🚩 **wrong_pricing** (high): claim — “$299-399 + $5.99/month subscription required for most features” → reality — “Current Ring 5 base is $399 with a $5.99/month membership required for full features”
   - 🚩 **stale** (high): claim — “Gen 3” → reality — “The Oura Ring 5 launched 2026-05-28”
 
-### perplexity
-
-For **sleep tracking**, **Oura** is the stronger pick if you want the most **research-backed accuracy** and the most polished sleep insights, while **RingConn** is the better value if you want **good-enough sleep tracking** without a subscription.[1][2][3]
-
-- **Choose Oura** if your priority is:
-  - the most credible validation against polysomnography, which is the gold-standard sleep lab test[1][3]
-  - more detailed sleep insights, readiness-style coaching, and a more mature app experience[2][3]
-  - a ring whose sleep performance is more consistently supported by peer-reviewed studies[1]
-
-- **Choose RingConn** if your priority is:
-  - lower upfront cost and **no subscription fee**[3][4]
-  - long battery life and a simpler, budget-friendly sleep tracker[1][4]
-  - core sleep metrics that reviewers say are broadly comparable in day-to-day use, even if the formal validation base is thinner[1][2]
-
-On accuracy specifically, sources summarizing available studies report that **Oura has the deeper clinical validation literature**, including a 2024 study with strong sleep/wake detection performance and broader peer-reviewed support for sleep metrics.[1] Reviewers say **RingConn’s sleep tracking is usable and often similar in practical output**, but it has fewer formal studies behind it.[1][2]
-
-If you care mostly about **sleep staging, wake detection, and trustworthy trends**, **Oura** is the safer choice.[1][2] If you care mostly about **cost and battery life** and are okay with slightly less validation, **RingConn** is the better deal.[1][3][4]
-
-Citations: https://healnourishgrow.com/ringconn-vs-oura/ · https://www.wareable.com/features/oura-ring-4-vs-ringconn-gen-2-comparison · https://www.garagegymreviews.com/ringconn-vs-oura · https://moneysavingmom.com/ringconn-vs-oura-ring-which-smart-ring-is-worth-your-money/ · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.youtube.com/watch?v=M3yO05vZ96M · https://www.facebook.com/groups/322829073580573/posts/704790408717769/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “RingConn is the better value if you want good-enough sleep tracking without a subscription.” → reality — “Oura requires a $5.99/month membership for full features.”
-
 ### gemini
 
 Both the Oura Ring and RingConn are excellent choices for sleep tracking, offering a discreet and comfortable way to monitor your sleep without wearing a bulky smartwatch. However, they have distinct philosophies and feature sets that might make one a better fit for you.
@@ -4800,6 +4772,34 @@ If the subscription fee is a deal-breaker for you, RingConn is an excellent choi
   - RingConn: present · prominence=mid_pack · framing=neutral
   - 🚩 **missing_or_invented_feature** (high): claim — “No SpO2 (Oxygen Saturation)” → reality — “blood-oxygen (SpO2)”
   - 🚩 **wrong_pricing** (high): claim — “Higher upfront cost + mandatory monthly subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month membership”
+
+### perplexity
+
+For **sleep tracking**, **Oura** is the stronger pick if you want the most **research-backed accuracy** and the most polished sleep insights, while **RingConn** is the better value if you want **good-enough sleep tracking** without a subscription.[1][2][3]
+
+- **Choose Oura** if your priority is:
+  - the most credible validation against polysomnography, which is the gold-standard sleep lab test[1][3]
+  - more detailed sleep insights, readiness-style coaching, and a more mature app experience[2][3]
+  - a ring whose sleep performance is more consistently supported by peer-reviewed studies[1]
+
+- **Choose RingConn** if your priority is:
+  - lower upfront cost and **no subscription fee**[3][4]
+  - long battery life and a simpler, budget-friendly sleep tracker[1][4]
+  - core sleep metrics that reviewers say are broadly comparable in day-to-day use, even if the formal validation base is thinner[1][2]
+
+On accuracy specifically, sources summarizing available studies report that **Oura has the deeper clinical validation literature**, including a 2024 study with strong sleep/wake detection performance and broader peer-reviewed support for sleep metrics.[1] Reviewers say **RingConn’s sleep tracking is usable and often similar in practical output**, but it has fewer formal studies behind it.[1][2]
+
+If you care mostly about **sleep staging, wake detection, and trustworthy trends**, **Oura** is the safer choice.[1][2] If you care mostly about **cost and battery life** and are okay with slightly less validation, **RingConn** is the better deal.[1][3][4]
+
+Citations: https://healnourishgrow.com/ringconn-vs-oura/ · https://www.wareable.com/features/oura-ring-4-vs-ringconn-gen-2-comparison · https://www.garagegymreviews.com/ringconn-vs-oura · https://moneysavingmom.com/ringconn-vs-oura-ring-which-smart-ring-is-worth-your-money/ · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.youtube.com/watch?v=M3yO05vZ96M · https://www.facebook.com/groups/322829073580573/posts/704790408717769/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “RingConn is the better value if you want good-enough sleep tracking without a subscription.” → reality — “Oura requires a $5.99/month membership for full features.”
 
 ---
 
@@ -4898,33 +4898,6 @@ Each of these alternatives has its own strengths and may cater to different pref
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
 
-### perplexity
-
-The **best alternatives to the Oura Ring** in 2026 are **Samsung Galaxy Ring**, **RingConn Gen 2 / Gen 2 Air**, **Ultrahuman Ring Air**, and, if you already own one, an **Apple Watch** with the right health app.[1][2][4] If you want the closest *subscription-free* Oura-style experience, reviewers most often point to **RingConn Gen 2 Air** or **RingConn Gen 2**.[1][2]
-
-- **Samsung Galaxy Ring** — frequently ranked as the best all-around Oura alternative and especially strong for workout tracking.[1][2]
-- **RingConn Gen 2 / Gen 2 Air** — praised for battery life, comfort, and no recurring subscription fees.[1][2][3]
-- **Ultrahuman Ring Air** — a top alternative with a strong feature set and no subscription model.[2][8]
-- **Apple Watch + health app** — a good option if you already own an Apple Watch and want broad tracking without buying a smart ring.[4]
-- **Budget option: Renpho Lynx** — a cheaper entry-level alternative, but with fewer insights than premium rings.[5]
-
-If you want the quickest recommendation:
-- **Best overall:** **Samsung Galaxy Ring**[1][2]
-- **Best subscription-free value:** **RingConn Gen 2 Air**[1][3]
-- **Best premium alternative:** **Ultrahuman Ring Air**[2][8]
-- **Best if you already have a smartwatch:** **Apple Watch** with a compatible health app[4]
-
-If you want, I can also give you a **buying guide by priority** — for example, **best for sleep**, **best battery life**, **best accuracy**, or **best budget**.
-
-Citations: https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.zdnet.com/article/renpho-lynx-smart-ring-review/ · https://www.facebook.com/groups/seminolehappenings/posts/2002732693819223/ · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.cnet.com/health/fitness/best-smart-ring/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=positive
-
 ### gemini
 
 The Oura Ring is fantastic for its discreet form factor and excellent sleep and recovery tracking. However, if you're looking for alternatives, there are several great options depending on what features you prioritize.
@@ -5009,6 +4982,33 @@ Ultimately, the "best" alternative depends on your personal priorities and lifes
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “No subscription required (as of current writing), which is a significant advantage over Oura.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+
+### perplexity
+
+The **best alternatives to the Oura Ring** in 2026 are **Samsung Galaxy Ring**, **RingConn Gen 2 / Gen 2 Air**, **Ultrahuman Ring Air**, and, if you already own one, an **Apple Watch** with the right health app.[1][2][4] If you want the closest *subscription-free* Oura-style experience, reviewers most often point to **RingConn Gen 2 Air** or **RingConn Gen 2**.[1][2]
+
+- **Samsung Galaxy Ring** — frequently ranked as the best all-around Oura alternative and especially strong for workout tracking.[1][2]
+- **RingConn Gen 2 / Gen 2 Air** — praised for battery life, comfort, and no recurring subscription fees.[1][2][3]
+- **Ultrahuman Ring Air** — a top alternative with a strong feature set and no subscription model.[2][8]
+- **Apple Watch + health app** — a good option if you already own an Apple Watch and want broad tracking without buying a smart ring.[4]
+- **Budget option: Renpho Lynx** — a cheaper entry-level alternative, but with fewer insights than premium rings.[5]
+
+If you want the quickest recommendation:
+- **Best overall:** **Samsung Galaxy Ring**[1][2]
+- **Best subscription-free value:** **RingConn Gen 2 Air**[1][3]
+- **Best premium alternative:** **Ultrahuman Ring Air**[2][8]
+- **Best if you already have a smartwatch:** **Apple Watch** with a compatible health app[4]
+
+If you want, I can also give you a **buying guide by priority** — for example, **best for sleep**, **best battery life**, **best accuracy**, or **best budget**.
+
+Citations: https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.zdnet.com/article/renpho-lynx-smart-ring-review/ · https://www.facebook.com/groups/seminolehappenings/posts/2002732693819223/ · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.cnet.com/health/fitness/best-smart-ring/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
+  - RingConn: present · prominence=mid_pack · framing=positive
 
 ---
 
@@ -5099,33 +5099,6 @@ Most Oura alternatives offer comparable tracking without subscriptions, though O
   - RingConn: present · prominence=recommended_first · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without monthly subscriptions” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
-### perplexity
-
-If you want **Oura Ring alternatives without a monthly subscription**, the strongest options in the results are **RingConn Gen 2 / Gen 2 Air**, **Amazfit Helio Ring**, **Ultrahuman Ring Air**, and **Samsung Galaxy Ring**.[2][5][6][7]
-
-A quick comparison:
-
-| Ring | Subscription? | Notes |
-|---|---:|---|
-| **RingConn Gen 2 / Gen 2 Air** | **No** | Frequently recommended as the closest Oura-like alternative, with strong sleep and health tracking and long battery life.[2][5][7] |
-| **Amazfit Helio Ring** | **No** | One of the cheaper subscription-free options; positioned as a budget alternative to Oura.[5][6] |
-| **Ultrahuman Ring Air** | **No** | More expensive upfront than some rivals, but no ongoing fee, so it can be cheaper over time.[6][7] |
-| **Samsung Galaxy Ring** | **No** | Premium option, especially attractive for Android users, with no subscription required.[5][6][7] |
-
-If you want the **closest overall replacement for Oura without fees**, multiple sources point to **RingConn** as the best starting point.[2][5][6][7] If your priority is **lowest price**, the **Amazfit Helio Ring** is repeatedly described as a budget-friendly subscription-free choice.[5][6]
-
-One important caveat: some sources are reviews or retailer/blog recommendations rather than lab-style independent testing, so feature quality can vary by app, battery life, and platform support.[1][2][5][7] If you want, I can also narrow these down by **iPhone vs Android**, **best sleep tracking**, or **best value under a specific budget**.
-
-Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://circulsense.com/blogs/product-guide-101/best-oura-ring-alternative-smart-rings-no-subscription · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.cosmopolitan.com/health-fitness/g62178023/oura-ring-alternatives-dupes/ · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.facebook.com/groups/322829073580573/posts/456932453503567/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Oura requires a $5.99/month membership for full features”
-
 ### gemini
 
 You're looking for a great alternative to the Oura Ring that provides similar health and wellness tracking without the ongoing monthly subscription fee. Many excellent devices fit this description, though they might come in different form factors (rings vs. watches).
@@ -5204,6 +5177,33 @@ All the options listed above provide valuable health and wellness data without f
   - RingConn: present · prominence=mid_pack · framing=positive
   - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
+### perplexity
+
+If you want **Oura Ring alternatives without a monthly subscription**, the strongest options in the results are **RingConn Gen 2 / Gen 2 Air**, **Amazfit Helio Ring**, **Ultrahuman Ring Air**, and **Samsung Galaxy Ring**.[2][5][6][7]
+
+A quick comparison:
+
+| Ring | Subscription? | Notes |
+|---|---:|---|
+| **RingConn Gen 2 / Gen 2 Air** | **No** | Frequently recommended as the closest Oura-like alternative, with strong sleep and health tracking and long battery life.[2][5][7] |
+| **Amazfit Helio Ring** | **No** | One of the cheaper subscription-free options; positioned as a budget alternative to Oura.[5][6] |
+| **Ultrahuman Ring Air** | **No** | More expensive upfront than some rivals, but no ongoing fee, so it can be cheaper over time.[6][7] |
+| **Samsung Galaxy Ring** | **No** | Premium option, especially attractive for Android users, with no subscription required.[5][6][7] |
+
+If you want the **closest overall replacement for Oura without fees**, multiple sources point to **RingConn** as the best starting point.[2][5][6][7] If your priority is **lowest price**, the **Amazfit Helio Ring** is repeatedly described as a budget-friendly subscription-free choice.[5][6]
+
+One important caveat: some sources are reviews or retailer/blog recommendations rather than lab-style independent testing, so feature quality can vary by app, battery life, and platform support.[1][2][5][7] If you want, I can also narrow these down by **iPhone vs Android**, **best sleep tracking**, or **best value under a specific budget**.
+
+Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://circulsense.com/blogs/product-guide-101/best-oura-ring-alternative-smart-rings-no-subscription · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.cosmopolitan.com/health-fitness/g62178023/oura-ring-alternatives-dupes/ · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.facebook.com/groups/322829073580573/posts/456932453503567/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=recommended_first · framing=positive
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Oura requires a $5.99/month membership for full features”
+
 ---
 
 ## cmp-07 · _comparison_ (weight 1.8)
@@ -5280,37 +5280,6 @@ Which features matter most to you?
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (low): claim — “Oura charges $5.99/month” → reality — “Membership is $5.99/month or $69.99/year”
   - 🚩 **missing_or_invented_feature** (low): claim — “Better sleep tracking accuracy (generally considered best-in-class)” → reality — “The fact sheet does not confirm this claim about sleep tracking accuracy”
-
-### perplexity
-
-**It depends on your phone and what you want from the ring.** For **Samsung Galaxy phone owners**, the **Galaxy Ring** is often the better fit because it is designed to work best in Samsung’s ecosystem, while the **Oura Ring** is generally the better choice for **iPhone or mixed-platform users** because it works with both iOS and Android.[4][8]
-
-Here’s the practical comparison:
-
-| Category | Galaxy Ring | Oura Ring |
-|---|---|---|
-| **Phone compatibility** | Android only, with strongest integration on Samsung devices[8] | Works with iOS and Android[8] |
-| **Price** | More expensive at **$399 MSRP**[1] | Starts at **$299**[1] |
-| **Health/analytics focus** | Strong health tracking, but more tied to Samsung ecosystem[4] | Often described as **more health-focused** with richer analytics[4] |
-| **Fit and feel** | Thinner and lighter in some comparisons[5] | Many reviewers still favor Oura’s overall feel and established design[1][6] |
-
-A few useful takeaways:
-- **Choose the Galaxy Ring** if you already use a Samsung phone and want the tightest integration.[8]
-- **Choose Oura** if you want broader compatibility and a more mature smart-ring platform with a strong reputation for health insights.[4][8]
-- If you’re deciding purely on value, Oura is usually the cheaper entry point, while Samsung is the pricier option.[1]
-
-If you want, I can also compare them for **sleep tracking, battery life, or workout accuracy**.
-
-Citations: https://timstevens.substack.com/p/galaxy-ring-vs-oura-horizon-gen3 · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.youtube.com/watch?v=oUeZXVCDbmY · https://www.tomsguide.com/wellness/fitness-trackers/samsung-galaxy-ring-vs-oura-ring-everything-we-know-so-far · https://www.garagegymreviews.com/samsung-ring-vs-oura · https://www.facebook.com/groups/945310367310036/posts/1434630208378047/ · https://www.youtube.com/watch?v=1g89tc-5TQE · https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-galaxy-ring.html
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Starts at $299” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Oura Ring is generally the better choice for iPhone or mixed-platform users because it works with both iOS and Android” → reality — “Oura Ring works with iOS and Android but no specific advantage for iPhone or mixed-platform users is mentioned”
 
 ### gemini
 
@@ -5391,6 +5360,37 @@ The Samsung Galaxy Ring has the potential to be a very strong competitor, especi
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “The ring itself is relatively expensive upfront (starting around $299).” → reality — “Current Ring 5 base is $399.”
   - 🚩 **missing_or_invented_feature** (high): claim — “To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period).” → reality — “Membership is required for full features, not just advanced features and historical data.”
+
+### perplexity
+
+**It depends on your phone and what you want from the ring.** For **Samsung Galaxy phone owners**, the **Galaxy Ring** is often the better fit because it is designed to work best in Samsung’s ecosystem, while the **Oura Ring** is generally the better choice for **iPhone or mixed-platform users** because it works with both iOS and Android.[4][8]
+
+Here’s the practical comparison:
+
+| Category | Galaxy Ring | Oura Ring |
+|---|---|---|
+| **Phone compatibility** | Android only, with strongest integration on Samsung devices[8] | Works with iOS and Android[8] |
+| **Price** | More expensive at **$399 MSRP**[1] | Starts at **$299**[1] |
+| **Health/analytics focus** | Strong health tracking, but more tied to Samsung ecosystem[4] | Often described as **more health-focused** with richer analytics[4] |
+| **Fit and feel** | Thinner and lighter in some comparisons[5] | Many reviewers still favor Oura’s overall feel and established design[1][6] |
+
+A few useful takeaways:
+- **Choose the Galaxy Ring** if you already use a Samsung phone and want the tightest integration.[8]
+- **Choose Oura** if you want broader compatibility and a more mature smart-ring platform with a strong reputation for health insights.[4][8]
+- If you’re deciding purely on value, Oura is usually the cheaper entry point, while Samsung is the pricier option.[1]
+
+If you want, I can also compare them for **sleep tracking, battery life, or workout accuracy**.
+
+Citations: https://timstevens.substack.com/p/galaxy-ring-vs-oura-horizon-gen3 · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.youtube.com/watch?v=oUeZXVCDbmY · https://www.tomsguide.com/wellness/fitness-trackers/samsung-galaxy-ring-vs-oura-ring-everything-we-know-so-far · https://www.garagegymreviews.com/samsung-ring-vs-oura · https://www.facebook.com/groups/945310367310036/posts/1434630208378047/ · https://www.youtube.com/watch?v=1g89tc-5TQE · https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-galaxy-ring.html
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Starts at $299” → reality — “Current Ring 5 base is $399”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura Ring is generally the better choice for iPhone or mixed-platform users because it works with both iOS and Android” → reality — “Oura Ring works with iOS and Android but no specific advantage for iPhone or mixed-platform users is mentioned”
 
 ---
 
@@ -5527,36 +5527,6 @@ For most **serious athletes**, **Whoop** remains the better choice due to superi
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-For **athletes**, **WHOOP** is usually the better choice if you care most about *training load, strain, and coach-like feedback*, while **Ultrahuman** is often better if you want *lighter wear, stronger sleep/recovery tracking, and no subscription*.[1][3][4]
-
-- **WHOOP** is designed more explicitly around *sports performance*: it gives a daily **strain score** aimed at cardiovascular load and includes a **Strength Trainer** feature to help improve strain estimates for weight training.[1][4]
-- **Ultrahuman** leans more toward *general fitness, sleep, and recovery*: its app emphasizes **sleep**, **Dynamic Recovery**, and lifestyle factors, and it also adds signals like **skin temperature** and **stress score**.[1][3]
-- For **weight training**, WHOOP has an advantage in workflow because it offers a dedicated strength feature, while WHOOP’s strain can be influenced by wrist movement and may struggle with muscular strain unless activities are logged more deliberately.[1]
-- For **comfort during intense training**, Ultrahuman’s ring form factor is much lighter and stays in close skin contact, which can help sensor consistency; however, rings can be awkward or unusable for some exercises, especially **Olympic lifts** or barbell work.[1][2]
-- **Ultrahuman** may be the easier long-term buy because it has **no annual membership** in the sources provided, while WHOOP uses a subscription model.[3][4][5]
-
-| If you are an athlete who mainly wants… | Better fit |
-|---|---|
-| Training load, recovery coaching, and strain guidance | **WHOOP**[1][4] |
-| Sleep/recovery tracking with less bulk and no subscription | **Ultrahuman**[1][3][4] |
-| Better support for structured strength training logging | **WHOOP**[1] |
-| The lightest, least noticeable wear | **Ultrahuman**[1][2] |
-
-A practical rule: if you’re a **team-sport, endurance, or data-driven athlete** who wants daily strain guidance, pick **WHOOP**; if you’re more focused on **sleep, recovery, and all-day comfort**, pick **Ultrahuman**.[1][3][4]
-
-If you want, I can also give you a **sport-by-sport recommendation** for running, CrossFit, lifting, cycling, or team sports.
-
-Citations: https://michaelkummer.com/whoop-vs-ultrahuman/ · https://www.youtube.com/watch?v=lXE3A_Ixwlc&vl=en · https://www.youtube.com/watch?v=gFHaH4MwCUw&vl=en · https://www.fitnessfirst.com.au/get-there/which-fitness-tracker-should-you-be-using/ · https://www.beauticate.com/news/why-i-swapped-my-whoop-for-an-ultrahuman-ring-and-what-its-taught-me-about-stress-sleep-and-bio-age-copy/ · https://x.com/deeppurpled/status/1783561205606420893 · https://www.glassdoor.co.in/Community/private-equity/whoop-oura-ring-ultrahuman-or-none · https://www.facebook.com/groups/922631435959839/posts/1092574685632179/
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: present · prominence=recommended_first · framing=positive
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Both Whoop and Ultrahuman offer advanced wearable technology aimed at optimizing health and performance, but they approach it with slightly different philosophies and feature sets. For athletes, the "better" choice often depends on individual priorities, specific goals, and how deep you want to dive into your biometric data.
@@ -5615,6 +5585,36 @@ Ultimately, both are excellent tools. Whoop is a fantastic "recovery coach," whi
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: present · prominence=recommended_first · framing=positive
   - Ultrahuman: present · prominence=recommended_first · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+For **athletes**, **WHOOP** is usually the better choice if you care most about *training load, strain, and coach-like feedback*, while **Ultrahuman** is often better if you want *lighter wear, stronger sleep/recovery tracking, and no subscription*.[1][3][4]
+
+- **WHOOP** is designed more explicitly around *sports performance*: it gives a daily **strain score** aimed at cardiovascular load and includes a **Strength Trainer** feature to help improve strain estimates for weight training.[1][4]
+- **Ultrahuman** leans more toward *general fitness, sleep, and recovery*: its app emphasizes **sleep**, **Dynamic Recovery**, and lifestyle factors, and it also adds signals like **skin temperature** and **stress score**.[1][3]
+- For **weight training**, WHOOP has an advantage in workflow because it offers a dedicated strength feature, while WHOOP’s strain can be influenced by wrist movement and may struggle with muscular strain unless activities are logged more deliberately.[1]
+- For **comfort during intense training**, Ultrahuman’s ring form factor is much lighter and stays in close skin contact, which can help sensor consistency; however, rings can be awkward or unusable for some exercises, especially **Olympic lifts** or barbell work.[1][2]
+- **Ultrahuman** may be the easier long-term buy because it has **no annual membership** in the sources provided, while WHOOP uses a subscription model.[3][4][5]
+
+| If you are an athlete who mainly wants… | Better fit |
+|---|---|
+| Training load, recovery coaching, and strain guidance | **WHOOP**[1][4] |
+| Sleep/recovery tracking with less bulk and no subscription | **Ultrahuman**[1][3][4] |
+| Better support for structured strength training logging | **WHOOP**[1] |
+| The lightest, least noticeable wear | **Ultrahuman**[1][2] |
+
+A practical rule: if you’re a **team-sport, endurance, or data-driven athlete** who wants daily strain guidance, pick **WHOOP**; if you’re more focused on **sleep, recovery, and all-day comfort**, pick **Ultrahuman**.[1][3][4]
+
+If you want, I can also give you a **sport-by-sport recommendation** for running, CrossFit, lifting, cycling, or team sports.
+
+Citations: https://michaelkummer.com/whoop-vs-ultrahuman/ · https://www.youtube.com/watch?v=lXE3A_Ixwlc&vl=en · https://www.youtube.com/watch?v=gFHaH4MwCUw&vl=en · https://www.fitnessfirst.com.au/get-there/which-fitness-tracker-should-you-be-using/ · https://www.beauticate.com/news/why-i-swapped-my-whoop-for-an-ultrahuman-ring-and-what-its-taught-me-about-stress-sleep-and-bio-age-copy/ · https://x.com/deeppurpled/status/1783561205606420893 · https://www.glassdoor.co.in/Community/private-equity/whoop-oura-ring-ultrahuman-or-none · https://www.facebook.com/groups/922631435959839/posts/1092574685632179/
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: present · prominence=recommended_first · framing=positive
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
@@ -5725,40 +5725,6 @@ Which ecosystem are you currently using?
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
 
-### perplexity
-
-**RingConn** is usually the better pick if you want **iPhone + Android compatibility**, **longer battery life**, and **sleep apnea monitoring**; **Samsung Galaxy Ring** is the better pick if you are already deep in the **Samsung Galaxy** ecosystem and want tighter integration with Samsung Health and Galaxy devices.[2][3][4]
-
-Here’s the practical difference:
-
-| Category | **Samsung Galaxy Ring** | **RingConn** |
-|---|---|---|
-| **Phone compatibility** | Android only, and sources note it is limited to Samsung Galaxy phones for full use[1][4] | Works with **Android and iOS**[1][2][3][4] |
-| **Battery life** | Around **5–7 days**; case adds roughly two extra recharges in some reports[1][3][4] | Around **10–12 days**; case support is much larger[1][4] |
-| **Health features** | Strong sleep and activity tracking, but sources note some metrics are not tracked 24/7 and it does **not** offer sleep apnea monitoring[1][2] | Offers **sleep apnea monitoring** and broader cross-platform tracking[2][4] |
-| **Durability / water resistance** | Rated up to **50 ATM** according to one comparison source[2] | Rated up to **100 ATM** in one comparison source[2] |
-| **Price** | Generally **more expensive**[1][4] | Generally **cheaper**[1][4] |
-| **Ecosystem** | Best for users who already use Samsung phones, Samsung Health, and Galaxy Watch[3][4] | Better for people who may switch phones or use non-Samsung devices[1][2][3][4] |
-
-A few important nuances:
-
-- The **Galaxy Ring** is described as lighter/thinner than RingConn Gen 1 in one source, but RingConn Gen 2 is also very slim and light, so the physical gap is small in practice.[1][4]
-- Sources agree that **RingConn is the more platform-agnostic choice**, while **Galaxy Ring is the more ecosystem-locked choice**.[1][2][3][4]
-- There is some variation in reported battery figures across reviewers, but the overall pattern is consistent: **RingConn lasts longer**.[1][3][4]
-
-If you want a simple recommendation:
-- Choose **Samsung Galaxy Ring** if you use a **Samsung Galaxy phone** and want the smoothest Samsung integration.[3][4]
-- Choose **RingConn** if you want the **best value**, **better battery life**, and **compatibility with both iPhone and Android**.[2][3][4]
-
-Citations: https://weareready.sg/blogs/news/ringconn-gen-1-2-vs-samsung-galaxy-smart-ring · https://www.androidpolice.com/samsung-galaxy-ring-vs-ringconn-2/ · https://www.androidcentral.com/wearables/samsung-galaxy-ring-vs-ringconn-smart-ring · https://www.wareable.com/wearable-tech/samsung-galaxy-ring-vs-ringconn-gen-2 · https://www.youtube.com/watch?v=kmGLLXUoc20 · https://www.youtube.com/watch?v=vUTG4D7iRe8&vl=en · https://ringconn.com/blogs/news/when-are-the-apple-ring-and-samsung-ring-coming · https://www.youtube.com/watch?v=sJAViNXG9_8&vl=en-US · https://www.facebook.com/groups/322829073580573/posts/550205900842888/
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=neutral
-
 ### gemini
 
 Comparing the Samsung Galaxy Ring and RingConn involves looking at one product that's already established and available, versus another that is highly anticipated but not yet released. This means some aspects of the Samsung Galaxy Ring are based on official announcements and strong speculation rather than hands-on reviews.
@@ -5864,6 +5830,40 @@ Here's a breakdown to help you decide:
   - RingConn: present · prominence=mid_pack · framing=positive
   - 🚩 **missing_or_invented_feature** (low): claim — “Vitality Score (similar to Oura's Readiness Score)” → reality — “Readiness and Recovery scores”
 
+### perplexity
+
+**RingConn** is usually the better pick if you want **iPhone + Android compatibility**, **longer battery life**, and **sleep apnea monitoring**; **Samsung Galaxy Ring** is the better pick if you are already deep in the **Samsung Galaxy** ecosystem and want tighter integration with Samsung Health and Galaxy devices.[2][3][4]
+
+Here’s the practical difference:
+
+| Category | **Samsung Galaxy Ring** | **RingConn** |
+|---|---|---|
+| **Phone compatibility** | Android only, and sources note it is limited to Samsung Galaxy phones for full use[1][4] | Works with **Android and iOS**[1][2][3][4] |
+| **Battery life** | Around **5–7 days**; case adds roughly two extra recharges in some reports[1][3][4] | Around **10–12 days**; case support is much larger[1][4] |
+| **Health features** | Strong sleep and activity tracking, but sources note some metrics are not tracked 24/7 and it does **not** offer sleep apnea monitoring[1][2] | Offers **sleep apnea monitoring** and broader cross-platform tracking[2][4] |
+| **Durability / water resistance** | Rated up to **50 ATM** according to one comparison source[2] | Rated up to **100 ATM** in one comparison source[2] |
+| **Price** | Generally **more expensive**[1][4] | Generally **cheaper**[1][4] |
+| **Ecosystem** | Best for users who already use Samsung phones, Samsung Health, and Galaxy Watch[3][4] | Better for people who may switch phones or use non-Samsung devices[1][2][3][4] |
+
+A few important nuances:
+
+- The **Galaxy Ring** is described as lighter/thinner than RingConn Gen 1 in one source, but RingConn Gen 2 is also very slim and light, so the physical gap is small in practice.[1][4]
+- Sources agree that **RingConn is the more platform-agnostic choice**, while **Galaxy Ring is the more ecosystem-locked choice**.[1][2][3][4]
+- There is some variation in reported battery figures across reviewers, but the overall pattern is consistent: **RingConn lasts longer**.[1][3][4]
+
+If you want a simple recommendation:
+- Choose **Samsung Galaxy Ring** if you use a **Samsung Galaxy phone** and want the smoothest Samsung integration.[3][4]
+- Choose **RingConn** if you want the **best value**, **better battery life**, and **compatibility with both iPhone and Android**.[2][3][4]
+
+Citations: https://weareready.sg/blogs/news/ringconn-gen-1-2-vs-samsung-galaxy-smart-ring · https://www.androidpolice.com/samsung-galaxy-ring-vs-ringconn-2/ · https://www.androidcentral.com/wearables/samsung-galaxy-ring-vs-ringconn-smart-ring · https://www.wareable.com/wearable-tech/samsung-galaxy-ring-vs-ringconn-gen-2 · https://www.youtube.com/watch?v=kmGLLXUoc20 · https://www.youtube.com/watch?v=vUTG4D7iRe8&vl=en · https://ringconn.com/blogs/news/when-are-the-apple-ring-and-samsung-ring-coming · https://www.youtube.com/watch?v=sJAViNXG9_8&vl=en-US · https://www.facebook.com/groups/322829073580573/posts/550205900842888/
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
+  - RingConn: present · prominence=recommended_first · framing=neutral
+
 ---
 
 ## cmp-10 · _comparison_ (weight 1.8)
@@ -5952,28 +5952,6 @@ What's your main use case - sleep optimization, fitness tracking, or general wel
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “$299-549 (ring) + $5.99/month subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month subscription”
 
-### perplexity
-
-**If you mean pure price-for-features value, Ultrahuman is usually the better value.** It has a similar upfront price to Oura but does **not** require a monthly subscription, while Oura does, which makes Ultrahuman cheaper over time.[1][3][5]
-
-- **Ultrahuman’s value edge:** reviewers consistently point to its flat purchase price and lack of subscription as the main reason it wins on value.[1][3][5]
-- **Oura’s value case:** Oura is often rated better for **tracking accuracy**, **app design**, and some premium features, so it can be the better value if those matter more to you than ongoing cost.[1][5]
-- **Cost comparison:** Oura typically starts around **$299–$349** depending on model/finish, but full access also costs about **$5.99/month** or about **$69.99/year**; Ultrahuman’s Ring Air is generally **$349** with **no subscription**.[1][3][5]
-- **Battery life:** Oura is commonly reported to have **longer battery life**, which can improve day-to-day convenience even if it costs more.[2][3]
-
-If you want the simplest answer: **Ultrahuman is the better value for most buyers; Oura is the better premium product if you’re willing to pay extra for the app, ecosystem, and battery life.**[1][3][5]
-
-Citations: https://honehealth.com/edge/oura-vs-ultrahuman/ · https://www.youtube.com/watch?v=H8Udebfw93g&vl=en · https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.digitaltrends.com/phones/oura-ring-vs-ultrahuman-ring-air-smart-rings-comparison-which-is-better/ · https://www.facebook.com/groups/322829073580573/posts/536870162176462/ · https://www.tiktok.com/@christineleeee/video/7496687527735381294?lang=en
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=recommended_first · framing=positive
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura typically starts around $299–$349 depending on model/finish” → reality — “Current Ring 5 base is $399”
-  - 🚩 **wrong_pricing** (low): claim — “full access also costs about $5.99/month or about $69.99/year” → reality — “Membership is $5.99/month or $69.99/year, first month free for new members”
-
 ### gemini
 
 Deciding which is "better value" between Oura and Ultrahuman really depends on your **personal priorities and what kind of data you're looking to optimize.** Both are excellent smart rings, but they have different strengths and target audiences.
@@ -6042,6 +6020,28 @@ Both rings require a subscription for full functionality, so factor that into yo
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “Subscription Required: Full features require a monthly subscription after the initial purchase.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+
+### perplexity
+
+**If you mean pure price-for-features value, Ultrahuman is usually the better value.** It has a similar upfront price to Oura but does **not** require a monthly subscription, while Oura does, which makes Ultrahuman cheaper over time.[1][3][5]
+
+- **Ultrahuman’s value edge:** reviewers consistently point to its flat purchase price and lack of subscription as the main reason it wins on value.[1][3][5]
+- **Oura’s value case:** Oura is often rated better for **tracking accuracy**, **app design**, and some premium features, so it can be the better value if those matter more to you than ongoing cost.[1][5]
+- **Cost comparison:** Oura typically starts around **$299–$349** depending on model/finish, but full access also costs about **$5.99/month** or about **$69.99/year**; Ultrahuman’s Ring Air is generally **$349** with **no subscription**.[1][3][5]
+- **Battery life:** Oura is commonly reported to have **longer battery life**, which can improve day-to-day convenience even if it costs more.[2][3]
+
+If you want the simplest answer: **Ultrahuman is the better value for most buyers; Oura is the better premium product if you’re willing to pay extra for the app, ecosystem, and battery life.**[1][3][5]
+
+Citations: https://honehealth.com/edge/oura-vs-ultrahuman/ · https://www.youtube.com/watch?v=H8Udebfw93g&vl=en · https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.digitaltrends.com/phones/oura-ring-vs-ultrahuman-ring-air-smart-rings-comparison-which-is-better/ · https://www.facebook.com/groups/322829073580573/posts/536870162176462/ · https://www.tiktok.com/@christineleeee/video/7496687527735381294?lang=en
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: present · prominence=recommended_first · framing=positive
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Oura typically starts around $299–$349 depending on model/finish” → reality — “Current Ring 5 base is $399”
+  - 🚩 **wrong_pricing** (low): claim — “full access also costs about $5.99/month or about $69.99/year” → reality — “Membership is $5.99/month or $69.99/year, first month free for new members”
 
 ---
 
@@ -6132,40 +6132,6 @@ What specific Whoop features are most important to you?
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-
-### perplexity
-
-If you want **cheaper alternatives to Whoop**, the best value picks are usually the **Amazfit Helio Strap**, **Xiaomi Smart Band 9**, **Polar Loop**, and **Fitbit Charge 6** because they offer health and sleep tracking without Whoop’s recurring cost, or at least at a much lower total cost.[3][6][1]
-
-A practical way to compare them is:
-
-| Alternative | Typical cost | Subscription | Best for |
-|---|---:|---:|---|
-| **Amazfit Helio Strap** | about **$99–$150** | **None** | Most Whoop-like cheap strap option[3][4][7] |
-| **Xiaomi Smart Band 9** | about **$59** | **None** | Cheapest budget tracker[3] |
-| **Polar Loop** | about **$199.99** | **None** | Simple band with no monthly fee[6] |
-| **Fitbit Charge 6** | hardware + optional paid features | **Lower than Whoop** | Broad fitness tracking on a familiar platform[1] |
-| **Oura Ring 4** | about **$349+** | **$5.99/month** | Ring form factor with strong sleep/recovery tracking[3][1] |
-| **Apple Watch / Pixel Watch / Garmin** | higher upfront cost | usually **none** | Better if you want a full smartwatch instead of a band[1][4] |
-
-If your main goal is **“Whoop-like tracking without the monthly bill,”** the **Amazfit Helio Strap** is the closest match in form factor and one of the cheapest options mentioned, with no subscription required.[3][4][6] If your goal is simply **saving money**, the **Xiaomi Smart Band 9** is the lowest-cost option in the results.[3]
-
-If you want, I can narrow this down by:
-- **lowest upfront price**
-- **best sleep tracking**
-- **best strap like Whoop**
-- **best for iPhone or Android**
-
-Citations: https://www.digitaltrends.com/wearables/best-whoop-alternatives/ · https://www.youtube.com/watch?v=cFRbqkoWcg0&vl=en · https://www.bgr.com/2005016/best-whoop-alternatives-health-fitness-tracking/ · https://livity-app.com/en/blog/best-whoop-alternatives · https://www.whoopalternatives.com · https://www.zdnet.com/article/polar-loop-review/ · https://www.youtube.com/watch?v=HO7RC1mnKso&vl=en · https://www.facebook.com/groups/garminforum/posts/2654527061573878/ · https://www.tiktok.com/@cedlom/video/7586371612476214559?lang=en
-
-**Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: present · prominence=recommended_first · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 about $349+” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Ring form factor with strong sleep/recovery tracking” → reality — “A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.”
 
 ### gemini
 
@@ -6282,6 +6248,40 @@ By considering these factors, you can find a cheaper alternative that meets your
   - 🚩 **wrong_pricing** (high): claim — “$300-$400 for the ring. Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription.” → reality — “Current Ring 5 base is $399. Membership is required for full features, no full free tier.”
   - 🚩 **stale** (high): claim — “Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription.” → reality — “The Ring 5 launched 2026-05-28, and the membership is required for full features.”
 
+### perplexity
+
+If you want **cheaper alternatives to Whoop**, the best value picks are usually the **Amazfit Helio Strap**, **Xiaomi Smart Band 9**, **Polar Loop**, and **Fitbit Charge 6** because they offer health and sleep tracking without Whoop’s recurring cost, or at least at a much lower total cost.[3][6][1]
+
+A practical way to compare them is:
+
+| Alternative | Typical cost | Subscription | Best for |
+|---|---:|---:|---|
+| **Amazfit Helio Strap** | about **$99–$150** | **None** | Most Whoop-like cheap strap option[3][4][7] |
+| **Xiaomi Smart Band 9** | about **$59** | **None** | Cheapest budget tracker[3] |
+| **Polar Loop** | about **$199.99** | **None** | Simple band with no monthly fee[6] |
+| **Fitbit Charge 6** | hardware + optional paid features | **Lower than Whoop** | Broad fitness tracking on a familiar platform[1] |
+| **Oura Ring 4** | about **$349+** | **$5.99/month** | Ring form factor with strong sleep/recovery tracking[3][1] |
+| **Apple Watch / Pixel Watch / Garmin** | higher upfront cost | usually **none** | Better if you want a full smartwatch instead of a band[1][4] |
+
+If your main goal is **“Whoop-like tracking without the monthly bill,”** the **Amazfit Helio Strap** is the closest match in form factor and one of the cheapest options mentioned, with no subscription required.[3][4][6] If your goal is simply **saving money**, the **Xiaomi Smart Band 9** is the lowest-cost option in the results.[3]
+
+If you want, I can narrow this down by:
+- **lowest upfront price**
+- **best sleep tracking**
+- **best strap like Whoop**
+- **best for iPhone or Android**
+
+Citations: https://www.digitaltrends.com/wearables/best-whoop-alternatives/ · https://www.youtube.com/watch?v=cFRbqkoWcg0&vl=en · https://www.bgr.com/2005016/best-whoop-alternatives-health-fitness-tracking/ · https://livity-app.com/en/blog/best-whoop-alternatives · https://www.whoopalternatives.com · https://www.zdnet.com/article/polar-loop-review/ · https://www.youtube.com/watch?v=HO7RC1mnKso&vl=en · https://www.facebook.com/groups/garminforum/posts/2654527061573878/ · https://www.tiktok.com/@cedlom/video/7586371612476214559?lang=en
+
+**Judge verdict:**
+  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - Whoop: present · prominence=recommended_first · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 about $349+” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Ring form factor with strong sleep/recovery tracking” → reality — “A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.”
+
 ---
 
 ## brd-01 · _brand_ (weight 2.0)
@@ -6359,34 +6359,6 @@ Ultimately, if you're looking for a device that provides in-depth health insight
   - 🚩 **wrong_pricing** (high): claim — “$299-549 + $5.99/month subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month membership”
   - 🚩 **stale** (med): claim — “Battery life - 4-7 days beats most smartwatches” → reality — “up to ~8-day battery (Ring 4 generation)”
 
-### perplexity
-
-The **Oura Ring is worth it for some people, but not everyone**. It makes the most sense if you care most about **sleep tracking, recovery, stress, and long-term health trends** and are comfortable paying both the upfront price and the monthly subscription.[1][3][7]
-
-What the reviews consistently say:
-
-- **Best for sleep and recovery:** Multiple reviewers call it one of the strongest sleep-tracking wearables and say it gives useful readiness/recovery insights.[3][7]
-- **Not the best fitness tracker:** If you mainly want workout tracking, a smartwatch or fitness watch is often better, and one reviewer specifically says it is not a good replacement for Garmin or Apple Watch for biking or running.[2]
-- **Expensive overall:** The ring itself typically costs roughly **$299–$549**, and the full app experience requires a **$5.99/month subscription** (or similar annual pricing), which several reviewers flag as the main downside.[1][2][3][5]
-- **Comfort is a big plus:** Reviewers frequently praise that it is lightweight, discreet, and comfortable enough to wear all day and overnight.[3][5][7]
-
-A practical rule of thumb:
-
-- **Worth it** if you want passive health insights, sleep coaching, and recovery data more than workout stats.[1][3][7]
-- **Probably not worth it** if you dislike subscriptions, want detailed exercise metrics, or are unlikely to use the data regularly.[2][3][6]
-
-If you want, I can also give you a **“Oura Ring vs Apple Watch vs Garmin vs WHOOP”** recommendation based on your priorities.
-
-Citations: https://gethealthyu.com/oura-ring-review/ · https://www.femmecyclist.com/oura-ring-review/ · https://www.womanandhome.com/health-wellbeing/fitness/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like · https://www.facebook.com/groups/945310367310036/posts/1363217722185963/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: present · prominence=mid_pack · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The ring itself typically costs roughly $299–$549” → reality — “Current Ring 5 base is $399”
-
 ### gemini
 
 The Oura Ring is a fascinating piece of wearable technology, and whether it's "worth it" really depends on your individual needs, goals, and budget.
@@ -6450,6 +6422,34 @@ However, if your primary goal is detailed workout tracking, smart features, or y
   - 🚩 **wrong_pricing** (high): claim — “The ring itself is premium-priced (typically $299-$549 depending on the model/finish).” → reality — “Current Ring 5 base is $399, Premium finishes $499.”
   - 🚩 **missing_or_invented_feature** (med): claim — “Oura now requires a monthly membership ($5.99/month in the US) to access all its features and historical data.” → reality — “Membership is required for full features, but the first month is free for new members.”
 
+### perplexity
+
+The **Oura Ring is worth it for some people, but not everyone**. It makes the most sense if you care most about **sleep tracking, recovery, stress, and long-term health trends** and are comfortable paying both the upfront price and the monthly subscription.[1][3][7]
+
+What the reviews consistently say:
+
+- **Best for sleep and recovery:** Multiple reviewers call it one of the strongest sleep-tracking wearables and say it gives useful readiness/recovery insights.[3][7]
+- **Not the best fitness tracker:** If you mainly want workout tracking, a smartwatch or fitness watch is often better, and one reviewer specifically says it is not a good replacement for Garmin or Apple Watch for biking or running.[2]
+- **Expensive overall:** The ring itself typically costs roughly **$299–$549**, and the full app experience requires a **$5.99/month subscription** (or similar annual pricing), which several reviewers flag as the main downside.[1][2][3][5]
+- **Comfort is a big plus:** Reviewers frequently praise that it is lightweight, discreet, and comfortable enough to wear all day and overnight.[3][5][7]
+
+A practical rule of thumb:
+
+- **Worth it** if you want passive health insights, sleep coaching, and recovery data more than workout stats.[1][3][7]
+- **Probably not worth it** if you dislike subscriptions, want detailed exercise metrics, or are unlikely to use the data regularly.[2][3][6]
+
+If you want, I can also give you a **“Oura Ring vs Apple Watch vs Garmin vs WHOOP”** recommendation based on your priorities.
+
+Citations: https://gethealthyu.com/oura-ring-review/ · https://www.femmecyclist.com/oura-ring-review/ · https://www.womanandhome.com/health-wellbeing/fitness/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like · https://www.facebook.com/groups/945310367310036/posts/1363217722185963/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “The ring itself typically costs roughly $299–$549” → reality — “Current Ring 5 base is $399”
+
 ---
 
 ## brd-02 · _brand_ (weight 2.0)
@@ -6489,29 +6489,6 @@ Prices may vary based on promotions, and the company occasionally offers discoun
   - 🚩 **stale** (high): claim — “Oura Ring Gen3 Heritage: $299 (silver, black, stealth)” → reality — “Ring 5 launched 2026-05-28”
   - 🚩 **stale** (high): claim — “Oura Ring Gen3 Horizon: $349-$399 (various finishes)” → reality — “Ring 5 launched 2026-05-28”
 
-### perplexity
-
-The **Oura Ring** typically costs **$349 to $499** for the current Oura Ring 4, depending on finish and model, and it also requires a **membership of $5.99/month** or **$69.99/year** after the first free month.[2][5]
-
-A few pricing notes:
-- **Oura Ring 4 (regular titanium)**: **$349–$499** depending on color/finish.[2][6]
-- **Ceramic Oura Ring 4**: **$499**.[6]
-- **Membership**: **$5.99/month** or **$69.99/year**; new members get the **first month free**.[5][6]
-- Some retailers also sell older or different configurations, so prices can vary by model and seller.[1][3]
-
-If you want, I can also give you the **cheapest current Oura Ring option** or break down the **total first-year cost**.
-
-Citations: https://honehealth.com/edge/oura-ring-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mattressclarity.com/reviews/oura-ring-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://ouraring.com/store/rings/oura-ring-4 · https://www.bestbuy.com/site/brands/oura/pcmcat1680720122530.c?id=pcmcat1680720122530 · https://www.walmart.com/brand/oura/20016151 · https://ouraring.com/store/rings/oura-ring-5/silver
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring typically costs $349 to $499 for the current Oura Ring 4, depending on finish and model” → reality — “Current Ring 5 base is $399; Ring 4 was $349 and is being cleared out below that”
-  - 🚩 **stale** (high): claim — “current Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
-
 ### gemini
 
 The Oura Ring has two main costs: the **device itself** and a **monthly membership subscription**.
@@ -6546,6 +6523,29 @@ The Oura Ring has two main costs: the **device itself** and a **monthly membersh
   - 🚩 **wrong_pricing** (high): claim — “The price of the ring itself typically ranges from $299 to $549 USD or more, depending on the model and finish.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
   - 🚩 **stale** (high): claim — “Heritage: Usually starts around $299 USD for standard finishes.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
   - 🚩 **stale** (high): claim — “Horizon: Usually starts around $349 USD for standard finishes.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
+
+### perplexity
+
+The **Oura Ring** typically costs **$349 to $499** for the current Oura Ring 4, depending on finish and model, and it also requires a **membership of $5.99/month** or **$69.99/year** after the first free month.[2][5]
+
+A few pricing notes:
+- **Oura Ring 4 (regular titanium)**: **$349–$499** depending on color/finish.[2][6]
+- **Ceramic Oura Ring 4**: **$499**.[6]
+- **Membership**: **$5.99/month** or **$69.99/year**; new members get the **first month free**.[5][6]
+- Some retailers also sell older or different configurations, so prices can vary by model and seller.[1][3]
+
+If you want, I can also give you the **cheapest current Oura Ring option** or break down the **total first-year cost**.
+
+Citations: https://honehealth.com/edge/oura-ring-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mattressclarity.com/reviews/oura-ring-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://ouraring.com/store/rings/oura-ring-4 · https://www.bestbuy.com/site/brands/oura/pcmcat1680720122530.c?id=pcmcat1680720122530 · https://www.walmart.com/brand/oura/20016151 · https://ouraring.com/store/rings/oura-ring-5/silver
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring typically costs $349 to $499 for the current Oura Ring 4, depending on finish and model” → reality — “Current Ring 5 base is $399; Ring 4 was $349 and is being cleared out below that”
+  - 🚩 **stale** (high): claim — “current Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
 
 ---
 
@@ -6596,29 +6596,6 @@ The subscription model has been controversial among users, as the ring itself co
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “the ring itself costs $299-$549 depending on the model” → reality — “Current Ring 5 base is $399”
 
-### perplexity
-
-**Yes, for most Oura rings, a subscription is required to get the full experience.** Oura says the ring and app still work without membership, but the insights and health data are much more limited; without an active membership, you only get the three daily scores, ring battery, basic profile info, app settings, and Explore content.[1][3]
-
-A few important exceptions and details:
-
-- **Gen2 users do not require a membership** and are not charged membership fees.[1]
-- For **Gen3/Gen4 and newer**, Oura’s membership unlocks the full app experience and personalized insights.[1][3]
-- Oura offers a **free first month** for new members, then charges a monthly or annual fee.[1][3]
-- Pricing listed by Oura in the U.S. is **$5.99/month or $69.99/year**.[1][3]
-
-If you want, I can also explain **what you can and can’t do without the subscription** in a quick comparison.
-
-Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Membership · https://www.facebook.com/groups/945310367310036/posts/1474398324401235/ · https://ouraring.com/membership · https://www.bestbuy.com/site/questions/oura-ring-gen3-horizon-size-before-you-buy-size-10-stealth-2021/6540332/question/36f566a4-54d8-3217-b594-2f3ca9e4b64a · https://www.facebook.com/groups/322829073580573/posts/572198845310260/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.youtube.com/shorts/ayFEOCMDLKM
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “Gen2 users do not require a membership and are not charged membership fees.” → reality — “No full free tier — without membership the ring and app still work but insights are heavily limited.”
-
 ### gemini
 
 Yes, the Oura Ring **does require a paid Oura Membership** to access its full features and insights.
@@ -6648,6 +6625,29 @@ Here's a breakdown:
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (low): claim — “The cost of the Oura Membership is usually around $5.99 USD per month” → reality — “Membership: $5.99/month or $69.99/year”
+
+### perplexity
+
+**Yes, for most Oura rings, a subscription is required to get the full experience.** Oura says the ring and app still work without membership, but the insights and health data are much more limited; without an active membership, you only get the three daily scores, ring battery, basic profile info, app settings, and Explore content.[1][3]
+
+A few important exceptions and details:
+
+- **Gen2 users do not require a membership** and are not charged membership fees.[1]
+- For **Gen3/Gen4 and newer**, Oura’s membership unlocks the full app experience and personalized insights.[1][3]
+- Oura offers a **free first month** for new members, then charges a monthly or annual fee.[1][3]
+- Pricing listed by Oura in the U.S. is **$5.99/month or $69.99/year**.[1][3]
+
+If you want, I can also explain **what you can and can’t do without the subscription** in a quick comparison.
+
+Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Membership · https://www.facebook.com/groups/945310367310036/posts/1474398324401235/ · https://ouraring.com/membership · https://www.bestbuy.com/site/questions/oura-ring-gen3-horizon-size-before-you-buy-size-10-stealth-2021/6540332/question/36f566a4-54d8-3217-b594-2f3ca9e4b64a · https://www.facebook.com/groups/322829073580573/posts/572198845310260/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.youtube.com/shorts/ayFEOCMDLKM
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (med): claim — “Gen2 users do not require a membership and are not charged membership fees.” → reality — “No full free tier — without membership the ring and app still work but insights are heavily limited.”
 
 ---
 
@@ -6694,6 +6694,20 @@ Are you considering getting one, or do you have questions about specific feature
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **stale** (high): claim — “Oura Ring Gen3 is the newest model available.” → reality — “Oura Ring 5 is the newest model, launched 2026-05-28.”
 
+### gemini
+
+The newest Oura Ring right now is the **Oura Ring Gen3**.
+
+It was released in October 2021 and is still the current generation of their smart ring. While they occasionally release new finishes or limited editions, the core hardware and technology remain the Gen3.
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (high): claim — “The newest Oura Ring right now is the Oura Ring Gen3.” → reality — “The Oura Ring 5 launched 2026-05-28.”
+
 ### perplexity
 
 The **newest Oura Ring** is **Oura Ring 5**.[1][4]
@@ -6711,20 +6725,6 @@ Citations: https://www.businesswire.com/news/home/20260528686853/en/URA-Introduc
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **missing_or_invented_feature** (med): claim — “week-long battery life (listed as 6 to 9 days on Oura’s site)” → reality — “up to ~8-day battery (Ring 4 generation)”
-
-### gemini
-
-The newest Oura Ring right now is the **Oura Ring Gen3**.
-
-It was released in October 2021 and is still the current generation of their smart ring. While they occasionally release new finishes or limited editions, the core hardware and technology remain the Gen3.
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “The newest Oura Ring right now is the Oura Ring Gen3.” → reality — “The Oura Ring 5 launched 2026-05-28.”
 
 ---
 
@@ -6858,37 +6858,6 @@ Skip if: You want comprehensive workout tracking or dislike subscription models
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “Hardware is expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
 
-### perplexity
-
-The **Oura Ring’s main strengths** are **sleep and recovery tracking**, **long battery life**, and a **small, discreet design** that is comfortable for all-day wear.[1][2][4] Its main **downsides** are the **high upfront cost**, the **required subscription**, and the fact that **activity tracking is less robust than a smartwatch**.[1][4][5]
-
-- **Pros**
-- **Excellent sleep tracking** and useful recovery insights, including readiness, HRV, resting heart rate, and temperature trends.[1][2][3]
-- **Comfortable and discreet** compared with bulkier wearables like watches.[2][4][5]
-- **Long battery life**, with reviewers commonly reporting several days between charges.[1][4][7]
-- **Useful wellness features**, including menstrual-cycle insights and non-judgmental activity summaries.[2][3][5]
-- **Waterproof** and generally easy to set up, according to reviewers.[4][5]
-
-- **Cons**
-- **Expensive** hardware, with some reviewers noting the price is high for a screenless device.[1][5]
-- **Monthly membership fee** is required for full access to the data.[1][4][5]
-- **Bulkier than a normal ring**, and some users find it noticeable at first.[1][5]
-- **Less suitable for heavy lifting** and generally not as strong for workout tracking as a smartwatch.[3][5]
-- **Durability concerns** such as scratches or scuffs have been mentioned by reviewers.[1][7]
-
-If you want, I can also give you a **who it’s best for / who should skip it** version in 5 lines.
-
-Citations: https://www.femmecyclist.com/oura-ring-review/ · https://gethealthyu.com/oura-ring-review/ · https://www.businessinsider.com/oura-ring-fitness-tracker-pros-cons-after-years-wearing-style-2025-1 · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.youtube.com/watch?v=HeXIJrjhACQ · https://www.facebook.com/groups/945310367310036/posts/1415385493635852/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “high upfront cost” → reality — “Base finishes (Silver, Black) — $399; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — $499”
-  - 🚩 **missing_or_invented_feature** (med): claim — “activity tracking is less robust than a smartwatch” → reality — “It is not a smartwatch — no screen, no notifications, no on-device display”
-
 ### gemini
 
 The Oura Ring is a popular smart ring designed to track various health metrics, primarily focusing on sleep, recovery, and activity. It's known for its discreet form factor and in-depth insights. Here's a breakdown of its pros and cons:
@@ -6995,6 +6964,37 @@ The Oura Ring excels as a discreet, powerful tool for understanding and optimizi
   - 🚩 **wrong_pricing** (high): claim — “Mandatory monthly subscription: To access all your data, insights, and features, you must pay a monthly subscription fee.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
   - 🚩 **stale** (high): claim — “The Oura Ring is a popular smart ring designed to track various health metrics, primarily focusing on sleep, recovery, and activity.” → reality — “Oura Ring 5 (announced 2026-05-28, ships 2026-06-04) — ~40% smaller than Ring 4, thinner/lighter redesign, updated sensors.”
 
+### perplexity
+
+The **Oura Ring’s main strengths** are **sleep and recovery tracking**, **long battery life**, and a **small, discreet design** that is comfortable for all-day wear.[1][2][4] Its main **downsides** are the **high upfront cost**, the **required subscription**, and the fact that **activity tracking is less robust than a smartwatch**.[1][4][5]
+
+- **Pros**
+- **Excellent sleep tracking** and useful recovery insights, including readiness, HRV, resting heart rate, and temperature trends.[1][2][3]
+- **Comfortable and discreet** compared with bulkier wearables like watches.[2][4][5]
+- **Long battery life**, with reviewers commonly reporting several days between charges.[1][4][7]
+- **Useful wellness features**, including menstrual-cycle insights and non-judgmental activity summaries.[2][3][5]
+- **Waterproof** and generally easy to set up, according to reviewers.[4][5]
+
+- **Cons**
+- **Expensive** hardware, with some reviewers noting the price is high for a screenless device.[1][5]
+- **Monthly membership fee** is required for full access to the data.[1][4][5]
+- **Bulkier than a normal ring**, and some users find it noticeable at first.[1][5]
+- **Less suitable for heavy lifting** and generally not as strong for workout tracking as a smartwatch.[3][5]
+- **Durability concerns** such as scratches or scuffs have been mentioned by reviewers.[1][7]
+
+If you want, I can also give you a **who it’s best for / who should skip it** version in 5 lines.
+
+Citations: https://www.femmecyclist.com/oura-ring-review/ · https://gethealthyu.com/oura-ring-review/ · https://www.businessinsider.com/oura-ring-fitness-tracker-pros-cons-after-years-wearing-style-2025-1 · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.youtube.com/watch?v=HeXIJrjhACQ · https://www.facebook.com/groups/945310367310036/posts/1415385493635852/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (high): claim — “high upfront cost” → reality — “Base finishes (Silver, Black) — $399; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — $499”
+  - 🚩 **missing_or_invented_feature** (med): claim — “activity tracking is less robust than a smartwatch” → reality — “It is not a smartwatch — no screen, no notifications, no on-device display”
+
 ---
 
 ## brd-06 · _brand_ (weight 2.0)
@@ -7050,25 +7050,6 @@ If sleep tracking is your primary goal and you want detailed insights without we
   - 🚩 **wrong_pricing** (high): claim — “$299-$549 depending on the model” → reality — “$399 for base finishes, $499 for premium finishes”
   - 🚩 **missing_or_invented_feature** (med): claim — “Needs charging every 4-7 days” → reality — “up to ~8-day battery (Ring 4 generation)”
 
-### perplexity
-
-Yes — the **Oura Ring is generally considered very good for sleep tracking**, especially if you want a comfortable device that can be worn overnight without feeling bulky.[2][7]
-
-It tracks **sleep stages**, **total sleep time**, **sleep onset**, **heart rate**, **heart rate variability**, **body temperature**, and in newer reviews it also detects **naps**, then turns that data into a daily **Sleep Score** in the Oura app.[2][1] Reviewers consistently praise the ring for being **easy to wear**, **discreet**, and good at helping people notice sleep patterns over time.[1][2][7]
-
-That said, it is best viewed as a **trend and recovery tracker**, not a medical-grade sleep lab replacement.[6][2] One review noted that sleep duration can be off by **20–30 minutes or more** on some nights, and sleep-stage detection is “mixed” in at least some comparisons, which is consistent with the limits of wearable sleep tracking in general.[6]
-
-If your main goal is **actionable sleep insights and convenience**, Oura is a strong choice.[2][4][7] If you need **clinical-level accuracy** for diagnosing a sleep disorder, it is not enough on its own.[6][2]
-
-Citations: https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.sleepfoundation.org/best-sleep-trackers/oura-ring-review · https://www.foodforfitness.co.uk/oura-ring-uk-review/ · https://gethealthyu.com/oura-ring-review/ · https://www.youtube.com/watch?v=MhMKtqY6CmM · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.cnet.com/tech/mobile/apple-watch-vs-oura-ring-which-should-you-buy/
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Yes, the Oura Ring is widely considered one of the **best consumer-grade devices for sleep tracking**, especially when compared to other wearables like smartwatches.
@@ -7122,6 +7103,25 @@ In summary, if you're looking for a highly capable and insightful consumer devic
   - RingConn: absent · prominence=absent · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “The device itself is a significant investment.” → reality — “Current Ring 5 base is $399.”
   - 🚩 **missing_or_invented_feature** (med): claim — “Subscription Required: To access all the detailed insights and historical data, you need a monthly Oura Membership subscription.” → reality — “Membership is required for full features, but the first month is free for new members.”
+
+### perplexity
+
+Yes — the **Oura Ring is generally considered very good for sleep tracking**, especially if you want a comfortable device that can be worn overnight without feeling bulky.[2][7]
+
+It tracks **sleep stages**, **total sleep time**, **sleep onset**, **heart rate**, **heart rate variability**, **body temperature**, and in newer reviews it also detects **naps**, then turns that data into a daily **Sleep Score** in the Oura app.[2][1] Reviewers consistently praise the ring for being **easy to wear**, **discreet**, and good at helping people notice sleep patterns over time.[1][2][7]
+
+That said, it is best viewed as a **trend and recovery tracker**, not a medical-grade sleep lab replacement.[6][2] One review noted that sleep duration can be off by **20–30 minutes or more** on some nights, and sleep-stage detection is “mixed” in at least some comparisons, which is consistent with the limits of wearable sleep tracking in general.[6]
+
+If your main goal is **actionable sleep insights and convenience**, Oura is a strong choice.[2][4][7] If you need **clinical-level accuracy** for diagnosing a sleep disorder, it is not enough on its own.[6][2]
+
+Citations: https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.sleepfoundation.org/best-sleep-trackers/oura-ring-review · https://www.foodforfitness.co.uk/oura-ring-uk-review/ · https://gethealthyu.com/oura-ring-review/ · https://www.youtube.com/watch?v=MhMKtqY6CmM · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.cnet.com/tech/mobile/apple-watch-vs-oura-ring-which-should-you-buy/
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
 
 ---
 
@@ -7201,31 +7201,6 @@ What specific health metrics are you most interested in tracking?
   - 🚩 **wrong_pricing** (high): claim — “the $300+ ring” → reality — “Current Ring 5 base is $399”
   - 🚩 **missing_or_invented_feature** (med): claim — “The membership is basically required to get value from the $300+ ring” → reality — “without membership the ring and app still work but insights are heavily limited”
 
-### perplexity
-
-**It depends on how much you use the app’s deeper insights.** Oura’s membership is relatively cheap at **$5.99/month** in the US and includes a free first month for new members, but it is required to unlock the ring’s full daily health insights, advanced analysis, and new app features.[1][2]
-
-If you mainly want **basic sleep, readiness, and activity scores**, several reviews note that the ring is much less useful without the subscription, and one source says non-subscribers only get those three core scores plus limited functionality.[8][5] If you want **detailed sleep trends, stress/recovery data, heart health metrics, personalized recommendations, and Oura Advisor**, the subscription is what makes the product feel complete.[2][7]
-
-A practical way to judge value:
-- **Worth it** if you check the app regularly, care about sleep/recovery optimization, and will use the extra metrics and recommendations.[2][5][7]
-- **Not worth it** if you mostly want step counting or occasional sleep checks, because you may not use enough of the paid features to justify an ongoing fee.[8][5]
-- **More likely worth it** if you can use **HSA/FSA** funds, since Oura says the membership is eligible in the US.[2]
-
-One reviewer said the monthly fee “barely makes a dent” compared with some other health apps, while another described the subscription as the main drawback and a “hard no” for people who dislike paying monthly for hardware they already bought.[3][5] That split reflects the real tradeoff: Oura is a strong health tracker, but the subscription is what turns it from a basic wearable into a full analytics product.[2][8]
-
-If you want, I can also give you a **quick yes/no recommendation** based on your use case, like sleep tracking, fitness, women’s health, or stress monitoring.
-
-Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Membership · https://ouraring.com/membership · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://www.galaxus.at/en/page/oura-4-review-is-a-smart-ring-subscription-worth-it-36801 · https://www.facebook.com/groups/945310367310036/posts/1339011987939870/ · https://www.howtogeek.com/i-dont-like-subscriptions-but-the-oura-ring-is-worth-it-for-me/ · https://appleinsider.com/articles/23/03/19/oura-ring-review-love-the-features-changes-hate-the-new-subscription · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like
-
-**Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “Oura’s membership is relatively cheap at $5.99/month in the US” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
-
 ### gemini
 
 The question of whether the Oura Ring membership is "worth it" monthly is a common one, and the answer largely depends on your individual needs, goals, and how you plan to use the device.
@@ -7280,6 +7255,31 @@ Many users find the insights invaluable for improving their health and well-bein
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
   - 🚩 **wrong_pricing** (high): claim — “The membership unlocks...” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+
+### perplexity
+
+**It depends on how much you use the app’s deeper insights.** Oura’s membership is relatively cheap at **$5.99/month** in the US and includes a free first month for new members, but it is required to unlock the ring’s full daily health insights, advanced analysis, and new app features.[1][2]
+
+If you mainly want **basic sleep, readiness, and activity scores**, several reviews note that the ring is much less useful without the subscription, and one source says non-subscribers only get those three core scores plus limited functionality.[8][5] If you want **detailed sleep trends, stress/recovery data, heart health metrics, personalized recommendations, and Oura Advisor**, the subscription is what makes the product feel complete.[2][7]
+
+A practical way to judge value:
+- **Worth it** if you check the app regularly, care about sleep/recovery optimization, and will use the extra metrics and recommendations.[2][5][7]
+- **Not worth it** if you mostly want step counting or occasional sleep checks, because you may not use enough of the paid features to justify an ongoing fee.[8][5]
+- **More likely worth it** if you can use **HSA/FSA** funds, since Oura says the membership is eligible in the US.[2]
+
+One reviewer said the monthly fee “barely makes a dent” compared with some other health apps, while another described the subscription as the main drawback and a “hard no” for people who dislike paying monthly for hardware they already bought.[3][5] That split reflects the real tradeoff: Oura is a strong health tracker, but the subscription is what turns it from a basic wearable into a full analytics product.[2][8]
+
+If you want, I can also give you a **quick yes/no recommendation** based on your use case, like sleep tracking, fitness, women’s health, or stress monitoring.
+
+Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Membership · https://ouraring.com/membership · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://www.galaxus.at/en/page/oura-4-review-is-a-smart-ring-subscription-worth-it-36801 · https://www.facebook.com/groups/945310367310036/posts/1339011987939870/ · https://www.howtogeek.com/i-dont-like-subscriptions-but-the-oura-ring-is-worth-it-for-me/ · https://appleinsider.com/articles/23/03/19/oura-ring-review-love-the-features-changes-hate-the-new-subscription · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like
+
+**Judge verdict:**
+  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **wrong_pricing** (low): claim — “Oura’s membership is relatively cheap at $5.99/month in the US” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
 
 ---
 
@@ -7354,29 +7354,6 @@ HRV is best used as **one tool among many** (alongside sleep quality, mood, perf
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-**Heart rate variability (HRV)** is commonly used as a marker of **recovery status**: in general, **higher HRV relative to your own baseline** suggests better recovery, greater autonomic flexibility, and readiness to train, while **lower HRV** often reflects accumulated stress, fatigue, illness, poor sleep, or insufficient recovery.[2][3][8][9]
-
-HRV matters because it reflects the balance between the **sympathetic** (“fight or flight”) and **parasympathetic** (“rest and digest”) branches of the autonomic nervous system.[2][6] After hard training, HRV often drops temporarily, and a return toward baseline is commonly interpreted as recovery progressing.[2][8] Research and sports medicine guidance also note that HRV can help guide whether to do a hard workout, a lighter session, or rest.[2][8][9]
-
-A few important nuances:
-
-- **Compare HRV to your own baseline**, not to someone else’s, because normal values vary a lot by person.[3][8]
-- A **single low reading** does not necessarily mean poor recovery; the **trend over several days** is usually more informative.[8][9]
-- HRV is useful, but it is **not a perfect recovery score**. Factors like fueling status, sleep, stress, illness, and training load can all affect it, and in some cases HRV can look “good” even when other problems are present.[5]
-
-If you want, I can also explain **how to interpret HRV day-to-day** or how it differs from **resting heart rate** and **heart rate recovery**.
-
-Citations: https://pmc.ncbi.nlm.nih.gov/articles/PMC4632887/ · https://www.scienceforsport.com/heart-rate-variability-hrv/ · https://www.princetonorthopaedic.com/heart-rate-variability-and-recovery-what-hrv-means/ · https://www.parknorthpt.com/post/why-heart-rate-variability-hrv-matters-for-your-rehabilitation-journey · https://beccamcconville.com/hrv-for-athletes/ · https://bradfordrabinmd.com/heart-rate-variability-exercise-recovery-and-overall-health/ · https://www.youtube.com/watch?v=leArNJNR6pQ · https://pmc.ncbi.nlm.nih.gov/articles/PMC11204851/ · https://www.hss.edu/health-library/move-better/heart-rate-variability
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Heart Rate Variability (HRV) is a powerful and increasingly popular metric for understanding your body's recovery status because it provides a window into the activity of your **Autonomic Nervous System (ANS)**.
@@ -7417,6 +7394,29 @@ Here's a breakdown of how HRV relates to recovery:
 *   **Context is King:** A single low HRV reading isn't necessarily a disaster. Always consider it in context with how you feel, your sleep quality, recent training, and other life stressors.
 
 In summary, HRV serves as a powerful, objective biomarker for your body's recovery status, reflecting the balance between your "fight or flight" and "rest and digest" systems. By monitoring your HRV, you gain valuable insights into your physiological readiness, allowing you to make informed decisions about training, lifestyle, and overall well-being to optimize your recovery and performance.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+**Heart rate variability (HRV)** is commonly used as a marker of **recovery status**: in general, **higher HRV relative to your own baseline** suggests better recovery, greater autonomic flexibility, and readiness to train, while **lower HRV** often reflects accumulated stress, fatigue, illness, poor sleep, or insufficient recovery.[2][3][8][9]
+
+HRV matters because it reflects the balance between the **sympathetic** (“fight or flight”) and **parasympathetic** (“rest and digest”) branches of the autonomic nervous system.[2][6] After hard training, HRV often drops temporarily, and a return toward baseline is commonly interpreted as recovery progressing.[2][8] Research and sports medicine guidance also note that HRV can help guide whether to do a hard workout, a lighter session, or rest.[2][8][9]
+
+A few important nuances:
+
+- **Compare HRV to your own baseline**, not to someone else’s, because normal values vary a lot by person.[3][8]
+- A **single low reading** does not necessarily mean poor recovery; the **trend over several days** is usually more informative.[8][9]
+- HRV is useful, but it is **not a perfect recovery score**. Factors like fueling status, sleep, stress, illness, and training load can all affect it, and in some cases HRV can look “good” even when other problems are present.[5]
+
+If you want, I can also explain **how to interpret HRV day-to-day** or how it differs from **resting heart rate** and **heart rate recovery**.
+
+Citations: https://pmc.ncbi.nlm.nih.gov/articles/PMC4632887/ · https://www.scienceforsport.com/heart-rate-variability-hrv/ · https://www.princetonorthopaedic.com/heart-rate-variability-and-recovery-what-hrv-means/ · https://www.parknorthpt.com/post/why-heart-rate-variability-hrv-matters-for-your-rehabilitation-journey · https://beccamcconville.com/hrv-for-athletes/ · https://bradfordrabinmd.com/heart-rate-variability-exercise-recovery-and-overall-health/ · https://www.youtube.com/watch?v=leArNJNR6pQ · https://pmc.ncbi.nlm.nih.gov/articles/PMC11204851/ · https://www.hss.edu/health-library/move-better/heart-rate-variability
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -7475,25 +7475,6 @@ If you're tracking your sleep heart rate and notice concerning patterns, it's wo
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-For **most healthy adults**, a **sleeping heart rate** is often about **40 to 60 bpm**, and many people fall around **50 to 75 bpm** depending on fitness, age, and overall health.[1][4]
-
-A useful rule of thumb is that heart rate during sleep is usually about **20% to 30% lower** than your daytime resting heart rate.[1][2][4] Since a typical adult resting heart rate is **60 to 100 bpm**, a lower number during sleep is expected.[4][7][9]
-
-A sleeping heart rate **below 40 bpm** can be normal in some people, especially trained athletes, but if it is **consistently below 40 bpm** or **above 100 bpm** during sleep, that is outside the usual range and is worth discussing with a clinician, especially if you have symptoms like dizziness, fainting, chest pain, or shortness of breath.[1][4][7]
-
-If you want, I can also help you interpret **your specific sleeping heart rate** based on your age, fitness level, and whether you have any symptoms.
-
-Citations: https://www.sleepfoundation.org/physical-health/sleeping-heart-rate · https://www.cardiaccarepc.com/content-hub/what-is-the-normal-heart-rate-in-women-while-sleeping · https://pmc.ncbi.nlm.nih.gov/articles/PMC3963245/ · https://health.clevelandclinic.org/sleeping-heart-rate · https://ouraring.com/blog/sleeping-heart-rate/ · https://ringconn.com/blogs/news/normal-sleeping-heart-rate-by-age · https://www.mayoclinic.org/healthy-lifestyle/fitness/expert-answers/heart-rate/faq-20057979 · https://www.health.harvard.edu/blog/your-resting-heart-rate-can-reflect-your-current-and-future-health-201606172482 · https://www.heart.org/en/healthy-living/exercise-and-physical-activity/fitness-basics/target-heart-rates
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 A healthy resting heart rate (RHR) during sleep is generally **lower than your awake resting heart rate**. This is because your body is in a state of deep relaxation, metabolism slows down, and the parasympathetic nervous system (responsible for "rest and digest") is dominant.
@@ -7521,6 +7502,25 @@ While a lower heart rate during sleep is normal, consistently very high or very 
 *   **Significant Spikes or Irregularities:** Frequent, unexplained spikes or very irregular heart rhythms during sleep should also be evaluated by a healthcare professional.
 
 **In summary:** A healthy sleep heart rate for most adults is typically between **40 and 70 bpm**, often dropping to its lowest point during deep sleep. It's more important to understand your *personal baseline* and notice any significant, consistent deviations from it. If you have concerns about your sleep heart rate, it's always best to consult with a doctor.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+For **most healthy adults**, a **sleeping heart rate** is often about **40 to 60 bpm**, and many people fall around **50 to 75 bpm** depending on fitness, age, and overall health.[1][4]
+
+A useful rule of thumb is that heart rate during sleep is usually about **20% to 30% lower** than your daytime resting heart rate.[1][2][4] Since a typical adult resting heart rate is **60 to 100 bpm**, a lower number during sleep is expected.[4][7][9]
+
+A sleeping heart rate **below 40 bpm** can be normal in some people, especially trained athletes, but if it is **consistently below 40 bpm** or **above 100 bpm** during sleep, that is outside the usual range and is worth discussing with a clinician, especially if you have symptoms like dizziness, fainting, chest pain, or shortness of breath.[1][4][7]
+
+If you want, I can also help you interpret **your specific sleeping heart rate** based on your age, fitness level, and whether you have any symptoms.
+
+Citations: https://www.sleepfoundation.org/physical-health/sleeping-heart-rate · https://www.cardiaccarepc.com/content-hub/what-is-the-normal-heart-rate-in-women-while-sleeping · https://pmc.ncbi.nlm.nih.gov/articles/PMC3963245/ · https://health.clevelandclinic.org/sleeping-heart-rate · https://ouraring.com/blog/sleeping-heart-rate/ · https://ringconn.com/blogs/news/normal-sleeping-heart-rate-by-age · https://www.mayoclinic.org/healthy-lifestyle/fitness/expert-answers/heart-rate/faq-20057979 · https://www.health.harvard.edu/blog/your-resting-heart-rate-can-reflect-your-current-and-future-health-201606172482 · https://www.heart.org/en/healthy-living/exercise-and-physical-activity/fitness-basics/target-heart-rates
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -7590,30 +7590,6 @@ Deep sleep is crucial for physical recovery, memory consolidation, and overall h
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-For most **adults**, deep sleep is usually about **10–25% of total sleep**, which works out to roughly **40–110 minutes** if you sleep 7–9 hours a night.[1][3][8] A common practical target is around **1 to 2 hours per night**, but there is **no single official minimum** that applies to everyone.[3][8]
-
-A few important details:
-
-- If you sleep **7 hours**, 10–25% deep sleep is about **42–105 minutes**.[1][3]
-- If you sleep **8 hours**, it is about **48–120 minutes**.[1][3]
-- Deep sleep tends to happen more in the **first half of the night** and becomes less frequent later on.[3][4][8]
-- Deep sleep needs **decline with age**, so older adults often spend less time in it.[1][8]
-
-What matters most is not hitting an exact number every night, but whether you usually wake up **rested**, stay alert during the day, and get enough **total sleep** overall.[3][8]
-
-If you want, I can also help you estimate whether *your* deep sleep amount is likely normal based on your age and total sleep time.
-
-Citations: https://www.healthline.com/health/how-much-deep-sleep-do-you-need · https://www.thesleepclinicmd.com/how-much-core-sleep-do-you-need/ · https://www.sleepfoundation.org/stages-of-sleep/deep-sleep · https://www.texashealth.org/areyouawellbeing/Health-and-Well-Being/How-Much-Deep-Light-and-REM-Sleep-Do-You-Need · https://dreemhealth.com/blog/sleep-basics/how-to-get-more-deep-sleep-a-sleep-clinics-guide · https://sleeplessinarizona.com/are-you-getting-enough-deep-sleep/ · https://pmc.ncbi.nlm.nih.gov/articles/PMC10968898/ · https://my.clevelandclinic.org/health/body/12148-sleep-basics
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 While there's no single "magic number" that applies to everyone, here's a general guideline for how much deep sleep you actually need each night:
@@ -7662,6 +7638,30 @@ Deep sleep (also known as N3 or slow-wave sleep) is the most restorative stage o
 8.  **Get Sunlight Exposure:** Exposure to natural light, especially in the morning, helps regulate your circadian rhythm.
 
 If you consistently feel tired despite getting what you believe is enough sleep, or if you have concerns about your sleep quality, it's always a good idea to consult with a doctor or a sleep specialist.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+For most **adults**, deep sleep is usually about **10–25% of total sleep**, which works out to roughly **40–110 minutes** if you sleep 7–9 hours a night.[1][3][8] A common practical target is around **1 to 2 hours per night**, but there is **no single official minimum** that applies to everyone.[3][8]
+
+A few important details:
+
+- If you sleep **7 hours**, 10–25% deep sleep is about **42–105 minutes**.[1][3]
+- If you sleep **8 hours**, it is about **48–120 minutes**.[1][3]
+- Deep sleep tends to happen more in the **first half of the night** and becomes less frequent later on.[3][4][8]
+- Deep sleep needs **decline with age**, so older adults often spend less time in it.[1][8]
+
+What matters most is not hitting an exact number every night, but whether you usually wake up **rested**, stay alert during the day, and get enough **total sleep** overall.[3][8]
+
+If you want, I can also help you estimate whether *your* deep sleep amount is likely normal based on your age and total sleep time.
+
+Citations: https://www.healthline.com/health/how-much-deep-sleep-do-you-need · https://www.thesleepclinicmd.com/how-much-core-sleep-do-you-need/ · https://www.sleepfoundation.org/stages-of-sleep/deep-sleep · https://www.texashealth.org/areyouawellbeing/Health-and-Well-Being/How-Much-Deep-Light-and-REM-Sleep-Do-You-Need · https://dreemhealth.com/blog/sleep-basics/how-to-get-more-deep-sleep-a-sleep-clinics-guide · https://sleeplessinarizona.com/are-you-getting-enough-deep-sleep/ · https://pmc.ncbi.nlm.nih.gov/articles/PMC10968898/ · https://my.clevelandclinic.org/health/body/12148-sleep-basics
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -7753,6 +7753,73 @@ Would you like information about apps or other tracking methods to use alongside
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
+### gemini
+
+Tracking your Basal Body Temperature (BBT) is a common and effective way to understand your menstrual cycle, particularly to identify ovulation. BBT is your lowest resting body temperature, and it changes in response to hormonal shifts throughout your cycle.
+
+Here's a detailed guide on how to use body temperature to track your menstrual cycle:
+
+### How BBT Works (The Science Behind It)
+
+1.  **Before Ovulation (Follicular Phase):** During the first half of your cycle, estrogen is the dominant hormone. Your BBT will typically be lower, usually ranging from about 97.0°F to 97.5°F (36.1°C to 36.4°C).
+2.  **Around Ovulation:** Some women experience a slight dip in BBT on the day of ovulation, but this isn't always noticeable.
+3.  **After Ovulation (Luteal Phase):** Once ovulation occurs, your body starts producing progesterone. Progesterone causes your BBT to rise and stay elevated for the rest of your luteal phase. This rise is usually about 0.4°F to 1.0°F (0.2°C to 0.5°C) above your pre-ovulation temperatures. Your post-ovulation temperatures might range from 97.6°F to 98.6°F (36.4°C to 37.0°C).
+4.  **Before Your Period:** If you're not pregnant, progesterone levels drop about 12-16 days after ovulation, causing your BBT to drop back down to your pre-ovulation levels. Your period typically starts within 12-36 hours of this temperature drop.
+5.  **If You're Pregnant:** If you conceive, progesterone levels remain high, and your BBT will stay elevated. A sustained high temperature for more than 18 days past ovulation can be an early indicator of pregnancy.
+
+### How to Track Your BBT (Step-by-Step)
+
+1.  **Get a BBT Thermometer:** You'll need a special basal body thermometer. These are more sensitive than regular thermometers and measure to two decimal places (e.g., 97.45°F or 36.35°C). Digital BBT thermometers are widely available.
+2.  **Take Your Temperature Every Morning:**
+    *   **Immediately Upon Waking:** This is crucial. Take your temperature *before* you get out of bed, talk, drink water, go to the bathroom, or do anything else. Any activity can raise your temperature.
+    *   **After At Least 3 Hours of Uninterrupted Sleep:** Try to ensure you've had a solid block of sleep. If your sleep is frequently interrupted, it can affect accuracy.
+    *   **At the Same Time Each Day:** Try to take your temperature at roughly the same time every morning (within 30-60 minutes). If you wake up significantly earlier or later than usual, make a note of it on your chart.
+3.  **Choose Your Method and Stick With It:** You can take your BBT orally, vaginally, or rectally. The most common method is oral. Whichever you choose, use the same method consistently throughout your cycle.
+4.  **Record Your Temperature:**
+    *   **Charting Apps:** Many fertility tracking apps (e.g., Fertility Friend, Ovia Fertility, Flo) allow you to input your daily BBT, and they will often automatically generate a chart and identify ovulation for you.
+    *   **Paper Chart:** You can also print out a BBT chart and manually plot your temperatures.
+    *   **Note Other Factors:** It's important to note anything that might affect your temperature, such as:
+        *   Less than 3 hours of sleep
+        *   Illness (fever)
+        *   Alcohol consumption the night before
+        *   Stress
+        *   Travel/time zone changes
+        *   Certain medications
+        *   Waking up significantly earlier or later than usual
+
+### Interpreting Your BBT Chart
+
+1.  **Look for a "Shift":** The key is to identify a sustained temperature shift. This means your temperature rises and stays elevated for at least three consecutive days.
+2.  **Identify the Coverline:** Draw an imaginary horizontal line (the "coverline") just above your highest pre-ovulation temperature.
+3.  **Confirm Ovulation:** Ovulation is confirmed when you have three consecutive days of temperatures that are at least 0.4°F (0.2°C) above your coverline. The day of ovulation is typically the day *before* the first day of this sustained temperature rise.
+4.  **Identify Your Fertile Window:** BBT confirms ovulation *after* it has happened. Sperm can live for up to 5 days, and the egg is viable for 12-24 hours. Therefore, your most fertile window is the 5 days leading up to ovulation and the day of ovulation itself. BBT helps you understand when you *did* ovulate, which can help you predict your fertile window in future cycles.
+5.  **Luteal Phase Length:** The number of days between ovulation and the start of your period is your luteal phase length. A healthy luteal phase is typically 12-16 days long. A consistently short luteal phase (less than 10 days) can sometimes indicate hormonal imbalances and might make it harder to conceive.
+
+### Benefits of BBT Tracking
+
+*   **Confirms Ovulation:** It's one of the most reliable at-home methods to confirm that you have ovulated.
+*   **Identifies Your Fertile Window (Retrospectively):** By understanding when you typically ovulate, you can better predict your fertile window in future cycles.
+*   **Helps Pinpoint Cycle Length and Regularity:** You'll gain a clearer picture of your unique cycle patterns.
+*   **Early Indication of Pregnancy:** A sustained high temperature for 18+ days past ovulation is a strong indicator of pregnancy.
+*   **Natural Family Planning (NFP):** When combined with other fertility signs (like cervical mucus), BBT can be used as a method of natural birth control or to time intercourse for conception.
+*   **Identifies Luteal Phase Defects:** Can help identify if your luteal phase is consistently too short.
+
+### Limitations and Challenges
+
+*   **Retrospective:** BBT confirms ovulation *after* it has happened, so it's not ideal for timing intercourse *before* ovulation in real-time. For that, you'd combine it with other methods like ovulation predictor kits (OPKs) and cervical mucus tracking.
+*   **Requires Discipline:** Daily tracking can be a commitment.
+*   **Affected by Many Factors:** Illness, alcohol, poor sleep, stress, and travel can all skew your readings.
+*   **Not 100% Accurate for Contraception Alone:** While useful for NFP, BBT alone is not as effective as other birth control methods if you're trying to prevent pregnancy.
+
+By consistently tracking your BBT, you'll gain valuable insights into your body's unique rhythms and hormonal patterns, empowering you to better understand and manage your reproductive health. If you have any concerns about your cycle or fertility, always consult with a healthcare professional.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
 ### perplexity
 
 You can use body temperature to track your menstrual cycle by monitoring your **Basal Body Temperature (BBT)**—the lowest resting temperature of your body, typically measured right after waking up. Here’s a step-by-step guide:
@@ -7829,73 +7896,6 @@ Citations: https://pmc.ncbi.nlm.nih.gov/articles/PMC11294004/ · https://www.nat
 
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
-### gemini
-
-Tracking your Basal Body Temperature (BBT) is a common and effective way to understand your menstrual cycle, particularly to identify ovulation. BBT is your lowest resting body temperature, and it changes in response to hormonal shifts throughout your cycle.
-
-Here's a detailed guide on how to use body temperature to track your menstrual cycle:
-
-### How BBT Works (The Science Behind It)
-
-1.  **Before Ovulation (Follicular Phase):** During the first half of your cycle, estrogen is the dominant hormone. Your BBT will typically be lower, usually ranging from about 97.0°F to 97.5°F (36.1°C to 36.4°C).
-2.  **Around Ovulation:** Some women experience a slight dip in BBT on the day of ovulation, but this isn't always noticeable.
-3.  **After Ovulation (Luteal Phase):** Once ovulation occurs, your body starts producing progesterone. Progesterone causes your BBT to rise and stay elevated for the rest of your luteal phase. This rise is usually about 0.4°F to 1.0°F (0.2°C to 0.5°C) above your pre-ovulation temperatures. Your post-ovulation temperatures might range from 97.6°F to 98.6°F (36.4°C to 37.0°C).
-4.  **Before Your Period:** If you're not pregnant, progesterone levels drop about 12-16 days after ovulation, causing your BBT to drop back down to your pre-ovulation levels. Your period typically starts within 12-36 hours of this temperature drop.
-5.  **If You're Pregnant:** If you conceive, progesterone levels remain high, and your BBT will stay elevated. A sustained high temperature for more than 18 days past ovulation can be an early indicator of pregnancy.
-
-### How to Track Your BBT (Step-by-Step)
-
-1.  **Get a BBT Thermometer:** You'll need a special basal body thermometer. These are more sensitive than regular thermometers and measure to two decimal places (e.g., 97.45°F or 36.35°C). Digital BBT thermometers are widely available.
-2.  **Take Your Temperature Every Morning:**
-    *   **Immediately Upon Waking:** This is crucial. Take your temperature *before* you get out of bed, talk, drink water, go to the bathroom, or do anything else. Any activity can raise your temperature.
-    *   **After At Least 3 Hours of Uninterrupted Sleep:** Try to ensure you've had a solid block of sleep. If your sleep is frequently interrupted, it can affect accuracy.
-    *   **At the Same Time Each Day:** Try to take your temperature at roughly the same time every morning (within 30-60 minutes). If you wake up significantly earlier or later than usual, make a note of it on your chart.
-3.  **Choose Your Method and Stick With It:** You can take your BBT orally, vaginally, or rectally. The most common method is oral. Whichever you choose, use the same method consistently throughout your cycle.
-4.  **Record Your Temperature:**
-    *   **Charting Apps:** Many fertility tracking apps (e.g., Fertility Friend, Ovia Fertility, Flo) allow you to input your daily BBT, and they will often automatically generate a chart and identify ovulation for you.
-    *   **Paper Chart:** You can also print out a BBT chart and manually plot your temperatures.
-    *   **Note Other Factors:** It's important to note anything that might affect your temperature, such as:
-        *   Less than 3 hours of sleep
-        *   Illness (fever)
-        *   Alcohol consumption the night before
-        *   Stress
-        *   Travel/time zone changes
-        *   Certain medications
-        *   Waking up significantly earlier or later than usual
-
-### Interpreting Your BBT Chart
-
-1.  **Look for a "Shift":** The key is to identify a sustained temperature shift. This means your temperature rises and stays elevated for at least three consecutive days.
-2.  **Identify the Coverline:** Draw an imaginary horizontal line (the "coverline") just above your highest pre-ovulation temperature.
-3.  **Confirm Ovulation:** Ovulation is confirmed when you have three consecutive days of temperatures that are at least 0.4°F (0.2°C) above your coverline. The day of ovulation is typically the day *before* the first day of this sustained temperature rise.
-4.  **Identify Your Fertile Window:** BBT confirms ovulation *after* it has happened. Sperm can live for up to 5 days, and the egg is viable for 12-24 hours. Therefore, your most fertile window is the 5 days leading up to ovulation and the day of ovulation itself. BBT helps you understand when you *did* ovulate, which can help you predict your fertile window in future cycles.
-5.  **Luteal Phase Length:** The number of days between ovulation and the start of your period is your luteal phase length. A healthy luteal phase is typically 12-16 days long. A consistently short luteal phase (less than 10 days) can sometimes indicate hormonal imbalances and might make it harder to conceive.
-
-### Benefits of BBT Tracking
-
-*   **Confirms Ovulation:** It's one of the most reliable at-home methods to confirm that you have ovulated.
-*   **Identifies Your Fertile Window (Retrospectively):** By understanding when you typically ovulate, you can better predict your fertile window in future cycles.
-*   **Helps Pinpoint Cycle Length and Regularity:** You'll gain a clearer picture of your unique cycle patterns.
-*   **Early Indication of Pregnancy:** A sustained high temperature for 18+ days past ovulation is a strong indicator of pregnancy.
-*   **Natural Family Planning (NFP):** When combined with other fertility signs (like cervical mucus), BBT can be used as a method of natural birth control or to time intercourse for conception.
-*   **Identifies Luteal Phase Defects:** Can help identify if your luteal phase is consistently too short.
-
-### Limitations and Challenges
-
-*   **Retrospective:** BBT confirms ovulation *after* it has happened, so it's not ideal for timing intercourse *before* ovulation in real-time. For that, you'd combine it with other methods like ovulation predictor kits (OPKs) and cervical mucus tracking.
-*   **Requires Discipline:** Daily tracking can be a commitment.
-*   **Affected by Many Factors:** Illness, alcohol, poor sleep, stress, and travel can all skew your readings.
-*   **Not 100% Accurate for Contraception Alone:** While useful for NFP, BBT alone is not as effective as other birth control methods if you're trying to prevent pregnancy.
-
-By consistently tracking your BBT, you'll gain valuable insights into your body's unique rhythms and hormonal patterns, empowering you to better understand and manage your reproductive health. If you have any concerns about your cycle or fertility, always consult with a healthcare professional.
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
@@ -7994,31 +7994,6 @@ HRV varies widely by individual, but general guidelines:
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-A **good HRV score** is usually **not one universal number**; it depends on your age, fitness, sleep, stress, and device, and the best benchmark is your own baseline over time.[2][4] As a rough reference, adult resting/sleeping HRV values are often in the **~40–100 ms** range, with younger adults typically higher and older adults lower.[1][3][6]
-
-What matters most is whether your HRV is **stable or trending upward** for *you*.[2][4] A single low reading is not usually alarming, but a **sustained drop** can reflect stress, illness, poor sleep, dehydration, alcohol use, or overtraining.[2]
-
-Ways to improve HRV include:
-
-- **Sleep well**: consistent, quality sleep is one of the strongest supports for higher HRV.[1][3][4]
-- **Manage stress**: meditation, yoga, relaxation, and breathing exercises can help raise HRV.[1][6][7]
-- **Exercise regularly**: physical activity is associated with better HRV, especially when balanced with recovery.[1][4][5][7]
-- **Recover properly**: if HRV is low, lighter training, stretching, breathwork, and earlier bedtime may help.[6]
-- **Support overall health**: good hydration, healthy eating, and limiting alcohol can improve HRV trends.[2][4][7]
-
-If you want, I can also help you interpret **your specific HRV number** if you tell me your age, the device/app you use, and whether it’s a nightly, resting, or morning reading.
-
-Citations: https://cardiomood.com/2023/06/17/what-is-a-good-hrv-by-age · https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/ · https://insightcla.com/blog/average-sleeping-hrv-by-age/ · https://ouraring.com/blog/average-hrv/ · https://www.kubios.com/blog/heart-rate-variability-normal-range/ · https://www.hss.edu/health-library/move-better/heart-rate-variability · https://www.webmd.com/heart/what-is-heart-rate-variability
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Heart Rate Variability (HRV) is a fascinating and increasingly popular metric that reflects the balance of your autonomic nervous system (ANS) – specifically, the interplay between your sympathetic ("fight or flight") and parasympathetic ("rest and digest") branches. A higher HRV generally indicates a more adaptable and resilient nervous system, while a lower HRV can suggest stress, fatigue, or illness.
@@ -8105,6 +8080,31 @@ Improving your HRV isn't about chasing a number; it's about adopting a lifestyle
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
+### perplexity
+
+A **good HRV score** is usually **not one universal number**; it depends on your age, fitness, sleep, stress, and device, and the best benchmark is your own baseline over time.[2][4] As a rough reference, adult resting/sleeping HRV values are often in the **~40–100 ms** range, with younger adults typically higher and older adults lower.[1][3][6]
+
+What matters most is whether your HRV is **stable or trending upward** for *you*.[2][4] A single low reading is not usually alarming, but a **sustained drop** can reflect stress, illness, poor sleep, dehydration, alcohol use, or overtraining.[2]
+
+Ways to improve HRV include:
+
+- **Sleep well**: consistent, quality sleep is one of the strongest supports for higher HRV.[1][3][4]
+- **Manage stress**: meditation, yoga, relaxation, and breathing exercises can help raise HRV.[1][6][7]
+- **Exercise regularly**: physical activity is associated with better HRV, especially when balanced with recovery.[1][4][5][7]
+- **Recover properly**: if HRV is low, lighter training, stretching, breathwork, and earlier bedtime may help.[6]
+- **Support overall health**: good hydration, healthy eating, and limiting alcohol can improve HRV trends.[2][4][7]
+
+If you want, I can also help you interpret **your specific HRV number** if you tell me your age, the device/app you use, and whether it’s a nightly, resting, or morning reading.
+
+Citations: https://cardiomood.com/2023/06/17/what-is-a-good-hrv-by-age · https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/ · https://insightcla.com/blog/average-sleeping-hrv-by-age/ · https://ouraring.com/blog/average-hrv/ · https://www.kubios.com/blog/heart-rate-variability-normal-range/ · https://www.hss.edu/health-library/move-better/heart-rate-variability · https://www.webmd.com/heart/what-is-heart-rate-variability
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
 ---
 
 ## adj-06 · _adjacent_authority_ (weight 1.0)
@@ -8183,41 +8183,6 @@ What's making you question your sleep quality?
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-You’re **probably getting enough quality sleep** if you fall asleep within about 30 minutes, wake up only rarely, fall back asleep within about 20 minutes if you do wake, and feel **rested, alert, and energized** during the day.[1][2][5][8]
-
-A practical way to check is to look for these signs:
-
-- **You fall asleep easily**: usually within 30 minutes of going to bed.[1][5][8]
-- **You stay asleep most of the night**: waking no more than once or so, and not lying awake long after nighttime awakenings.[1][5][8]
-- **You wake feeling refreshed** rather than tired or ready to go back to sleep.[1][2][5]
-- **You can function well during the day** without struggling to stay alert, focus, remember things, or regulate your mood.[1][2][4][6]
-- **You do not rely heavily on caffeine** to get through the day.[1]
-- **You’re not getting strong warning signs** like gasping or choking during sleep, repeated awakenings, or frequent daytime sleepiness.[1][2][4]
-
-A simple self-check is to ask:
-- Did I fall asleep within 30 minutes?
-- Did I wake up no more than 1 time overnight?
-- If I woke up, was I back asleep within 20 minutes?
-- Did I feel rested and energetic in the morning?
-- Did I need lots of caffeine to function?[5][7][8]
-
-If you answer “no” to several of those, your sleep quality may be poor even if you’re in bed long enough.[2][5][8]
-
-It’s also important to note that **sleep quality is not just sleep duration**; it also depends on whether sleep is continuous and refreshing.[2][8]
-
-If you’re having **gasping/choking at night, frequent awakenings, or persistent daytime sleepiness**, that can point to a sleep disorder such as sleep apnea and is worth discussing with a clinician.[1][2][4]
-
-Citations: https://www.hprc-online.org/mental-fitness/sleep/how-tell-if-you-get-good-sleep · https://www.cdc.gov/sleep/about/index.html · https://breathingandsleepcenter.com/2024/09/indicators-of-poor-sleep-quality/ · https://www.uab.edu/news/news-you-can-use/seven-signs-of-poor-sleep · https://www.sleepfoundation.org/sleep-hygiene/how-to-determine-poor-quality-sleep · https://my.clevelandclinic.org/health/diseases/23970-sleep-deprivation · https://www.uhhospitals.org/blog/articles/2021/08/how-to-know-if-youre-getting-a-good-nights-sleep · https://www.thensf.org/what-is-sleep-quality/ · https://www.health.harvard.edu/sleep/8-reasons-why-youre-not-sleeping
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Knowing if you're getting enough *quality* sleep involves a combination of how you feel, what you observe, and sometimes, what data suggests. It's not just about the number of hours, but how restorative those hours are.
@@ -8277,6 +8242,41 @@ If you consistently experience any of the following, it's a good idea to consult
 *   Suspected sleep disorders (insomnia, sleep apnea, restless legs syndrome, narcolepsy).
 
 Ultimately, the best indicator of quality sleep is how you feel and function during your waking hours. If you wake up feeling refreshed and maintain good energy and focus throughout the day without relying heavily on stimulants, chances are you're getting good quality sleep.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+You’re **probably getting enough quality sleep** if you fall asleep within about 30 minutes, wake up only rarely, fall back asleep within about 20 minutes if you do wake, and feel **rested, alert, and energized** during the day.[1][2][5][8]
+
+A practical way to check is to look for these signs:
+
+- **You fall asleep easily**: usually within 30 minutes of going to bed.[1][5][8]
+- **You stay asleep most of the night**: waking no more than once or so, and not lying awake long after nighttime awakenings.[1][5][8]
+- **You wake feeling refreshed** rather than tired or ready to go back to sleep.[1][2][5]
+- **You can function well during the day** without struggling to stay alert, focus, remember things, or regulate your mood.[1][2][4][6]
+- **You do not rely heavily on caffeine** to get through the day.[1]
+- **You’re not getting strong warning signs** like gasping or choking during sleep, repeated awakenings, or frequent daytime sleepiness.[1][2][4]
+
+A simple self-check is to ask:
+- Did I fall asleep within 30 minutes?
+- Did I wake up no more than 1 time overnight?
+- If I woke up, was I back asleep within 20 minutes?
+- Did I feel rested and energetic in the morning?
+- Did I need lots of caffeine to function?[5][7][8]
+
+If you answer “no” to several of those, your sleep quality may be poor even if you’re in bed long enough.[2][5][8]
+
+It’s also important to note that **sleep quality is not just sleep duration**; it also depends on whether sleep is continuous and refreshing.[2][8]
+
+If you’re having **gasping/choking at night, frequent awakenings, or persistent daytime sleepiness**, that can point to a sleep disorder such as sleep apnea and is worth discussing with a clinician.[1][2][4]
+
+Citations: https://www.hprc-online.org/mental-fitness/sleep/how-tell-if-you-get-good-sleep · https://www.cdc.gov/sleep/about/index.html · https://breathingandsleepcenter.com/2024/09/indicators-of-poor-sleep-quality/ · https://www.uab.edu/news/news-you-can-use/seven-signs-of-poor-sleep · https://www.sleepfoundation.org/sleep-hygiene/how-to-determine-poor-quality-sleep · https://my.clevelandclinic.org/health/diseases/23970-sleep-deprivation · https://www.uhhospitals.org/blog/articles/2021/08/how-to-know-if-youre-getting-a-good-nights-sleep · https://www.thensf.org/what-is-sleep-quality/ · https://www.health.harvard.edu/sleep/8-reasons-why-youre-not-sleeping
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -8366,28 +8366,6 @@ Even moderate drinking (2-3 drinks) can:
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
-### perplexity
-
-Alcohol can make you feel sleepy at first, but it usually **worsens sleep quality** by making sleep more fragmented and reducing **REM sleep**, which is important for memory, mood, and feeling restored the next day.[1][2][6] It can also increase **snoring** and **sleep apnea** risk by relaxing throat muscles and narrowing the airway.[1][3]
-
-For **recovery**, that matters because sleep is when the body and brain do much of their repair work. Poor sleep from alcohol is linked with more **next-day fatigue**, **daytime dysfunction**, and worse overall “recovery” from both physical and mental stress.[1][5][6] In people with alcohol use disorder or early recovery, **insomnia** and other sleep disruptions are common, and sleep problems can make relapse more likely by worsening mood and stress control.[1][3]
-
-A practical way to think about it:
-- **You may fall asleep faster**, but sleep is often lighter and more broken up later in the night.[1][4][6]
-- **REM sleep drops**, especially in the first half of the night, and sleep can rebound into more vivid dreams or awakenings later.[1][5][6]
-- **Recovery suffers** because fragmented sleep and less restorative sleep reduce how refreshed, alert, and physically recovered you feel the next day.[1][3][5]
-
-If your goal is better sleep or better recovery, the most helpful change is usually to **avoid alcohol close to bedtime**, especially heavy drinking.[1][2][4]
-
-Citations: https://www.sleepfoundation.org/nutrition/alcohol-and-sleep · https://www.ncoa.org/article/how-alcohol-affects-your-sleep/ · https://www.theraleighhouse.com/treatments/alcohol-addiction/the-importance-of-sleep-in-alcoholism-recovery · https://hackensackmeridianhealth.org/en/healthier-you/2023/06/14/heres-how-alcohol-affects-your-sleep · https://pmc.ncbi.nlm.nih.gov/articles/PMC4666864/ · https://health.clevelandclinic.org/why-you-should-limit-alcohol-before-bed-for-better-sleep · https://www.youtube.com/watch?v=olp0hUYsQSc · https://www.mdanderson.org/cancerwise/alcohol-affects-sleep-heres-how.h00-159778023.html
-
-**Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: absent · prominence=absent · framing=neutral
-
 ### gemini
 
 Alcohol has a complex and often detrimental effect on both sleep and recovery, despite the common misconception that it helps you fall asleep. While it might initially make you feel drowsy, its overall impact is disruptive and counterproductive to restorative rest.
@@ -8438,6 +8416,28 @@ Recovery encompasses both physical and mental restoration. Alcohol impairs both:
     *   Sleep is crucial for a robust immune system. By disrupting sleep, alcohol can suppress immune function, making you more susceptible to illness and slowing down recovery from sickness.
 
 **In summary:** While a drink might seem like a quick fix for falling asleep, it ultimately sabotages the quality and restorative power of your sleep. This, in turn, significantly hinders both your physical and mental recovery, leaving you feeling less refreshed, less energetic, and less prepared for the day ahead. The closer to bedtime you drink, and the more you drink, the more pronounced these negative effects will be.
+
+**Judge verdict:**
+  - **Oura**: absent · prominence=absent · framing=neutral
+  - Whoop: absent · prominence=absent · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+
+### perplexity
+
+Alcohol can make you feel sleepy at first, but it usually **worsens sleep quality** by making sleep more fragmented and reducing **REM sleep**, which is important for memory, mood, and feeling restored the next day.[1][2][6] It can also increase **snoring** and **sleep apnea** risk by relaxing throat muscles and narrowing the airway.[1][3]
+
+For **recovery**, that matters because sleep is when the body and brain do much of their repair work. Poor sleep from alcohol is linked with more **next-day fatigue**, **daytime dysfunction**, and worse overall “recovery” from both physical and mental stress.[1][5][6] In people with alcohol use disorder or early recovery, **insomnia** and other sleep disruptions are common, and sleep problems can make relapse more likely by worsening mood and stress control.[1][3]
+
+A practical way to think about it:
+- **You may fall asleep faster**, but sleep is often lighter and more broken up later in the night.[1][4][6]
+- **REM sleep drops**, especially in the first half of the night, and sleep can rebound into more vivid dreams or awakenings later.[1][5][6]
+- **Recovery suffers** because fragmented sleep and less restorative sleep reduce how refreshed, alert, and physically recovered you feel the next day.[1][3][5]
+
+If your goal is better sleep or better recovery, the most helpful change is usually to **avoid alcohol close to bedtime**, especially heavy drinking.[1][2][4]
+
+Citations: https://www.sleepfoundation.org/nutrition/alcohol-and-sleep · https://www.ncoa.org/article/how-alcohol-affects-your-sleep/ · https://www.theraleighhouse.com/treatments/alcohol-addiction/the-importance-of-sleep-in-alcoholism-recovery · https://hackensackmeridianhealth.org/en/healthier-you/2023/06/14/heres-how-alcohol-affects-your-sleep · https://pmc.ncbi.nlm.nih.gov/articles/PMC4666864/ · https://health.clevelandclinic.org/why-you-should-limit-alcohol-before-bed-for-better-sleep · https://www.youtube.com/watch?v=olp0hUYsQSc · https://www.mdanderson.org/cancerwise/alcohol-affects-sleep-heres-how.h00-159778023.html
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
@@ -8657,7 +8657,7 @@ Assessed 180 of 180 answers.
 # GEO Audit — Oura
 
 **Run date:** 2026-06-13
-**Query set:** v1-draft-r2 · 1 run(s) per query
+**Query set:** v1 · 1 run(s) per query
 **Engines:** anthropic, gemini, openai, perplexity
 **Competitors:** Whoop, Ultrahuman, Samsung Galaxy Ring, RingConn
 **Detection:** LLM judge
@@ -8885,7 +8885,7 @@ Assessed 180 of 180 answers.
 
 ## Query Set (Appendix)
 
-_Version v1-draft-r2, locked 2026-06-11._
+_Version v1, locked 2026-06-11._
 
 | Query | Intent | Persona / modifier | Weight |
 | --- | --- | --- | --- |

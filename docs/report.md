@@ -2,7 +2,7 @@
 
 **Run ID:** `204e7854-d4cc-4e9c-869e-81cdf594148e`  
 **Surface:** parametric memory (what each model recommends from training, no live retrieval) — Perplexity additionally returns live citations  
-**Query set:** `v1-draft-r2` · 45 queries, locked 2026-06-11  
+**Query set:** `v1` · 45 queries, locked 2026-06-11  
 **Engines:** anthropic, gemini, openai, perplexity (4)  
 **Competitors benchmarked:** Whoop, Ultrahuman, Samsung Galaxy Ring, RingConn  
 **Coverage:** 180 answers · 180 judge verdicts (every answer scored by one held-constant `gpt-4o` judge against the Oura fact sheet)  
@@ -285,7 +285,7 @@ Oura’s 41% share-of-voice is larger than the next two competitors combined. **
 
 ### Trend
 
-_This is the **baseline** cycle for query set `v1-draft-r2` — no prior comparable run to diff against. The trend column (the method’s moat: re-run the locked set on a 4–6 week cadence and show the named metric move) activates from the next cycle via `geo compare <before> <after>`._
+_This is the **baseline** cycle for query set `v1` — no prior comparable run to diff against. The trend column (the method’s moat: re-run the locked set on a 4–6 week cadence and show the named metric move) activates from the next cycle via `geo compare <before> <after>`._
 
 ### Structurally behind — Oura absent, competitor #1 (13 cells)
 
@@ -384,7 +384,7 @@ Sequenced by impact × fixability. Items 1–2 are the demo-ready story; 3–4 a
 
 ### §6.1 Query set
 
-`v1-draft-r2` · 45 queries · locked 2026-06-11. Intent mix: problem_aware 7, category 13, comparison 11, brand 7, adjacent_authority 7.
+`v1` · 45 queries · locked 2026-06-11. Intent mix: problem_aware 7, category 13, comparison 11, brand 7, adjacent_authority 7.
 
 | Query ID | Intent | Weight | Persona/modifier | Prompt |
 | --- | --- | --- | --- | --- |
