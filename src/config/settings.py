@@ -42,7 +42,9 @@ ENGINE_SEED: int = int(os.getenv("ENGINE_SEED", "42"))
 PAYLOAD_LOG_PATH: str | None = os.getenv("PAYLOAD_LOG_PATH")
 
 # The LLM judge — ONE held-constant model scores every answer from every engine,
-# so cross-engine comparisons stay valid. Held constant > which model. For
-# stricter neutrality set this to a model that isn't one of the measured
-# surfaces. Uses OPENAI_API_KEY.
-JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "gpt-4o")
+# so cross-engine comparisons stay valid. Held constant > which model. Uses the
+# Anthropic API (ANTHROPIC_API_KEY). Sonnet 4.6 is the economical-but-accurate
+# default for high-volume runs (~40% cheaper than Opus); set JUDGE_MODEL to
+# claude-opus-4-8 for max accuracy or claude-haiku-4-5 for max economy. Note:
+# Claude is itself a measured surface — for stricter neutrality use a non-measured model.
+JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-sonnet-4-6")

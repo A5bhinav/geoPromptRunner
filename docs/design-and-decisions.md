@@ -51,8 +51,8 @@ The report's engine-powered cells (§1 scorecard incl. grade, §2 by-bucket + ac
 The judge replaced the regex detection as the report's primary path. The runner collects raw answers; the **judge reads each answer and returns structured fields**; metrics aggregate those. It's a separate pass — stored answers can be **re-judged any time without re-querying the engines** (and the `judgments` table makes re-renders free).
 
 ### Implementation facts
-- **Model:** one held-constant judge — `gpt-4o` via `OPENAI_API_KEY` (`JUDGE_MODEL` env-overridable). Held-constant matters more than which model; for stricter neutrality it can be set to a model that isn't a measured surface.
-- **Determinism:** temperature from `ENGINE_TEMPERATURE` (0), `response_format={"type":"json_object"}` (forced JSON).
+- **Model:** one held-constant judge — `claude-sonnet-4-6` via `ANTHROPIC_API_KEY` (`JUDGE_MODEL` env-overridable). Sonnet 4.6 is the economical-but-accurate default for high-volume runs (~40% cheaper than Opus); raise to `claude-opus-4-8` for max accuracy or drop to `claude-haiku-4-5` for max economy. Held-constant matters more than which model. ⚠️ Claude is itself one of the measured surfaces, so for stricter neutrality set `JUDGE_MODEL` to a model that isn't measured.
+- **Determinism:** no `temperature` (Opus 4.8 rejects it) and no thinking; JSON is forced via a single required `record_judgment` tool call (the Anthropic API has no `json_object` mode).
 - **Never-raise:** a failed call degrades to `assessed=False` ("not assessed"), never crashes a run.
 - **No outside knowledge:** the system prompt forbids it; accuracy is judged *only* against the provided fact sheet (consumed as plain text, exactly as designed).
 - **One pass, all brands:** client + competitors scored together so prominence stays *relative* ("who got named first"). Brand parsing is name-keyed, case-insensitive, with safe enum coercion.

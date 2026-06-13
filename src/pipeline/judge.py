@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 import logging
 from enum import StrEnum
 
-import openai
-from openai import OpenAI
+import anthropic
+from anthropic import Anthropic
+from anthropic.types import Message, ToolChoiceToolParam, ToolParam
 
 from src.config import settings
 from src.storage.models import (
@@ -39,10 +39,16 @@ logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "You are a strict evaluator measuring how brands appear in an AI assistant's "
-    "answer to a buyer's question. You output ONLY JSON. Do NOT use any outside "
-    "knowledge about the brands — judge present/prominence/framing only from the "
-    "answer text, and judge accuracy ONLY against the provided fact sheet."
+    "answer to a buyer's question. You record your assessment by calling the "
+    "record_judgment tool. Do NOT use any outside knowledge about the brands — "
+    "judge present/prominence/framing only from the answer text, and judge "
+    "accuracy ONLY against the provided fact sheet."
 )
+
+# JSON shape is enforced by a forced tool call rather than a response_format flag
+# (the Anthropic API has no json_object mode). Output is small structured JSON;
+# 4096 leaves headroom for many accuracy flags without risking truncation.
+_JUDGE_MAX_TOKENS = 4096
 
 _BASE_INSTRUCTIONS = """Question asked: {query}
 
@@ -61,8 +67,8 @@ For EACH brand above, decide:
   recommended first vs. buried at the bottom).
 - framing: positive | neutral | negative (e.g. "avoid X" is negative).
 {accuracy_instructions}
-Return JSON exactly in this shape and nothing else:
-{{"brands":[{{"brand":"<name>","present":true,"prominence":"mid_pack","framing":"neutral"}}],"client_accuracy_flags":[{accuracy_example}]}}"""
+Record your assessment by calling the record_judgment tool: one brands entry per
+brand listed above, plus client_accuracy_flags (empty if none apply)."""
 
 _ACCURACY_BLOCK = """
 CLIENT FACT SHEET (ground truth — the ONLY allowed source for accuracy):
@@ -86,23 +92,80 @@ _NO_ACCURACY_BLOCK = (
 )
 
 
+def _judgment_tool() -> ToolParam:
+    """The forced tool the judge calls — its input schema IS the judgment JSON.
+
+    Enums are sourced from the data-layer types so the schema can't drift from
+    what the parsers accept.
+    """
+    return {
+        "name": "record_judgment",
+        "description": (
+            "Record how each brand appears in the answer, plus any client accuracy "
+            "flags checked against the fact sheet."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "brand": {"type": "string"},
+                            "present": {"type": "boolean"},
+                            "prominence": {"type": "string", "enum": [p.value for p in Prominence]},
+                            "framing": {"type": "string", "enum": [f.value for f in Framing]},
+                        },
+                        "required": ["brand", "present", "prominence", "framing"],
+                    },
+                },
+                "client_accuracy_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "enum": [t.value for t in AccuracyFlagType]},
+                            "claim": {"type": "string"},
+                            "reality": {"type": "string"},
+                            "severity": {"type": "string", "enum": [s.value for s in Severity]},
+                        },
+                        "required": ["type", "claim", "reality", "severity"],
+                    },
+                },
+            },
+            "required": ["brands", "client_accuracy_flags"],
+        },
+    }
+
+
+def _extract_tool_input(response: Message) -> dict[str, object]:
+    """Pull the record_judgment tool input (already a parsed dict) from the reply."""
+    for block in response.content:
+        if block.type == "tool_use" and isinstance(block.input, dict):
+            return block.input
+    raise ValueError("judge response contained no record_judgment tool call")
+
+
 class Judge:
     """One held-constant LLM that scores every answer — the detection 'brain'.
 
     Separate pass from the runner: feed it stored answers and re-judge any time
-    without re-querying the engines. Low temperature + forced JSON; a failed call
-    degrades to ``assessed=False`` ("not assessed"), never raises.
+    without re-querying the engines. JSON is forced via a single required tool
+    call (the Anthropic API has no json_object mode); a failed call degrades to
+    ``assessed=False`` ("not assessed"), never raises.
     """
 
     def __init__(self, model: str | None = None) -> None:
-        if not settings.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY is not set; the judge needs it (see .env.example).")
+        if not settings.ANTHROPIC_API_KEY:
+            raise ValueError("ANTHROPIC_API_KEY is not set; the judge needs it (see .env.example).")
         self._model = model or settings.JUDGE_MODEL
-        self._client = OpenAI(
-            api_key=settings.OPENAI_API_KEY,
+        self._client = Anthropic(
+            api_key=settings.ANTHROPIC_API_KEY,
             timeout=settings.ENGINE_TIMEOUT_SECONDS,
             max_retries=settings.ENGINE_MAX_RETRIES,
         )
+        self._tool = _judgment_tool()
 
     def _build_prompt(
         self,
@@ -113,20 +176,14 @@ class Judge:
         fact_sheet: str | None,
     ) -> str:
         brand_lines = "\n".join([f"- {client} [CLIENT]"] + [f"- {c}" for c in competitors])
-        if fact_sheet:
-            accuracy_instructions = _ACCURACY_BLOCK.format(fact_sheet=fact_sheet)
-            accuracy_example = (
-                '{"type":"wrong_pricing","claim":"...","reality":"...","severity":"high"}'
-            )
-        else:
-            accuracy_instructions = _NO_ACCURACY_BLOCK
-            accuracy_example = ""
+        accuracy_instructions = (
+            _ACCURACY_BLOCK.format(fact_sheet=fact_sheet) if fact_sheet else _NO_ACCURACY_BLOCK
+        )
         return _BASE_INSTRUCTIONS.format(
             query=query_text,
             answer=answer,
             brand_lines=brand_lines,
             accuracy_instructions=accuracy_instructions,
-            accuracy_example=accuracy_example,
         )
 
     def judge_answer(
@@ -140,18 +197,20 @@ class Judge:
         """Judge one answer. Returns (brand judgments, client accuracy flags, assessed)."""
         prompt = self._build_prompt(query_text, answer, client, competitors, fact_sheet)
         try:
-            response = self._client.chat.completions.create(
+            # Forced tool call = guaranteed structured JSON. No temperature (Opus
+            # 4.8 rejects it) and no thinking (incompatible with a forced tool and
+            # unneeded for this classification pass).
+            tool_choice: ToolChoiceToolParam = {"type": "tool", "name": "record_judgment"}
+            response = self._client.messages.create(
                 model=self._model,
-                temperature=settings.ENGINE_TEMPERATURE,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": _SYSTEM},
-                    {"role": "user", "content": prompt},
-                ],
+                max_tokens=_JUDGE_MAX_TOKENS,
+                system=_SYSTEM,
+                messages=[{"role": "user", "content": prompt}],
+                tools=[self._tool],
+                tool_choice=tool_choice,
             )
-            content = response.choices[0].message.content or ""
-            raw = json.loads(content)
-        except (openai.APIError, json.JSONDecodeError, KeyError, IndexError, ValueError) as exc:
+            raw = _extract_tool_input(response)
+        except (anthropic.APIError, KeyError, IndexError, ValueError) as exc:
             logger.warning("Judge failed (not assessed): %s", type(exc).__name__)
             return [], [], False
         except Exception as exc:  # never crash a run on the judge
@@ -168,11 +227,19 @@ class Judge:
         client: str,
         competitors: list[str],
         fact_sheet: str | None = None,
+        progress: bool = False,
     ) -> list[AnswerJudgment]:
         """Judge every answered result. Identical answers (temp 0 repeats) are
         judged once and reused, so multi-run cycles don't multiply judge calls.
+
+        ``progress`` prints an incremental count to stdout (every 20 answers plus
+        the last) — a re-judge is many sequential API calls, so a long run is
+        otherwise silent. Off by default; callers with their own status surface
+        (the API runner) leave it off.
         """
         cache: dict[tuple[str, str], tuple[list[BrandJudgment], list[AccuracyFlag], bool]] = {}
+        total = sum(1 for r in results if r["response"] is not None)
+        done = 0
         judgments: list[AnswerJudgment] = []
         for r in results:
             answer = r["response"]
@@ -182,6 +249,9 @@ class Judge:
             if key not in cache:
                 cache[key] = self.judge_answer(r["prompt"], answer, client, competitors, fact_sheet)
             brands, flags, assessed = cache[key]
+            done += 1
+            if progress and (done % 20 == 0 or done == total):
+                print(f"  judged {done}/{total} answers", flush=True)
             judgments.append(
                 AnswerJudgment(
                     query_id=r["query_id"],

@@ -119,7 +119,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
         try:
             judge = Judge()
             judgments = judge.judge_results(
-                outcome.results, outcome.client_name, outcome.competitors, fact_sheet
+                outcome.results, outcome.client_name, outcome.competitors, fact_sheet, progress=True
             )
             if outcome.run_id and not args.no_persist:
                 try:
@@ -201,7 +201,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
         print(exc)
         return 1
     judgments = judge.judge_results(
-        outcome.results, outcome.client_name, outcome.competitors, fact_sheet
+        outcome.results, outcome.client_name, outcome.competitors, fact_sheet, progress=True
     )
     if not args.no_persist:
         try:
