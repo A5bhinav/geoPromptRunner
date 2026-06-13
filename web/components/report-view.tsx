@@ -172,7 +172,13 @@ export function ReportView({ report }: { report: ReportPayload }) {
             label="Accuracy flags"
             muted={!s.accuracy_assessed}
             value={s.accuracy_assessed ? (s.accuracy_flag_count ?? 0) : "Not assessed"}
-            sub={s.accuracy_assessed ? "claims the models got wrong" : "needs fact sheet + judge"}
+            sub={
+              s.accuracy_assessed
+                ? "claims the models got wrong"
+                : report.detection === "judge"
+                  ? "needs a fact sheet"
+                  : "needs the LLM judge"
+            }
           />
         </div>
       </section>
@@ -289,7 +295,9 @@ export function ReportView({ report }: { report: ReportPayload }) {
                 <p className="text-sm text-muted-foreground">
                   {s.accuracy_assessed
                     ? "None flagged — the models described the client accurately."
-                    : "Not assessed — provide a fact sheet and enable the judge (config,judge,true)."}
+                    : report.detection === "judge"
+                      ? "Not assessed — add a fact sheet (fact rows in the CSV) so the judge can check claims."
+                      : "Not assessed — enable the LLM judge (config,judge,true)."}
                 </p>
               ) : (
                 <ul className="space-y-3">
