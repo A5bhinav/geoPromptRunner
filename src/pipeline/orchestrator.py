@@ -79,13 +79,23 @@ def run_audit(
         )
 
     run_id: str | None = resume_run_id
-    done_query_ids: set[str] = set()
+    # Cells already persisted, at (query_id, engine, run_index) granularity, plus
+    # the prior results themselves. Resuming at the cell level (not the query
+    # level) is what lets a newly-added engine be backfilled and a half-finished
+    # query be completed — only the genuinely-missing cells re-run.
+    done_cells: set[tuple[str, str, int]] = set()
+    prior_results: list[QueryResult] = []
     if resume_run_id is not None:
         try:
-            done_query_ids = {r["query_id"] for r in db.get_query_results(resume_run_id)}
+            prior_results = db.get_query_results(resume_run_id)
+            done_cells = {
+                (r["query_id"], r["engine_name"], r["run_index"]) for r in prior_results
+            }
             if progress:
+                done_queries = len({r["query_id"] for r in prior_results})
                 print(
-                    f"  Resuming run {resume_run_id}: {len(done_query_ids)} queries already stored"
+                    f"  Resuming run {resume_run_id}: {len(done_cells)} cells across "
+                    f"{done_queries} queries already stored"
                 )
         except StorageError as exc:
             logger.warning("Could not load run to resume (%s); starting fresh", exc)
@@ -100,19 +110,24 @@ def run_audit(
                 query_set_version=query_set.version,
                 query_set_locked_at=query_set.locked_at,
                 runs_per_query=runs_per_query,
+                engines=[e.ENGINE_NAME for e in engines],
+                n_queries=len(queries),
+                total_calls=total_calls,
                 engine_models=engine_models(engines),
             )
         except StorageError as exc:
             logger.warning("Storage unavailable, continuing in-memory: %s", exc)
             run_id = None
 
-    results: list[QueryResult] = []
+    # The outcome carries prior + new results so a resumed run renders/judges the
+    # whole run, not just the cells it happened to fill this pass.
+    results: list[QueryResult] = list(prior_results)
     for index, query in enumerate(queries, start=1):
-        if query.query_id in done_query_ids:
+        cell = run_query_set([query], engines, runs_per_query, done_cells=done_cells)
+        if not cell:
             if progress:
                 print(f"  [{index}/{len(queries)}] {query.query_id}: skipped (already stored)")
             continue
-        cell = run_query_set([query], engines, runs_per_query)
         results.extend(cell)
         if run_id is not None:
             try:
@@ -122,6 +137,14 @@ def run_audit(
         if progress:
             answered = sum(1 for r in cell if r["response"] is not None)
             print(f"  [{index}/{len(queries)}] {query.query_id}: {answered}/{len(cell)} answered")
+
+    # Mark the run terminal so a finished CLI run isn't later mistaken for an
+    # interrupted one (the API resumes anything left in a non-terminal state).
+    if run_id is not None:
+        try:
+            db.update_audit_run_progress(run_id, completed_calls=len(results), status="done")
+        except StorageError as exc:
+            logger.warning("Could not mark run %s done: %s", run_id, exc)
 
     if progress:
         print(f"Done. {len(results)} results collected" + (f" (run {run_id})." if run_id else "."))

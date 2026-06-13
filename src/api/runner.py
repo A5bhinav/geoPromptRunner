@@ -212,12 +212,12 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
     state.state = "running"
     qs = state.audit.query_set
 
-    # Resume support: any per-query cells already persisted for this run are
-    # reloaded and skipped, so an interrupted run continues from where it
-    # stopped rather than re-paying for completed queries. (Empty for a fresh
-    # run — each query's whole cell is saved atomically, so a query is either
-    # fully stored or not at all.)
-    done_query_ids: set[str] = set()
+    # Resume support: any cells already persisted for this run are reloaded and
+    # skipped at (query_id, engine, run_index) granularity, so an interrupted
+    # run continues exactly where it stopped — including filling in an engine
+    # that wasn't available last time or completing a query a crash left
+    # half-finished. (Empty for a fresh run.)
+    done_cells: set[tuple[str, str, int]] = set()
     if state.db_run_id is not None:
         try:
             prior = db.get_query_results(state.db_run_id)
@@ -226,7 +226,7 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         if prior:
             state.results.extend(prior)
             state.completed_calls = len(prior)
-            done_query_ids = {r["query_id"] for r in prior}
+            done_cells = {(r["query_id"], r["engine_name"], r["run_index"]) for r in prior}
             for r in prior:
                 state.engine_completed[r["engine_name"]] = (
                     state.engine_completed.get(r["engine_name"], 0) + 1
@@ -234,13 +234,13 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
 
     try:
         for query in qs.queries:
-            if query.query_id in done_query_ids:
-                continue
             if state.cancel_requested:
                 state.state = "cancelled"
                 _persist_state(state)
                 return
-            cell = run_query_set([query], engines, cfg.runs_per_query)
+            cell = run_query_set([query], engines, cfg.runs_per_query, done_cells=done_cells)
+            if not cell:
+                continue
             state.results.extend(cell)
             state.completed_calls += len(cell)
             for r in cell:

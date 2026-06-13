@@ -30,8 +30,12 @@ def main(run_id: str, query_set_path: str, reference_engine: str = "openai") -> 
     existing = db.get_query_results(run_id)
     # The full instrument grid = (query_id, run_index) cells the reference
     # engine ran; Gemini should match it cell-for-cell.
-    ref_cells = {(r["query_id"], r["run_index"]) for r in existing if r["engine_name"] == reference_engine}
-    gemini_cells = {(r["query_id"], r["run_index"]) for r in existing if r["engine_name"] == "gemini"}
+    ref_cells = {
+        (r["query_id"], r["run_index"]) for r in existing if r["engine_name"] == reference_engine
+    }
+    gemini_cells = {
+        (r["query_id"], r["run_index"]) for r in existing if r["engine_name"] == "gemini"
+    }
     missing = sorted(ref_cells - gemini_cells)
 
     if not missing:

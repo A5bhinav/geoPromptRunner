@@ -38,6 +38,8 @@ def run_query_set(
     queries: list[Query],
     engines: list[BaseEngine],
     runs_per_query: int = 3,
+    *,
+    done_cells: set[tuple[str, str, int]] | None = None,
 ) -> list[QueryResult]:
     """Run every query against every engine ``runs_per_query`` times.
 
@@ -46,14 +48,23 @@ def run_query_set(
     and run index so downstream metrics can aggregate per bucket and per run.
     Citations are captured via ``BaseEngine.query_with_citations`` (empty for
     engines that don't expose them). One failing engine never aborts the run.
+
+    ``done_cells`` — a set of ``(query_id, engine_name, run_index)`` already
+    persisted — lets a resumed run skip exactly the cells it has, at engine/run
+    granularity. This is what makes resume correct when the engine set changed
+    between cycles (e.g. a key was added) or a crash left a query half-finished:
+    only the genuinely-missing cells are re-run, never a whole query at once.
     """
     if runs_per_query < 1:
         raise ValueError(f"runs_per_query must be >= 1, got {runs_per_query}")
 
+    skip = done_cells or set()
     results: list[QueryResult] = []
     for query in queries:
         for engine in engines:
             for run_index in range(runs_per_query):
+                if (query.query_id, engine.ENGINE_NAME, run_index) in skip:
+                    continue
                 response, citations = engine.query_with_citations(query.text)
                 results.append(
                     QueryResult(
