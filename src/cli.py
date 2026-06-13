@@ -264,7 +264,11 @@ def _cmd_compare(args: argparse.Namespace) -> int:
             f"{after.query_set_version}); the comparison may not be valid."
         )
     cmp = compare_runs(before.results, after.results, after.client_name, after.competitors)
-    print(render_comparison(cmp, f"run {args.before[:8]}", f"run {args.after[:8]}"))
+    print(
+        render_comparison(
+            cmp, f"run {args.before[:8]}", f"run {args.after[:8]}", noise_floor=args.noise_floor
+        )
+    )
     return 0
 
 
@@ -398,6 +402,13 @@ def main(argv: list[str] | None = None) -> int:
     p_compare = sub.add_parser("compare", help="diff two runs (cadence/trend)")
     p_compare.add_argument("before")
     p_compare.add_argument("after")
+    p_compare.add_argument(
+        "--noise-floor",
+        type=float,
+        default=None,
+        help="real-move threshold as a fraction (e.g. 0.05 = 5 pts) from the determinism "
+        "baseline; deltas below it are tagged 'within noise'",
+    )
     p_compare.set_defaults(func=_cmd_compare)
 
     p_runs = sub.add_parser("runs", help="list stored runs for a client")

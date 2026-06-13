@@ -6,7 +6,13 @@ from datetime import UTC, datetime, timedelta
 from src.pipeline import metrics
 from src.storage.models import QueryResult
 
-__all__ = ["RunComparison", "compare_runs", "render_comparison", "due_for_rerun"]
+__all__ = [
+    "RunComparison",
+    "compare_runs",
+    "render_comparison",
+    "due_for_rerun",
+    "is_real_move",
+]
 
 # Methodology re-runs the locked set on a ~4-6 week cadence (Step 8).
 DEFAULT_CADENCE_DAYS = 42
@@ -78,21 +84,48 @@ def compare_runs(
     )
 
 
-def _delta(before: float, after: float) -> str:
+def is_real_move(before: float, after: float, noise_floor: float) -> bool:
+    """True if the change exceeds the measurement noise band (a fraction in
+    [0,1] from the determinism baseline). Below it, a delta is jitter, not signal."""
+    return abs(after - before) > noise_floor
+
+
+def _delta(before: float, after: float, noise_floor: float | None = None) -> str:
     pts = (after - before) * 100
     arrow = "▲" if pts > 0 else ("▼" if pts < 0 else "—")
-    return f"{before * 100:.0f}% → {after * 100:.0f}% ({arrow}{abs(pts):.0f} pts)"
+    out = f"{before * 100:.0f}% → {after * 100:.0f}% ({arrow}{abs(pts):.0f} pts)"
+    if noise_floor is not None and pts != 0 and not is_real_move(before, after, noise_floor):
+        out += " _(within noise)_"
+    return out
 
 
-def render_comparison(cmp: RunComparison, before_label: str, after_label: str) -> str:
-    """Render the before/after diff as markdown — the clean handoff for §6."""
+def render_comparison(
+    cmp: RunComparison,
+    before_label: str,
+    after_label: str,
+    noise_floor: float | None = None,
+) -> str:
+    """Render the before/after diff as markdown — the clean handoff for §6.
+
+    ``noise_floor`` (a fraction, e.g. 0.05 = 5 pts) is the measurement noise band
+    from the determinism baseline (``geo verify determinism``). When given, deltas
+    that don't clear it are tagged _(within noise)_ so the trend — the moat —
+    reports real movement, not jitter.
+    """
     lines: list[str] = []
     lines.append(f"# Trend — {cmp.brand}")
     lines.append("")
     lines.append(f"**Comparing:** {before_label} → {after_label}")
+    if noise_floor is not None:
+        lines.append("")
+        lines.append(
+            f"_Real-move threshold: ±{noise_floor * 100:.0f} pts (from the determinism "
+            "baseline); smaller deltas are within measurement noise._"
+        )
     lines.append("")
     lines.append(
-        f"**Overall mention rate:** {_delta(cmp.mention_rate_before, cmp.mention_rate_after)}"
+        f"**Overall mention rate:** "
+        f"{_delta(cmp.mention_rate_before, cmp.mention_rate_after, noise_floor)}"
     )
     lines.append("")
 
@@ -104,7 +137,7 @@ def render_comparison(cmp: RunComparison, before_label: str, after_label: str) -
     for b in buckets:
         before = cmp.mention_rate_by_bucket_before.get(b, 0.0)
         after = cmp.mention_rate_by_bucket_after.get(b, 0.0)
-        lines.append(f"| {b} | {_delta(before, after)} |")
+        lines.append(f"| {b} | {_delta(before, after, noise_floor)} |")
     lines.append("")
 
     lines.append("## Share of Voice")
@@ -116,7 +149,7 @@ def render_comparison(cmp: RunComparison, before_label: str, after_label: str) -
         before = cmp.share_of_voice_before.get(n, 0.0)
         after = cmp.share_of_voice_after.get(n, 0.0)
         marker = " (client)" if n == cmp.brand else ""
-        lines.append(f"| {n}{marker} | {_delta(before, after)} |")
+        lines.append(f"| {n}{marker} | {_delta(before, after, noise_floor)} |")
     lines.append("")
 
     lines.append(f"## Queries Won ({len(cmp.queries_won)})")
