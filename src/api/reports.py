@@ -227,6 +227,16 @@ def build_report(
 
     citation_rate_client = metrics.citation_rate(results, domains) if domains else None
 
+    # Accuracy was assessed iff the judge ran against a fact sheet. The run row's
+    # fact_sheet_present is the intended signal, but it's only set on UI-created
+    # runs — a CLI `judge --fact-sheet` leaves it False. The judge only emits
+    # flags when given a fact sheet, so any flag is itself proof a sheet was used.
+    # Keying off both keeps the scorecard from contradicting the flags table /
+    # grade it's shown beside (e.g. grade F with a full flag list but a blank
+    # count). Residual: a fact-sheet run that found zero errors with the row flag
+    # unset reads as "not assessed" — conservative, and gone once the row is set.
+    accuracy_assessed = has_judge and (fact_sheet_present or bool(accuracy_flags))
+
     scorecard = ScorecardPayload(
         visibility_grade=grade_payload,
         share_of_model_client=share_by_brand.get(client, 0.0),
@@ -237,8 +247,8 @@ def build_report(
             mention_by_brand.get(top_competitor) if top_competitor else None
         ),
         citation_rate_client=citation_rate_client,
-        accuracy_assessed=fact_sheet_present and has_judge,
-        accuracy_flag_count=(len(accuracy_flags) if (fact_sheet_present and has_judge) else None),
+        accuracy_assessed=accuracy_assessed,
+        accuracy_flag_count=(len(accuracy_flags) if accuracy_assessed else None),
     )
 
     return ReportPayload(
