@@ -210,7 +210,7 @@ If you consistently wake up exhausted:
 Citations: https://www.padentalsleep.com/why-you-can-still-feel-exhausted-after-8-hours-of-sleep · https://health.clevelandclinic.org/why-you-wake-up-tired-after-8-hours-of-sleep · https://www.youtube.com/watch?v=G7ZPN2kCksI · https://www.sleeptest.co.uk/still-tired-during-day-after-eight-hours-sleep/ · https://www.ncbi.nlm.nih.gov/search/research-news/17008 · https://synergyreleasesports.com/why-am-i-still-tired-after-8-hours-of-sleep/ · https://www.nhs.uk/live-well/sleep-and-tiredness/
 
 **Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
@@ -420,7 +420,7 @@ Your doctor can rule out underlying medical conditions, review your medications,
 By systematically investigating your habits and environment, you'll be much closer to understanding why your sleep has gone bad and what steps you can take to improve it.
 
 **Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
@@ -549,11 +549,13 @@ Most non-wearable tech is less accurate than wrist devices, but if you're consis
 **What's driving your preference against watches?** (comfort, EMF concerns, etc.) - might help narrow down the best option for you.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=buried · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **competitor_confusion** (med): claim — “Oura Ring alternative: Bedside radar sensors like Google Nest Hub (2nd gen) use motion/sound sensing” → reality — “Oura Ring is a smart ring wearable — it is not a bedside radar sensor. The answer frames Oura Ring as an 'alternative' to bedside devices, conflating its category. Oura is a ring-form-factor wearable, not a non-contact bedside device. This misrepresents its identity and product category.”
+  - 🚩 **identity** (high): claim — “Oura Ring is listed as an 'alternative' to bedside radar sensors in the context of non-wearable sleep tracking” → reality — “Oura Ring IS a wearable (a smart ring worn on the finger). It is not a non-wearable or bedside device. The fact sheet clearly describes it as 'A smart ring that tracks sleep, activity, heart rate, and recovery' — a wearable by definition.”
 
 ### gemini
 
@@ -671,8 +673,9 @@ By combining a few of these strategies, you can get a very comprehensive picture
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “relatively expensive upfront cost” → reality — “Oura Ring 5 base is $399 with a required $5.99/month membership”
-  - 🚩 **missing_or_invented_feature** (high): claim — “subscription required for full features” → reality — “membership is required for the full product”
+  - 🚩 **stale** (med): claim — “Oura Ring described using features consistent with Ring 4 generation (no mention of Ring 5)” → reality — “Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Answer implies subscription is optional, listing it only as a 'Con': 'subscription required for full features'” → reality — “The membership at $5.99/month is required for the full product; without it, insights are heavily limited — it is not truly optional”
+  - 🚩 **wrong_pricing** (low): claim — “No specific price is mentioned for the Oura Ring hardware” → reality — “Current Oura Ring 5 base price is $399; fact sheet flags stale prices of $349 (Ring 4) or $299 (Gen 3) as common errors — omitting price avoids a wrong claim but also omits key buyer info”
 
 ### perplexity
 
@@ -700,7 +703,9 @@ Citations: https://www.sleepfoundation.org/best-sleep-trackers · https://www.no
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 is highlighted as the top sleep tracker (implying it is the current/newest model)” → reality — “The Oura Ring 5 is the current model, launched 2026-05-28. The Ring 4 is now a previous model being cleared out.”
+  - 🚩 **wrong_pricing** (med): claim — “No pricing is explicitly stated, but recommending Ring 4 as the top pick implies it is current at its original $349 price point” → reality — “Current model is Ring 5 at $399 base; Ring 4 is being cleared out below $349.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura Ring is a one-time purchase with no mention of a required subscription” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited.”
 
 ---
 
@@ -972,7 +977,7 @@ Implementing these strategies consistently can help improve the quality of your 
 **Most impactful**: temperature control, exercise timing, and avoiding alcohol. Track with a wearable to see what works for you.
 
 **Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
@@ -1538,6 +1543,8 @@ When choosing a smart ring, consider what features are most important to you, su
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (med): claim — “The Oura Ring is described generally without mention of the Ring 5 as the current model, implying an older model is current” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription” → reality — “A membership is required at $5.99/month or $69.99/year for full features; this is a material part of the product cost”
 
 ### anthropic
 
@@ -1583,11 +1590,10 @@ Here are the top smart rings currently available:
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $6/month subscription for full features” → reality — “$5.99/month or $69.99/year”
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (high): claim — “Best Overall: Oura Ring Gen 3” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old.”
+  - 🚩 **wrong_pricing** (high): claim — “Price: $299-$549” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. $299 is an old Gen 3 price.”
+  - 🚩 **wrong_pricing** (low): claim — “Requires $6/month subscription for full features” → reality — “The membership is $5.99/month or $69.99/year. While close, the framing as optional ('requires... for full features') understates it — the fact sheet notes it is a required membership and the ring is heavily limited without it.”
 
 ### gemini
 
@@ -1669,12 +1675,12 @@ Here's a breakdown of the top contenders and what they're best for:
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=buried · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “relatively expensive” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “period prediction” → reality — “cycle insights”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage) is the top pick” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is a previous generation.”
+  - 🚩 **stale** (med): claim — “Relatively expensive (implying Ring 3/4 pricing context)” → reality — “Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes); Ring 4 was $349. The answer does not cite a specific price, but the model referenced (Gen 3) is outdated.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “Factually correct directionally, but the answer frames it as a 'Con' without specifying the cost ($5.99/month or $69.99/year) or that a first month is free. More importantly, the subscription is not optional — it is required for the full product, which the answer softens by saying 'for full features after the initial purchase.'”
+  - 🚩 **stale** (low): claim — “Battery life of 4-7 days cited for Oura” → reality — “The fact sheet states up to ~8-day battery life for the Ring 4 generation; Ring 5 details may differ but 4-7 days undersells the stated spec.”
 
 ### perplexity
 
@@ -1696,10 +1702,12 @@ Citations: https://www.cnet.com/health/fitness/best-smart-ring/ · https://www.b
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 is the best smart ring overall / current model” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the top/current pick is stale.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 is presented as the current product at an implied $349 price point (stale model reference)” → reality — “Current model is Oura Ring 5 at $399 base. Ring 4 was $349 and is now being cleared below that.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required $5.99/month membership subscription for Oura” → reality — “Oura requires a paid membership ($5.99/month or $69.99/year) for full features; this is a material cost omission especially given the answer contrasts Oura against no-subscription competitors like RingConn.”
 
 ---
 
@@ -1731,8 +1739,9 @@ While the Oura Ring is highly recommended, it's always a good idea to consider y
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “The Oura Ring typically offers a battery life of up to 7 days” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura Ring provides a readiness score that helps users understand their overall recovery and readiness for the day based on sleep and other physiological metrics” → reality — “Readiness and Recovery scores”
+  - 🚩 **stale** (low): claim — “The Oura Ring typically offers a battery life of up to 7 days” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of a required monthly/annual membership fee ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time purchase with full features” → reality — “A required membership ($5.99/month or $69.99/year) is needed for full features; without it insights are heavily limited.”
+  - 🚩 **stale** (med): claim — “No mention of the current Oura Ring 5 model (launched 2026-05-28); answer implies the existing/current ring without specifying model” → reality — “Oura Ring 5 is the current model as of 2026-05-28, which is ~40% smaller than Ring 4 with updated sensors.”
 
 ### anthropic
 
@@ -1779,11 +1788,12 @@ While the Oura Ring is highly recommended, it's always a good idea to consider y
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “requires subscription ($5.99/month)” → reality — “Membership is required for full features”
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
+  - RingConn: present · prominence=buried · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 listed as the product (and priced $299-$549)” → reality — “The current model is Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is outdated.”
+  - 🚩 **wrong_pricing** (high): claim — “Price listed as $299-$549” → reality — “Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); $349 was Ring 4.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription implied as optional ('Requires subscription ($5.99/month)')” → reality — “The membership is required for full features — it is not truly optional. Without it, insights are heavily limited.”
+  - 🚩 **stale** (low): claim — “Battery listed as 4-7 days” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is current model.”
 
 ### gemini
 
@@ -1847,8 +1857,9 @@ Both of these rings will provide you with a wealth of data and actionable insigh
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “no mention of required subscription” → reality — “required $5.99/mo membership”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage) is the recommended model” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring Gen 3 is two generations old.”
+  - 🚩 **wrong_pricing** (low): claim — “Battery life of 4-7 days is cited for the Oura Ring” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring Gen 3 spec is stale”
+  - 🚩 **missing_or_invented_feature** (med): claim — “The answer implies Oura's subscription is a known cost but does not clearly state it is required for full features — it says 'you don't mind a subscription' as a caveat, framing it as optional” → reality — “The membership ($5.99/mo or $69.99/yr) is required for full features; without it, insights are heavily limited. It is not optional.”
 
 ### perplexity
 
@@ -1871,7 +1882,7 @@ Citations: https://www.facebook.com/groups/322829073580573/posts/722537603609716
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4 is the strongest overall choice” → reality — “The Oura Ring 5 is the newest model”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 is the strongest overall choice / best overall for sleep tracking” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. Calling Ring 4 the top/current pick is stale.”
 
 ---
 
@@ -1911,8 +1922,8 @@ When choosing a smart ring, consider factors such as the specific metrics you wa
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Higher price point compared to some other options.” → reality — “Current Ring 5 base is $399 with a required $5.99/mo membership.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (med): claim — “Higher price point compared to some other options (implies Ring 4 or older pricing context; no specific current model mentioned)” → reality — “Current model is Oura Ring 5 (launched 2026-05-28), starting at $399. Ring 4 is the previous/clearance model.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer describes Oura Ring pricing only as a 'higher price point' with no mention of a required monthly/annual membership” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material cost omission”
 
 ### anthropic
 
@@ -1958,9 +1969,10 @@ When choosing a smart ring, consider factors such as the specific metrics you wa
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “~$299 + $5.99/month membership” → reality — “Current Ring 5 base is $399”
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3) — Best Overall, listed as the top pick” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old; even Ring 4 is now superseded.”
+  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299 + $5.99/month membership” → reality — “The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the Gen 3 price, which is stale.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Battery: 4-7 days” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; the stated 4-7 days understates Oura's battery life claim.”
 
 ### gemini
 
@@ -2056,8 +2068,10 @@ The Ultrahuman Ring AIR has emerged as a strong competitor to Oura, often praise
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage)” → reality — “Oura Ring 5 is the newest model”
-  - 🚩 **wrong_pricing** (low): claim — “Requires a monthly subscription ($5.99/month in the US)” → reality — “Membership is $5.99/month or $69.99/year”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage) is listed as the current/top model” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399.”
+  - 🚩 **wrong_pricing** (low): claim — “Subscription is $5.99/month — this part is correct, but no annual pricing option ($69.99/year) is mentioned” → reality — “Membership is $5.99/month OR $69.99/year. The monthly figure is correct but the annual option is omitted.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura offers 'sleep sounds' within the app to aid recovery” → reality — “The fact sheet lists 'meditations, sleep stories' as guided content — 'sleep sounds' is not explicitly listed and may be an invented/conflated feature name.”
+  - 🚩 **stale** (high): claim — “The answer describes 'Gen 3 Horizon/Heritage' as the product being recommended, implying it is current” → reality — “Ring 5 is the current model (launched 2026-05-28); Gen 3 and even Ring 4 are now outdated models.”
 
 ### perplexity
 
@@ -2081,8 +2095,9 @@ Citations: https://www.wareable.com/fashion/best-smart-rings-1340 · https://www
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
-  - RingConn: present · prominence=buried · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
+  - RingConn: present · prominence=also_ran · framing=neutral
+  - 🚩 **stale** (high): claim — “The Oura Ring 4 is recommended as the best overall for recovery and described as the strongest overall pick.” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. The Ring 4 is now a previous/clearance model. Calling Ring 4 the top pick is stale.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription for Oura.” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features. Omitting this is a material error as the ring is not a simple one-time purchase.”
 
 ---
 
@@ -2113,7 +2128,8 @@ While the Oura Ring is a leading choice, it's always a good idea to compare diff
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “Menstrual Cycle Tracking: Allows users to log and track their menstrual cycle, helping to predict periods and understand cycle patterns.” → reality — “Cycle insights are mentioned, but not specifically logging and predicting periods.”
+  - 🚩 **stale** (med): claim — “The Oura Ring is one of the most popular smart rings (implicitly referencing the current/latest model without specifying Ring 5; the features described match the Ring 4 generation)” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. The answer does not mention Ring 5 at all, implying Ring 4 or an older model is current.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of required monthly/annual membership — implies the ring is a one-time purchase with full features” → reality — “A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited.”
 
 ### anthropic
 
@@ -2166,11 +2182,10 @@ While the Oura Ring is a leading choice, it's always a good idea to compare diff
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 is the newest model”
-  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Tracks temperature variations for cycle prediction” → reality — “Cycle insights are mentioned but not specifically temperature variations for cycle prediction”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Requires subscription ($5.99/month after 6 months)” → reality — “Membership is $5.99/month or $69.99/year with the first month free”
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3) is listed as the current/top model” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is two generations old.”
+  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is a stale Gen 3 price.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Requires subscription ($5.99/month after 6 months)” → reality — “The membership is $5.99/month (or $69.99/year) and is required from the start — only the first month is free. There is no 6-month free period.”
 
 ### gemini
 
@@ -2245,8 +2260,10 @@ Consider your budget, whether you're willing to pay a subscription, and how impo
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full access to all features and historical data after the initial free trial.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage) is presented as the current model” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is two generations old.”
+  - 🚩 **stale** (high): claim — “The answer references Gen 3 models (Horizon/Heritage) as the product to buy” → reality — “Ring 5 is the current shipping model (as of 2026-06-04); Ring 4 was the prior generation. Gen 3 is even older.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Requires a monthly subscription... after the initial free trial” → reality — “The membership is $5.99/month or $69.99/year, with only the first month free. The answer characterizes this correctly in general terms but omits the specific pricing, which is a meaningful omission for a buyer.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription is described as needed for 'full access to all features and historical data'” → reality — “The fact sheet says membership is required for the full product; without it, insights are heavily limited. The answer's framing is broadly consistent but softens the requirement.”
 
 ### perplexity
 
@@ -2284,9 +2301,10 @@ Citations: https://ringconn.com/blogs/news/track-temperature-shifts-cycle-smart-
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4 is the latest” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 typically requires a subscription” → reality — “Oura Ring 5 requires a $5.99/month membership for full features”
+  - RingConn: present · prominence=also_ran · framing=positive
+  - 🚩 **stale** (high): claim — “The Oura Ring 4 is the top choice and best smart ring for women's health (implying it is the current/latest model)” → reality — “The Oura Ring 5 launched on 2026-05-28 and is now the current model. The Ring 4 is being cleared out. Calling Ring 4 the top/latest pick in a '2026' review is stale.”
+  - 🚩 **wrong_pricing** (med): claim — “No specific price is mentioned for Oura Ring 4, but the answer implies Ring 4 is the current product available for purchase” → reality — “The current model is Ring 5 at $399 base. Ring 4 was $349 and is now being cleared out below that price.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “The note at the end says the Oura Ring 4 'typically requires a subscription for full access to its advanced insights' — framed as optional/typical rather than required” → reality — “The membership at $5.99/month is required for full features — it is not merely 'typical' but mandatory. Without it, insights are heavily limited.”
 
 ---
 
@@ -2308,7 +2326,9 @@ When choosing a smart ring, consider factors such as the specific features you n
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (med): claim — “It typically offers a battery life of about 4 to 7 days, depending on usage.” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (low): claim — “Battery life of about 4 to 7 days” → reality — “Fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model and its battery life is not specified differently in the sheet, but the stated range of 4-7 days understates the documented ~8-day figure.”
+  - 🚩 **stale** (med): claim — “No mention of Oura Ring 5 as the current/latest model; answer implies a generic/older model is current” → reality — “Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all.”
+  - 🚩 **wrong_pricing** (high): claim — “No pricing mentioned, but no subscription cost is referenced — implies ring is effectively a one-time purchase by omission” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; omitting this is a material accuracy error per the fact sheet.”
 
 ### anthropic
 
@@ -2349,11 +2369,12 @@ All require charging every few days, which is standard for smart rings due to th
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (low): claim — “Requires subscription ($5.99/month)” → reality — “$5.99/month or $69.99/year”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 is listed as the current/recommended product” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399.”
+  - 🚩 **wrong_pricing** (med): claim — “No explicit hardware price is stated, but the model referenced (Gen 3) implies stale pricing context” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Gen 3 is two generations old.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription listed as $5.99/month — this part is correct, but the answer implies it is a 'Con' optional add-on” → reality — “The $5.99/month membership is required for full features; without it the app is heavily limited. It is not truly optional.”
 
 ### gemini
 
@@ -2442,7 +2463,9 @@ If you want the most **polished and accurate experience** and don't mind a month
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “A monthly subscription is necessary to access most of the advanced features after the initial trial period. This is a significant ongoing cost.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3 Horizon/Heritage) is referenced as the current model” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is even older.”
+  - 🚩 **stale** (high): claim — “Subscription described as a 'monthly subscription' with no specific price mentioned, but the ring model cited (Gen 3) is stale” → reality — “Current model is Ring 5 at $399 base; the fact sheet flags any mention of Gen 3 or Ring 4 as the latest as stale”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription described only as a required monthly fee with no specific cost given — the answer says 'a monthly subscription is necessary' without specifying $5.99/month” → reality — “Membership is $5.99/month or $69.99/year; first month free. While the answer does correctly note a subscription exists, it omits the specific pricing detail. This is a low-severity omission rather than a direct error.”
 
 ### perplexity
 
@@ -2460,14 +2483,15 @@ Therefore, if your primary priority is maximizing battery life, the **RingConn G
 Citations: https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.zdnet.com/article/best-smart-ring/ · https://ringconn.com/blogs/news/how-long-does-a-ring-battery-last-tips-for-smart-rings · https://www.cnet.com/health/fitness/best-smart-ring/ · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “roughly half the price” → reality — “Oura Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “zero ongoing subscription fees” → reality — “required $5.99/mo membership”
+  - 🚩 **stale** (high): claim — “The Oura Ring 4 is described as the current/reigning champion model” → reality — “The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 is being cleared out”
+  - 🚩 **wrong_pricing** (med): claim — “RingConn is roughly half the price of the Oura Ring 4, implying Oura Ring 4 is the current priced model” → reality — “The current model is the Oura Ring 5 at $399 base; Ring 4 was $349 and is now being cleared out below that”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of Oura's required subscription fee, implying it may be a one-time purchase” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features”
+  - 🚩 **wrong_pricing** (med): claim — “Oura Ring 4 battery life is 'typically around 4–7 days'” → reality — “Fact sheet states Oura Ring 4 offers up to ~8-day battery life”
 
 ---
 
@@ -2492,12 +2516,13 @@ As of my last update, several smart rings do not require a monthly subscription.
 When choosing a smart ring, consider what features are most important to you, such as health tracking, battery life, design, and compatibility with your smartphone. Always check the latest product details and reviews, as companies may update their offerings or introduce new subscription models.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura did not require a subscription for basic features” → reality — “Membership is required for full features, $5.99/month or $69.99/year”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura did not require a subscription for basic features, but they introduced a membership for advanced insights and features.” → reality — “The membership ($5.99/mo or $69.99/yr) is required for the full product. There is no free tier — without membership, insights are heavily limited. The subscription is not optional for 'advanced' features; it is effectively required.”
+  - 🚩 **stale** (med): claim — “The answer implies the Oura Ring as described is the current/relevant model without referencing Ring 5.” → reality — “The Oura Ring 5 launched 2026-05-28 and is now the current model. Any answer not referencing Ring 5 is stale.”
 
 ### anthropic
 
@@ -2546,7 +2571,8 @@ Here are the top options that don't require ongoing fees:
   - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **wrong_pricing** (med): claim — “Oura Ring requires $5.99/month subscription for most features” → reality — “Membership is $5.99/month or $69.99/year, with the first month free for new members”
+  - 🚩 **wrong_pricing** (low): claim — “Oura Ring requires $5.99/month subscription for most features” → reality — “The subscription price of $5.99/month is actually correct per the fact sheet — this is not a pricing error. No flag needed here.”
+  - 🚩 **stale** (med): claim — “The answer implies the current/relevant Oura Ring model is the one priced at hardware cost without specifying the Ring 5; no current model is named, and the context suggests the Ring 4 era pricing/product” → reality — “The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 at $349 is being cleared out.”
 
 ### gemini
 
@@ -2625,8 +2651,9 @@ For most people seeking a reliable, comprehensive smart ring without a subscript
   - Ultrahuman: present · prominence=also_ran · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (low): claim — “Oura Ring requires a monthly subscription (currently $5.99/month) to access all its advanced features and historical data.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Without the subscription, you only get basic metrics.” → reality — “Without membership the ring and app still work but insights are heavily limited.”
+  - 🚩 **stale** (low): claim — “Oura Ring requires a monthly subscription ($5.99/month) to access all its advanced features and historical data” → reality — “The subscription price is correct at $5.99/month, but the answer omits the annual option of $69.99/year and the first free month for new members. More critically, it implies the ring still functions with 'basic metrics' without subscription — the fact sheet says insights are 'heavily limited' without membership, making it effectively required.”
+  - 🚩 **stale** (med): claim — “Oura Ring is described without mentioning the current model (Ring 5) — implicitly treating the product as if Ring 4 or an unspecified version is current” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. The answer makes no mention of Ring 4 or Ring 5 by name, but fails to reference the latest Ring 5 launch.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Sometimes [Oura and Ultrahuman] offer a 'lifetime subscription' option, but that's not the default model” → reality — “The fact sheet makes no mention of a lifetime subscription option for Oura. This appears to be an invented claim not supported by the fact sheet.”
 
 ### perplexity
 
@@ -2647,11 +2674,13 @@ If you want, I can also give you a **best smart ring by budget** or **best for i
 Citations: https://www.circular.xyz/post/best-smart-rings-without-subscription · https://www.youtube.com/watch?v=ZqwQJrekglE&vl=en-US · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.facebook.com/groups/243779055327725/posts/662607093444917/ · https://www.cnet.com/health/fitness/best-smart-ring/ · https://www.zdnet.com/article/i-compared-this-subscription-free-smart-ring-to-my-oura-and-heres-how-it-fared/ · https://www.youtube.com/watch?v=MX4nTLB092k
 
 **Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=negative
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **missing_or_invented_feature** (low): claim — “ZDNET explicitly contrasts [Ultrahuman Ring Air] with Oura's monthly fee — implying Oura's subscription is its only notable characteristic, and the answer uses Oura only as a negative foil without mentioning it as a product option” → reality — “Oura does have a required $5.99/month membership, but it is a full-featured smart ring with sleep tracking, readiness scores, HRV, SpO2, and more — not merely a cautionary subscription example”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer implies Oura requires a monthly fee but does not specify the fee amount or any details about the product” → reality — “Oura membership is $5.99/month or $69.99/year; the current hardware is the Ring 5 at $399 base. The answer omits all product detail for Oura.”
 
 ---
 
@@ -2673,6 +2702,7 @@ When choosing a smart ring for sleep tracking, consider factors such as comfort,
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies the Oura Ring is a one-time purchase with no mention of a required monthly/annual membership subscription.” → reality — “The Oura Ring requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited.”
 
 ### anthropic
 
@@ -2709,12 +2739,12 @@ Based on current testing and reviews, here are the top options:
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=buried · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Requires $5.99/month subscription for full features” → reality — “Membership is required for full features, but the first month is free for new members”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3) is listed as the current/featured model” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model at $349; Ring 3 is two generations old.”
+  - 🚩 **wrong_pricing** (high): claim — “Price listed as ~$299-$549” → reality — “Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is stale (old Gen 3 pricing).”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription described as required only for 'full features', implying partial free use is meaningful” → reality — “The fact sheet confirms there is no full free tier — without membership the ring and app still work but insights are heavily limited; the membership is effectively required for the full product.”
 
 ### gemini
 
@@ -2791,8 +2821,9 @@ However, the **Ultrahuman Ring AIR** is an incredibly close second and a very co
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “$5.99/month or $69.99/year membership required for full features”
+  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3) is highlighted as the top recommended model” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model; Ring 3 is even older.”
+  - 🚩 **wrong_pricing** (med): claim — “No specific price is stated, but the model referenced (Gen 3) implies outdated pricing context” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Ring 3 pricing is no longer relevant.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Requires a monthly subscription for full features after the initial purchase (framed as optional/consideration)” → reality — “The membership at $5.99/month (or $69.99/year) is required — without it, insights are heavily limited. It is not truly optional.”
 
 ### perplexity
 
@@ -2811,9 +2842,9 @@ Citations: https://www.runnersworld.com/uk/gear/a40459007/best-smart-rings/ · h
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4 is the most accurate smart ring for sleep tracking” → reality — “The Oura Ring 5 is the newest model”
+  - Samsung Galaxy Ring: present · prominence=buried · framing=neutral
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “The Oura Ring 4 is the most accurate smart ring for sleep tracking” → reality — “The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 the latest/top model is now stale.”
 
 ---
 
@@ -2838,12 +2869,14 @@ As of my last update, smart rings are becoming increasingly popular for their ab
 When choosing a smart ring, consider what features are most important to you, such as fitness tracking, sleep monitoring, or device control, and ensure the ring is compatible with your smartphone. Always check for the latest reviews and user feedback to ensure the product meets your expectations.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “older versions might be available at a discount” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches”
+  - 🚩 **stale** (med): claim — “Older Oura models might be available at a discount, implying the latest/current model is newer and pricier — but references 'older versions' without naming the current model, effectively treating Ring 4 or earlier as the reference point rather than the Ring 5 (launched 2026-05-28).” → reality — “The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 is the previous model being cleared out.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time discounted hardware purchase.” → reality — “A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material ongoing cost.”
+  - 🚩 **wrong_pricing** (med): claim — “Suggests older Oura models can be found 'at a discount' as a budget option, implying sub-$349 or similar low pricing without specifying the actual current price.” → reality — “Current Oura Ring 5 starts at $399 (base finishes). Ring 4 is being cleared out below $349, but this is still not a true budget option, and the mandatory subscription adds ongoing cost.”
 
 ### anthropic
 
@@ -2892,8 +2925,9 @@ What features matter most to you?
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring ($299 + $6/month)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura Ring has better features but ongoing costs” → reality — “Membership is required for full features; without it, insights are limited”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring ($299 + $6/month)” → reality — “Current Oura Ring 5 base price is $399 (Ring 4 was $349; $299 is an even older/stale price). The membership is $5.99/month, so the $6/month figure is approximately correct but the hardware price is wrong.”
+  - 🚩 **stale** (high): claim — “Oura Ring priced at $299” → reality — “The Ring 5 (current model as of 2026-05-28) starts at $399; $299 refers to a much older generation. Even the Ring 4 was $349.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Oura Ring has 'better features' but involves ongoing subscription costs, implying the subscription is optional or a differentiator rather than required” → reality — “The membership is required for full features — it is not optional. Without it, insights are heavily limited.”
 
 ### gemini
 
@@ -2956,13 +2990,14 @@ If you already own an Amazfit smartwatch, the **Amazfit Helio Ring** could be a 
 For the **best budget smart ring** that offers a solid feature set, good battery life, and most importantly, **no ongoing subscription fees**, the **RingConn Smart Ring** is currently your best bet. It provides excellent value for its one-time purchase price.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=negative
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=also_ran · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring (which starts at $349 + $5.99/month subscription)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura, which requires a monthly subscription to access all your data” → reality — “Membership is required for full features, but the ring and app still work without it, albeit with limited insights”
+  - 🚩 **stale** (high): claim — “Oura Ring starts at $349” → reality — “The current model is the Oura Ring 5, which starts at $399 (base finishes). The $349 price was for the Ring 4, now being cleared out.”
+  - 🚩 **stale** (med): claim — “Oura's subscription is $5.99/month (implied as the only or key detail, with no mention of the annual option or that Ring 4 is now old)” → reality — “The subscription pricing of $5.99/month is correct, but the context implies the Ring 4 is the current model at $349, whereas the Ring 5 launched 2026-05-28 at $399 base.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring starts at $349” → reality — “Current Oura Ring 5 base price is $399; $349 was the Ring 4 price.”
 
 ### perplexity
 
@@ -3071,8 +3106,10 @@ What specific features matter most to you?
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (low): claim — “Subscription: Required for full features (~$6/month)” → reality — “$5.99/month or $69.99/year”
+  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3) is listed as the current/featured model” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 3 is even older.”
+  - 🚩 **wrong_pricing** (low): claim — “Subscription is ~$6/month” → reality — “Subscription is $5.99/month or $69.99/year — the approximation is close but the annual option and exact pricing are not mentioned.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription is 'required for full features' but the ring is implicitly presented as a standard hardware purchase without highlighting the mandatory nature of the subscription” → reality — “The membership is required for the full product experience — without it, insights are heavily limited. The answer does note subscription is required, so this is partially correct, but does not convey the material limitation of the free tier.”
+  - 🚩 **stale** (high): claim — “Oura Ring Generation 3 is presented as the top/current product recommendation” → reality — “Oura Ring 5 is the current model (launched 2026-05-28, base price $399). Ring 4 was $349 and is being cleared out. Ring 3 is two generations old.”
 
 ### gemini
 
@@ -3137,11 +3174,11 @@ In summary, the "best smart ring 2026" will likely be a highly sophisticated, AI
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura to push further into predictive health, more advanced illness detection” → reality — “Oura focuses on sleep, activity, heart rate, and recovery tracking, not predictive health or illness detection”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Oura potentially expand its ecosystem” → reality — “Oura's key integrations are Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API”
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (med): claim — “Oura is described as 'currently the market leader' with no mention of the Oura Ring 5; implies the current product generation is not the Ring 5” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model as of the fact sheet's last verified date (2026-06-02)”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The subscription model is described as optional context ('like Oura's'), with no clear statement that the membership is required for the full product” → reality — “The membership ($5.99/month or $69.99/year) is required for full features — it is not optional”
 
 ### perplexity
 
@@ -3165,13 +3202,11 @@ Citations: https://www.youtube.com/watch?v=VAkAAmvd0co · https://the-gadgeteer.
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=also_ran · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4 is the best smart ring in 2026” → reality — “The Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 was $349” → reality — “Oura Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “best smart ring in 2026 overall is the Oura Ring 4” → reality — “Oura Ring 5 is the current model”
-  - 🚩 **missing_or_invented_feature** (high): claim — “best subscription-free option” → reality — “Oura requires a $5.99/month membership for full features”
+  - 🚩 **stale** (high): claim — “Best overall: Oura Ring 4 — repeatedly ranked #1 for its health suite and sleep tracking.” → reality — “The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 'best overall' or implying it is the latest model is now stale.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura is a one-time purchase with no mention of a required subscription.” → reality — “Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. This is a material omission.”
 
 ---
 
@@ -3210,10 +3245,10 @@ Is there something specific about smart rings you're interested in? I might be a
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=also_ran · framing=neutral
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3)” → reality — “Oura Ring 5 launched 2026-05-28”
+  - RingConn: present · prominence=buried · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring (Generation 3) - popular for sleep and health tracking” → reality — “The current/newest model as of 2026-05-28 is the Oura Ring 5. Ring 4 was the previous model at $349; Ring 5 base is $399. Mentioning Gen 3 as the notable model is severely outdated.”
 
 ### gemini
 
@@ -3248,11 +3283,14 @@ To know what the newest smart ring is in 2026, you'll want to keep an eye on:
 In summary, while I can't name a specific product, the smart ring market in 2026 will likely be more competitive, feature-rich, and integrated than it is today, with Samsung's offering being a strong contender for "newest and most impactful" depending on its release schedule.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=buried · framing=neutral
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=also_ran · framing=neutral
+  - 🚩 **stale** (high): claim — “Oura Ring is listed as an established player expected to continue to innovate, with no mention of the Oura Ring 5 as the newest model launched in 2026” → reality — “The Oura Ring 5 was announced 2026-05-28 and ships 2026-06-04 — it is the current/newest model and directly relevant to a '2026 newest smart ring' query”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer implies ongoing hope for blood pressure in a ring as a future feature challenge, without mentioning Oura's existing SpO2, HRV, body-temperature, or Ring 5's ~40% smaller redesign” → reality — “Oura Ring already has SpO2, HRV, body-temperature trends, and the Ring 5 features a ~40% smaller form factor vs Ring 4”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required $5.99/month membership fee; framing implies Oura is a straightforward hardware purchase” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material part of the product offering”
 
 ### perplexity
 
@@ -3267,7 +3305,7 @@ Citations: https://the-gadgeteer.com/2026/05/15/best-smart-ring-2026-oura-isnt-t
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=recommended_first · framing=neutral
+  - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
 
@@ -3299,11 +3337,12 @@ These devices offer various features and benefits, so the best choice depends on
 
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: present · prominence=mid_pack · framing=neutral
+  - Whoop: present · prominence=mid_pack · framing=positive
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura Ring provides insights into your readiness and recovery.” → reality — “The Oura Ring provides Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.”
+  - 🚩 **stale** (med): claim — “The Oura Ring tracks sleep, activity, heart rate, and body temperature (implicitly describing the current/latest ring without specifying model; no mention of Ring 5)” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Answers that do not acknowledge Ring 5 are stale.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription ($5.99/mo) — implying the Oura Ring is a one-time purchase” → reality — “Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material cost omission.”
 
 ### anthropic
 
@@ -3340,12 +3379,12 @@ What's your main tracking goal? That would help narrow it down.
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: present · prominence=mid_pack · framing=neutral
-  - Ultrahuman: present · prominence=also_ran · framing=neutral
+  - Ultrahuman: present · prominence=buried · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=also_ran · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “long battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription required for full features ($6/month)” → reality — “required $5.99/mo membership”
+  - 🚩 **stale** (high): claim — “Oura Ring priced at $299-$549” → reality — “Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation; $549 does not correspond to any listed price.”
+  - 🚩 **wrong_pricing** (low): claim — “Subscription required for full features ($6/month)” → reality — “The membership is $5.99/month or $69.99/year — the $6/month figure is a rounded approximation, but close enough to be considered minor; however the answer frames it as optional ('required for full features') without clearly stating it is required/mandatory for the full product.”
+  - 🚩 **stale** (high): claim — “No mention of Oura Ring 5 as the current model” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The answer implies older pricing ($299-$549) consistent with Ring 3/4 era, failing to reference the Ring 5.”
 
 ### gemini
 
@@ -3446,8 +3485,8 @@ By considering these factors, you can pinpoint the best non-wrist health tracker
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “Membership is $5.99/month or $69.99/year”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen3) is the top recommendation” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 is the previous model, and Gen 3 is even older.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Requires a monthly subscription for full features after the initial purchase” → reality — “The membership is required ($5.99/month or $69.99/year) and is not optional — without it, insights are heavily limited. The answer implies it is optional/add-on rather than effectively required.”
 
 ### perplexity
 
@@ -3465,7 +3504,7 @@ Citations: https://cybernews.com/health-tech/best-minimalist-fitness-trackers/ �
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: present · prominence=mid_pack · framing=neutral
+  - Whoop: present · prominence=also_ran · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
@@ -3496,7 +3535,8 @@ When choosing a smart ring, consider factors such as comfort, battery life, app 
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura app is intuitive and provides detailed insights, making it a great choice for beginners.” → reality — “The fact sheet does not mention the app being intuitive or specifically suitable for beginners.”
+  - 🚩 **stale** (med): claim — “The Oura Ring is one of the most popular smart rings on the market... (no mention of Ring 5 or current model)” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Any reference to the Oura Ring without specifying Ring 5 as the latest is stale.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features; this is a material cost omission.”
 
 ### anthropic
 
@@ -3550,11 +3590,11 @@ What's your main goal - sleep tracking, fitness, or general health monitoring?
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=also_ran · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “$299 + $5.99/month subscription” → reality — “Current Ring 5 base is $399”
-  - 🚩 **stale** (high): claim — “Oura Ring Generation 3” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **stale** (high): claim — “Oura Ring Generation 3 is the top pick” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model; Ring 3 is even older and outdated.”
+  - 🚩 **wrong_pricing** (high): claim — “$299 + $5.99/month subscription” → reality — “The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the price of the much older Gen 3.”
 
 ### gemini
 
@@ -3622,10 +3662,12 @@ For most beginners, the **Oura Ring Gen 3** offers the most polished, easy-to-un
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
-  - Samsung Galaxy Ring: present · prominence=buried · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=buried · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (low): claim — “Oura Membership (currently $5.99/month)” → reality — “$5.99/month or $69.99/year”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 (Horizon or Heritage) is the top recommendation” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28); Ring Gen 3 is two generations old”
+  - 🚩 **wrong_pricing** (low): claim — “Subscription is currently $5.99/month” → reality — “The membership price of $5.99/month is actually correct per the fact sheet”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 is described as the current product to buy, with no mention of Ring 4 or Ring 5” → reality — “The Oura Ring 5 is the current model (launched 2026-05-28) at $399 base; Ring 4 was $349”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Battery life typically lasts 4-7 days on a single charge” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the battery life”
 
 ### perplexity
 
@@ -3663,14 +3705,15 @@ If you're a beginner who wants **accuracy, no subscription, long battery life, a
 Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.techradar.com/health-fitness/fitness-trackers/best-smart-ring · https://www.bestbuy.com/site/wearable-technology/smart-rings/pcmcat1719950540059.c?id=pcmcat1719950540059 · https://www.bodyspec.com/blog/post/best_smart_ring_2026_reviews_buying_guide · https://www.techadvisor.com/article/2471183/best-smart-ring.html
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=negative
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4” → reality — “Oura Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “no subscription required” → reality — “required $5.99/mo membership”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 is named as the current/relevant model” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is being cleared out.”
+  - 🚩 **wrong_pricing** (med): claim — “Oura Ring 4 is described as 'expensive' implying a premium price point, without specifying; the model referenced (Ring 4) was $349” → reality — “Current model is Ring 5 at $399 base; Ring 4 is now being cleared below $349.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura Ring 4 is described as 'subscription-based' correctly, but no mention of the specific cost ($5.99/mo or $69.99/yr) or that a first month is free” → reality — “Membership is $5.99/month or $69.99/year with first month free — the answer correctly flags subscription exists but omits detail. Not a factual error per se, but the subscription framing is accurate.”
+  - 🚩 **stale** (high): claim — “The answer claims RingConn Gen 2 delivers '90% of the performance of the premium Oura Ring 4', treating Ring 4 as the current premium benchmark” → reality — “The current Oura model is the Ring 5 (launched 2026-05-28), not the Ring 4.”
 
 ---
 
@@ -3702,7 +3745,7 @@ When choosing a smart ring, consider what features are most important to you, su
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (low): claim — “offering features like sleep tracking, heart rate monitoring, and activity tracking” → reality — “Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura Ring is a one-time purchase with no mention of a required monthly/annual membership” → reality — “Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; without it, insights are heavily limited”
 
 ### anthropic
 
@@ -3754,11 +3797,12 @@ The **Oura Ring** remains the market leader for accuracy and features, while **S
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299-$549” → reality — “Current Ring 5 base is $399”
-  - 🚩 **stale** (high): claim — “Oura Ring Gen 3” → reality — “The Oura Ring 5 launched 2026-05-28”
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 listed as the top product” → reality — “The current model is Oura Ring 5 (launched 2026-05-28); Ring 4 was the previous model, and Ring 3 is even older.”
+  - 🚩 **wrong_pricing** (high): claim — “Price listed as ~$299-$549” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) and $499 (premium finishes). $299 is a stale Gen 3 price.”
+  - 🚩 **wrong_pricing** (low): claim — “4-7 day battery life stated” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the battery life.”
 
 ### gemini
 
@@ -3828,9 +3872,10 @@ Here are the top-rated smart rings right now, along with some highly anticipated
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen3 Horizon / Heritage)” → reality — “Oura Ring 5 is the newest model”
-  - 🚩 **wrong_pricing** (high): claim — “higher price point” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “requires a monthly subscription for full features after the initial free period” → reality — “Membership is required for full features, $5.99/month or $69.99/year, first month free”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen3 Horizon / Heritage) is listed as the current top-rated model” → reality — “The current model is the Oura Ring 5, which launched 2026-05-28. Gen3 is two generations old.”
+  - 🚩 **stale** (high): claim — “The answer refers to 'Oura Ring (Gen3)' in the summary as the top contender right now” → reality — “Oura Ring 5 is the current model as of 2026-06-04; Ring 4 was the previous model before that.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Requires a monthly subscription for full features after the initial free period” → reality — “The membership is $5.99/month or $69.99/year, with only the first month free — not a broad 'initial free period'. The membership is required; without it, insights are heavily limited.”
+  - 🚩 **wrong_pricing** (med): claim — “Higher price point (implied ~$349 era pricing by referencing Gen3)” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The answer never states a specific price but anchors on the Gen3 model, implying stale pricing context.”
 
 ### perplexity
 
@@ -3872,9 +3917,9 @@ Citations: https://www.techadvisor.com/article/2471183/best-smart-ring.html · h
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “The Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Starts at ~$349” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “It requires a mandatory monthly subscription” → reality — “Membership is required for full features, but the ring and app still work without it, albeit with limited insights”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 remains the undisputed leader / is the top pick” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model; the Ring 4 is now being cleared out. An answer dated mid-2026 should reference Ring 5 as the current model.”
+  - 🚩 **wrong_pricing** (high): claim — “Starts at ~$349” → reality — “The Ring 4 was $349 but is now being cleared out below that price. The current model, Ring 5, starts at $399. The answer presents $349 as the active price.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “It requires a mandatory monthly subscription, making it the most expensive option long-term (implied one-time cost + subscription only)” → reality — “The subscription is correctly flagged as required, but the answer omits the specific cost: $5.99/month or $69.99/year, with the first month free. While the omission of the exact price is minor, the framing is otherwise accurate on the subscription being mandatory.”
 
 ---
 
@@ -3931,12 +3976,14 @@ When comparing the Oura Ring and Whoop for recovery tracking, both devices offer
 Ultimately, the choice between Oura Ring and Whoop depends on your specific needs, lifestyle, and what aspects of health and recovery you prioritize.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: present · prominence=mid_pack · framing=positive
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura requires a subscription for full access to its features and insights.” → reality — “Membership is $5.99/month or $69.99/year, with the first month free for new members.”
+  - 🚩 **stale** (low): claim — “The Oura Ring typically lasts about 4-7 days on a single charge” → reality — “The fact sheet lists up to ~8-day battery for the Ring 4 generation, and the Ring 5 is the current model as of 2026-05-28.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura requires a subscription for full access to its features and insights (no specific price given)” → reality — “The membership is required at $5.99/month or $69.99/year with the first month free. The answer acknowledges a subscription exists but omits the price, which is a material detail per the fact sheet's known-inaccuracy watch-list.”
+  - 🚩 **stale** (med): claim — “No mention of Oura Ring 5 as the current model; the answer describes the device generically without referencing Ring 5” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. Failing to mention it means the answer implicitly treats an older generation as current.”
 
 ### anthropic
 
@@ -3994,7 +4041,10 @@ Both are excellent for recovery. **Oura** is better for sleep-focused recovery a
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Lifetime (Gen 2) or $5.99/mo (Gen 3)” → reality — “$5.99/month or $69.99/year for membership, required for full features”
+  - 🚩 **stale** (med): claim — “Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3)” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). There is no 'lifetime' membership for Gen 2 vs. Gen 3 framing that is current — the membership is $5.99/mo or $69.99/year for all current users.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3) — implying Gen 2 owners have a lifetime/free membership and only Gen 3 requires $5.99/mo” → reality — “The membership is required for full features and costs $5.99/mo (or $69.99/yr). The fact sheet does not describe any 'lifetime' free tier for Gen 2 as a current product distinction.”
+  - 🚩 **stale** (high): claim — “The answer compares Oura Ring (Gen 2/Gen 3 framing) without mentioning the Oura Ring 5 as the current model” → reality — “The Oura Ring 5 is the current model as of 2026-05-28. Referring to Gen 2/Gen 3 as the relevant current models is stale.”
+  - 🚩 **wrong_pricing** (med): claim — “No hardware price is mentioned, but the subscription framing of 'Lifetime (Gen 2) or $5.99/mo (Gen 3)' implies Gen 2 has no ongoing cost” → reality — “Current Oura Ring 5 hardware starts at $399 (base finishes) with a required $5.99/mo membership. There is no current 'lifetime' free membership offering described in the fact sheet.”
 
 ### gemini
 
@@ -4090,7 +4140,9 @@ Both require a subscription, so factor that into your decision as well.
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Both require a subscription, so factor that into your decision as well.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (low): claim — “Battery Life: Typically 5-7 days” → reality — “Fact sheet lists up to ~8-day battery for Ring 4 generation; Ring 5 specs not specified but Ring 4 is noted as up to ~8 days. The answer's '5-7 days' is potentially understated/stale.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Both require a subscription, so factor that into your decision as well (brief mention at end)” → reality — “The fact sheet flags that models often omit the required $5.99/mo membership as a frequent and material error. The answer only briefly mentions this at the very end without specifying the cost or that it is required for full features — the omission of the mandatory nature and price is a meaningful gap.”
+  - 🚩 **stale** (med): claim — “No mention of Oura Ring 5 as the current model; implicitly describes features of Ring 4 or unspecified generation” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference it at all, leaving the reader with no awareness of the latest hardware.”
 
 ### perplexity
 
@@ -4115,6 +4167,7 @@ Citations: https://www.runnersworld.com/uk/gear/tech/a70325622/oura-ring-vs-whoo
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura uses a daily Readiness score that blends nightly data with longer-term trends — no mention of a required membership subscription” → reality — “Oura requires a paid membership ($5.99/month or $69.99/year) for full features; the ring is not a standalone one-time purchase product without subscription”
 
 ---
 
@@ -4153,7 +4206,10 @@ Ultimately, the choice between the two will depend on your specific needs, prefe
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (med): claim — “The Oura Ring typically has a battery life of about 4-7 days, depending on usage.” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (low): claim — “The Oura Ring typically has a battery life of about 4-7 days, depending on usage.” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model as of 2026-05-28.”
+  - 🚩 **stale** (high): claim — “The answer describes the Oura Ring's features and positioning without referencing the Oura Ring 5, implying an older model is current.” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The answer gives no indication of Ring 5's existence.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implying the ring is a one-time purchase.” → reality — “A required membership ($5.99/month or $69.99/year) is needed for full features; the ring is not a standalone one-time purchase product.”
+  - 🚩 **wrong_pricing** (med): claim — “Pricing is discussed only vaguely ('worth considering how it compares to the Oura Ring in terms of value for money') with no specific price stated — but the implicit reference to an Oura Ring price is absent entirely, risking the impression of an older price point.” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The old Ring 4 was $349.”
 
 ### anthropic
 
@@ -4190,11 +4246,10 @@ Oura is generally considered more refined with better analytics, but the Galaxy 
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “more expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **missing_or_invented_feature** (med): claim — “longer battery life (4-7 days)” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3) is referenced as the current model” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Gen 3 is even older.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring costs $299-$549” → reality — “Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point.”
 
 ### gemini
 
@@ -4299,9 +4354,10 @@ If you need a smart ring *now* and value a mature product, go with Oura. If you'
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3)” → reality — “Oura Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “~$299 - $549 (depending on style)” → reality — “Base finishes $399, Premium finishes $499”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Subscription required for full features ($5.99/month)” → reality — “$5.99/month or $69.99/year, first month free for new members”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3) is the product being compared, with a price of ~$299 - $549” → reality — “The current model is Oura Ring 5 (launched 2026-05-28), base price $399 (Silver/Black) or $499 (premium finishes). Ring 4 was $349. Gen 3 / $299 pricing is outdated.”
+  - 🚩 **wrong_pricing** (high): claim — “Device price ranges from $299 to $549 depending on style” → reality — “Current Oura Ring 5 is $399 (base finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3) and $549 is not a listed price point.”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 is the product referenced throughout the comparison” → reality — “The current model is the Oura Ring 5, announced 2026-05-28, shipping 2026-06-04. Calling Gen 3 the current product is significantly stale.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Battery life is 4-7 days” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 may differ but the sheet lists 8 days for Ring 4, not 4-7 days.”
 
 ### perplexity
 
@@ -4330,11 +4386,10 @@ Citations: https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-ga
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **wrong_pricing** (high): claim — “Starting price $349” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (high): claim — “No subscription needed” → reality — “Required $5.99/mo membership”
+  - 🚩 **stale** (high): claim — “The answer recommends and describes the 'Oura Ring 4' as the current/best model throughout.” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the best/current model is stale.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 starting price listed as $349.” → reality — “The current Oura Ring 5 starts at $399. The Ring 4 was $349 but is the previous/outgoing model.”
 
 ---
 
@@ -4392,12 +4447,12 @@ Choosing between the Oura Ring and the Ultrahuman Ring Air depends on your speci
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring is known for its sleek and minimalist design, often available in a variety of finishes like silver, black, and gold.” → reality — “Current Ring 5 base is $399 for Silver, Black; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499.”
-  - 🚩 **missing_or_invented_feature** (high): claim — “Oura is renowned for its comprehensive sleep tracking capabilities, providing insights into sleep stages, sleep quality, and overall sleep score.” → reality — “Sleep tracking (stages, Sleep Score) is a core feature, but the answer omits the required membership for full features.”
-  - 🚩 **missing_or_invented_feature** (high): claim — “The Oura app provides detailed insights and trends over time, with a focus on improving sleep and overall wellness.” → reality — “The membership is required for full product features, including detailed insights.”
+  - 🚩 **stale** (high): claim — “The answer describes Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4 or an older model is the current product.” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 and ships 2026-06-04.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura is a one-time hardware purchase with no mention of a required subscription/membership.” → reality — “Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. Without it, insights are heavily limited.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer does not mention blood-oxygen (SpO2) tracking as a feature.” → reality — “The fact sheet lists SpO2 (blood-oxygen) as a core feature of the Oura Ring.”
 
 ### anthropic
 
@@ -4457,8 +4512,10 @@ Both are excellent choices—your decision likely comes down to subscription pre
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$299-$549” → reality — “$399-$499”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Period prediction for women” → reality — “Cycle insights, but not specifically period prediction”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring priced at $299-$549” → reality — “Current Oura Ring 5 is $399 (base) or $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. Ring 4 was $349 and is now being cleared out.”
+  - 🚩 **stale** (high): claim — “No mention of the Oura Ring 5 as the current/latest model” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all, implying an older model.”
+  - 🚩 **wrong_pricing** (low): claim — “Subscription costs $72/year ($5.99/month × 12)” → reality — “The annual subscription is $69.99/year (not $72/year). Monthly is $5.99/mo, but the annual plan is a discounted $69.99.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Battery life listed as 4-7 days” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation. 4-7 days understates the claimed battery life.”
 
 ### gemini
 
@@ -4552,15 +4609,15 @@ Both are excellent smart rings that will provide valuable insights into your hea
 Your decision will likely come down to whether the ongoing subscription cost of Oura is acceptable to you, versus the long-term value and comfort offered by the Ultrahuman Ring Air.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Price: ~$299 - $549 USD (plus subscription)” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “SpO2 (limited)” → reality — “blood-oxygen (SpO2) is a core feature”
-  - 🚩 **stale** (high): claim — “Gen3: Late 2021” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Battery Life: 4-7 days” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen3) is presented as the current model in the comparison table” → reality — “The current model is Oura Ring 5, launched 2026-05-28. Ring 4 was the prior generation; Ring 3 is even older.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring price listed as ~$299 - $549 USD” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); Ring 4 was $349.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring launch date listed as 'Gen3: Late 2021'” → reality — “The current model is Ring 5 (launched 2026-05-28), not Gen 3 (2021). This reflects a stale model reference.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Battery life stated as 4-7 days for Oura Ring” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; the answer understates this.”
 
 ### perplexity
 
@@ -4589,10 +4646,11 @@ Citations: https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://honehea
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Typically requires a membership for full access to insights.” → reality — “Membership is required for full features, not just typically.”
+  - 🚩 **stale** (med): claim — “Oura Ring has reported around 8 days battery life in one hands-on comparison” → reality — “The ~8-day battery figure corresponds to the Ring 4 generation. The current model is the Ring 5 (launched 2026-05-28); no updated battery figure for Ring 5 is provided, and the answer does not mention Ring 5 at all.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Oura 'typically requires a membership' framed as optional/typical rather than required” → reality — “The membership is explicitly required for full features — it is not merely typical but mandatory. The fact sheet flags omitting or softening this as a frequent material error.”
 
 ---
 
@@ -4652,8 +4710,9 @@ Ultimately, the choice between the Oura Ring and RingConn will depend on your sp
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Generally considered a premium product, with prices reflecting its advanced features and design.” → reality — “Current Ring 5 base is $399 with a required $5.99/month membership.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Provides continuous heart rate monitoring, including resting heart rate and heart rate variability (HRV).” → reality — “The fact sheet does not confirm continuous heart rate monitoring, only 24/7 heart rate and HRV.”
+  - 🚩 **stale** (med): claim — “No mention of Oura Ring 5 as the current model; the answer discusses the Oura Ring generically without referencing the Ring 5 launched 2026-05-28.” → reality — “The Oura Ring 5 is the current model, launched 2026-05-28, ~40% smaller than Ring 4.”
+  - 🚩 **wrong_pricing** (high): claim — “Price described only as 'generally considered a premium product, with prices reflecting its advanced features and design' — no specific price mentioned, and no mention of required subscription.” → reality — “Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes), plus a required $5.99/month membership.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr) needed for full features.” → reality — “A required membership is needed for full features; without it, insights are heavily limited. This is a material omission.”
 
 ### anthropic
 
@@ -4701,9 +4760,12 @@ Ultimately, the choice between the Oura Ring and RingConn will depend on your sp
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$299-399 + $5.99/month subscription required for most features” → reality — “Current Ring 5 base is $399 with a $5.99/month membership required for full features”
-  - 🚩 **stale** (high): claim — “Gen 3” → reality — “The Oura Ring 5 launched 2026-05-28”
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring Gen 3 is the product being discussed” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is the previous model now being cleared out.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura costs $299-399” → reality — “Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. The $299 figure is stale (Gen 3 era).”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription is $5.99/month — implied as optional ('required for most features') with implication ring works fine without it” → reality — “The $5.99/month membership is required for the full product. Without it, insights are heavily limited. It is not truly optional for meaningful use.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura battery life is 4-7 days” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation. The 4-7 day figure is understated/stale.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Oura described as 'bulkier design' as a weakness” → reality — “The Oura Ring 5 is ~40% smaller than Ring 4, with a thinner/lighter redesign — calling it 'bulkier' is inaccurate for the current model.”
 
 ### gemini
 
@@ -4769,9 +4831,10 @@ If the subscription fee is a deal-breaker for you, RingConn is an excellent choi
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **missing_or_invented_feature** (high): claim — “No SpO2 (Oxygen Saturation)” → reality — “blood-oxygen (SpO2)”
-  - 🚩 **wrong_pricing** (high): claim — “Higher upfront cost + mandatory monthly subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month membership”
+  - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **stale** (high): claim — “Oura Ring (Gen 3) is the model referenced in the comparison table” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model; Gen 3 is even older.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura Ring has No SpO2 (Oxygen Saturation)” → reality — “Oura Ring does have SpO2 (blood-oxygen tracking) — it is listed as a core feature in the fact sheet.”
+  - 🚩 **wrong_pricing** (med): claim — “Higher upfront cost + mandatory monthly subscription (no specific price given, but implies Gen 3 pricing context)” → reality — “Current Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year. Referencing Gen 3 implies stale pricing context.”
 
 ### perplexity
 
@@ -4799,7 +4862,8 @@ Citations: https://healnourishgrow.com/ringconn-vs-oura/ · https://www.wareable
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “RingConn is the better value if you want good-enough sleep tracking without a subscription.” → reality — “Oura requires a $5.99/month membership for full features.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura includes 'readiness-style coaching' as a notable feature” → reality — “Oura does have Readiness and Recovery scores per the fact sheet, so this is broadly accurate — no flag needed. Flagging instead: the answer makes no mention of the required subscription fee, implying the ring stands on its own as a purchase.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required $5.99/month membership fee — the answer implicitly frames Oura as a straight hardware purchase vs. RingConn's 'no subscription fee'” → reality — “Oura requires a $5.99/month (or $69.99/year) membership for full features; omitting this while highlighting RingConn's no-subscription advantage is a material inaccuracy”
 
 ---
 
@@ -4828,11 +4892,12 @@ The Oura Ring is a popular wearable device known for its sleek design and compre
 Each of these alternatives has its own strengths and may cater to different preferences and needs, so it's important to consider what specific features are most important to you when choosing a device.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: present · prominence=recommended_first · framing=positive
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura is simply a 'wearable device' without mentioning the required monthly/annual membership subscription” → reality — “Oura requires a mandatory $5.99/month or $69.99/year membership for full features; without it, insights are heavily limited. This is a material cost omission.”
 
 ### anthropic
 
@@ -4892,11 +4957,13 @@ Each of these alternatives has its own strengths and may cater to different pref
 **Best choice depends on your priority:** rings for discreteness, bands for athletics, watches for versatility.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: present · prominence=mid_pack · framing=positive
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=recommended_first · framing=positive
+  - 🚩 **stale** (med): claim — “The answer implies Oura Ring (as a product being compared against) without mentioning the Ring 5 as the current model” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 at $349 is now being cleared out”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer does not mention Oura's required monthly/annual membership subscription cost when framing it as the product being replaced” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not optional”
 
 ### gemini
 
@@ -4976,12 +5043,14 @@ If your primary goal is just sleep tracking and you don't want to wear anything.
 Ultimately, the "best" alternative depends on your personal priorities and lifestyle.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=positive
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: present · prominence=mid_pack · framing=positive
-  - Ultrahuman: present · prominence=recommended_first · framing=positive
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “No subscription required (as of current writing), which is a significant advantage over Oura.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (med): claim — “The answer describes the Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4-era information is current.” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. Ring 4 is now being cleared out.”
+  - 🚩 **wrong_pricing** (low): claim — “The answer implies Oura has a subscription cost but describes Whoop's subscription as 'often higher monthly cost' than Oura's, without stating Oura's actual membership price.” → reality — “Oura membership is $5.99/month or $69.99/year. The answer never states the actual Oura subscription price, leaving the reader without accurate pricing information.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Battery life described as '4-7 days' for Oura.” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation. The answer's '4-7 days' range understates the stated battery life.”
 
 ### perplexity
 
@@ -5004,11 +5073,12 @@ If you want, I can also give you a **buying guide by priority** — for example,
 Citations: https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.zdnet.com/article/renpho-lynx-smart-ring-review/ · https://www.facebook.com/groups/seminolehappenings/posts/2002732693819223/ · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.cnet.com/health/fitness/best-smart-ring/
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
+  - 🚩 **missing_or_invented_feature** (med): claim — “The answer implies Oura requires a subscription (mentions 'subscription-free' as a differentiator for competitors), but never explicitly states the subscription is required for full features — the subscription model is effectively omitted/understated as a named Oura drawback.” → reality — “Oura requires a mandatory $5.99/month or $69.99/year membership for full features; this is a material and frequently missed detail the fact sheet flags as high-priority.”
 
 ---
 
@@ -5037,12 +5107,12 @@ If you're looking for alternatives to the Oura Ring that don't require a monthly
 When choosing a device, consider what specific features are most important to you, such as sleep tracking, heart rate monitoring, or activity tracking, and ensure the device meets those needs. Additionally, check for compatibility with your smartphone and any specific apps you might want to use.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
-  - Whoop: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
+  - Whoop: present · prominence=recommended_first · framing=negative
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Oura Ring requires a monthly subscription for full features”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer implies Oura Ring alternatives are needed because of a monthly subscription, but does not explicitly state Oura's subscription is required for full features — it only frames Oura as having a subscription implicitly via the question context. No direct claim about Oura's subscription model is made in the answer body.” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features — this is a required, not optional, subscription.”
 
 ### anthropic
 
@@ -5092,12 +5162,13 @@ Here are smart rings and wearables that don't require ongoing subscriptions:
 Most Oura alternatives offer comparable tracking without subscriptions, though Oura's app interface and insights are often considered more polished. Choose based on your priority: cost savings vs. user experience.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without monthly subscriptions” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - RingConn: present · prominence=recommended_first · framing=positive
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies Oura Ring is a one-time purchase by framing it as a product that alternatives replace, without mentioning Oura's required $5.99/month membership” → reality — “Oura requires a mandatory membership ($5.99/month or $69.99/year) for full features — the ring is NOT a simple one-time purchase”
+  - 🚩 **stale** (med): claim — “The answer does not mention the Oura Ring 5 (launched 2026-05-28), implicitly treating the product line as if Ring 4 or an older model is current” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model, priced at $399 (base) or $499 (premium finishes)”
 
 ### gemini
 
@@ -5170,12 +5241,13 @@ These offer broader functionality, often including a screen, but still provide e
 All the options listed above provide valuable health and wellness data without forcing you into a recurring subscription, allowing you to own your data and insights outright.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (med): claim — “The answer frames Oura Ring as requiring a monthly subscription, which is correct, but does not mention the current model (Ring 5) or any up-to-date product details — implicitly treating the product as a static reference point without acknowledging the Ring 5 launched 2026-05-28.” → reality — “The current model is the Oura Ring 5, launched 2026-05-28, which is ~40% smaller than Ring 4. The answer makes no mention of Ring 5.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer implies Oura's subscription is simply a 'monthly subscription fee' without specifying that the ring still partially works without it but insights are heavily limited — and does not mention the $5.99/month or $69.99/year price for the membership.” → reality — “Membership is $5.99/month or $69.99/year; without membership the ring and app still work but insights are heavily limited.”
 
 ### perplexity
 
@@ -5197,12 +5269,12 @@ One important caveat: some sources are reviews or retailer/blog recommendations 
 Citations: https://www.youtube.com/watch?v=XhrCnA2HdSg&vl=en · https://circulsense.com/blogs/product-guide-101/best-oura-ring-alternative-smart-rings-no-subscription · https://livity-app.com/en/blog/best-oura-ring-alternatives · https://www.brandqualityproducts.com/fitness-trackers/best-oura-ring-dupes/ · https://www.tomsguide.com/wellness/fitness-trackers/best-oura-ring-alternatives · https://www.cosmopolitan.com/health-fitness/g62178023/oura-ring-alternatives-dupes/ · https://www.wareable.com/fashion/best-smart-rings-1340 · https://www.facebook.com/groups/322829073580573/posts/456932453503567/
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=also_ran · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=positive
   - RingConn: present · prominence=recommended_first · framing=positive
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring alternatives without a monthly subscription” → reality — “Oura requires a $5.99/month membership for full features”
+  - 🚩 **missing_or_invented_feature** (med): claim — “The answer frames Oura as a product to replace/avoid due to its subscription, implying the subscription is an optional or notable negative differentiator, but does not explicitly state the subscription cost or that it is required for full features.” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not merely an optional add-on. The answer never states the subscription price or that it is mandatory.”
 
 ---
 
@@ -5241,7 +5313,8 @@ Ultimately, the choice between the two would depend on your specific needs, pref
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (low): claim — “Oura Ring is known for its accurate sleep tracking, heart rate monitoring, and readiness scores.” → reality — “Oura Ring 5 is the current model with updated sensors and features.”
+  - 🚩 **stale** (med): claim — “Oura Ring is described generally with no mention of the Ring 5; the answer implies an older/unspecified model is current” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer makes no mention of a required monthly membership/subscription cost for the Oura Ring” → reality — “Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; this is a material ongoing cost”
 
 ### anthropic
 
@@ -5278,8 +5351,8 @@ Which features matter most to you?
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “Oura charges $5.99/month” → reality — “Membership is $5.99/month or $69.99/year”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Better sleep tracking accuracy (generally considered best-in-class)” → reality — “The fact sheet does not confirm this claim about sleep tracking accuracy”
+  - 🚩 **wrong_pricing** (low): claim — “Oura charges $5.99/month” → reality — “The $5.99/month figure is correct, but the answer implies the subscription is optional ('Oura charges $5.99/month' as a disadvantage framing). The fact sheet notes membership is required for full features, not merely an add-on charge.”
+  - 🚩 **stale** (med): claim — “Oura's battery life is 4-7 days” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days is understated and likely stale.”
 
 ### gemini
 
@@ -5353,13 +5426,14 @@ The Samsung Galaxy Ring has the potential to be a very strong competitor, especi
 **My recommendation is to wait for independent reviews of the Samsung Galaxy Ring** once it's released. These reviews will provide crucial information on its real-world accuracy, battery life, software experience, and overall value proposition compared to Oura.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=positive
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The ring itself is relatively expensive upfront (starting around $299).” → reality — “Current Ring 5 base is $399.”
-  - 🚩 **missing_or_invented_feature** (high): claim — “To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period).” → reality — “Membership is required for full features, not just advanced features and historical data.”
+  - 🚩 **wrong_pricing** (high): claim — “The ring itself is relatively expensive upfront (starting around $299).” → reality — “The current Oura Ring 5 starts at $399 (base finishes). The $299 price is from an older generation (Gen 3). Even the Ring 4 was $349.”
+  - 🚩 **stale** (med): claim — “Oura has been the pioneer in the smart ring space for years... its algorithms... have been refined over multiple generations. [No mention of Ring 5 as the current model; implicitly treats Ring 4-era or older as current.]” → reality — “The Oura Ring 5 launched on 2026-05-28 and ships 2026-06-04. It is the current model, featuring ~40% smaller size and updated sensors. The answer makes no mention of Ring 5.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period).” → reality — “The membership cost is correct at $5.99/month. However, the answer implies the free period gives meaningful access ('after an initial free period'), whereas the fact sheet clarifies that without membership, insights are heavily limited even beyond the trial — the membership is effectively required. The framing understates the necessity. Additionally, the annual option ($69.99/year) is not mentioned.”
 
 ### perplexity
 
@@ -5384,13 +5458,14 @@ If you want, I can also compare them for **sleep tracking, battery life, or work
 Citations: https://timstevens.substack.com/p/galaxy-ring-vs-oura-horizon-gen3 · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.youtube.com/watch?v=oUeZXVCDbmY · https://www.tomsguide.com/wellness/fitness-trackers/samsung-galaxy-ring-vs-oura-ring-everything-we-know-so-far · https://www.garagegymreviews.com/samsung-ring-vs-oura · https://www.facebook.com/groups/945310367310036/posts/1434630208378047/ · https://www.youtube.com/watch?v=1g89tc-5TQE · https://www.techadvisor.com/article/2491369/oura-ring-4-vs-samsung-galaxy-ring.html
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Starts at $299” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Oura Ring is generally the better choice for iPhone or mixed-platform users because it works with both iOS and Android” → reality — “Oura Ring works with iOS and Android but no specific advantage for iPhone or mixed-platform users is mentioned”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring starts at $299” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black). The $299 price is from a much older generation. Ring 4 was $349.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership fee ($5.99/mo) — implied to be a one-time purchase” → reality — “Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material ongoing cost”
+  - 🚩 **stale** (med): claim — “No mention of Oura Ring 5 as the current model” → reality — “Oura Ring 5 launched 2026-05-28 and began shipping 2026-06-04; it is the current model”
 
 ---
 
@@ -5447,8 +5522,8 @@ Ultimately, the choice between Whoop and Ultrahuman will depend on your specific
 
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
-  - Whoop: present · prominence=recommended_first · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Whoop: present · prominence=recommended_first · framing=positive
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
@@ -5584,7 +5659,7 @@ Ultimately, both are excellent tools. Whoop is a fantastic "recovery coach," whi
 **Judge verdict:**
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: present · prominence=recommended_first · framing=positive
-  - Ultrahuman: present · prominence=recommended_first · framing=positive
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
 
@@ -5671,7 +5746,7 @@ The choice between the Samsung Galaxy Ring and RingConn will largely depend on y
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: present · prominence=mid_pack · framing=neutral
 
 ### anthropic
@@ -5722,8 +5797,8 @@ Which ecosystem are you currently using?
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
+  - RingConn: present · prominence=mid_pack · framing=positive
 
 ### gemini
 
@@ -5828,7 +5903,10 @@ Here's a breakdown to help you decide:
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: present · prominence=recommended_first · framing=positive
   - RingConn: present · prominence=mid_pack · framing=positive
-  - 🚩 **missing_or_invented_feature** (low): claim — “Vitality Score (similar to Oura's Readiness Score)” → reality — “Readiness and Recovery scores”
+  - 🚩 **competitor_confusion** (low): claim — “Samsung Galaxy Ring has a 'Vitality Score' (similar to Oura's Readiness Score)” → reality — “Oura's score is called the 'Readiness Score', not 'Vitality Score'. The answer correctly names it 'Readiness Score' in the parenthetical, but attributes 'Vitality Score' to Samsung — this is a minor framing issue. More importantly, Oura is only mentioned as a passing reference point, not described on its own merits.”
+  - 🚩 **wrong_pricing** (med): claim — “Samsung Galaxy Ring expected to be competitive with Oura (e.g., $250-$350+)” → reality — “The fact sheet lists Oura Ring 5 base price at $399 (and Ring 4 was $349). The answer implies Oura is in the $250-$350+ range, which understates the current Oura pricing.”
+  - 🚩 **stale** (med): claim — “Oura's Readiness Score is mentioned as a reference benchmark with no indication of current model or pricing” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer gives no model info for Oura and implies pricing below actual current levels.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura is implicitly presented as a subscription-based product only by contrast (Samsung and RingConn both noted as 'no subscription'), with no explicit mention of Oura's required $5.99/mo membership” → reality — “Oura requires a mandatory $5.99/month membership for full features — this is a key differentiator that the fact sheet flags as frequently missed. The answer does not state this about Oura.”
 
 ### perplexity
 
@@ -5861,8 +5939,8 @@ Citations: https://weareready.sg/blogs/news/ringconn-gen-1-2-vs-samsung-galaxy-s
   - **Oura**: absent · prominence=absent · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=recommended_first · framing=neutral
-  - RingConn: present · prominence=recommended_first · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
+  - RingConn: present · prominence=recommended_first · framing=positive
 
 ---
 
@@ -5904,12 +5982,15 @@ Determining which product offers better value between the Oura Ring and the Ultr
 Ultimately, the better value depends on which features align most closely with your health priorities and how much you're willing to invest in ongoing subscriptions. It might be helpful to read user reviews and possibly try out both products if possible to see which one fits your lifestyle better.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
+  - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura requires a subscription for full access to its features and insights.” → reality — “Oura requires a $5.99/month or $69.99/year membership for full features.”
+  - 🚩 **stale** (med): claim — “The answer discusses Oura Ring features without naming a current model, implying the current product is the Ring 4 or older generation (no mention of Ring 5).” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out.”
+  - 🚩 **wrong_pricing** (low): claim — “The answer does not state any hardware price for Oura, but implies cost comparison without noting the Ring 5 base price of $399.” → reality — “Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer says Oura 'requires a subscription for full access to its features and insights' without specifying the cost ($5.99/month or $69.99/year).” → reality — “Membership is $5.99/month or $69.99/year; first month free. The subscription is required — not mentioning the price is an omission, though the existence of the subscription is correctly noted.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer states Ultrahuman provides 'insights into glucose levels and metabolic efficiency' and implies glucose monitoring is a feature of the Ultrahuman Ring itself.” → reality — “This is a claim about Ultrahuman, not Oura, so it is not directly checkable against the Oura fact sheet. However, the fact sheet does not flag this as a competitor confusion issue for Oura.”
 
 ### anthropic
 
@@ -5947,10 +6028,12 @@ What's your main use case - sleep optimization, fitness tracking, or general wel
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=positive
+  - Ultrahuman: present · prominence=mid_pack · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$299-549 (ring) + $5.99/month subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month subscription”
+  - 🚩 **wrong_pricing** (high): claim — “Oura: $299-549 (ring)” → reality — “Current Oura Ring 5 base price is $399 (premium finishes $499). $299 is a stale Gen 3 price; $549 does not correspond to any current listed price.”
+  - 🚩 **stale** (high): claim — “Oura ring priced at $299-549, implying older/current models in that range” → reality — “The Ring 5 launched 2026-05-28 at $399 base / $499 premium. Ring 4 is being cleared out below $349. Most AI models still quote Ring 4 or Ring 3 pricing.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Oura has 10+ years of development” → reality — “Oura was founded in 2013; as of 2026 that is approximately 13 years, so '10+' is technically not wrong, but the fact sheet notes founded 2013 — this is borderline and not a clear error.”
 
 ### gemini
 
@@ -6019,7 +6102,10 @@ Both rings require a subscription for full functionality, so factor that into yo
   - Ultrahuman: present · prominence=mid_pack · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Subscription Required: Full features require a monthly subscription after the initial purchase.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **stale** (med): claim — “Oura Ring (implied current model discussed with no mention of Ring 5); the answer discusses features without naming the current model, and the context implies Ring 4-era information” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is no longer the latest.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Both rings require a subscription for full functionality — listed as a 'Potential Downside' under Oura, framed as equivalent to Ultrahuman” → reality — “While the answer does mention the subscription requirement for Oura, it fails to specify the cost ($5.99/month or $69.99/year) and critically lists it only as a bullet under 'Potential Downsides' rather than a central cost consideration, understating its materiality.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription listed as a downside bullet point for Oura under Ultrahuman's section, implying it may not be required or is optional ('Full features require a monthly subscription after the initial purchase')” → reality — “The Oura membership at $5.99/mo is required for full features — the fact sheet flags this as a frequent and material error when omitted or downplayed. The answer does mention it but buries it and does not state the price.”
+  - 🚩 **wrong_pricing** (high): claim — “No hardware price is mentioned for Oura at all” → reality — “Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The answer omits pricing entirely, preventing accurate value comparison.”
 
 ### perplexity
 
@@ -6035,13 +6121,14 @@ If you want the simplest answer: **Ultrahuman is the better value for most buyer
 Citations: https://honehealth.com/edge/oura-vs-ultrahuman/ · https://www.youtube.com/watch?v=H8Udebfw93g&vl=en · https://michaelkummer.com/ultrahuman-vs-oura-ring/ · https://taylored.health/2025/04/14/the-ultimate-smart-ring-showdown-oura-vs-ultrahuman-vs-samsung-galaxy-ring/ · https://www.digitaltrends.com/phones/oura-ring-vs-ultrahuman-ring-air-smart-rings-comparison-which-is-better/ · https://www.facebook.com/groups/322829073580573/posts/536870162176462/ · https://www.tiktok.com/@christineleeee/video/7496687527735381294?lang=en
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: present · prominence=recommended_first · framing=positive
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura typically starts around $299–$349 depending on model/finish” → reality — “Current Ring 5 base is $399”
-  - 🚩 **wrong_pricing** (low): claim — “full access also costs about $5.99/month or about $69.99/year” → reality — “Membership is $5.99/month or $69.99/year, first month free for new members”
+  - 🚩 **wrong_pricing** (high): claim — “Oura typically starts around $299–$349 depending on model/finish” → reality — “The current Oura Ring 5 starts at $399 (base finishes). $349 was the Ring 4 price and $299 is an even older/stale price.”
+  - 🚩 **stale** (high): claim — “Oura typically starts around $299–$349 depending on model/finish” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399. The answer implies Ring 4 / older pricing is current.”
+  - 🚩 **wrong_pricing** (med): claim — “full access also costs about $5.99/month or about $69.99/year” → reality — “Pricing is correct ($5.99/month or $69.99/year), but the answer frames it as optional ('full access also costs') rather than required for the full product. The membership is required for full features.”
 
 ---
 
@@ -6245,8 +6332,10 @@ By considering these factors, you can find a cheaper alternative that meets your
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$300-$400 for the ring. Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription.” → reality — “Current Ring 5 base is $399. Membership is required for full features, no full free tier.”
-  - 🚩 **stale** (high): claim — “Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription.” → reality — “The Ring 5 launched 2026-05-28, and the membership is required for full features.”
+  - 🚩 **stale** (high): claim — “Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription.” → reality — “The membership is required for full features across all current generations — there is no meaningful free tier. The fact sheet states 'without membership the ring and app still work but insights are heavily limited,' and the current model is Ring 5 (not Gen3).”
+  - 🚩 **wrong_pricing** (med): claim — “~$300-$400 for the ring” → reality — “The current Oura Ring 5 starts at $399 (base finishes) and goes up to $499 (premium finishes). The stated range of $300-$400 is stale/inaccurate.”
+  - 🚩 **stale** (high): claim — “Newer generations (Gen3) require a $5.99/month membership — implying Gen3 is the current/newest model” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Referring to Gen3 as a current or recent model is stale.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “older generations (Gen2) and some Gen3 features are available without a subscription” → reality — “The fact sheet states there is no full free tier — without membership, insights are heavily limited for all models. The answer implies a meaningful no-subscription option exists for older/Gen3 rings, which contradicts the fact sheet.”
 
 ### perplexity
 
@@ -6274,13 +6363,14 @@ If you want, I can narrow this down by:
 Citations: https://www.digitaltrends.com/wearables/best-whoop-alternatives/ · https://www.youtube.com/watch?v=cFRbqkoWcg0&vl=en · https://www.bgr.com/2005016/best-whoop-alternatives-health-fitness-tracking/ · https://livity-app.com/en/blog/best-whoop-alternatives · https://www.whoopalternatives.com · https://www.zdnet.com/article/polar-loop-review/ · https://www.youtube.com/watch?v=HO7RC1mnKso&vl=en · https://www.facebook.com/groups/garminforum/posts/2654527061573878/ · https://www.tiktok.com/@cedlom/video/7586371612476214559?lang=en
 
 **Judge verdict:**
-  - **Oura**: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=mid_pack · framing=positive
   - Whoop: present · prominence=recommended_first · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 about $349+” → reality — “Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Ring form factor with strong sleep/recovery tracking” → reality — “A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.”
+  - 🚩 **stale** (high): claim — “Oura Ring 4 at about $349+” → reality — “The current model is the Oura Ring 5, starting at $399. The Ring 4 was $349 but is now being cleared out as the Ring 5 launches.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 costs about $349+” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription is $5.99/month (implied optional or secondary)” → reality — “The $5.99/month membership is required for full features — not truly optional. Without it, insights are heavily limited.”
 
 ---
 
@@ -6312,9 +6402,9 @@ Ultimately, if you're looking for a device that provides in-depth health insight
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring is relatively expensive compared to other fitness trackers.” → reality — “Current Ring 5 base is $399 with a required $5.99/mo membership.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “The Oura Ring typically offers a battery life of about 4-7 days.” → reality — “Up to ~8-day battery (Ring 4 generation).”
-  - 🚩 **missing_or_invented_feature** (low): claim — “Oura has a strong focus on data privacy.” → reality — “Not mentioned in the fact sheet.”
+  - 🚩 **stale** (low): claim — “The Oura Ring typically offers a battery life of about 4-7 days” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); the current Ring 5 is the latest model”
+  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring is relatively expensive compared to other fitness trackers (no specific price or subscription cost mentioned)” → reality — “The Oura Ring 5 starts at $399 for base finishes, PLUS a required $5.99/month membership fee. The answer omits the mandatory subscription entirely, implying it may be a one-time purchase.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “It may not offer as many features as some smartwatches, such as GPS tracking or notifications” → reality — “The fact sheet confirms no notifications/no screen (correct), but does not mention GPS as a missing feature explicitly — GPS omission is consistent. However, framing it as lacking 'some smartwatch features' is fair. The more critical omission is the mandatory membership not being mentioned at all.”
 
 ### anthropic
 
@@ -6351,13 +6441,14 @@ Ultimately, if you're looking for a device that provides in-depth health insight
 **Bottom line**: It's a premium product that excels at specific things. If sleep and recovery data will actually change your behavior, it can be valuable. If not, there are cheaper alternatives.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$299-549 + $5.99/month subscription” → reality — “Base finishes $399, Premium finishes $499, $5.99/month membership”
-  - 🚩 **stale** (med): claim — “Battery life - 4-7 days beats most smartwatches” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **wrong_pricing** (high): claim — “Price — $299-549 + $5.99/month subscription” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); the $549 figure does not correspond to any current model. The upper end should be $499.”
+  - 🚩 **stale** (high): claim — “Price range starts at $299, implying older/current model pricing” → reality — “The Ring 5 (launched 2026-05-28) starts at $399. $299 reflects a much older generation and is stale.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Battery life 4-7 days” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days understates the advertised battery life.”
 
 ### gemini
 
@@ -6419,8 +6510,9 @@ However, if your primary goal is detailed workout tracking, smart features, or y
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The ring itself is premium-priced (typically $299-$549 depending on the model/finish).” → reality — “Current Ring 5 base is $399, Premium finishes $499.”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Oura now requires a monthly membership ($5.99/month in the US) to access all its features and historical data.” → reality — “Membership is required for full features, but the first month is free for new members.”
+  - 🚩 **wrong_pricing** (high): claim — “The ring itself is premium-priced (typically $299-$549 depending on the model/finish)” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era). The $549 figure is not a listed price.”
+  - 🚩 **stale** (high): claim — “Implies Ring 4 / generic 'Oura Ring' pricing without referencing the Ring 5 as the current model” → reality — “The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 ($349) is being cleared out.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Battery life typically lasts 4-7 days on a single charge” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the quoted battery life.”
 
 ### perplexity
 
@@ -6443,12 +6535,13 @@ If you want, I can also give you a **“Oura Ring vs Apple Watch vs Garmin vs WH
 Citations: https://gethealthyu.com/oura-ring-review/ · https://www.femmecyclist.com/oura-ring-review/ · https://www.womanandhome.com/health-wellbeing/fitness/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like · https://www.facebook.com/groups/945310367310036/posts/1363217722185963/
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: present · prominence=also_ran · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The ring itself typically costs roughly $299–$549” → reality — “Current Ring 5 base is $399”
+  - 🚩 **wrong_pricing** (high): claim — “The ring itself typically costs roughly $299–$549” → reality — “Current Oura Ring 5 base price is $399 (premium finishes $499). The $299 figure is for an older generation (Gen 3). The $549 figure does not appear in the fact sheet at all.”
+  - 🚩 **stale** (high): claim — “The ring itself typically costs roughly $299–$549 (implying older/unclear model generation)” → reality — “The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 ($349) is the previous model being cleared out. The answer does not mention Ring 5.”
 
 ---
 
@@ -6466,7 +6559,9 @@ As of the latest information available, the Oura Ring typically costs between $2
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “the Oura Ring typically costs between $299 and $549” → reality — “Current Ring 5 base is $399, Premium finishes are $499”
+  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring typically costs between $299 and $549” → reality — “Current Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point.”
+  - 🚩 **stale** (high): claim — “Pricing range of $299–$549 implies stale/incorrect model pricing” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28), priced at $399–$499. The $299 price references the old Gen 3.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer implies the Oura Ring is a one-time purchase with no mention of a required subscription” → reality — “A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited.”
 
 ### anthropic
 
@@ -6485,9 +6580,9 @@ Prices may vary based on promotions, and the company occasionally offers discoun
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring typically costs $299-$399 depending on the model and finish you choose” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349”
-  - 🚩 **stale** (high): claim — “Oura Ring Gen3 Heritage: $299 (silver, black, stealth)” → reality — “Ring 5 launched 2026-05-28”
-  - 🚩 **stale** (high): claim — “Oura Ring Gen3 Horizon: $349-$399 (various finishes)” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **stale** (high): claim — “Oura Ring Gen3 Heritage at $299 and Gen3 Horizon at $349-$399 are presented as current models” → reality — “The current model is Oura Ring 5 (launched 2026-05-28), priced at $399 (base) or $499 (premium finishes). Ring Gen3 is two generations old.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring costs $299-$399 depending on model and finish” → reality — “Current Oura Ring 5 base price is $399 (Silver, Black) and $499 for premium finishes (Gold, Stealth, Brushed Silver, Deep Rose).”
+  - 🚩 **missing_or_invented_feature** (med): claim — “New purchases typically include a free trial period of often 1-6 months of membership” → reality — “The fact sheet states only the first month of membership is free — there is no 1-6 month range mentioned.”
 
 ### gemini
 
@@ -6515,14 +6610,15 @@ The Oura Ring has two main costs: the **device itself** and a **monthly membersh
 *   Always check the official Oura website (ouraring.com) for the most current pricing, available models, and any regional variations.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The price of the ring itself typically ranges from $299 to $549 USD or more, depending on the model and finish.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
-  - 🚩 **stale** (high): claim — “Heritage: Usually starts around $299 USD for standard finishes.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
-  - 🚩 **stale** (high): claim — “Horizon: Usually starts around $349 USD for standard finishes.” → reality — “Current Ring 5 base is $399; previous model Ring 4 was $349.”
+  - 🚩 **stale** (high): claim — “Heritage model starts around $299 USD; Horizon model starts around $349 USD” → reality — “The current model is the Oura Ring 5, with a base price of $399 (Silver/Black) and $499 for premium finishes. Ring 4 was $349 and is being cleared out. There is no current 'Heritage' or 'Horizon' model lineup at those prices.”
+  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring device ranges from $299 to $549 USD” → reality — “Current Ring 5 pricing is $399 (base) and $499 (premium finishes). The $299 price is outdated (Gen 3 era) and $549 does not correspond to any listed price on the fact sheet.”
+  - 🚩 **stale** (high): claim — “Heritage and Horizon are the current models” → reality — “The current model is the Oura Ring 5, launched 2026-05-28. Heritage and Horizon were Ring 3-era model names.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Membership costs $5.99 USD per month (only monthly option mentioned)” → reality — “Membership is $5.99/month OR $69.99/year. The annual option and the first month free for new members were not mentioned.”
 
 ### perplexity
 
@@ -6539,13 +6635,14 @@ If you want, I can also give you the **cheapest current Oura Ring option** or br
 Citations: https://honehealth.com/edge/oura-ring-review/ · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.mattressclarity.com/reviews/oura-ring-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://ouraring.com/store/rings/oura-ring-4 · https://www.bestbuy.com/site/brands/oura/pcmcat1680720122530.c?id=pcmcat1680720122530 · https://www.walmart.com/brand/oura/20016151 · https://ouraring.com/store/rings/oura-ring-5/silver
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring typically costs $349 to $499 for the current Oura Ring 4, depending on finish and model” → reality — “Current Ring 5 base is $399; Ring 4 was $349 and is being cleared out below that”
-  - 🚩 **stale** (high): claim — “current Oura Ring 4” → reality — “Ring 5 launched 2026-05-28”
+  - 🚩 **stale** (high): claim — “The current Oura Ring is the Oura Ring 4, priced at $349–$499” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399 for base finishes and $499 for premium finishes. The Ring 4 is a previous model now being cleared out.”
+  - 🚩 **wrong_pricing** (high): claim — “Oura Ring 4 (regular titanium): $349–$499 depending on color/finish” → reality — “Ring 5 base price is $399; premium finishes are $499. The Ring 4 was $349 and is now the previous model being cleared below that price.”
+  - 🚩 **wrong_pricing** (med): claim — “Ceramic Oura Ring 4: $499” → reality — “The fact sheet does not mention a ceramic variant of the Ring 4; current Ring 5 premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499. There is no mention of a ceramic option.”
 
 ---
 
@@ -6563,6 +6660,9 @@ Yes, the Oura Ring does require a subscription for full access to its features. 
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (low): claim — “the ring itself can still track basic metrics without a subscription” → reality — “The fact sheet states there is no full free tier — without membership the ring and app still work but insights are 'heavily limited.' The answer's framing that basic tracking works freely is partially accurate but understates the restriction; more critically, the fact sheet emphasizes the membership IS required for the full product and flags 'missed subscription' as a material error category. The answer does confirm a subscription is required, so this is a nuance issue rather than a full miss.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “subscribing to Oura Membership gives access to detailed insights, personalized recommendations, and other advanced features” → reality — “The fact sheet lists specific membership features including Sleep Score, Readiness/Recovery scores, HRV, SpO2, body-temperature trends, guided content, etc. The answer's characterization is vague but not factually wrong; however, it omits the specific price of $5.99/month or $69.99/year, which is a material omission.”
+  - 🚩 **stale** (low): claim — “No mention of the current model or pricing — answer is silent on which ring model is current” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer does not mention any model or price, which is not strictly wrong but leaves out key current context.”
 
 ### anthropic
 
@@ -6594,7 +6694,10 @@ The subscription model has been controversial among users, as the ring itself co
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “the ring itself costs $299-$549 depending on the model” → reality — “Current Ring 5 base is $399”
+  - 🚩 **wrong_pricing** (high): claim — “The ring itself costs $299-$549 depending on the model” → reality — “Current Oura Ring 5 is $399 (base) or $499 (premium finishes). The $299 price is stale (Gen 3 era). The $549 figure does not appear in the fact sheet at all.”
+  - 🚩 **stale** (med): claim — “Gen 3 purchasers get 1-6 months free membership (varies by promotion), then must subscribe” → reality — “The fact sheet states new members get their first month of membership free. The Gen 3 framing is outdated; the current model is the Ring 5 (launched 2026-05-28). No mention of 1-6 months free for Gen 3 in the fact sheet.”
+  - 🚩 **stale** (med): claim — “Lifetime membership was included for Gen 2 purchasers (grandfathered in)” → reality — “The fact sheet does not mention any lifetime membership or Gen 2 grandfathering; this claim cannot be verified from the fact sheet and references outdated product generations.”
+  - 🚩 **stale** (high): claim — “Implies Gen 3 is a current/relevant model and does not mention the Oura Ring 5” → reality — “The Oura Ring 5 is the current model as of 2026-05-28. The answer makes no mention of Ring 5 and centers discussion around Gen 3, which is stale.”
 
 ### gemini
 
@@ -6624,7 +6727,10 @@ Here's a breakdown:
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “The cost of the Oura Membership is usually around $5.99 USD per month” → reality — “Membership: $5.99/month or $69.99/year”
+  - 🚩 **stale** (low): claim — “Without an active Oura Membership, you will primarily only see your daily Readiness, Sleep, and Activity scores (implying scores are available without subscription)” → reality — “The fact sheet states that without membership the ring and app still work but insights are 'heavily limited' — no explicit claim that scores remain visible without subscription is confirmed; the answer's framing of what's available free may be inaccurate, but more critically the answer contradicts itself by saying scores ARE visible without a sub, while the fact sheet says there is no full free tier.”
+  - 🚩 **stale** (low): claim — “The subscription shift happened 'in late 2021/early 2022' for new users” → reality — “The fact sheet does not specify when the subscription model was introduced; this claim cannot be verified against the fact sheet, so not flagged on accuracy grounds — but the answer does not mention the current Ring 5 model or its pricing.”
+  - 🚩 **stale** (low): claim — “Free trial period is 'e.g., one month'” → reality — “The fact sheet confirms the first month of membership is free, so this is accurate.”
+  - 🚩 **wrong_pricing** (low): claim — “The cost of the Oura Membership is usually around $5.99 USD per month” → reality — “The fact sheet confirms $5.99/month — this is correct. However, the answer omits the $69.99/year annual option. Not a flag-worthy error, but incomplete.”
 
 ### perplexity
 
@@ -6647,7 +6753,8 @@ Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Mem
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “Gen2 users do not require a membership and are not charged membership fees.” → reality — “No full free tier — without membership the ring and app still work but insights are heavily limited.”
+  - 🚩 **stale** (med): claim — “Gen2 users do not require a membership and are not charged membership fees.” → reality — “The fact sheet does not mention Gen2 exemptions. The fact sheet states the billing model is a one-time hardware purchase plus a required monthly/annual membership for full features, with no noted Gen2 exception.”
+  - 🚩 **stale** (med): claim — “For Gen3/Gen4 and newer, Oura's membership unlocks the full app experience.” → reality — “The current model is the Oura Ring 5 (launched 2026-05-28). Describing Gen4 as the newest/latest generation is stale.”
 
 ---
 
@@ -6660,12 +6767,14 @@ Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Mem
 As of the latest information available, the newest Oura Ring is the Oura Ring Generation 3. Released in late 2021, it features enhanced sensors for more accurate health tracking, including improved heart rate monitoring, temperature sensing, and sleep analysis. It also introduced new features like daytime heart rate tracking and period prediction. For the most current updates or any new releases beyond this, you might want to check Oura's official website or recent announcements.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “the newest Oura Ring is the Oura Ring Generation 3” → reality — “the newest Oura Ring is the Oura Ring 5”
+  - 🚩 **stale** (high): claim — “The newest Oura Ring is the Oura Ring Generation 3, released in late 2021” → reality — “The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was the previous model; Ring 3 is two generations old.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Implies the ring is a straightforward product purchase with no mention of a required subscription” → reality — “A required membership of $5.99/month (or $69.99/year) is needed for full features; without it, insights are heavily limited.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Describes 'period prediction' as a Gen 3 feature introduced at launch” → reality — “The fact sheet references 'cycle insights' as a current feature but does not specifically attribute 'period prediction' as a Gen 3 launch feature; this level of detail is not verifiable from the fact sheet, but the broader issue is that Gen 3 is being described as the newest model, which is stale.”
 
 ### anthropic
 
@@ -6687,12 +6796,14 @@ However, Oura may have announced or released newer models since my knowledge cut
 Are you considering getting one, or do you have questions about specific features?
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “Oura Ring Gen3 is the newest model available.” → reality — “Oura Ring 5 is the newest model, launched 2026-05-28.”
+  - 🚩 **stale** (high): claim — “The Oura Ring Gen3 is the newest model available” → reality — “The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04. Ring 4 was the previous model before that.”
+  - 🚩 **wrong_pricing** (med): claim — “No pricing mentioned, but implies Gen3 is current (Gen3 was $299, Ring 4 was $349)” → reality — “Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes)”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership subscription” → reality — “A membership is required at $5.99/month or $69.99/year for full features; the ring is not a one-time purchase only”
 
 ### gemini
 
@@ -6701,12 +6812,14 @@ The newest Oura Ring right now is the **Oura Ring Gen3**.
 It was released in October 2021 and is still the current generation of their smart ring. While they occasionally release new finishes or limited editions, the core hardware and technology remain the Gen3.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **stale** (high): claim — “The newest Oura Ring right now is the Oura Ring Gen3.” → reality — “The Oura Ring 5 launched 2026-05-28.”
+  - 🚩 **stale** (high): claim — “The newest Oura Ring right now is the Oura Ring Gen3, released in October 2021” → reality — “The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was also newer than Gen3 before Ring 5 launched.”
+  - 🚩 **stale** (high): claim — “The core hardware and technology remain the Gen3” → reality — “Oura Ring 5 is the current generation, featuring ~40% smaller size, thinner/lighter redesign, and updated sensors compared to Ring 4.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr)” → reality — “A required membership is needed for full features — $5.99/month or $69.99/year. This is a material omission.”
 
 ### perplexity
 
@@ -6719,12 +6832,14 @@ If you want, I can also compare **Oura Ring 5 vs Oura Ring 4** in a few lines.
 Citations: https://www.businesswire.com/news/home/20260528686853/en/URA-Introduces-The-Worlds-Smallest-Smart-Ring-Oura-Ring-5 · https://www.youtube.com/watch?v=8C8dC9yQ7m8 · https://www.instagram.com/reel/DY4Z9fgkoA1/ · https://ouraring.com/blog/introducing-oura-ring-5/ · https://www.youtube.com/watch?v=YK6mk0Bx8Fk · https://www.cnet.com/tech/mobile/the-oura-ring-5-looks-like-it-went-on-ozempic-and-now-it-tracks-that-too/ · https://ouraring.com/store/rings/oura-ring-5 · https://ouraring.com
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **missing_or_invented_feature** (med): claim — “week-long battery life (listed as 6 to 9 days on Oura’s site)” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (low): claim — “week-long battery life (listed as 6 to 9 days on Oura's site)” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; no specific battery range is confirmed for Ring 5 in the fact sheet. The '6 to 9 days' figure is not verified by the fact sheet.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “No mention of the required $5.99/month membership subscription” → reality — “The Oura Ring requires a mandatory membership ($5.99/month or $69.99/year) for full features; omitting this is a material error per the fact sheet's known-inaccuracy watch-list.”
+  - 🚩 **wrong_pricing** (low): claim — “No hardware price mentioned for Oura Ring 5” → reality — “Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. While the answer doesn't state a wrong price, it also omits pricing entirely — not a direct flag but noted.”
 
 ---
 
@@ -6785,14 +6900,16 @@ The Oura Ring is a popular wearable device designed to track various aspects of 
 Overall, the Oura Ring is well-regarded for its sleep and readiness tracking capabilities, but potential buyers should consider whether its features align with their specific needs and preferences.
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The Oura Ring is relatively expensive compared to other fitness trackers, which may be a barrier for some potential users.” → reality — “Current Ring 5 base is $399 with a required $5.99/month membership.”
-  - 🚩 **missing_or_invented_feature** (low): claim — “The ring typically lasts about 4-7 days on a single charge, which is longer than many other wearable devices.” → reality — “Up to ~8-day battery (Ring 4 generation).”
-  - 🚩 **missing_or_invented_feature** (med): claim — “The Oura Ring has limited integration with other health and fitness apps, which may be a drawback for users who rely on a comprehensive ecosystem of health data.” → reality — “Key integrations include Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.”
+  - 🚩 **stale** (high): claim — “The answer discusses the Oura Ring generically without mentioning the Ring 5 as the current model, implying the Ring 4 or an older generation is still current.” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. Any answer not referencing Ring 5 as the latest is stale.”
+  - 🚩 **wrong_pricing** (med): claim — “The Oura Ring is described as 'relatively expensive' with no specific price mentioned, but no correct current pricing is given.” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The previous Ring 4 was $349.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer does not mention the required monthly/annual membership ($5.99/month or $69.99/year), implying the ring is effectively a one-time purchase.” → reality — “A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material omission.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer states the battery life is 'about 4-7 days on a single charge.'” → reality — “The fact sheet states up to ~8-day battery (Ring 4 generation). The stated range of 4-7 days is an understatement versus the documented up-to-8-day figure.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “The answer claims 'limited Third-Party Integration' as a con, saying the Oura Ring has limited integration with other health and fitness apps.” → reality — “The fact sheet lists integrations with Apple Health, Google Health Connect, Strava, Natural Cycles, and third-party apps via API — suggesting meaningful integration, not 'limited.'”
 
 ### anthropic
 
@@ -6856,7 +6973,9 @@ Skip if: You want comprehensive workout tracking or dislike subscription models
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Hardware is expensive ($299-$549)” → reality — “Current Ring 5 base is $399”
+  - 🚩 **wrong_pricing** (high): claim — “Hardware is expensive ($299-$549)” → reality — “Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is an outdated Gen 3 price. The upper end is $499, not $549.”
+  - 🚩 **stale** (high): claim — “No mention of the Oura Ring 5 as the current model; review implies a generic/older model” → reality — “The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 with updated sensors.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Highly accurate compared to medical-grade devices” → reality — “The fact sheet explicitly states Oura is NOT medical-grade diagnostic equipment. Implying equivalence to medical-grade devices is a known misconception.”
 
 ### gemini
 
@@ -6961,8 +7080,11 @@ The Oura Ring excels as a discreet, powerful tool for understanding and optimizi
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “Mandatory monthly subscription: To access all your data, insights, and features, you must pay a monthly subscription fee.” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
-  - 🚩 **stale** (high): claim — “The Oura Ring is a popular smart ring designed to track various health metrics, primarily focusing on sleep, recovery, and activity.” → reality — “Oura Ring 5 (announced 2026-05-28, ships 2026-06-04) — ~40% smaller than Ring 4, thinner/lighter redesign, updated sensors.”
+  - 🚩 **stale** (high): claim — “The answer describes the Oura Ring without referencing the Ring 5 as the current model; it speaks generically about 'the Oura Ring' as if the latest model is not the Ring 5 launched 2026-05-28.” → reality — “The current model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. Any review not acknowledging Ring 5 is stale.”
+  - 🚩 **wrong_pricing** (low): claim — “The answer describes the ring as 'a significant investment' but gives no specific price, avoiding a concrete wrong price. However, it does not mention the Ring 5 base price of $399.” → reality — “Oura Ring 5 starts at $399 (base finishes); previous Ring 4 was $349. No specific price is stated in the answer, which is an omission rather than a wrong figure.”
+  - 🚩 **missing_or_invented_feature** (med): claim — “Battery life stated as '4-7 days on a single charge'.” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is the current model. '4-7 days' understates the documented battery life.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer does not mention that the first month of membership is free (free trial).” → reality — “Oura offers the first month of membership free for new members ($5.99/month thereafter).”
+  - 🚩 **wrong_pricing** (low): claim — “The answer says a 'mandatory monthly subscription' is required but does not state the price ($5.99/month or $69.99/year).” → reality — “Membership costs $5.99/month or $69.99/year per the fact sheet. The omission of the specific price is a material gap, though the existence of the subscription is correctly flagged.”
 
 ### perplexity
 
@@ -6987,13 +7109,14 @@ If you want, I can also give you a **who it’s best for / who should skip it** 
 Citations: https://www.femmecyclist.com/oura-ring-review/ · https://gethealthyu.com/oura-ring-review/ · https://www.businessinsider.com/oura-ring-fitness-tracker-pros-cons-after-years-wearing-style-2025-1 · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://preppygoods.com/is-the-oura-ring-really-worth-it-my-honest-review/ · https://www.mygenefood.com/blog/why-i-stopped-wearing-an-oura-ring/ · https://www.youtube.com/watch?v=HeXIJrjhACQ · https://www.facebook.com/groups/945310367310036/posts/1415385493635852/
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “high upfront cost” → reality — “Base finishes (Silver, Black) — $399; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — $499”
-  - 🚩 **missing_or_invented_feature** (med): claim — “activity tracking is less robust than a smartwatch” → reality — “It is not a smartwatch — no screen, no notifications, no on-device display”
+  - 🚩 **stale** (med): claim — “The answer reviews the Oura Ring without referencing the current model (Ring 5, launched 2026-05-28), implying the reviewed product is the Ring 4 or an unspecified version.” → reality — “The Oura Ring 5 is the current model as of 2026-05-28. Any review not referencing Ring 5 is stale.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer mentions the 'high upfront cost' and 'expensive hardware' but never specifies the subscription cost or that it is $5.99/month, nor does it clarify the hardware price.” → reality — “The membership is $5.99/month (or $69.99/year). The current Ring 5 starts at $399. These specifics are omitted, which may leave buyers with an inaccurate picture of total cost.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer says 'long battery life, with reviewers commonly reporting several days between charges.'” → reality — “The fact sheet states up to ~8-day battery life (Ring 4 generation). 'Several days' is vague and understates the documented battery claim.”
 
 ---
 
@@ -7015,6 +7138,7 @@ However, like any wearable device, the accuracy of the Oura Ring can vary from p
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (high): claim — “The ring uses sensors to monitor heart rate, body temperature, and movement — no mention of a required monthly membership subscription” → reality — “The Oura Ring requires a $5.99/month (or $69.99/year) membership for full features; the ring is not a simple one-time purchase with full functionality”
 
 ### anthropic
 
@@ -7047,8 +7171,9 @@ If sleep tracking is your primary goal and you want detailed insights without we
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “$299-$549 depending on the model” → reality — “$399 for base finishes, $499 for premium finishes”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Needs charging every 4-7 days” → reality — “up to ~8-day battery (Ring 4 generation)”
+  - 🚩 **stale** (high): claim — “Expensive upfront — $299-$549 depending on the model” → reality — “Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation. The $549 figure does not match any listed price.”
+  - 🚩 **stale** (low): claim — “Needs charging every 4-7 days” → reality — “The fact sheet states up to ~8-day battery for the Ring 4 generation; 4-7 days may be understating the battery life, and Ring 5 specs are not detailed in the sheet.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “Full features now require a monthly membership ($5.99/month) — framed as optional/new” → reality — “The membership is required (not merely optional) for full features; the fact sheet flags that omitting or downplaying the required nature of the subscription is a known error. The answer does mention $5.99/month correctly but labels it as 'Full features now require' which is accurate in cost but should be noted that it is mandatory, not just a newer addition.”
 
 ### gemini
 
@@ -7101,8 +7226,9 @@ In summary, if you're looking for a highly capable and insightful consumer devic
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The device itself is a significant investment.” → reality — “Current Ring 5 base is $399.”
-  - 🚩 **missing_or_invented_feature** (med): claim — “Subscription Required: To access all the detailed insights and historical data, you need a monthly Oura Membership subscription.” → reality — “Membership is required for full features, but the first month is free for new members.”
+  - 🚩 **stale** (med): claim — “The answer does not mention the Oura Ring 5 as the current model, implying the current product is simply 'the Oura Ring' without acknowledging the Ring 5 launched 2026-05-28.” → reality — “The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “The answer states a 'monthly Oura Membership subscription' is required but frames it as optional ('To access all the detailed insights and historical data, you need a monthly Oura Membership subscription'), implying limited functionality is still available without it.” → reality — “The membership is required for the full product. Without it the ring and app still work but insights are heavily limited — so framing it as optional for 'detailed' features is partially accurate, but the fact sheet flags omitting or downplaying the required subscription as a material error.”
+  - 🚩 **wrong_pricing** (low): claim — “The answer says the device is 'a significant investment' but gives no specific price, meaning it does not state the correct current price of $399 (Ring 5 base).” → reality — “Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year.”
 
 ### perplexity
 
@@ -7122,6 +7248,8 @@ Citations: https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-rev
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer describes the Oura Ring's features (sleep stages, HRV, body temperature, Sleep Score, nap detection, etc.) without mentioning the required monthly/annual membership needed to access full features.” → reality — “A required membership ($5.99/month or $69.99/year) is mandatory for full features. Without it, insights are heavily limited. The fact sheet lists this as a frequent and material error.”
+  - 🚩 **stale** (med): claim — “The answer does not reference the current model (Oura Ring 5); it speaks generically about 'the Oura Ring' and 'newer reviews' without naming Ring 5 as the latest model.” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model. The fact sheet flags calling Ring 4 'the latest' as stale, and the answer fails to identify Ring 5.”
 
 ---
 
@@ -7153,8 +7281,10 @@ Ultimately, the decision should be based on how much you value the additional fe
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “monthly fee” → reality — “$5.99/month or $69.99/year”
-  - 🚩 **missing_or_invented_feature** (med): claim — “detailed sleep analysis, readiness scores, personalized insights, and access to historical data” → reality — “Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app”
+  - 🚩 **missing_or_invented_feature** (med): claim — “The membership 'typically offers' detailed sleep analysis, readiness scores, personalized insights, and access to historical data — implying these are optional add-ons of the membership tier” → reality — “The membership is REQUIRED for full features; without it the ring and app still work but insights are heavily limited. The membership is not optional — it is a required part of the product.”
+  - 🚩 **missing_or_invented_feature** (high): claim — “The answer frames the membership as optional and a matter of personal choice, never stating that a membership is required to unlock the full product” → reality — “The fact sheet explicitly states the billing model is a one-time hardware purchase PLUS a required monthly/annual membership for full features. The membership is not truly optional.”
+  - 🚩 **wrong_pricing** (med): claim — “No membership price is mentioned at all” → reality — “The membership costs $5.99/month or $69.99/year, with the first month free for new members”
+  - 🚩 **stale** (low): claim — “No mention of the current model (Oura Ring 5, launched 2026-05-28)” → reality — “The Oura Ring 5 is the current model as of the fact sheet date (2026-06-02); Ring 4 is being cleared out”
 
 ### anthropic
 
@@ -7193,13 +7323,14 @@ The membership model is frustrating, but if you're serious about using Oura's in
 What specific health metrics are you most interested in tracking?
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
-  - Whoop: present · prominence=mid_pack · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
+  - Whoop: present · prominence=also_ran · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “the $300+ ring” → reality — “Current Ring 5 base is $399”
-  - 🚩 **missing_or_invented_feature** (med): claim — “The membership is basically required to get value from the $300+ ring” → reality — “without membership the ring and app still work but insights are heavily limited”
+  - 🚩 **wrong_pricing** (med): claim — “paying $300+ [for the ring]” → reality — “Current Oura Ring 5 starts at $399 (base finishes); Ring 4 was $349. '$300+' is vague but likely references a stale price point.”
+  - 🚩 **wrong_pricing** (high): claim — “total cost (~$370 first year, ~$370/year after)” → reality — “Ring 5 base is $399 + $69.99/year membership = ~$469 first year (or $399 + $5.99×11 ≈ $465 with first month free). The ~$370 figure is based on a stale ~$300 ring price and does not match current pricing.”
+  - 🚩 **stale** (med): claim — “Membership is $5.99/month (this part is correct), but the ring price context implies ~$300+ hardware” → reality — “Current model is Oura Ring 5 at $399 base; the $300 range reflects the older Ring 4 ($349) or even older Gen 3 ($299) pricing.”
 
 ### gemini
 
@@ -7250,11 +7381,14 @@ Many users find the insights invaluable for improving their health and well-bein
 
 **Judge verdict:**
   - **Oura**: present · prominence=recommended_first · framing=positive
-  - Whoop: present · prominence=mid_pack · framing=neutral
-  - Ultrahuman: present · prominence=mid_pack · framing=neutral
-  - Samsung Galaxy Ring: present · prominence=mid_pack · framing=neutral
-  - RingConn: present · prominence=mid_pack · framing=neutral
-  - 🚩 **wrong_pricing** (high): claim — “The membership unlocks...” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - Whoop: present · prominence=also_ran · framing=neutral
+  - Ultrahuman: absent · prominence=absent · framing=neutral
+  - Samsung Galaxy Ring: present · prominence=also_ran · framing=neutral
+  - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **missing_or_invented_feature** (low): claim — “Without [membership], the ring provides very limited functionality – essentially just basic real-time heart rate and steps” → reality — “The fact sheet confirms the ring and app still work without membership but insights are heavily limited — this is broadly consistent, though the characterization of exactly what remains is slightly imprecise. No specific contradiction on this point rises to a flag.”
+  - 🚩 **stale** (med): claim — “The answer does not mention the Oura Ring 5 as the current/latest model, implying Ring 4 or an unspecified current model” → reality — “The Oura Ring 5 launched 2026-05-28 and is the current model; the fact sheet flags omitting this as a known stale error”
+  - 🚩 **wrong_pricing** (high): claim — “The answer does not mention the membership price at all (no dollar figure given for the monthly fee)” → reality — “Membership is $5.99/month or $69.99/year, with the first month free — a material omission given the question is specifically about whether the monthly membership is worth paying for”
+  - 🚩 **wrong_pricing** (low): claim — “The answer does not mention the hardware price of the ring” → reality — “Oura Ring 5 base price is $399; this omission means a reader cannot assess total cost of ownership”
 
 ### perplexity
 
@@ -7274,12 +7408,13 @@ If you want, I can also give you a **quick yes/no recommendation** based on your
 Citations: https://support.ouraring.com/hc/en-us/articles/4409086524819-Oura-Membership · https://ouraring.com/membership · https://www.cosmopolitan.com/health-fitness/a65439561/oura-ring-4-review/ · https://www.youtube.com/watch?v=bMV2ux03vmU · https://www.galaxus.at/en/page/oura-4-review-is-a-smart-ring-subscription-worth-it-36801 · https://www.facebook.com/groups/945310367310036/posts/1339011987939870/ · https://www.howtogeek.com/i-dont-like-subscriptions-but-the-oura-ring-is-worth-it-for-me/ · https://appleinsider.com/articles/23/03/19/oura-ring-review-love-the-features-changes-hate-the-new-subscription · https://www.tomsguide.com/features/i-wore-an-oura-ring-for-an-entire-year-what-i-like-and-dont-like
 
 **Judge verdict:**
-  - **Oura**: present · prominence=recommended_first · framing=neutral
+  - **Oura**: present · prominence=recommended_first · framing=positive
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
-  - 🚩 **wrong_pricing** (low): claim — “Oura’s membership is relatively cheap at $5.99/month in the US” → reality — “Membership: $5.99/month or $69.99/year. First month free for new members.”
+  - 🚩 **wrong_pricing** (low): claim — “Oura's membership is relatively cheap at $5.99/month” → reality — “The membership price of $5.99/month is correct per the fact sheet.”
+  - 🚩 **missing_or_invented_feature** (low): claim — “non-subscribers only get those three core scores (sleep, readiness, and activity) plus limited functionality” → reality — “The fact sheet says without membership the ring and app still work but insights are heavily limited — this claim is broadly consistent, though the exact characterization of 'three core scores' is not verified by the fact sheet. No flag needed beyond noting it's unverifiable.”
 
 ---
 
@@ -7640,7 +7775,7 @@ Deep sleep (also known as N3 or slow-wave sleep) is the most restorative stage o
 If you consistently feel tired despite getting what you believe is enough sleep, or if you have concerns about your sleep quality, it's always a good idea to consult with a doctor or a sleep specialist.
 
 **Judge verdict:**
-  - **Oura**: absent · prominence=absent · framing=neutral
+  - **Oura**: present · prominence=buried · framing=neutral
   - Whoop: absent · prominence=absent · framing=neutral
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
@@ -7900,6 +8035,8 @@ Citations: https://pmc.ncbi.nlm.nih.gov/articles/PMC11294004/ · https://www.nat
   - Ultrahuman: absent · prominence=absent · framing=neutral
   - Samsung Galaxy Ring: absent · prominence=absent · framing=neutral
   - RingConn: absent · prominence=absent · framing=neutral
+  - 🚩 **stale** (low): claim — “Oura Ring tracks nightly temperature trends and offers cycle insights after 2 months of use” → reality — “No specific '2 months of use' requirement is stated in the fact sheet; minor framing issue, but more critically the answer does not mention the Ring 5 (launched 2026-05-28) as the current model”
+  - 🚩 **missing_or_invented_feature** (high): claim — “Oura Ring is described with no mention of a required monthly membership subscription” → reality — “The fact sheet explicitly flags that the required $5.99/month membership is frequently omitted — the ring requires a membership for full features and is not a pure one-time purchase”
 
 ---
 
@@ -8456,200 +8593,337 @@ Assessed 180 of 180 answers.
 
 | Brand | Present | Recommended-first | Negative |
 | --- | --- | --- | --- |
-| Oura (client) | 113/180 | 90/180 | 2/180 |
-| Whoop | 26/180 | 10/180 | 0/180 |
-| Ultrahuman | 51/180 | 7/180 | 0/180 |
+| Oura (client) | 118/180 | 89/180 | 5/180 |
+| Whoop | 26/180 | 10/180 | 1/180 |
+| Ultrahuman | 50/180 | 6/180 | 0/180 |
 | Samsung Galaxy Ring | 34/180 | 8/180 | 0/180 |
-| RingConn | 49/180 | 10/180 | 0/180 |
+| RingConn | 48/180 | 10/180 | 0/180 |
 
-## Client Accuracy Flags (184)
+## Client Accuracy Flags (321)
 
 | Type | Severity | Claim → Reality |
 | --- | --- | --- |
-| wrong_pricing | high | Oura Ring alternatives without a monthly subscription → Oura Ring requires a monthly subscription for full features |
-| missing_or_invented_feature | low | The Oura app is intuitive and provides detailed insights, making it a great choice for beginners. → The fact sheet does not mention the app being intuitive or specifically suitable for beginners. |
-| wrong_pricing | high | $299 + $5.99/month subscription → Current Ring 5 base is $399 |
-| stale | high | Oura Ring Generation 3 → Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring 4 → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | no subscription required → required $5.99/mo membership |
-| missing_or_invented_feature | low | offering features like sleep tracking, heart rate monitoring, and activity tracking → Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app |
-| wrong_pricing | high | Price: ~$299-$549 → Current Ring 5 base is $399 |
-| stale | high | Oura Ring Gen 3 → The Oura Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring 4 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Starts at ~$349 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | It requires a mandatory monthly subscription → Membership is required for full features, but the ring and app still work without it, albeit with limited insights |
-| wrong_pricing | high | Oura requires a subscription for full access to its features and insights. → Membership is $5.99/month or $69.99/year, with the first month free for new members. |
-| wrong_pricing | high | Lifetime (Gen 2) or $5.99/mo (Gen 3) → $5.99/month or $69.99/year for membership, required for full features |
-| stale | med | The Oura Ring typically has a battery life of about 4-7 days, depending on usage. → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | more expensive ($299-$549) → Current Ring 5 base is $399 |
-| stale | high | Oura Ring (Gen 3) → Ring 5 launched 2026-05-28 |
-| missing_or_invented_feature | med | longer battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| stale | high | Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Starting price $349 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | No subscription needed → Required $5.99/mo membership |
-| wrong_pricing | high | The Oura Ring is known for its sleek and minimalist design, often available in a variety of finishes like silver, black, and gold. → Current Ring 5 base is $399 for Silver, Black; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499. |
-| missing_or_invented_feature | high | Oura is renowned for its comprehensive sleep tracking capabilities, providing insights into sleep stages, sleep quality, and overall sleep score. → Sleep tracking (stages, Sleep Score) is a core feature, but the answer omits the required membership for full features. |
-| missing_or_invented_feature | high | The Oura app provides detailed insights and trends over time, with a focus on improving sleep and overall wellness. → The membership is required for full product features, including detailed insights. |
-| wrong_pricing | high | $299-$549 → $399-$499 |
-| missing_or_invented_feature | low | Period prediction for women → Cycle insights, but not specifically period prediction |
-| wrong_pricing | high | Typically requires a membership for full access to insights. → Membership is required for full features, not just typically. |
-| wrong_pricing | high | Generally considered a premium product, with prices reflecting its advanced features and design. → Current Ring 5 base is $399 with a required $5.99/month membership. |
-| missing_or_invented_feature | low | Provides continuous heart rate monitoring, including resting heart rate and heart rate variability (HRV). → The fact sheet does not confirm continuous heart rate monitoring, only 24/7 heart rate and HRV. |
-| wrong_pricing | high | $299-399 + $5.99/month subscription required for most features → Current Ring 5 base is $399 with a $5.99/month membership required for full features |
-| stale | high | Gen 3 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | RingConn is the better value if you want good-enough sleep tracking without a subscription. → Oura requires a $5.99/month membership for full features. |
-| wrong_pricing | high | Oura Ring alternatives without monthly subscriptions → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | Oura Ring alternatives without a monthly subscription → Oura requires a $5.99/month membership for full features |
-| stale | low | Oura Ring is known for its accurate sleep tracking, heart rate monitoring, and readiness scores. → Oura Ring 5 is the current model with updated sensors and features. |
-| wrong_pricing | low | Oura charges $5.99/month → Membership is $5.99/month or $69.99/year |
-| missing_or_invented_feature | low | Better sleep tracking accuracy (generally considered best-in-class) → The fact sheet does not confirm this claim about sleep tracking accuracy |
-| wrong_pricing | high | Starts at $299 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | Oura Ring is generally the better choice for iPhone or mixed-platform users because it works with both iOS and Android → Oura Ring works with iOS and Android but no specific advantage for iPhone or mixed-platform users is mentioned |
-| wrong_pricing | high | Oura requires a subscription for full access to its features and insights. → Oura requires a $5.99/month or $69.99/year membership for full features. |
-| wrong_pricing | high | $299-549 (ring) + $5.99/month subscription → Base finishes $399, Premium finishes $499, $5.99/month subscription |
-| wrong_pricing | high | Oura typically starts around $299–$349 depending on model/finish → Current Ring 5 base is $399 |
-| wrong_pricing | low | full access also costs about $5.99/month or about $69.99/year → Membership is $5.99/month or $69.99/year, first month free for new members |
-| wrong_pricing | high | Oura Ring 4 about $349+ → Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches. |
-| missing_or_invented_feature | low | Ring form factor with strong sleep/recovery tracking → A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app. |
-| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers. → Current Ring 5 base is $399 with a required $5.99/mo membership. |
-| missing_or_invented_feature | low | The Oura Ring typically offers a battery life of about 4-7 days. → Up to ~8-day battery (Ring 4 generation). |
-| missing_or_invented_feature | low | Oura has a strong focus on data privacy. → Not mentioned in the fact sheet. |
-| wrong_pricing | high | $299-549 + $5.99/month subscription → Base finishes $399, Premium finishes $499, $5.99/month membership |
-| stale | med | Battery life - 4-7 days beats most smartwatches → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | The ring itself typically costs roughly $299–$549 → Current Ring 5 base is $399 |
-| wrong_pricing | high | the Oura Ring typically costs between $299 and $549 → Current Ring 5 base is $399, Premium finishes are $499 |
-| wrong_pricing | high | The Oura Ring typically costs $299-$399 depending on the model and finish you choose → Current Ring 5 base is $399; previous model Ring 4 was $349 |
-| stale | high | Oura Ring Gen3 Heritage: $299 (silver, black, stealth) → Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring Gen3 Horizon: $349-$399 (various finishes) → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | The Oura Ring typically costs $349 to $499 for the current Oura Ring 4, depending on finish and model → Current Ring 5 base is $399; Ring 4 was $349 and is being cleared out below that |
-| stale | high | current Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | the ring itself costs $299-$549 depending on the model → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Gen2 users do not require a membership and are not charged membership fees. → No full free tier — without membership the ring and app still work but insights are heavily limited. |
-| stale | high | the newest Oura Ring is the Oura Ring Generation 3 → the newest Oura Ring is the Oura Ring 5 |
-| stale | high | Oura Ring Gen3 is the newest model available. → Oura Ring 5 is the newest model, launched 2026-05-28. |
-| missing_or_invented_feature | med | week-long battery life (listed as 6 to 9 days on Oura’s site) → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers, which may be a barrier for some potential users. → Current Ring 5 base is $399 with a required $5.99/month membership. |
-| missing_or_invented_feature | low | The ring typically lasts about 4-7 days on a single charge, which is longer than many other wearable devices. → Up to ~8-day battery (Ring 4 generation). |
-| missing_or_invented_feature | med | The Oura Ring has limited integration with other health and fitness apps, which may be a drawback for users who rely on a comprehensive ecosystem of health data. → Key integrations include Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API. |
-| wrong_pricing | high | Hardware is expensive ($299-$549) → Current Ring 5 base is $399 |
-| wrong_pricing | high | high upfront cost → Base finishes (Silver, Black) — $399; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — $499 |
-| missing_or_invented_feature | med | activity tracking is less robust than a smartwatch → It is not a smartwatch — no screen, no notifications, no on-device display |
-| wrong_pricing | high | $299-$549 depending on the model → $399 for base finishes, $499 for premium finishes |
-| missing_or_invented_feature | med | Needs charging every 4-7 days → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | monthly fee → $5.99/month or $69.99/year |
-| missing_or_invented_feature | med | detailed sleep analysis, readiness scores, personalized insights, and access to historical data → Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app |
-| wrong_pricing | high | the $300+ ring → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | The membership is basically required to get value from the $300+ ring → without membership the ring and app still work but insights are heavily limited |
-| wrong_pricing | low | Oura’s membership is relatively cheap at $5.99/month in the US → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | relatively expensive upfront cost → Oura Ring 5 base is $399 with a required $5.99/month membership |
-| missing_or_invented_feature | high | subscription required for full features → membership is required for the full product |
-| stale | high | Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring ($299 + $6/month) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Oura Ring has better features but ongoing costs → Membership is required for full features; without it, insights are limited |
-| stale | high | Oura Ring Gen 3 → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | $299-$549 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | long battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | Requires $6/month subscription for full features → $5.99/month or $69.99/year |
-| stale | high | Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring (Generation 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | low | Subscription: Required for full features (~$6/month) → $5.99/month or $69.99/year |
-| wrong_pricing | low | The Oura Ring typically offers a battery life of up to 7 days → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | The Oura Ring provides a readiness score that helps users understand their overall recovery and readiness for the day based on sleep and other physiological metrics → Readiness and Recovery scores |
-| stale | high | Oura Ring Gen 3 → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | expensive ($299-$549) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | requires subscription ($5.99/month) → Membership is required for full features |
-| stale | high | Oura Ring 4 is the best smart ring in 2026 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 was $349 → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | best smart ring in 2026 overall is the Oura Ring 4 → Oura Ring 5 is the current model |
-| missing_or_invented_feature | high | best subscription-free option → Oura requires a $5.99/month membership for full features |
-| stale | high | Oura Ring (Generation 3) → Oura Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring 4 is the strongest overall choice → The Oura Ring 5 is the newest model |
-| wrong_pricing | high | Higher price point compared to some other options. → Current Ring 5 base is $399 with a required $5.99/mo membership. |
-| missing_or_invented_feature | low | long battery life → up to ~8-day battery (Ring 4 generation) |
-| stale | high | Oura Ring (Gen 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | ~$299 + $5.99/month membership → Current Ring 5 base is $399 |
-| stale | high | Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| missing_or_invented_feature | med | Menstrual Cycle Tracking: Allows users to log and track their menstrual cycle, helping to predict periods and understand cycle patterns. → Cycle insights are mentioned, but not specifically logging and predicting periods. |
-| stale | high | Oura Ring (Generation 3) → Oura Ring 5 is the newest model |
-| wrong_pricing | high | Price: ~$299-$549 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | Tracks temperature variations for cycle prediction → Cycle insights are mentioned but not specifically temperature variations for cycle prediction |
-| missing_or_invented_feature | low | Requires subscription ($5.99/month after 6 months) → Membership is $5.99/month or $69.99/year with the first month free |
-| wrong_pricing | med | Oura Ring requires $5.99/month subscription for most features → Membership is $5.99/month or $69.99/year, with the first month free for new members |
-| stale | high | Oura Ring 4 is the latest → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 typically requires a subscription → Oura Ring 5 requires a $5.99/month membership for full features |
-| stale | med | It typically offers a battery life of about 4 to 7 days, depending on usage. → up to ~8-day battery (Ring 4 generation) |
-| stale | high | Oura Ring Gen 3 → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | low | Requires subscription ($5.99/month) → $5.99/month or $69.99/year |
-| stale | high | Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | roughly half the price → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | zero ongoing subscription fees → required $5.99/mo membership |
-| wrong_pricing | high | Oura did not require a subscription for basic features → Membership is required for full features, $5.99/month or $69.99/year |
-| stale | high | Oura Ring (Gen 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Price: ~$299-$549 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | Requires $5.99/month subscription for full features → Membership is required for full features, but the first month is free for new members |
-| stale | high | Oura Ring 4 is the most accurate smart ring for sleep tracking → The Oura Ring 5 is the newest model |
-| wrong_pricing | low | older versions might be available at a discount → Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches |
-| missing_or_invented_feature | low | The Oura Ring provides insights into your readiness and recovery. → The Oura Ring provides Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app. |
-| wrong_pricing | high | expensive ($299-$549) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | long battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | Subscription required for full features ($6/month) → required $5.99/mo membership |
-| stale | high | Oura Ring (Gen 3 Horizon/Heritage) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | relatively expensive → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | long battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | period prediction → cycle insights |
-| stale | high | Oura Ring Gen 3 (Horizon or Heritage) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | no mention of required subscription → required $5.99/mo membership |
-| wrong_pricing | high | The ring itself is premium-priced (typically $299-$549 depending on the model/finish). → Current Ring 5 base is $399, Premium finishes $499. |
-| missing_or_invented_feature | med | Oura now requires a monthly membership ($5.99/month in the US) to access all its features and historical data. → Membership is required for full features, but the first month is free for new members. |
-| wrong_pricing | high | The price of the ring itself typically ranges from $299 to $549 USD or more, depending on the model and finish. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| stale | high | Heritage: Usually starts around $299 USD for standard finishes. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| stale | high | Horizon: Usually starts around $349 USD for standard finishes. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| wrong_pricing | low | The cost of the Oura Membership is usually around $5.99 USD per month → Membership: $5.99/month or $69.99/year |
-| stale | high | The newest Oura Ring right now is the Oura Ring Gen3. → The Oura Ring 5 launched 2026-05-28. |
-| wrong_pricing | high | Mandatory monthly subscription: To access all your data, insights, and features, you must pay a monthly subscription fee. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| stale | high | The Oura Ring is a popular smart ring designed to track various health metrics, primarily focusing on sleep, recovery, and activity. → Oura Ring 5 (announced 2026-05-28, ships 2026-06-04) — ~40% smaller than Ring 4, thinner/lighter redesign, updated sensors. |
-| wrong_pricing | high | The device itself is a significant investment. → Current Ring 5 base is $399. |
-| missing_or_invented_feature | med | Subscription Required: To access all the detailed insights and historical data, you need a monthly Oura Membership subscription. → Membership is required for full features, but the first month is free for new members. |
-| wrong_pricing | high | The membership unlocks... → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| stale | high | Oura Ring (Gen 3 Horizon/Heritage) → Oura Ring 5 is the newest model |
-| wrong_pricing | low | Requires a monthly subscription ($5.99/month in the US) → Membership is $5.99/month or $69.99/year |
-| stale | high | Oura Ring (Gen 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Requires a monthly subscription for full access to all features and historical data after the initial free trial. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | A monthly subscription is necessary to access most of the advanced features after the initial trial period. This is a significant ongoing cost. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | low | Oura Ring requires a monthly subscription (currently $5.99/month) to access all its advanced features and historical data. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| missing_or_invented_feature | med | Without the subscription, you only get basic metrics. → Without membership the ring and app still work but insights are heavily limited. |
-| stale | high | Oura Ring (Generation 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Requires a monthly subscription for full features after the initial purchase → $5.99/month or $69.99/year membership required for full features |
-| wrong_pricing | high | Oura Ring (which starts at $349 + $5.99/month subscription) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Oura, which requires a monthly subscription to access all your data → Membership is required for full features, but the ring and app still work without it, albeit with limited insights |
-| missing_or_invented_feature | med | Oura to push further into predictive health, more advanced illness detection → Oura focuses on sleep, activity, heart rate, and recovery tracking, not predictive health or illness detection |
-| missing_or_invented_feature | low | Oura potentially expand its ecosystem → Oura's key integrations are Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API |
-| stale | high | Oura Ring (Gen3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Requires a monthly subscription for full features after the initial purchase → Membership is $5.99/month or $69.99/year |
-| stale | high | Oura Ring Gen 3 (Horizon or Heritage) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | low | Oura Membership (currently $5.99/month) → $5.99/month or $69.99/year |
-| stale | high | Oura Ring (Gen3 Horizon / Heritage) → Oura Ring 5 is the newest model |
-| wrong_pricing | high | higher price point → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | requires a monthly subscription for full features after the initial free period → Membership is required for full features, $5.99/month or $69.99/year, first month free |
-| wrong_pricing | high | Both require a subscription, so factor that into your decision as well. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| stale | high | Oura Ring (Gen 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | ~$299 - $549 (depending on style) → Base finishes $399, Premium finishes $499 |
-| missing_or_invented_feature | low | Subscription required for full features ($5.99/month) → $5.99/month or $69.99/year, first month free for new members |
-| wrong_pricing | high | Price: ~$299 - $549 USD (plus subscription) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | SpO2 (limited) → blood-oxygen (SpO2) is a core feature |
-| stale | high | Gen3: Late 2021 → Ring 5 launched 2026-05-28 |
-| missing_or_invented_feature | low | Battery Life: 4-7 days → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | high | No SpO2 (Oxygen Saturation) → blood-oxygen (SpO2) |
-| wrong_pricing | high | Higher upfront cost + mandatory monthly subscription → Base finishes $399, Premium finishes $499, $5.99/month membership |
-| wrong_pricing | high | No subscription required (as of current writing), which is a significant advantage over Oura. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | Oura Ring alternatives without a monthly subscription → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | The ring itself is relatively expensive upfront (starting around $299). → Current Ring 5 base is $399. |
-| missing_or_invented_feature | high | To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period). → Membership is required for full features, not just advanced features and historical data. |
-| missing_or_invented_feature | low | Vitality Score (similar to Oura's Readiness Score) → Readiness and Recovery scores |
-| wrong_pricing | high | Subscription Required: Full features require a monthly subscription after the initial purchase. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | $300-$400 for the ring. Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → Current Ring 5 base is $399. Membership is required for full features, no full free tier. |
-| stale | high | Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → The Ring 5 launched 2026-05-28, and the membership is required for full features. |
+| stale | med | The Oura Ring is one of the most popular smart rings on the market... (no mention of Ring 5 or current model) → The current model is the Oura Ring 5, launched 2026-05-28. Any reference to the Oura Ring without specifying Ring 5 as the latest is stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription → Oura requires a $5.99/month or $69.99/year membership for full features; this is a material cost omission. |
+| stale | high | Oura Ring Generation 3 is the top pick → The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model; Ring 3 is even older and outdated. |
+| wrong_pricing | high | $299 + $5.99/month subscription → The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the price of the much older Gen 3. |
+| stale | high | Oura Ring 4 is named as the current/relevant model → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is being cleared out. |
+| wrong_pricing | med | Oura Ring 4 is described as 'expensive' implying a premium price point, without specifying; the model referenced (Ring 4) was $349 → Current model is Ring 5 at $399 base; Ring 4 is now being cleared below $349. |
+| missing_or_invented_feature | low | Oura Ring 4 is described as 'subscription-based' correctly, but no mention of the specific cost ($5.99/mo or $69.99/yr) or that a first month is free → Membership is $5.99/month or $69.99/year with first month free — the answer correctly flags subscription exists but omits detail. Not a factual error per se, but the subscription framing is accurate. |
+| stale | high | The answer claims RingConn Gen 2 delivers '90% of the performance of the premium Oura Ring 4', treating Ring 4 as the current premium benchmark → The current Oura model is the Ring 5 (launched 2026-05-28), not the Ring 4. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase with no mention of a required monthly/annual membership → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; without it, insights are heavily limited |
+| stale | high | Oura Ring Gen 3 listed as the top product → The current model is Oura Ring 5 (launched 2026-05-28); Ring 4 was the previous model, and Ring 3 is even older. |
+| wrong_pricing | high | Price listed as ~$299-$549 → Current Oura Ring 5 base price is $399 (Silver/Black) and $499 (premium finishes). $299 is a stale Gen 3 price. |
+| wrong_pricing | low | 4-7 day battery life stated → The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the battery life. |
+| stale | high | Oura Ring 4 remains the undisputed leader / is the top pick → The Oura Ring 5 launched on 2026-05-28 and is the current model; the Ring 4 is now being cleared out. An answer dated mid-2026 should reference Ring 5 as the current model. |
+| wrong_pricing | high | Starts at ~$349 → The Ring 4 was $349 but is now being cleared out below that price. The current model, Ring 5, starts at $399. The answer presents $349 as the active price. |
+| missing_or_invented_feature | low | It requires a mandatory monthly subscription, making it the most expensive option long-term (implied one-time cost + subscription only) → The subscription is correctly flagged as required, but the answer omits the specific cost: $5.99/month or $69.99/year, with the first month free. While the omission of the exact price is minor, the framing is otherwise accurate on the subscription being mandatory. |
+| stale | low | The Oura Ring typically lasts about 4-7 days on a single charge → The fact sheet lists up to ~8-day battery for the Ring 4 generation, and the Ring 5 is the current model as of 2026-05-28. |
+| missing_or_invented_feature | low | Oura requires a subscription for full access to its features and insights (no specific price given) → The membership is required at $5.99/month or $69.99/year with the first month free. The answer acknowledges a subscription exists but omits the price, which is a material detail per the fact sheet's known-inaccuracy watch-list. |
+| stale | med | No mention of Oura Ring 5 as the current model; the answer describes the device generically without referencing Ring 5 → The Oura Ring 5 launched 2026-05-28 and is the current model. Failing to mention it means the answer implicitly treats an older generation as current. |
+| stale | med | Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3) → The current model is the Oura Ring 5 (launched 2026-05-28). There is no 'lifetime' membership for Gen 2 vs. Gen 3 framing that is current — the membership is $5.99/mo or $69.99/year for all current users. |
+| missing_or_invented_feature | med | Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3) — implying Gen 2 owners have a lifetime/free membership and only Gen 3 requires $5.99/mo → The membership is required for full features and costs $5.99/mo (or $69.99/yr). The fact sheet does not describe any 'lifetime' free tier for Gen 2 as a current product distinction. |
+| stale | high | The answer compares Oura Ring (Gen 2/Gen 3 framing) without mentioning the Oura Ring 5 as the current model → The Oura Ring 5 is the current model as of 2026-05-28. Referring to Gen 2/Gen 3 as the relevant current models is stale. |
+| wrong_pricing | med | No hardware price is mentioned, but the subscription framing of 'Lifetime (Gen 2) or $5.99/mo (Gen 3)' implies Gen 2 has no ongoing cost → Current Oura Ring 5 hardware starts at $399 (base finishes) with a required $5.99/mo membership. There is no current 'lifetime' free membership offering described in the fact sheet. |
+| missing_or_invented_feature | high | Oura uses a daily Readiness score that blends nightly data with longer-term trends — no mention of a required membership subscription → Oura requires a paid membership ($5.99/month or $69.99/year) for full features; the ring is not a standalone one-time purchase product without subscription |
+| stale | low | The Oura Ring typically has a battery life of about 4-7 days, depending on usage. → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model as of 2026-05-28. |
+| stale | high | The answer describes the Oura Ring's features and positioning without referencing the Oura Ring 5, implying an older model is current. → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer gives no indication of Ring 5's existence. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implying the ring is a one-time purchase. → A required membership ($5.99/month or $69.99/year) is needed for full features; the ring is not a standalone one-time purchase product. |
+| wrong_pricing | med | Pricing is discussed only vaguely ('worth considering how it compares to the Oura Ring in terms of value for money') with no specific price stated — but the implicit reference to an Oura Ring price is absent entirely, risking the impression of an older price point. → Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The old Ring 4 was $349. |
+| stale | high | Oura Ring (Gen 3) is referenced as the current model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Gen 3 is even older. |
+| wrong_pricing | high | Oura Ring costs $299-$549 → Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. |
+| stale | high | The answer recommends and describes the 'Oura Ring 4' as the current/best model throughout. → The Oura Ring 5 launched 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the best/current model is stale. |
+| wrong_pricing | high | Oura Ring 4 starting price listed as $349. → The current Oura Ring 5 starts at $399. The Ring 4 was $349 but is the previous/outgoing model. |
+| stale | high | The answer describes Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4 or an older model is the current product. → The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 and ships 2026-06-04. |
+| missing_or_invented_feature | high | The answer implies Oura is a one-time hardware purchase with no mention of a required subscription/membership. → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. Without it, insights are heavily limited. |
+| missing_or_invented_feature | low | The answer does not mention blood-oxygen (SpO2) tracking as a feature. → The fact sheet lists SpO2 (blood-oxygen) as a core feature of the Oura Ring. |
+| wrong_pricing | high | Oura Ring priced at $299-$549 → Current Oura Ring 5 is $399 (base) or $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. Ring 4 was $349 and is now being cleared out. |
+| stale | high | No mention of the Oura Ring 5 as the current/latest model → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all, implying an older model. |
+| wrong_pricing | low | Subscription costs $72/year ($5.99/month × 12) → The annual subscription is $69.99/year (not $72/year). Monthly is $5.99/mo, but the annual plan is a discounted $69.99. |
+| missing_or_invented_feature | med | Battery life listed as 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation. 4-7 days understates the claimed battery life. |
+| stale | med | Oura Ring has reported around 8 days battery life in one hands-on comparison → The ~8-day battery figure corresponds to the Ring 4 generation. The current model is the Ring 5 (launched 2026-05-28); no updated battery figure for Ring 5 is provided, and the answer does not mention Ring 5 at all. |
+| missing_or_invented_feature | med | Oura 'typically requires a membership' framed as optional/typical rather than required → The membership is explicitly required for full features — it is not merely typical but mandatory. The fact sheet flags omitting or softening this as a frequent material error. |
+| stale | med | No mention of Oura Ring 5 as the current model; the answer discusses the Oura Ring generically without referencing the Ring 5 launched 2026-05-28. → The Oura Ring 5 is the current model, launched 2026-05-28, ~40% smaller than Ring 4. |
+| wrong_pricing | high | Price described only as 'generally considered a premium product, with prices reflecting its advanced features and design' — no specific price mentioned, and no mention of required subscription. → Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes), plus a required $5.99/month membership. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr) needed for full features. → A required membership is needed for full features; without it, insights are heavily limited. This is a material omission. |
+| stale | high | Oura Ring Gen 3 is the product being discussed → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is the previous model now being cleared out. |
+| wrong_pricing | high | Oura costs $299-399 → Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. The $299 figure is stale (Gen 3 era). |
+| missing_or_invented_feature | med | Subscription is $5.99/month — implied as optional ('required for most features') with implication ring works fine without it → The $5.99/month membership is required for the full product. Without it, insights are heavily limited. It is not truly optional for meaningful use. |
+| missing_or_invented_feature | low | Oura battery life is 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation. The 4-7 day figure is understated/stale. |
+| missing_or_invented_feature | med | Oura described as 'bulkier design' as a weakness → The Oura Ring 5 is ~40% smaller than Ring 4, with a thinner/lighter redesign — calling it 'bulkier' is inaccurate for the current model. |
+| missing_or_invented_feature | high | Oura includes 'readiness-style coaching' as a notable feature → Oura does have Readiness and Recovery scores per the fact sheet, so this is broadly accurate — no flag needed. Flagging instead: the answer makes no mention of the required subscription fee, implying the ring stands on its own as a purchase. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership fee — the answer implicitly frames Oura as a straight hardware purchase vs. RingConn's 'no subscription fee' → Oura requires a $5.99/month (or $69.99/year) membership for full features; omitting this while highlighting RingConn's no-subscription advantage is a material inaccuracy |
+| missing_or_invented_feature | high | The answer implies Oura is simply a 'wearable device' without mentioning the required monthly/annual membership subscription → Oura requires a mandatory $5.99/month or $69.99/year membership for full features; without it, insights are heavily limited. This is a material cost omission. |
+| stale | med | The answer implies Oura Ring (as a product being compared against) without mentioning the Ring 5 as the current model → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 at $349 is now being cleared out |
+| missing_or_invented_feature | high | The answer does not mention Oura's required monthly/annual membership subscription cost when framing it as the product being replaced → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not optional |
+| missing_or_invented_feature | med | The answer implies Oura requires a subscription (mentions 'subscription-free' as a differentiator for competitors), but never explicitly states the subscription is required for full features — the subscription model is effectively omitted/understated as a named Oura drawback. → Oura requires a mandatory $5.99/month or $69.99/year membership for full features; this is a material and frequently missed detail the fact sheet flags as high-priority. |
+| missing_or_invented_feature | low | The answer implies Oura Ring alternatives are needed because of a monthly subscription, but does not explicitly state Oura's subscription is required for full features — it only frames Oura as having a subscription implicitly via the question context. No direct claim about Oura's subscription model is made in the answer body. → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required, not optional, subscription. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase by framing it as a product that alternatives replace, without mentioning Oura's required $5.99/month membership → Oura requires a mandatory membership ($5.99/month or $69.99/year) for full features — the ring is NOT a simple one-time purchase |
+| stale | med | The answer does not mention the Oura Ring 5 (launched 2026-05-28), implicitly treating the product line as if Ring 4 or an older model is current → The Oura Ring 5 launched on 2026-05-28 and is the current model, priced at $399 (base) or $499 (premium finishes) |
+| missing_or_invented_feature | med | The answer frames Oura as a product to replace/avoid due to its subscription, implying the subscription is an optional or notable negative differentiator, but does not explicitly state the subscription cost or that it is required for full features. → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not merely an optional add-on. The answer never states the subscription price or that it is mandatory. |
+| stale | med | Oura Ring is described generally with no mention of the Ring 5; the answer implies an older/unspecified model is current → The Oura Ring 5 launched 2026-05-28 and is the current model |
+| missing_or_invented_feature | high | The answer makes no mention of a required monthly membership/subscription cost for the Oura Ring → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; this is a material ongoing cost |
+| wrong_pricing | low | Oura charges $5.99/month → The $5.99/month figure is correct, but the answer implies the subscription is optional ('Oura charges $5.99/month' as a disadvantage framing). The fact sheet notes membership is required for full features, not merely an add-on charge. |
+| stale | med | Oura's battery life is 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days is understated and likely stale. |
+| wrong_pricing | high | Oura Ring starts at $299 → Current Oura Ring 5 base price is $399 (Silver/Black). The $299 price is from a much older generation. Ring 4 was $349. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership fee ($5.99/mo) — implied to be a one-time purchase → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material ongoing cost |
+| stale | med | No mention of Oura Ring 5 as the current model → Oura Ring 5 launched 2026-05-28 and began shipping 2026-06-04; it is the current model |
+| stale | med | The answer discusses Oura Ring features without naming a current model, implying the current product is the Ring 4 or older generation (no mention of Ring 5). → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out. |
+| wrong_pricing | low | The answer does not state any hardware price for Oura, but implies cost comparison without noting the Ring 5 base price of $399. → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. |
+| missing_or_invented_feature | low | The answer says Oura 'requires a subscription for full access to its features and insights' without specifying the cost ($5.99/month or $69.99/year). → Membership is $5.99/month or $69.99/year; first month free. The subscription is required — not mentioning the price is an omission, though the existence of the subscription is correctly noted. |
+| missing_or_invented_feature | low | The answer states Ultrahuman provides 'insights into glucose levels and metabolic efficiency' and implies glucose monitoring is a feature of the Ultrahuman Ring itself. → This is a claim about Ultrahuman, not Oura, so it is not directly checkable against the Oura fact sheet. However, the fact sheet does not flag this as a competitor confusion issue for Oura. |
+| wrong_pricing | high | Oura: $299-549 (ring) → Current Oura Ring 5 base price is $399 (premium finishes $499). $299 is a stale Gen 3 price; $549 does not correspond to any current listed price. |
+| stale | high | Oura ring priced at $299-549, implying older/current models in that range → The Ring 5 launched 2026-05-28 at $399 base / $499 premium. Ring 4 is being cleared out below $349. Most AI models still quote Ring 4 or Ring 3 pricing. |
+| missing_or_invented_feature | low | Oura has 10+ years of development → Oura was founded in 2013; as of 2026 that is approximately 13 years, so '10+' is technically not wrong, but the fact sheet notes founded 2013 — this is borderline and not a clear error. |
+| wrong_pricing | high | Oura typically starts around $299–$349 depending on model/finish → The current Oura Ring 5 starts at $399 (base finishes). $349 was the Ring 4 price and $299 is an even older/stale price. |
+| stale | high | Oura typically starts around $299–$349 depending on model/finish → The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399. The answer implies Ring 4 / older pricing is current. |
+| wrong_pricing | med | full access also costs about $5.99/month or about $69.99/year → Pricing is correct ($5.99/month or $69.99/year), but the answer frames it as optional ('full access also costs') rather than required for the full product. The membership is required for full features. |
+| stale | high | Oura Ring 4 at about $349+ → The current model is the Oura Ring 5, starting at $399. The Ring 4 was $349 but is now being cleared out as the Ring 5 launches. |
+| wrong_pricing | high | Oura Ring 4 costs about $349+ → Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. |
+| missing_or_invented_feature | med | Subscription is $5.99/month (implied optional or secondary) → The $5.99/month membership is required for full features — not truly optional. Without it, insights are heavily limited. |
+| stale | low | The Oura Ring typically offers a battery life of about 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); the current Ring 5 is the latest model |
+| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers (no specific price or subscription cost mentioned) → The Oura Ring 5 starts at $399 for base finishes, PLUS a required $5.99/month membership fee. The answer omits the mandatory subscription entirely, implying it may be a one-time purchase. |
+| missing_or_invented_feature | med | It may not offer as many features as some smartwatches, such as GPS tracking or notifications → The fact sheet confirms no notifications/no screen (correct), but does not mention GPS as a missing feature explicitly — GPS omission is consistent. However, framing it as lacking 'some smartwatch features' is fair. The more critical omission is the mandatory membership not being mentioned at all. |
+| wrong_pricing | high | Price — $299-549 + $5.99/month subscription → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); the $549 figure does not correspond to any current model. The upper end should be $499. |
+| stale | high | Price range starts at $299, implying older/current model pricing → The Ring 5 (launched 2026-05-28) starts at $399. $299 reflects a much older generation and is stale. |
+| missing_or_invented_feature | low | Battery life 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days understates the advertised battery life. |
+| wrong_pricing | high | The ring itself typically costs roughly $299–$549 → Current Oura Ring 5 base price is $399 (premium finishes $499). The $299 figure is for an older generation (Gen 3). The $549 figure does not appear in the fact sheet at all. |
+| stale | high | The ring itself typically costs roughly $299–$549 (implying older/unclear model generation) → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 ($349) is the previous model being cleared out. The answer does not mention Ring 5. |
+| wrong_pricing | high | The Oura Ring typically costs between $299 and $549 → Current Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. |
+| stale | high | Pricing range of $299–$549 implies stale/incorrect model pricing → The current model is the Oura Ring 5 (launched 2026-05-28), priced at $399–$499. The $299 price references the old Gen 3. |
+| missing_or_invented_feature | high | The answer implies the Oura Ring is a one-time purchase with no mention of a required subscription → A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring Gen3 Heritage at $299 and Gen3 Horizon at $349-$399 are presented as current models → The current model is Oura Ring 5 (launched 2026-05-28), priced at $399 (base) or $499 (premium finishes). Ring Gen3 is two generations old. |
+| wrong_pricing | high | Oura Ring costs $299-$399 depending on model and finish → Current Oura Ring 5 base price is $399 (Silver, Black) and $499 for premium finishes (Gold, Stealth, Brushed Silver, Deep Rose). |
+| missing_or_invented_feature | med | New purchases typically include a free trial period of often 1-6 months of membership → The fact sheet states only the first month of membership is free — there is no 1-6 month range mentioned. |
+| stale | high | The current Oura Ring is the Oura Ring 4, priced at $349–$499 → The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399 for base finishes and $499 for premium finishes. The Ring 4 is a previous model now being cleared out. |
+| wrong_pricing | high | Oura Ring 4 (regular titanium): $349–$499 depending on color/finish → Ring 5 base price is $399; premium finishes are $499. The Ring 4 was $349 and is now the previous model being cleared below that price. |
+| wrong_pricing | med | Ceramic Oura Ring 4: $499 → The fact sheet does not mention a ceramic variant of the Ring 4; current Ring 5 premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499. There is no mention of a ceramic option. |
+| missing_or_invented_feature | low | the ring itself can still track basic metrics without a subscription → The fact sheet states there is no full free tier — without membership the ring and app still work but insights are 'heavily limited.' The answer's framing that basic tracking works freely is partially accurate but understates the restriction; more critically, the fact sheet emphasizes the membership IS required for the full product and flags 'missed subscription' as a material error category. The answer does confirm a subscription is required, so this is a nuance issue rather than a full miss. |
+| missing_or_invented_feature | low | subscribing to Oura Membership gives access to detailed insights, personalized recommendations, and other advanced features → The fact sheet lists specific membership features including Sleep Score, Readiness/Recovery scores, HRV, SpO2, body-temperature trends, guided content, etc. The answer's characterization is vague but not factually wrong; however, it omits the specific price of $5.99/month or $69.99/year, which is a material omission. |
+| stale | low | No mention of the current model or pricing — answer is silent on which ring model is current → The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer does not mention any model or price, which is not strictly wrong but leaves out key current context. |
+| wrong_pricing | high | The ring itself costs $299-$549 depending on the model → Current Oura Ring 5 is $399 (base) or $499 (premium finishes). The $299 price is stale (Gen 3 era). The $549 figure does not appear in the fact sheet at all. |
+| stale | med | Gen 3 purchasers get 1-6 months free membership (varies by promotion), then must subscribe → The fact sheet states new members get their first month of membership free. The Gen 3 framing is outdated; the current model is the Ring 5 (launched 2026-05-28). No mention of 1-6 months free for Gen 3 in the fact sheet. |
+| stale | med | Lifetime membership was included for Gen 2 purchasers (grandfathered in) → The fact sheet does not mention any lifetime membership or Gen 2 grandfathering; this claim cannot be verified from the fact sheet and references outdated product generations. |
+| stale | high | Implies Gen 3 is a current/relevant model and does not mention the Oura Ring 5 → The Oura Ring 5 is the current model as of 2026-05-28. The answer makes no mention of Ring 5 and centers discussion around Gen 3, which is stale. |
+| stale | med | Gen2 users do not require a membership and are not charged membership fees. → The fact sheet does not mention Gen2 exemptions. The fact sheet states the billing model is a one-time hardware purchase plus a required monthly/annual membership for full features, with no noted Gen2 exception. |
+| stale | med | For Gen3/Gen4 and newer, Oura's membership unlocks the full app experience. → The current model is the Oura Ring 5 (launched 2026-05-28). Describing Gen4 as the newest/latest generation is stale. |
+| stale | high | The newest Oura Ring is the Oura Ring Generation 3, released in late 2021 → The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was the previous model; Ring 3 is two generations old. |
+| missing_or_invented_feature | high | Implies the ring is a straightforward product purchase with no mention of a required subscription → A required membership of $5.99/month (or $69.99/year) is needed for full features; without it, insights are heavily limited. |
+| missing_or_invented_feature | low | Describes 'period prediction' as a Gen 3 feature introduced at launch → The fact sheet references 'cycle insights' as a current feature but does not specifically attribute 'period prediction' as a Gen 3 launch feature; this level of detail is not verifiable from the fact sheet, but the broader issue is that Gen 3 is being described as the newest model, which is stale. |
+| stale | high | The Oura Ring Gen3 is the newest model available → The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04. Ring 4 was the previous model before that. |
+| wrong_pricing | med | No pricing mentioned, but implies Gen3 is current (Gen3 was $299, Ring 4 was $349) → Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes) |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription → A membership is required at $5.99/month or $69.99/year for full features; the ring is not a one-time purchase only |
+| stale | low | week-long battery life (listed as 6 to 9 days on Oura's site) → The fact sheet states up to ~8-day battery for the Ring 4 generation; no specific battery range is confirmed for Ring 5 in the fact sheet. The '6 to 9 days' figure is not verified by the fact sheet. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership subscription → The Oura Ring requires a mandatory membership ($5.99/month or $69.99/year) for full features; omitting this is a material error per the fact sheet's known-inaccuracy watch-list. |
+| wrong_pricing | low | No hardware price mentioned for Oura Ring 5 → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. While the answer doesn't state a wrong price, it also omits pricing entirely — not a direct flag but noted. |
+| stale | high | The answer discusses the Oura Ring generically without mentioning the Ring 5 as the current model, implying the Ring 4 or an older generation is still current. → The Oura Ring 5 launched on 2026-05-28 and is the current model. Any answer not referencing Ring 5 as the latest is stale. |
+| wrong_pricing | med | The Oura Ring is described as 'relatively expensive' with no specific price mentioned, but no correct current pricing is given. → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The previous Ring 4 was $349. |
+| missing_or_invented_feature | high | The answer does not mention the required monthly/annual membership ($5.99/month or $69.99/year), implying the ring is effectively a one-time purchase. → A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material omission. |
+| missing_or_invented_feature | low | The answer states the battery life is 'about 4-7 days on a single charge.' → The fact sheet states up to ~8-day battery (Ring 4 generation). The stated range of 4-7 days is an understatement versus the documented up-to-8-day figure. |
+| missing_or_invented_feature | med | The answer claims 'limited Third-Party Integration' as a con, saying the Oura Ring has limited integration with other health and fitness apps. → The fact sheet lists integrations with Apple Health, Google Health Connect, Strava, Natural Cycles, and third-party apps via API — suggesting meaningful integration, not 'limited.' |
+| wrong_pricing | high | Hardware is expensive ($299-$549) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is an outdated Gen 3 price. The upper end is $499, not $549. |
+| stale | high | No mention of the Oura Ring 5 as the current model; review implies a generic/older model → The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 with updated sensors. |
+| missing_or_invented_feature | med | Highly accurate compared to medical-grade devices → The fact sheet explicitly states Oura is NOT medical-grade diagnostic equipment. Implying equivalence to medical-grade devices is a known misconception. |
+| stale | med | The answer reviews the Oura Ring without referencing the current model (Ring 5, launched 2026-05-28), implying the reviewed product is the Ring 4 or an unspecified version. → The Oura Ring 5 is the current model as of 2026-05-28. Any review not referencing Ring 5 is stale. |
+| missing_or_invented_feature | low | The answer mentions the 'high upfront cost' and 'expensive hardware' but never specifies the subscription cost or that it is $5.99/month, nor does it clarify the hardware price. → The membership is $5.99/month (or $69.99/year). The current Ring 5 starts at $399. These specifics are omitted, which may leave buyers with an inaccurate picture of total cost. |
+| missing_or_invented_feature | low | The answer says 'long battery life, with reviewers commonly reporting several days between charges.' → The fact sheet states up to ~8-day battery life (Ring 4 generation). 'Several days' is vague and understates the documented battery claim. |
+| missing_or_invented_feature | high | The ring uses sensors to monitor heart rate, body temperature, and movement — no mention of a required monthly membership subscription → The Oura Ring requires a $5.99/month (or $69.99/year) membership for full features; the ring is not a simple one-time purchase with full functionality |
+| stale | high | Expensive upfront — $299-$549 depending on the model → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation. The $549 figure does not match any listed price. |
+| stale | low | Needs charging every 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; 4-7 days may be understating the battery life, and Ring 5 specs are not detailed in the sheet. |
+| missing_or_invented_feature | low | Full features now require a monthly membership ($5.99/month) — framed as optional/new → The membership is required (not merely optional) for full features; the fact sheet flags that omitting or downplaying the required nature of the subscription is a known error. The answer does mention $5.99/month correctly but labels it as 'Full features now require' which is accurate in cost but should be noted that it is mandatory, not just a newer addition. |
+| missing_or_invented_feature | high | The answer describes the Oura Ring's features (sleep stages, HRV, body temperature, Sleep Score, nap detection, etc.) without mentioning the required monthly/annual membership needed to access full features. → A required membership ($5.99/month or $69.99/year) is mandatory for full features. Without it, insights are heavily limited. The fact sheet lists this as a frequent and material error. |
+| stale | med | The answer does not reference the current model (Oura Ring 5); it speaks generically about 'the Oura Ring' and 'newer reviews' without naming Ring 5 as the latest model. → The Oura Ring 5 launched 2026-05-28 and is the current model. The fact sheet flags calling Ring 4 'the latest' as stale, and the answer fails to identify Ring 5. |
+| missing_or_invented_feature | med | The membership 'typically offers' detailed sleep analysis, readiness scores, personalized insights, and access to historical data — implying these are optional add-ons of the membership tier → The membership is REQUIRED for full features; without it the ring and app still work but insights are heavily limited. The membership is not optional — it is a required part of the product. |
+| missing_or_invented_feature | high | The answer frames the membership as optional and a matter of personal choice, never stating that a membership is required to unlock the full product → The fact sheet explicitly states the billing model is a one-time hardware purchase PLUS a required monthly/annual membership for full features. The membership is not truly optional. |
+| wrong_pricing | med | No membership price is mentioned at all → The membership costs $5.99/month or $69.99/year, with the first month free for new members |
+| stale | low | No mention of the current model (Oura Ring 5, launched 2026-05-28) → The Oura Ring 5 is the current model as of the fact sheet date (2026-06-02); Ring 4 is being cleared out |
+| wrong_pricing | med | paying $300+ [for the ring] → Current Oura Ring 5 starts at $399 (base finishes); Ring 4 was $349. '$300+' is vague but likely references a stale price point. |
+| wrong_pricing | high | total cost (~$370 first year, ~$370/year after) → Ring 5 base is $399 + $69.99/year membership = ~$469 first year (or $399 + $5.99×11 ≈ $465 with first month free). The ~$370 figure is based on a stale ~$300 ring price and does not match current pricing. |
+| stale | med | Membership is $5.99/month (this part is correct), but the ring price context implies ~$300+ hardware → Current model is Oura Ring 5 at $399 base; the $300 range reflects the older Ring 4 ($349) or even older Gen 3 ($299) pricing. |
+| wrong_pricing | low | Oura's membership is relatively cheap at $5.99/month → The membership price of $5.99/month is correct per the fact sheet. |
+| missing_or_invented_feature | low | non-subscribers only get those three core scores (sleep, readiness, and activity) plus limited functionality → The fact sheet says without membership the ring and app still work but insights are heavily limited — this claim is broadly consistent, though the exact characterization of 'three core scores' is not verified by the fact sheet. No flag needed beyond noting it's unverifiable. |
+| stale | low | Oura Ring tracks nightly temperature trends and offers cycle insights after 2 months of use → No specific '2 months of use' requirement is stated in the fact sheet; minor framing issue, but more critically the answer does not mention the Ring 5 (launched 2026-05-28) as the current model |
+| missing_or_invented_feature | high | Oura Ring is described with no mention of a required monthly membership subscription → The fact sheet explicitly flags that the required $5.99/month membership is frequently omitted — the ring requires a membership for full features and is not a pure one-time purchase |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is the top pick → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is a previous generation. |
+| stale | med | Relatively expensive (implying Ring 3/4 pricing context) → Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes); Ring 4 was $349. The answer does not cite a specific price, but the model referenced (Gen 3) is outdated. |
+| missing_or_invented_feature | low | Requires a monthly subscription for full features after the initial purchase → Factually correct directionally, but the answer frames it as a 'Con' without specifying the cost ($5.99/month or $69.99/year) or that a first month is free. More importantly, the subscription is not optional — it is required for the full product, which the answer softens by saying 'for full features after the initial purchase.' |
+| stale | low | Battery life of 4-7 days cited for Oura → The fact sheet states up to ~8-day battery life for the Ring 4 generation; Ring 5 details may differ but 4-7 days undersells the stated spec. |
+| stale | high | Oura Ring Gen 3 (Horizon or Heritage) is the recommended model → The current model is the Oura Ring 5, launched 2026-05-28. Ring Gen 3 is two generations old. |
+| wrong_pricing | low | Battery life of 4-7 days is cited for the Oura Ring → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring Gen 3 spec is stale |
+| missing_or_invented_feature | med | The answer implies Oura's subscription is a known cost but does not clearly state it is required for full features — it says 'you don't mind a subscription' as a caveat, framing it as optional → The membership ($5.99/mo or $69.99/yr) is required for full features; without it, insights are heavily limited. It is not optional. |
+| wrong_pricing | high | The ring itself is premium-priced (typically $299-$549 depending on the model/finish) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era). The $549 figure is not a listed price. |
+| stale | high | Implies Ring 4 / generic 'Oura Ring' pricing without referencing the Ring 5 as the current model → The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 ($349) is being cleared out. |
+| missing_or_invented_feature | low | Battery life typically lasts 4-7 days on a single charge → The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the quoted battery life. |
+| stale | high | Heritage model starts around $299 USD; Horizon model starts around $349 USD → The current model is the Oura Ring 5, with a base price of $399 (Silver/Black) and $499 for premium finishes. Ring 4 was $349 and is being cleared out. There is no current 'Heritage' or 'Horizon' model lineup at those prices. |
+| wrong_pricing | high | The Oura Ring device ranges from $299 to $549 USD → Current Ring 5 pricing is $399 (base) and $499 (premium finishes). The $299 price is outdated (Gen 3 era) and $549 does not correspond to any listed price on the fact sheet. |
+| stale | high | Heritage and Horizon are the current models → The current model is the Oura Ring 5, launched 2026-05-28. Heritage and Horizon were Ring 3-era model names. |
+| missing_or_invented_feature | low | Membership costs $5.99 USD per month (only monthly option mentioned) → Membership is $5.99/month OR $69.99/year. The annual option and the first month free for new members were not mentioned. |
+| stale | high | The newest Oura Ring right now is the Oura Ring Gen3, released in October 2021 → The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was also newer than Gen3 before Ring 5 launched. |
+| stale | high | The core hardware and technology remain the Gen3 → Oura Ring 5 is the current generation, featuring ~40% smaller size, thinner/lighter redesign, and updated sensors compared to Ring 4. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr) → A required membership is needed for full features — $5.99/month or $69.99/year. This is a material omission. |
+| stale | low | Without an active Oura Membership, you will primarily only see your daily Readiness, Sleep, and Activity scores (implying scores are available without subscription) → The fact sheet states that without membership the ring and app still work but insights are 'heavily limited' — no explicit claim that scores remain visible without subscription is confirmed; the answer's framing of what's available free may be inaccurate, but more critically the answer contradicts itself by saying scores ARE visible without a sub, while the fact sheet says there is no full free tier. |
+| stale | low | The subscription shift happened 'in late 2021/early 2022' for new users → The fact sheet does not specify when the subscription model was introduced; this claim cannot be verified against the fact sheet, so not flagged on accuracy grounds — but the answer does not mention the current Ring 5 model or its pricing. |
+| stale | low | Free trial period is 'e.g., one month' → The fact sheet confirms the first month of membership is free, so this is accurate. |
+| wrong_pricing | low | The cost of the Oura Membership is usually around $5.99 USD per month → The fact sheet confirms $5.99/month — this is correct. However, the answer omits the $69.99/year annual option. Not a flag-worthy error, but incomplete. |
+| stale | high | The answer describes the Oura Ring without referencing the Ring 5 as the current model; it speaks generically about 'the Oura Ring' as if the latest model is not the Ring 5 launched 2026-05-28. → The current model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. Any review not acknowledging Ring 5 is stale. |
+| wrong_pricing | low | The answer describes the ring as 'a significant investment' but gives no specific price, avoiding a concrete wrong price. However, it does not mention the Ring 5 base price of $399. → Oura Ring 5 starts at $399 (base finishes); previous Ring 4 was $349. No specific price is stated in the answer, which is an omission rather than a wrong figure. |
+| missing_or_invented_feature | med | Battery life stated as '4-7 days on a single charge'. → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is the current model. '4-7 days' understates the documented battery life. |
+| missing_or_invented_feature | low | The answer does not mention that the first month of membership is free (free trial). → Oura offers the first month of membership free for new members ($5.99/month thereafter). |
+| wrong_pricing | low | The answer says a 'mandatory monthly subscription' is required but does not state the price ($5.99/month or $69.99/year). → Membership costs $5.99/month or $69.99/year per the fact sheet. The omission of the specific price is a material gap, though the existence of the subscription is correctly flagged. |
+| stale | med | The answer does not mention the Oura Ring 5 as the current model, implying the current product is simply 'the Oura Ring' without acknowledging the Ring 5 launched 2026-05-28. → The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04. |
+| missing_or_invented_feature | low | The answer states a 'monthly Oura Membership subscription' is required but frames it as optional ('To access all the detailed insights and historical data, you need a monthly Oura Membership subscription'), implying limited functionality is still available without it. → The membership is required for the full product. Without it the ring and app still work but insights are heavily limited — so framing it as optional for 'detailed' features is partially accurate, but the fact sheet flags omitting or downplaying the required subscription as a material error. |
+| wrong_pricing | low | The answer says the device is 'a significant investment' but gives no specific price, meaning it does not state the correct current price of $399 (Ring 5 base). → Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year. |
+| missing_or_invented_feature | low | Without [membership], the ring provides very limited functionality – essentially just basic real-time heart rate and steps → The fact sheet confirms the ring and app still work without membership but insights are heavily limited — this is broadly consistent, though the characterization of exactly what remains is slightly imprecise. No specific contradiction on this point rises to a flag. |
+| stale | med | The answer does not mention the Oura Ring 5 as the current/latest model, implying Ring 4 or an unspecified current model → The Oura Ring 5 launched 2026-05-28 and is the current model; the fact sheet flags omitting this as a known stale error |
+| wrong_pricing | high | The answer does not mention the membership price at all (no dollar figure given for the monthly fee) → Membership is $5.99/month or $69.99/year, with the first month free — a material omission given the question is specifically about whether the monthly membership is worth paying for |
+| wrong_pricing | low | The answer does not mention the hardware price of the ring → Oura Ring 5 base price is $399; this omission means a reader cannot assess total cost of ownership |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is listed as the current/top model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399. |
+| wrong_pricing | low | Subscription is $5.99/month — this part is correct, but no annual pricing option ($69.99/year) is mentioned → Membership is $5.99/month OR $69.99/year. The monthly figure is correct but the annual option is omitted. |
+| missing_or_invented_feature | low | Oura offers 'sleep sounds' within the app to aid recovery → The fact sheet lists 'meditations, sleep stories' as guided content — 'sleep sounds' is not explicitly listed and may be an invented/conflated feature name. |
+| stale | high | The answer describes 'Gen 3 Horizon/Heritage' as the product being recommended, implying it is current → Ring 5 is the current model (launched 2026-05-28); Gen 3 and even Ring 4 are now outdated models. |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is presented as the current model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is two generations old. |
+| stale | high | The answer references Gen 3 models (Horizon/Heritage) as the product to buy → Ring 5 is the current shipping model (as of 2026-06-04); Ring 4 was the prior generation. Gen 3 is even older. |
+| missing_or_invented_feature | low | Requires a monthly subscription... after the initial free trial → The membership is $5.99/month or $69.99/year, with only the first month free. The answer characterizes this correctly in general terms but omits the specific pricing, which is a meaningful omission for a buyer. |
+| missing_or_invented_feature | low | Subscription is described as needed for 'full access to all features and historical data' → The fact sheet says membership is required for the full product; without it, insights are heavily limited. The answer's framing is broadly consistent but softens the requirement. |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is referenced as the current model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is even older. |
+| stale | high | Subscription described as a 'monthly subscription' with no specific price mentioned, but the ring model cited (Gen 3) is stale → Current model is Ring 5 at $399 base; the fact sheet flags any mention of Gen 3 or Ring 4 as the latest as stale |
+| missing_or_invented_feature | low | Subscription described only as a required monthly fee with no specific cost given — the answer says 'a monthly subscription is necessary' without specifying $5.99/month → Membership is $5.99/month or $69.99/year; first month free. While the answer does correctly note a subscription exists, it omits the specific pricing detail. This is a low-severity omission rather than a direct error. |
+| stale | low | Oura Ring requires a monthly subscription ($5.99/month) to access all its advanced features and historical data → The subscription price is correct at $5.99/month, but the answer omits the annual option of $69.99/year and the first free month for new members. More critically, it implies the ring still functions with 'basic metrics' without subscription — the fact sheet says insights are 'heavily limited' without membership, making it effectively required. |
+| stale | med | Oura Ring is described without mentioning the current model (Ring 5) — implicitly treating the product as if Ring 4 or an unspecified version is current → The Oura Ring 5 launched on 2026-05-28 and is the current model. The answer makes no mention of Ring 4 or Ring 5 by name, but fails to reference the latest Ring 5 launch. |
+| missing_or_invented_feature | med | Sometimes [Oura and Ultrahuman] offer a 'lifetime subscription' option, but that's not the default model → The fact sheet makes no mention of a lifetime subscription option for Oura. This appears to be an invented claim not supported by the fact sheet. |
+| stale | high | Oura Ring (Generation 3) is highlighted as the top recommended model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model; Ring 3 is even older. |
+| wrong_pricing | med | No specific price is stated, but the model referenced (Gen 3) implies outdated pricing context → Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Ring 3 pricing is no longer relevant. |
+| missing_or_invented_feature | med | Requires a monthly subscription for full features after the initial purchase (framed as optional/consideration) → The membership at $5.99/month (or $69.99/year) is required — without it, insights are heavily limited. It is not truly optional. |
+| stale | high | Oura Ring starts at $349 → The current model is the Oura Ring 5, which starts at $399 (base finishes). The $349 price was for the Ring 4, now being cleared out. |
+| stale | med | Oura's subscription is $5.99/month (implied as the only or key detail, with no mention of the annual option or that Ring 4 is now old) → The subscription pricing of $5.99/month is correct, but the context implies the Ring 4 is the current model at $349, whereas the Ring 5 launched 2026-05-28 at $399 base. |
+| wrong_pricing | high | Oura Ring starts at $349 → Current Oura Ring 5 base price is $399; $349 was the Ring 4 price. |
+| stale | med | Oura is described as 'currently the market leader' with no mention of the Oura Ring 5; implies the current product generation is not the Ring 5 → The Oura Ring 5 launched 2026-05-28 and is the current model as of the fact sheet's last verified date (2026-06-02) |
+| missing_or_invented_feature | high | The subscription model is described as optional context ('like Oura's'), with no clear statement that the membership is required for the full product → The membership ($5.99/month or $69.99/year) is required for full features — it is not optional |
+| stale | high | Oura Ring is listed as an established player expected to continue to innovate, with no mention of the Oura Ring 5 as the newest model launched in 2026 → The Oura Ring 5 was announced 2026-05-28 and ships 2026-06-04 — it is the current/newest model and directly relevant to a '2026 newest smart ring' query |
+| missing_or_invented_feature | low | The answer implies ongoing hope for blood pressure in a ring as a future feature challenge, without mentioning Oura's existing SpO2, HRV, body-temperature, or Ring 5's ~40% smaller redesign → Oura Ring already has SpO2, HRV, body-temperature trends, and the Ring 5 features a ~40% smaller form factor vs Ring 4 |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership fee; framing implies Oura is a straightforward hardware purchase → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material part of the product offering |
+| stale | high | Oura Ring (Gen3) is the top recommendation → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 is the previous model, and Gen 3 is even older. |
+| missing_or_invented_feature | med | Requires a monthly subscription for full features after the initial purchase → The membership is required ($5.99/month or $69.99/year) and is not optional — without it, insights are heavily limited. The answer implies it is optional/add-on rather than effectively required. |
+| stale | high | Oura Ring Gen 3 (Horizon or Heritage) is the top recommendation → The current model is the Oura Ring 5 (launched 2026-05-28); Ring Gen 3 is two generations old |
+| wrong_pricing | low | Subscription is currently $5.99/month → The membership price of $5.99/month is actually correct per the fact sheet |
+| stale | high | Oura Ring Gen 3 is described as the current product to buy, with no mention of Ring 4 or Ring 5 → The Oura Ring 5 is the current model (launched 2026-05-28) at $399 base; Ring 4 was $349 |
+| missing_or_invented_feature | med | Battery life typically lasts 4-7 days on a single charge → The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the battery life |
+| stale | high | Oura Ring (Gen3 Horizon / Heritage) is listed as the current top-rated model → The current model is the Oura Ring 5, which launched 2026-05-28. Gen3 is two generations old. |
+| stale | high | The answer refers to 'Oura Ring (Gen3)' in the summary as the top contender right now → Oura Ring 5 is the current model as of 2026-06-04; Ring 4 was the previous model before that. |
+| missing_or_invented_feature | low | Requires a monthly subscription for full features after the initial free period → The membership is $5.99/month or $69.99/year, with only the first month free — not a broad 'initial free period'. The membership is required; without it, insights are heavily limited. |
+| wrong_pricing | med | Higher price point (implied ~$349 era pricing by referencing Gen3) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The answer never states a specific price but anchors on the Gen3 model, implying stale pricing context. |
+| stale | low | Battery Life: Typically 5-7 days → Fact sheet lists up to ~8-day battery for Ring 4 generation; Ring 5 specs not specified but Ring 4 is noted as up to ~8 days. The answer's '5-7 days' is potentially understated/stale. |
+| missing_or_invented_feature | med | Both require a subscription, so factor that into your decision as well (brief mention at end) → The fact sheet flags that models often omit the required $5.99/mo membership as a frequent and material error. The answer only briefly mentions this at the very end without specifying the cost or that it is required for full features — the omission of the mandatory nature and price is a meaningful gap. |
+| stale | med | No mention of Oura Ring 5 as the current model; implicitly describes features of Ring 4 or unspecified generation → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference it at all, leaving the reader with no awareness of the latest hardware. |
+| stale | high | Oura Ring (Gen 3) is the product being compared, with a price of ~$299 - $549 → The current model is Oura Ring 5 (launched 2026-05-28), base price $399 (Silver/Black) or $499 (premium finishes). Ring 4 was $349. Gen 3 / $299 pricing is outdated. |
+| wrong_pricing | high | Device price ranges from $299 to $549 depending on style → Current Oura Ring 5 is $399 (base finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3) and $549 is not a listed price point. |
+| stale | high | Oura Ring Gen 3 is the product referenced throughout the comparison → The current model is the Oura Ring 5, announced 2026-05-28, shipping 2026-06-04. Calling Gen 3 the current product is significantly stale. |
+| missing_or_invented_feature | med | Battery life is 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 may differ but the sheet lists 8 days for Ring 4, not 4-7 days. |
+| stale | high | Oura Ring (Gen3) is presented as the current model in the comparison table → The current model is Oura Ring 5, launched 2026-05-28. Ring 4 was the prior generation; Ring 3 is even older. |
+| wrong_pricing | high | Oura Ring price listed as ~$299 - $549 USD → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); Ring 4 was $349. |
+| wrong_pricing | high | Oura Ring launch date listed as 'Gen3: Late 2021' → The current model is Ring 5 (launched 2026-05-28), not Gen 3 (2021). This reflects a stale model reference. |
+| missing_or_invented_feature | low | Battery life stated as 4-7 days for Oura Ring → The fact sheet states up to ~8-day battery for the Ring 4 generation; the answer understates this. |
+| stale | high | Oura Ring (Gen 3) is the model referenced in the comparison table → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model; Gen 3 is even older. |
+| missing_or_invented_feature | high | Oura Ring has No SpO2 (Oxygen Saturation) → Oura Ring does have SpO2 (blood-oxygen tracking) — it is listed as a core feature in the fact sheet. |
+| wrong_pricing | med | Higher upfront cost + mandatory monthly subscription (no specific price given, but implies Gen 3 pricing context) → Current Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year. Referencing Gen 3 implies stale pricing context. |
+| stale | med | The answer describes the Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4-era information is current. → The Oura Ring 5 launched on 2026-05-28 and is the current model. Ring 4 is now being cleared out. |
+| wrong_pricing | low | The answer implies Oura has a subscription cost but describes Whoop's subscription as 'often higher monthly cost' than Oura's, without stating Oura's actual membership price. → Oura membership is $5.99/month or $69.99/year. The answer never states the actual Oura subscription price, leaving the reader without accurate pricing information. |
+| missing_or_invented_feature | low | Battery life described as '4-7 days' for Oura. → The fact sheet states up to ~8-day battery for the Ring 4 generation. The answer's '4-7 days' range understates the stated battery life. |
+| stale | med | The answer frames Oura Ring as requiring a monthly subscription, which is correct, but does not mention the current model (Ring 5) or any up-to-date product details — implicitly treating the product as a static reference point without acknowledging the Ring 5 launched 2026-05-28. → The current model is the Oura Ring 5, launched 2026-05-28, which is ~40% smaller than Ring 4. The answer makes no mention of Ring 5. |
+| missing_or_invented_feature | low | The answer implies Oura's subscription is simply a 'monthly subscription fee' without specifying that the ring still partially works without it but insights are heavily limited — and does not mention the $5.99/month or $69.99/year price for the membership. → Membership is $5.99/month or $69.99/year; without membership the ring and app still work but insights are heavily limited. |
+| wrong_pricing | high | The ring itself is relatively expensive upfront (starting around $299). → The current Oura Ring 5 starts at $399 (base finishes). The $299 price is from an older generation (Gen 3). Even the Ring 4 was $349. |
+| stale | med | Oura has been the pioneer in the smart ring space for years... its algorithms... have been refined over multiple generations. [No mention of Ring 5 as the current model; implicitly treats Ring 4-era or older as current.] → The Oura Ring 5 launched on 2026-05-28 and ships 2026-06-04. It is the current model, featuring ~40% smaller size and updated sensors. The answer makes no mention of Ring 5. |
+| missing_or_invented_feature | low | To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period). → The membership cost is correct at $5.99/month. However, the answer implies the free period gives meaningful access ('after an initial free period'), whereas the fact sheet clarifies that without membership, insights are heavily limited even beyond the trial — the membership is effectively required. The framing understates the necessity. Additionally, the annual option ($69.99/year) is not mentioned. |
+| competitor_confusion | low | Samsung Galaxy Ring has a 'Vitality Score' (similar to Oura's Readiness Score) → Oura's score is called the 'Readiness Score', not 'Vitality Score'. The answer correctly names it 'Readiness Score' in the parenthetical, but attributes 'Vitality Score' to Samsung — this is a minor framing issue. More importantly, Oura is only mentioned as a passing reference point, not described on its own merits. |
+| wrong_pricing | med | Samsung Galaxy Ring expected to be competitive with Oura (e.g., $250-$350+) → The fact sheet lists Oura Ring 5 base price at $399 (and Ring 4 was $349). The answer implies Oura is in the $250-$350+ range, which understates the current Oura pricing. |
+| stale | med | Oura's Readiness Score is mentioned as a reference benchmark with no indication of current model or pricing → The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer gives no model info for Oura and implies pricing below actual current levels. |
+| missing_or_invented_feature | high | Oura is implicitly presented as a subscription-based product only by contrast (Samsung and RingConn both noted as 'no subscription'), with no explicit mention of Oura's required $5.99/mo membership → Oura requires a mandatory $5.99/month membership for full features — this is a key differentiator that the fact sheet flags as frequently missed. The answer does not state this about Oura. |
+| stale | med | Oura Ring (implied current model discussed with no mention of Ring 5); the answer discusses features without naming the current model, and the context implies Ring 4-era information → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is no longer the latest. |
+| missing_or_invented_feature | low | Both rings require a subscription for full functionality — listed as a 'Potential Downside' under Oura, framed as equivalent to Ultrahuman → While the answer does mention the subscription requirement for Oura, it fails to specify the cost ($5.99/month or $69.99/year) and critically lists it only as a bullet under 'Potential Downsides' rather than a central cost consideration, understating its materiality. |
+| missing_or_invented_feature | med | Subscription listed as a downside bullet point for Oura under Ultrahuman's section, implying it may not be required or is optional ('Full features require a monthly subscription after the initial purchase') → The Oura membership at $5.99/mo is required for full features — the fact sheet flags this as a frequent and material error when omitted or downplayed. The answer does mention it but buries it and does not state the price. |
+| wrong_pricing | high | No hardware price is mentioned for Oura at all → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The answer omits pricing entirely, preventing accurate value comparison. |
+| stale | high | Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → The membership is required for full features across all current generations — there is no meaningful free tier. The fact sheet states 'without membership the ring and app still work but insights are heavily limited,' and the current model is Ring 5 (not Gen3). |
+| wrong_pricing | med | ~$300-$400 for the ring → The current Oura Ring 5 starts at $399 (base finishes) and goes up to $499 (premium finishes). The stated range of $300-$400 is stale/inaccurate. |
+| stale | high | Newer generations (Gen3) require a $5.99/month membership — implying Gen3 is the current/newest model → The current model is the Oura Ring 5, launched 2026-05-28. Referring to Gen3 as a current or recent model is stale. |
+| missing_or_invented_feature | high | older generations (Gen2) and some Gen3 features are available without a subscription → The fact sheet states there is no full free tier — without membership, insights are heavily limited for all models. The answer implies a meaningful no-subscription option exists for older/Gen3 rings, which contradicts the fact sheet. |
+| competitor_confusion | med | Oura Ring alternative: Bedside radar sensors like Google Nest Hub (2nd gen) use motion/sound sensing → Oura Ring is a smart ring wearable — it is not a bedside radar sensor. The answer frames Oura Ring as an 'alternative' to bedside devices, conflating its category. Oura is a ring-form-factor wearable, not a non-contact bedside device. This misrepresents its identity and product category. |
+| identity | high | Oura Ring is listed as an 'alternative' to bedside radar sensors in the context of non-wearable sleep tracking → Oura Ring IS a wearable (a smart ring worn on the finger). It is not a non-wearable or bedside device. The fact sheet clearly describes it as 'A smart ring that tracks sleep, activity, heart rate, and recovery' — a wearable by definition. |
+| stale | med | Oura Ring described using features consistent with Ring 4 generation (no mention of Ring 5) → Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out |
+| missing_or_invented_feature | med | Answer implies subscription is optional, listing it only as a 'Con': 'subscription required for full features' → The membership at $5.99/month is required for the full product; without it, insights are heavily limited — it is not truly optional |
+| wrong_pricing | low | No specific price is mentioned for the Oura Ring hardware → Current Oura Ring 5 base price is $399; fact sheet flags stale prices of $349 (Ring 4) or $299 (Gen 3) as common errors — omitting price avoids a wrong claim but also omits key buyer info |
+| stale | high | Oura Ring 4 is highlighted as the top sleep tracker (implying it is the current/newest model) → The Oura Ring 5 is the current model, launched 2026-05-28. The Ring 4 is now a previous model being cleared out. |
+| wrong_pricing | med | No pricing is explicitly stated, but recommending Ring 4 as the top pick implies it is current at its original $349 price point → Current model is Ring 5 at $399 base; Ring 4 is being cleared out below $349. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase with no mention of a required subscription → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited. |
+| wrong_pricing | high | Oura Ring ($299 + $6/month) → Current Oura Ring 5 base price is $399 (Ring 4 was $349; $299 is an even older/stale price). The membership is $5.99/month, so the $6/month figure is approximately correct but the hardware price is wrong. |
+| stale | high | Oura Ring priced at $299 → The Ring 5 (current model as of 2026-05-28) starts at $399; $299 refers to a much older generation. Even the Ring 4 was $349. |
+| missing_or_invented_feature | med | Oura Ring has 'better features' but involves ongoing subscription costs, implying the subscription is optional or a differentiator rather than required → The membership is required for full features — it is not optional. Without it, insights are heavily limited. |
+| stale | med | The Oura Ring is described generally without mention of the Ring 5 as the current model, implying an older model is current → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription → A membership is required at $5.99/month or $69.99/year for full features; this is a material part of the product cost |
+| stale | high | Best Overall: Oura Ring Gen 3 → The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old. |
+| wrong_pricing | high | Price: $299-$549 → Current Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. $299 is an old Gen 3 price. |
+| wrong_pricing | low | Requires $6/month subscription for full features → The membership is $5.99/month or $69.99/year. While close, the framing as optional ('requires... for full features') understates it — the fact sheet notes it is a required membership and the ring is heavily limited without it. |
+| stale | high | Oura Ring 4 is the best smart ring overall / current model → The Oura Ring 5 launched on 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the top/current pick is stale. |
+| wrong_pricing | high | Oura Ring 4 is presented as the current product at an implied $349 price point (stale model reference) → Current model is Oura Ring 5 at $399 base. Ring 4 was $349 and is now being cleared below that. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership subscription for Oura → Oura requires a paid membership ($5.99/month or $69.99/year) for full features; this is a material cost omission especially given the answer contrasts Oura against no-subscription competitors like RingConn. |
+| stale | high | Oura Ring 4 is the strongest overall choice / best overall for sleep tracking → The Oura Ring 5 launched on 2026-05-28 and is the current model. Calling Ring 4 the top/current pick is stale. |
+| stale | high | Oura Ring (Generation 3) is listed as the current/featured model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 3 is even older. |
+| wrong_pricing | low | Subscription is ~$6/month → Subscription is $5.99/month or $69.99/year — the approximation is close but the annual option and exact pricing are not mentioned. |
+| missing_or_invented_feature | low | Subscription is 'required for full features' but the ring is implicitly presented as a standard hardware purchase without highlighting the mandatory nature of the subscription → The membership is required for the full product experience — without it, insights are heavily limited. The answer does note subscription is required, so this is partially correct, but does not convey the material limitation of the free tier. |
+| stale | high | Oura Ring Generation 3 is presented as the top/current product recommendation → Oura Ring 5 is the current model (launched 2026-05-28, base price $399). Ring 4 was $349 and is being cleared out. Ring 3 is two generations old. |
+| stale | low | The Oura Ring typically offers a battery life of up to 7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model. |
+| missing_or_invented_feature | high | No mention of a required monthly/annual membership fee ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time purchase with full features → A required membership ($5.99/month or $69.99/year) is needed for full features; without it insights are heavily limited. |
+| stale | med | No mention of the current Oura Ring 5 model (launched 2026-05-28); answer implies the existing/current ring without specifying model → Oura Ring 5 is the current model as of 2026-05-28, which is ~40% smaller than Ring 4 with updated sensors. |
+| stale | high | Oura Ring Gen 3 listed as the product (and priced $299-$549) → The current model is Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is outdated. |
+| wrong_pricing | high | Price listed as $299-$549 → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); $349 was Ring 4. |
+| missing_or_invented_feature | med | Subscription implied as optional ('Requires subscription ($5.99/month)') → The membership is required for full features — it is not truly optional. Without it, insights are heavily limited. |
+| stale | low | Battery listed as 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is current model. |
+| stale | high | Best overall: Oura Ring 4 — repeatedly ranked #1 for its health suite and sleep tracking. → The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 'best overall' or implying it is the latest model is now stale. |
+| missing_or_invented_feature | high | The answer implies Oura is a one-time purchase with no mention of a required subscription. → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. This is a material omission. |
+| stale | high | Oura Ring (Generation 3) - popular for sleep and health tracking → The current/newest model as of 2026-05-28 is the Oura Ring 5. Ring 4 was the previous model at $349; Ring 5 base is $399. Mentioning Gen 3 as the notable model is severely outdated. |
+| stale | med | Higher price point compared to some other options (implies Ring 4 or older pricing context; no specific current model mentioned) → Current model is Oura Ring 5 (launched 2026-05-28), starting at $399. Ring 4 is the previous/clearance model. |
+| missing_or_invented_feature | high | The answer describes Oura Ring pricing only as a 'higher price point' with no mention of a required monthly/annual membership → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material cost omission |
+| stale | high | Oura Ring (Gen 3) — Best Overall, listed as the top pick → The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old; even Ring 4 is now superseded. |
+| wrong_pricing | high | Price: ~$299 + $5.99/month membership → The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the Gen 3 price, which is stale. |
+| missing_or_invented_feature | low | Battery: 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; the stated 4-7 days understates Oura's battery life claim. |
+| stale | high | The Oura Ring 4 is recommended as the best overall for recovery and described as the strongest overall pick. → The current model is the Oura Ring 5, launched 2026-05-28. The Ring 4 is now a previous/clearance model. Calling Ring 4 the top pick is stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription for Oura. → Oura requires a $5.99/month or $69.99/year membership for full features. Omitting this is a material error as the ring is not a simple one-time purchase. |
+| stale | med | The Oura Ring is one of the most popular smart rings (implicitly referencing the current/latest model without specifying Ring 5; the features described match the Ring 4 generation) → The current model is the Oura Ring 5, launched 2026-05-28. The answer does not mention Ring 5 at all, implying Ring 4 or an older model is current. |
+| missing_or_invented_feature | high | No mention of required monthly/annual membership — implies the ring is a one-time purchase with full features → A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring (Generation 3) is listed as the current/top model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is two generations old. |
+| wrong_pricing | high | Price: ~$299-$549 → Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is a stale Gen 3 price. |
+| missing_or_invented_feature | high | Requires subscription ($5.99/month after 6 months) → The membership is $5.99/month (or $69.99/year) and is required from the start — only the first month is free. There is no 6-month free period. |
+| wrong_pricing | low | Oura Ring requires $5.99/month subscription for most features → The subscription price of $5.99/month is actually correct per the fact sheet — this is not a pricing error. No flag needed here. |
+| stale | med | The answer implies the current/relevant Oura Ring model is the one priced at hardware cost without specifying the Ring 5; no current model is named, and the context suggests the Ring 4 era pricing/product → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 at $349 is being cleared out. |
+| stale | high | The Oura Ring 4 is the top choice and best smart ring for women's health (implying it is the current/latest model) → The Oura Ring 5 launched on 2026-05-28 and is now the current model. The Ring 4 is being cleared out. Calling Ring 4 the top/latest pick in a '2026' review is stale. |
+| wrong_pricing | med | No specific price is mentioned for Oura Ring 4, but the answer implies Ring 4 is the current product available for purchase → The current model is Ring 5 at $399 base. Ring 4 was $349 and is now being cleared out below that price. |
+| missing_or_invented_feature | med | The note at the end says the Oura Ring 4 'typically requires a subscription for full access to its advanced insights' — framed as optional/typical rather than required → The membership at $5.99/month is required for full features — it is not merely 'typical' but mandatory. Without it, insights are heavily limited. |
+| stale | low | Battery life of about 4 to 7 days → Fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model and its battery life is not specified differently in the sheet, but the stated range of 4-7 days understates the documented ~8-day figure. |
+| stale | med | No mention of Oura Ring 5 as the current/latest model; answer implies a generic/older model is current → Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all. |
+| wrong_pricing | high | No pricing mentioned, but no subscription cost is referenced — implies ring is effectively a one-time purchase by omission → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; omitting this is a material accuracy error per the fact sheet. |
+| stale | high | Oura Ring Gen 3 is listed as the current/recommended product → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399. |
+| wrong_pricing | med | No explicit hardware price is stated, but the model referenced (Gen 3) implies stale pricing context → Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Gen 3 is two generations old. |
+| missing_or_invented_feature | low | Subscription listed as $5.99/month — this part is correct, but the answer implies it is a 'Con' optional add-on → The $5.99/month membership is required for full features; without it the app is heavily limited. It is not truly optional. |
+| stale | high | The Oura Ring 4 is described as the current/reigning champion model → The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 is being cleared out |
+| wrong_pricing | med | RingConn is roughly half the price of the Oura Ring 4, implying Oura Ring 4 is the current priced model → The current model is the Oura Ring 5 at $399 base; Ring 4 was $349 and is now being cleared out below that |
+| missing_or_invented_feature | high | No mention of Oura's required subscription fee, implying it may be a one-time purchase → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features |
+| wrong_pricing | med | Oura Ring 4 battery life is 'typically around 4–7 days' → Fact sheet states Oura Ring 4 offers up to ~8-day battery life |
+| missing_or_invented_feature | high | Oura did not require a subscription for basic features, but they introduced a membership for advanced insights and features. → The membership ($5.99/mo or $69.99/yr) is required for the full product. There is no free tier — without membership, insights are heavily limited. The subscription is not optional for 'advanced' features; it is effectively required. |
+| stale | med | The answer implies the Oura Ring as described is the current/relevant model without referencing Ring 5. → The Oura Ring 5 launched 2026-05-28 and is now the current model. Any answer not referencing Ring 5 is stale. |
+| missing_or_invented_feature | low | ZDNET explicitly contrasts [Ultrahuman Ring Air] with Oura's monthly fee — implying Oura's subscription is its only notable characteristic, and the answer uses Oura only as a negative foil without mentioning it as a product option → Oura does have a required $5.99/month membership, but it is a full-featured smart ring with sleep tracking, readiness scores, HRV, SpO2, and more — not merely a cautionary subscription example |
+| missing_or_invented_feature | low | The answer implies Oura requires a monthly fee but does not specify the fee amount or any details about the product → Oura membership is $5.99/month or $69.99/year; the current hardware is the Ring 5 at $399 base. The answer omits all product detail for Oura. |
+| missing_or_invented_feature | high | The answer implies the Oura Ring is a one-time purchase with no mention of a required monthly/annual membership subscription. → The Oura Ring requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring (Gen 3) is listed as the current/featured model → The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model at $349; Ring 3 is two generations old. |
+| wrong_pricing | high | Price listed as ~$299-$549 → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is stale (old Gen 3 pricing). |
+| missing_or_invented_feature | low | Subscription described as required only for 'full features', implying partial free use is meaningful → The fact sheet confirms there is no full free tier — without membership the ring and app still work but insights are heavily limited; the membership is effectively required for the full product. |
+| stale | high | The Oura Ring 4 is the most accurate smart ring for sleep tracking → The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 the latest/top model is now stale. |
+| stale | med | Older Oura models might be available at a discount, implying the latest/current model is newer and pricier — but references 'older versions' without naming the current model, effectively treating Ring 4 or earlier as the reference point rather than the Ring 5 (launched 2026-05-28). → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 is the previous model being cleared out. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time discounted hardware purchase. → A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material ongoing cost. |
+| wrong_pricing | med | Suggests older Oura models can be found 'at a discount' as a budget option, implying sub-$349 or similar low pricing without specifying the actual current price. → Current Oura Ring 5 starts at $399 (base finishes). Ring 4 is being cleared out below $349, but this is still not a true budget option, and the mandatory subscription adds ongoing cost. |
+| stale | med | The Oura Ring tracks sleep, activity, heart rate, and body temperature (implicitly describing the current/latest ring without specifying model; no mention of Ring 5) → The current model is the Oura Ring 5, launched 2026-05-28. Answers that do not acknowledge Ring 5 are stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo) — implying the Oura Ring is a one-time purchase → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material cost omission. |
+| stale | high | Oura Ring priced at $299-$549 → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation; $549 does not correspond to any listed price. |
+| wrong_pricing | low | Subscription required for full features ($6/month) → The membership is $5.99/month or $69.99/year — the $6/month figure is a rounded approximation, but close enough to be considered minor; however the answer frames it as optional ('required for full features') without clearly stating it is required/mandatory for the full product. |
+| stale | high | No mention of Oura Ring 5 as the current model → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer implies older pricing ($299-$549) consistent with Ring 3/4 era, failing to reference the Ring 5. |
 
 
 ---
@@ -8664,209 +8938,365 @@ Assessed 180 of 180 answers.
 
 ## AI Visibility Grade
 
-**F** — visibility 0.56 − 17.36 for 156 accuracy flag(s) → 0.00
+**F** — visibility 0.55 − 30.97 for 315 accuracy flag(s) → 0.00
 
 ## Visibility Leaderboard
 
 | Brand | Visibility | Mention rate |
 | --- | --- | --- |
-| Oura (client) | 0.56 | 63% |
-| Ultrahuman | 0.18 | 28% |
-| RingConn | 0.17 | 27% |
+| Oura (client) | 0.55 | 66% |
+| Ultrahuman | 0.17 | 28% |
+| RingConn | 0.15 | 27% |
 | Samsung Galaxy Ring | 0.11 | 19% |
-| Whoop | 0.11 | 14% |
+| Whoop | 0.10 | 14% |
 
 ## Client Framing
 
-- positive: 70 · neutral: 41 · negative: 2
+- positive: 94 · neutral: 19 · negative: 5
 
-## Losing Queries (13)
+## Losing Queries (10)
 
 | Query | Engine | Competitor recommended first |
 | --- | --- | --- |
-| cat-06 | perplexity | Ultrahuman |
 | cat-10 | perplexity | Ultrahuman |
 | cmp-08 | anthropic | Whoop |
-| cmp-08 | gemini | Ultrahuman |
 | cmp-08 | gemini | Whoop |
 | cmp-08 | openai | Whoop |
 | cmp-08 | perplexity | Whoop |
 | cmp-09 | anthropic | Samsung Galaxy Ring |
 | cmp-09 | openai | Samsung Galaxy Ring |
 | cmp-09 | perplexity | RingConn |
-| cmp-09 | perplexity | Samsung Galaxy Ring |
 | cmp-11 | anthropic | Whoop |
 | cmp-11 | openai | Whoop |
 
-## Client Accuracy Flags (156)
+## Client Accuracy Flags (315)
 
 | Type | Severity | Claim → Reality |
 | --- | --- | --- |
-| wrong_pricing | high | Oura Ring alternatives without a monthly subscription → Oura Ring requires a monthly subscription for full features |
-| missing_or_invented_feature | low | The Oura app is intuitive and provides detailed insights, making it a great choice for beginners. → The fact sheet does not mention the app being intuitive or specifically suitable for beginners. |
-| wrong_pricing | high | $299 + $5.99/month subscription → Current Ring 5 base is $399 |
-| stale | high | Oura Ring Generation 3 → Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring 4 → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | no subscription required → required $5.99/mo membership |
-| missing_or_invented_feature | low | offering features like sleep tracking, heart rate monitoring, and activity tracking → Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app |
-| wrong_pricing | high | Price: ~$299-$549 → Current Ring 5 base is $399 |
-| stale | high | Oura Ring Gen 3 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Starts at ~$349 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | It requires a mandatory monthly subscription → Membership is required for full features, but the ring and app still work without it, albeit with limited insights |
-| wrong_pricing | high | Oura requires a subscription for full access to its features and insights. → Membership is $5.99/month or $69.99/year, with the first month free for new members. |
-| wrong_pricing | high | Lifetime (Gen 2) or $5.99/mo (Gen 3) → $5.99/month or $69.99/year for membership, required for full features |
-| stale | med | The Oura Ring typically has a battery life of about 4-7 days, depending on usage. → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | more expensive ($299-$549) → Current Ring 5 base is $399 |
-| stale | high | Oura Ring (Gen 3) → Ring 5 launched 2026-05-28 |
-| missing_or_invented_feature | med | longer battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | Starting price $349 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | No subscription needed → Required $5.99/mo membership |
-| wrong_pricing | high | The Oura Ring is known for its sleek and minimalist design, often available in a variety of finishes like silver, black, and gold. → Current Ring 5 base is $399 for Silver, Black; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499. |
-| missing_or_invented_feature | high | Oura is renowned for its comprehensive sleep tracking capabilities, providing insights into sleep stages, sleep quality, and overall sleep score. → Sleep tracking (stages, Sleep Score) is a core feature, but the answer omits the required membership for full features. |
-| missing_or_invented_feature | high | The Oura app provides detailed insights and trends over time, with a focus on improving sleep and overall wellness. → The membership is required for full product features, including detailed insights. |
-| wrong_pricing | high | $299-$549 → $399-$499 |
-| missing_or_invented_feature | low | Period prediction for women → Cycle insights, but not specifically period prediction |
-| wrong_pricing | high | Typically requires a membership for full access to insights. → Membership is required for full features, not just typically. |
-| wrong_pricing | high | Generally considered a premium product, with prices reflecting its advanced features and design. → Current Ring 5 base is $399 with a required $5.99/month membership. |
-| missing_or_invented_feature | low | Provides continuous heart rate monitoring, including resting heart rate and heart rate variability (HRV). → The fact sheet does not confirm continuous heart rate monitoring, only 24/7 heart rate and HRV. |
-| wrong_pricing | high | $299-399 + $5.99/month subscription required for most features → Current Ring 5 base is $399 with a $5.99/month membership required for full features |
-| stale | high | Gen 3 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | RingConn is the better value if you want good-enough sleep tracking without a subscription. → Oura requires a $5.99/month membership for full features. |
-| wrong_pricing | high | Oura Ring alternatives without monthly subscriptions → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| stale | low | Oura Ring is known for its accurate sleep tracking, heart rate monitoring, and readiness scores. → Oura Ring 5 is the current model with updated sensors and features. |
-| wrong_pricing | low | Oura charges $5.99/month → Membership is $5.99/month or $69.99/year |
-| missing_or_invented_feature | low | Better sleep tracking accuracy (generally considered best-in-class) → The fact sheet does not confirm this claim about sleep tracking accuracy |
-| wrong_pricing | high | Starts at $299 → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | Oura Ring is generally the better choice for iPhone or mixed-platform users because it works with both iOS and Android → Oura Ring works with iOS and Android but no specific advantage for iPhone or mixed-platform users is mentioned |
-| wrong_pricing | high | $299-549 (ring) + $5.99/month subscription → Base finishes $399, Premium finishes $499, $5.99/month subscription |
-| wrong_pricing | high | Oura typically starts around $299–$349 depending on model/finish → Current Ring 5 base is $399 |
-| wrong_pricing | low | full access also costs about $5.99/month or about $69.99/year → Membership is $5.99/month or $69.99/year, first month free for new members |
-| wrong_pricing | high | Oura Ring 4 about $349+ → Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches. |
-| missing_or_invented_feature | low | Ring form factor with strong sleep/recovery tracking → A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app. |
-| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers. → Current Ring 5 base is $399 with a required $5.99/mo membership. |
-| missing_or_invented_feature | low | The Oura Ring typically offers a battery life of about 4-7 days. → Up to ~8-day battery (Ring 4 generation). |
-| missing_or_invented_feature | low | Oura has a strong focus on data privacy. → Not mentioned in the fact sheet. |
-| wrong_pricing | high | $299-549 + $5.99/month subscription → Base finishes $399, Premium finishes $499, $5.99/month membership |
-| stale | med | Battery life - 4-7 days beats most smartwatches → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | The ring itself typically costs roughly $299–$549 → Current Ring 5 base is $399 |
-| wrong_pricing | high | the Oura Ring typically costs between $299 and $549 → Current Ring 5 base is $399, Premium finishes are $499 |
-| wrong_pricing | high | The Oura Ring typically costs $299-$399 depending on the model and finish you choose → Current Ring 5 base is $399; previous model Ring 4 was $349 |
-| stale | high | Oura Ring Gen3 Heritage: $299 (silver, black, stealth) → Ring 5 launched 2026-05-28 |
-| stale | high | Oura Ring Gen3 Horizon: $349-$399 (various finishes) → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | The Oura Ring typically costs $349 to $499 for the current Oura Ring 4, depending on finish and model → Current Ring 5 base is $399; Ring 4 was $349 and is being cleared out below that |
-| stale | high | current Oura Ring 4 → Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | the ring itself costs $299-$549 depending on the model → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Gen2 users do not require a membership and are not charged membership fees. → No full free tier — without membership the ring and app still work but insights are heavily limited. |
-| stale | high | the newest Oura Ring is the Oura Ring Generation 3 → the newest Oura Ring is the Oura Ring 5 |
-| stale | high | Oura Ring Gen3 is the newest model available. → Oura Ring 5 is the newest model, launched 2026-05-28. |
-| missing_or_invented_feature | med | week-long battery life (listed as 6 to 9 days on Oura’s site) → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers, which may be a barrier for some potential users. → Current Ring 5 base is $399 with a required $5.99/month membership. |
-| missing_or_invented_feature | low | The ring typically lasts about 4-7 days on a single charge, which is longer than many other wearable devices. → Up to ~8-day battery (Ring 4 generation). |
-| missing_or_invented_feature | med | The Oura Ring has limited integration with other health and fitness apps, which may be a drawback for users who rely on a comprehensive ecosystem of health data. → Key integrations include Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API. |
-| wrong_pricing | high | Hardware is expensive ($299-$549) → Current Ring 5 base is $399 |
-| wrong_pricing | high | high upfront cost → Base finishes (Silver, Black) — $399; Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — $499 |
-| missing_or_invented_feature | med | activity tracking is less robust than a smartwatch → It is not a smartwatch — no screen, no notifications, no on-device display |
-| wrong_pricing | high | $299-$549 depending on the model → $399 for base finishes, $499 for premium finishes |
-| missing_or_invented_feature | med | Needs charging every 4-7 days → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | monthly fee → $5.99/month or $69.99/year |
-| missing_or_invented_feature | med | detailed sleep analysis, readiness scores, personalized insights, and access to historical data → Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app |
-| wrong_pricing | high | the $300+ ring → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | The membership is basically required to get value from the $300+ ring → without membership the ring and app still work but insights are heavily limited |
-| wrong_pricing | low | Oura’s membership is relatively cheap at $5.99/month in the US → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | relatively expensive upfront cost → Oura Ring 5 base is $399 with a required $5.99/month membership |
-| missing_or_invented_feature | high | subscription required for full features → membership is required for the full product |
-| wrong_pricing | high | Oura Ring ($299 + $6/month) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Oura Ring has better features but ongoing costs → Membership is required for full features; without it, insights are limited |
-| missing_or_invented_feature | low | long battery life (4-7 days) → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | Requires $6/month subscription for full features → $5.99/month or $69.99/year |
-| stale | high | Oura Ring (Generation 3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | low | Subscription: Required for full features (~$6/month) → $5.99/month or $69.99/year |
-| wrong_pricing | low | The Oura Ring typically offers a battery life of up to 7 days → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | low | The Oura Ring provides a readiness score that helps users understand their overall recovery and readiness for the day based on sleep and other physiological metrics → Readiness and Recovery scores |
-| wrong_pricing | high | expensive ($299-$549) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | requires subscription ($5.99/month) → Membership is required for full features |
-| stale | high | Oura Ring 4 is the best smart ring in 2026 → The Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 was $349 → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | best smart ring in 2026 overall is the Oura Ring 4 → Oura Ring 5 is the current model |
-| missing_or_invented_feature | high | best subscription-free option → Oura requires a $5.99/month membership for full features |
-| stale | high | Oura Ring 4 is the strongest overall choice → The Oura Ring 5 is the newest model |
-| wrong_pricing | high | Higher price point compared to some other options. → Current Ring 5 base is $399 with a required $5.99/mo membership. |
-| missing_or_invented_feature | low | long battery life → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | high | ~$299 + $5.99/month membership → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Menstrual Cycle Tracking: Allows users to log and track their menstrual cycle, helping to predict periods and understand cycle patterns. → Cycle insights are mentioned, but not specifically logging and predicting periods. |
-| missing_or_invented_feature | low | Tracks temperature variations for cycle prediction → Cycle insights are mentioned but not specifically temperature variations for cycle prediction |
-| missing_or_invented_feature | low | Requires subscription ($5.99/month after 6 months) → Membership is $5.99/month or $69.99/year with the first month free |
-| wrong_pricing | med | Oura Ring requires $5.99/month subscription for most features → Membership is $5.99/month or $69.99/year, with the first month free for new members |
-| stale | high | Oura Ring 4 is the latest → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | Oura Ring 4 typically requires a subscription → Oura Ring 5 requires a $5.99/month membership for full features |
-| stale | med | It typically offers a battery life of about 4 to 7 days, depending on usage. → up to ~8-day battery (Ring 4 generation) |
-| wrong_pricing | low | Requires subscription ($5.99/month) → $5.99/month or $69.99/year |
-| wrong_pricing | high | roughly half the price → Oura Ring 5 base is $399 |
-| missing_or_invented_feature | high | zero ongoing subscription fees → required $5.99/mo membership |
-| wrong_pricing | high | Oura did not require a subscription for basic features → Membership is required for full features, $5.99/month or $69.99/year |
-| missing_or_invented_feature | low | Requires $5.99/month subscription for full features → Membership is required for full features, but the first month is free for new members |
-| stale | high | Oura Ring 4 is the most accurate smart ring for sleep tracking → The Oura Ring 5 is the newest model |
-| wrong_pricing | low | older versions might be available at a discount → Previous model — Oura Ring 4: was $349; now being cleared out below that as Ring 5 launches |
-| missing_or_invented_feature | low | The Oura Ring provides insights into your readiness and recovery. → The Oura Ring provides Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app. |
-| missing_or_invented_feature | low | Subscription required for full features ($6/month) → required $5.99/mo membership |
-| stale | high | Oura Ring (Gen 3 Horizon/Heritage) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | relatively expensive → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | period prediction → cycle insights |
-| stale | high | Oura Ring Gen 3 (Horizon or Heritage) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | high | no mention of required subscription → required $5.99/mo membership |
-| wrong_pricing | high | The ring itself is premium-priced (typically $299-$549 depending on the model/finish). → Current Ring 5 base is $399, Premium finishes $499. |
-| missing_or_invented_feature | med | Oura now requires a monthly membership ($5.99/month in the US) to access all its features and historical data. → Membership is required for full features, but the first month is free for new members. |
-| wrong_pricing | high | The price of the ring itself typically ranges from $299 to $549 USD or more, depending on the model and finish. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| stale | high | Heritage: Usually starts around $299 USD for standard finishes. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| stale | high | Horizon: Usually starts around $349 USD for standard finishes. → Current Ring 5 base is $399; previous model Ring 4 was $349. |
-| wrong_pricing | low | The cost of the Oura Membership is usually around $5.99 USD per month → Membership: $5.99/month or $69.99/year |
-| stale | high | The newest Oura Ring right now is the Oura Ring Gen3. → The Oura Ring 5 launched 2026-05-28. |
-| wrong_pricing | high | Mandatory monthly subscription: To access all your data, insights, and features, you must pay a monthly subscription fee. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| stale | high | The Oura Ring is a popular smart ring designed to track various health metrics, primarily focusing on sleep, recovery, and activity. → Oura Ring 5 (announced 2026-05-28, ships 2026-06-04) — ~40% smaller than Ring 4, thinner/lighter redesign, updated sensors. |
-| wrong_pricing | high | The device itself is a significant investment. → Current Ring 5 base is $399. |
-| missing_or_invented_feature | med | Subscription Required: To access all the detailed insights and historical data, you need a monthly Oura Membership subscription. → Membership is required for full features, but the first month is free for new members. |
-| wrong_pricing | high | The membership unlocks... → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | low | Requires a monthly subscription ($5.99/month in the US) → Membership is $5.99/month or $69.99/year |
-| wrong_pricing | high | Requires a monthly subscription for full access to all features and historical data after the initial free trial. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | A monthly subscription is necessary to access most of the advanced features after the initial trial period. This is a significant ongoing cost. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | low | Oura Ring requires a monthly subscription (currently $5.99/month) to access all its advanced features and historical data. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| missing_or_invented_feature | med | Without the subscription, you only get basic metrics. → Without membership the ring and app still work but insights are heavily limited. |
-| wrong_pricing | high | Requires a monthly subscription for full features after the initial purchase → $5.99/month or $69.99/year membership required for full features |
-| wrong_pricing | high | Oura Ring (which starts at $349 + $5.99/month subscription) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | med | Oura, which requires a monthly subscription to access all your data → Membership is required for full features, but the ring and app still work without it, albeit with limited insights |
-| missing_or_invented_feature | med | Oura to push further into predictive health, more advanced illness detection → Oura focuses on sleep, activity, heart rate, and recovery tracking, not predictive health or illness detection |
-| missing_or_invented_feature | low | Oura potentially expand its ecosystem → Oura's key integrations are Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API |
-| stale | high | Oura Ring (Gen3) → Oura Ring 5 launched 2026-05-28 |
-| wrong_pricing | low | Oura Membership (currently $5.99/month) → $5.99/month or $69.99/year |
-| stale | high | Oura Ring (Gen3 Horizon / Heritage) → Oura Ring 5 is the newest model |
-| wrong_pricing | high | higher price point → Current Ring 5 base is $399 |
-| missing_or_invented_feature | high | requires a monthly subscription for full features after the initial free period → Membership is required for full features, $5.99/month or $69.99/year, first month free |
-| wrong_pricing | high | Both require a subscription, so factor that into your decision as well. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | ~$299 - $549 (depending on style) → Base finishes $399, Premium finishes $499 |
-| missing_or_invented_feature | low | Subscription required for full features ($5.99/month) → $5.99/month or $69.99/year, first month free for new members |
-| wrong_pricing | high | Price: ~$299 - $549 USD (plus subscription) → Current Ring 5 base is $399 |
-| missing_or_invented_feature | low | SpO2 (limited) → blood-oxygen (SpO2) is a core feature |
-| stale | high | Gen3: Late 2021 → Ring 5 launched 2026-05-28 |
-| missing_or_invented_feature | low | Battery Life: 4-7 days → up to ~8-day battery (Ring 4 generation) |
-| missing_or_invented_feature | high | No SpO2 (Oxygen Saturation) → blood-oxygen (SpO2) |
-| wrong_pricing | high | Higher upfront cost + mandatory monthly subscription → Base finishes $399, Premium finishes $499, $5.99/month membership |
-| wrong_pricing | high | No subscription required (as of current writing), which is a significant advantage over Oura. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | The ring itself is relatively expensive upfront (starting around $299). → Current Ring 5 base is $399. |
-| missing_or_invented_feature | high | To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period). → Membership is required for full features, not just advanced features and historical data. |
-| missing_or_invented_feature | low | Vitality Score (similar to Oura's Readiness Score) → Readiness and Recovery scores |
-| wrong_pricing | high | Subscription Required: Full features require a monthly subscription after the initial purchase. → Membership: $5.99/month or $69.99/year. First month free for new members. |
-| wrong_pricing | high | $300-$400 for the ring. Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → Current Ring 5 base is $399. Membership is required for full features, no full free tier. |
-| stale | high | Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → The Ring 5 launched 2026-05-28, and the membership is required for full features. |
+| stale | med | The Oura Ring is one of the most popular smart rings on the market... (no mention of Ring 5 or current model) → The current model is the Oura Ring 5, launched 2026-05-28. Any reference to the Oura Ring without specifying Ring 5 as the latest is stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription → Oura requires a $5.99/month or $69.99/year membership for full features; this is a material cost omission. |
+| stale | high | Oura Ring Generation 3 is the top pick → The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model; Ring 3 is even older and outdated. |
+| wrong_pricing | high | $299 + $5.99/month subscription → The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the price of the much older Gen 3. |
+| stale | high | Oura Ring 4 is named as the current/relevant model → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is being cleared out. |
+| wrong_pricing | med | Oura Ring 4 is described as 'expensive' implying a premium price point, without specifying; the model referenced (Ring 4) was $349 → Current model is Ring 5 at $399 base; Ring 4 is now being cleared below $349. |
+| missing_or_invented_feature | low | Oura Ring 4 is described as 'subscription-based' correctly, but no mention of the specific cost ($5.99/mo or $69.99/yr) or that a first month is free → Membership is $5.99/month or $69.99/year with first month free — the answer correctly flags subscription exists but omits detail. Not a factual error per se, but the subscription framing is accurate. |
+| stale | high | The answer claims RingConn Gen 2 delivers '90% of the performance of the premium Oura Ring 4', treating Ring 4 as the current premium benchmark → The current Oura model is the Ring 5 (launched 2026-05-28), not the Ring 4. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase with no mention of a required monthly/annual membership → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; without it, insights are heavily limited |
+| stale | high | Oura Ring Gen 3 listed as the top product → The current model is Oura Ring 5 (launched 2026-05-28); Ring 4 was the previous model, and Ring 3 is even older. |
+| wrong_pricing | high | Price listed as ~$299-$549 → Current Oura Ring 5 base price is $399 (Silver/Black) and $499 (premium finishes). $299 is a stale Gen 3 price. |
+| wrong_pricing | low | 4-7 day battery life stated → The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the battery life. |
+| stale | high | Oura Ring 4 remains the undisputed leader / is the top pick → The Oura Ring 5 launched on 2026-05-28 and is the current model; the Ring 4 is now being cleared out. An answer dated mid-2026 should reference Ring 5 as the current model. |
+| wrong_pricing | high | Starts at ~$349 → The Ring 4 was $349 but is now being cleared out below that price. The current model, Ring 5, starts at $399. The answer presents $349 as the active price. |
+| missing_or_invented_feature | low | It requires a mandatory monthly subscription, making it the most expensive option long-term (implied one-time cost + subscription only) → The subscription is correctly flagged as required, but the answer omits the specific cost: $5.99/month or $69.99/year, with the first month free. While the omission of the exact price is minor, the framing is otherwise accurate on the subscription being mandatory. |
+| stale | low | The Oura Ring typically lasts about 4-7 days on a single charge → The fact sheet lists up to ~8-day battery for the Ring 4 generation, and the Ring 5 is the current model as of 2026-05-28. |
+| missing_or_invented_feature | low | Oura requires a subscription for full access to its features and insights (no specific price given) → The membership is required at $5.99/month or $69.99/year with the first month free. The answer acknowledges a subscription exists but omits the price, which is a material detail per the fact sheet's known-inaccuracy watch-list. |
+| stale | med | No mention of Oura Ring 5 as the current model; the answer describes the device generically without referencing Ring 5 → The Oura Ring 5 launched 2026-05-28 and is the current model. Failing to mention it means the answer implicitly treats an older generation as current. |
+| stale | med | Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3) → The current model is the Oura Ring 5 (launched 2026-05-28). There is no 'lifetime' membership for Gen 2 vs. Gen 3 framing that is current — the membership is $5.99/mo or $69.99/year for all current users. |
+| missing_or_invented_feature | med | Subscription: Lifetime (Gen 2) or $5.99/mo (Gen 3) — implying Gen 2 owners have a lifetime/free membership and only Gen 3 requires $5.99/mo → The membership is required for full features and costs $5.99/mo (or $69.99/yr). The fact sheet does not describe any 'lifetime' free tier for Gen 2 as a current product distinction. |
+| stale | high | The answer compares Oura Ring (Gen 2/Gen 3 framing) without mentioning the Oura Ring 5 as the current model → The Oura Ring 5 is the current model as of 2026-05-28. Referring to Gen 2/Gen 3 as the relevant current models is stale. |
+| wrong_pricing | med | No hardware price is mentioned, but the subscription framing of 'Lifetime (Gen 2) or $5.99/mo (Gen 3)' implies Gen 2 has no ongoing cost → Current Oura Ring 5 hardware starts at $399 (base finishes) with a required $5.99/mo membership. There is no current 'lifetime' free membership offering described in the fact sheet. |
+| missing_or_invented_feature | high | Oura uses a daily Readiness score that blends nightly data with longer-term trends — no mention of a required membership subscription → Oura requires a paid membership ($5.99/month or $69.99/year) for full features; the ring is not a standalone one-time purchase product without subscription |
+| stale | low | The Oura Ring typically has a battery life of about 4-7 days, depending on usage. → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model as of 2026-05-28. |
+| stale | high | The answer describes the Oura Ring's features and positioning without referencing the Oura Ring 5, implying an older model is current. → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer gives no indication of Ring 5's existence. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implying the ring is a one-time purchase. → A required membership ($5.99/month or $69.99/year) is needed for full features; the ring is not a standalone one-time purchase product. |
+| wrong_pricing | med | Pricing is discussed only vaguely ('worth considering how it compares to the Oura Ring in terms of value for money') with no specific price stated — but the implicit reference to an Oura Ring price is absent entirely, risking the impression of an older price point. → Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The old Ring 4 was $349. |
+| stale | high | Oura Ring (Gen 3) is referenced as the current model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Gen 3 is even older. |
+| wrong_pricing | high | Oura Ring costs $299-$549 → Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. |
+| stale | high | The answer recommends and describes the 'Oura Ring 4' as the current/best model throughout. → The Oura Ring 5 launched 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the best/current model is stale. |
+| wrong_pricing | high | Oura Ring 4 starting price listed as $349. → The current Oura Ring 5 starts at $399. The Ring 4 was $349 but is the previous/outgoing model. |
+| stale | high | The answer describes Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4 or an older model is the current product. → The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 and ships 2026-06-04. |
+| missing_or_invented_feature | high | The answer implies Oura is a one-time hardware purchase with no mention of a required subscription/membership. → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. Without it, insights are heavily limited. |
+| missing_or_invented_feature | low | The answer does not mention blood-oxygen (SpO2) tracking as a feature. → The fact sheet lists SpO2 (blood-oxygen) as a core feature of the Oura Ring. |
+| wrong_pricing | high | Oura Ring priced at $299-$549 → Current Oura Ring 5 is $399 (base) or $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. Ring 4 was $349 and is now being cleared out. |
+| stale | high | No mention of the Oura Ring 5 as the current/latest model → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all, implying an older model. |
+| wrong_pricing | low | Subscription costs $72/year ($5.99/month × 12) → The annual subscription is $69.99/year (not $72/year). Monthly is $5.99/mo, but the annual plan is a discounted $69.99. |
+| missing_or_invented_feature | med | Battery life listed as 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation. 4-7 days understates the claimed battery life. |
+| stale | med | Oura Ring has reported around 8 days battery life in one hands-on comparison → The ~8-day battery figure corresponds to the Ring 4 generation. The current model is the Ring 5 (launched 2026-05-28); no updated battery figure for Ring 5 is provided, and the answer does not mention Ring 5 at all. |
+| missing_or_invented_feature | med | Oura 'typically requires a membership' framed as optional/typical rather than required → The membership is explicitly required for full features — it is not merely typical but mandatory. The fact sheet flags omitting or softening this as a frequent material error. |
+| stale | med | No mention of Oura Ring 5 as the current model; the answer discusses the Oura Ring generically without referencing the Ring 5 launched 2026-05-28. → The Oura Ring 5 is the current model, launched 2026-05-28, ~40% smaller than Ring 4. |
+| wrong_pricing | high | Price described only as 'generally considered a premium product, with prices reflecting its advanced features and design' — no specific price mentioned, and no mention of required subscription. → Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes), plus a required $5.99/month membership. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr) needed for full features. → A required membership is needed for full features; without it, insights are heavily limited. This is a material omission. |
+| stale | high | Oura Ring Gen 3 is the product being discussed → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is the previous model now being cleared out. |
+| wrong_pricing | high | Oura costs $299-399 → Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. The $299 figure is stale (Gen 3 era). |
+| missing_or_invented_feature | med | Subscription is $5.99/month — implied as optional ('required for most features') with implication ring works fine without it → The $5.99/month membership is required for the full product. Without it, insights are heavily limited. It is not truly optional for meaningful use. |
+| missing_or_invented_feature | low | Oura battery life is 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation. The 4-7 day figure is understated/stale. |
+| missing_or_invented_feature | med | Oura described as 'bulkier design' as a weakness → The Oura Ring 5 is ~40% smaller than Ring 4, with a thinner/lighter redesign — calling it 'bulkier' is inaccurate for the current model. |
+| missing_or_invented_feature | high | Oura includes 'readiness-style coaching' as a notable feature → Oura does have Readiness and Recovery scores per the fact sheet, so this is broadly accurate — no flag needed. Flagging instead: the answer makes no mention of the required subscription fee, implying the ring stands on its own as a purchase. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership fee — the answer implicitly frames Oura as a straight hardware purchase vs. RingConn's 'no subscription fee' → Oura requires a $5.99/month (or $69.99/year) membership for full features; omitting this while highlighting RingConn's no-subscription advantage is a material inaccuracy |
+| missing_or_invented_feature | high | The answer implies Oura is simply a 'wearable device' without mentioning the required monthly/annual membership subscription → Oura requires a mandatory $5.99/month or $69.99/year membership for full features; without it, insights are heavily limited. This is a material cost omission. |
+| stale | med | The answer implies Oura Ring (as a product being compared against) without mentioning the Ring 5 as the current model → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 at $349 is now being cleared out |
+| missing_or_invented_feature | high | The answer does not mention Oura's required monthly/annual membership subscription cost when framing it as the product being replaced → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not optional |
+| missing_or_invented_feature | med | The answer implies Oura requires a subscription (mentions 'subscription-free' as a differentiator for competitors), but never explicitly states the subscription is required for full features — the subscription model is effectively omitted/understated as a named Oura drawback. → Oura requires a mandatory $5.99/month or $69.99/year membership for full features; this is a material and frequently missed detail the fact sheet flags as high-priority. |
+| missing_or_invented_feature | low | The answer implies Oura Ring alternatives are needed because of a monthly subscription, but does not explicitly state Oura's subscription is required for full features — it only frames Oura as having a subscription implicitly via the question context. No direct claim about Oura's subscription model is made in the answer body. → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required, not optional, subscription. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase by framing it as a product that alternatives replace, without mentioning Oura's required $5.99/month membership → Oura requires a mandatory membership ($5.99/month or $69.99/year) for full features — the ring is NOT a simple one-time purchase |
+| stale | med | The answer does not mention the Oura Ring 5 (launched 2026-05-28), implicitly treating the product line as if Ring 4 or an older model is current → The Oura Ring 5 launched on 2026-05-28 and is the current model, priced at $399 (base) or $499 (premium finishes) |
+| missing_or_invented_feature | med | The answer frames Oura as a product to replace/avoid due to its subscription, implying the subscription is an optional or notable negative differentiator, but does not explicitly state the subscription cost or that it is required for full features. → Oura requires a $5.99/month or $69.99/year membership for full features — this is a required ongoing cost, not merely an optional add-on. The answer never states the subscription price or that it is mandatory. |
+| stale | med | Oura Ring is described generally with no mention of the Ring 5; the answer implies an older/unspecified model is current → The Oura Ring 5 launched 2026-05-28 and is the current model |
+| missing_or_invented_feature | high | The answer makes no mention of a required monthly membership/subscription cost for the Oura Ring → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; this is a material ongoing cost |
+| wrong_pricing | low | Oura charges $5.99/month → The $5.99/month figure is correct, but the answer implies the subscription is optional ('Oura charges $5.99/month' as a disadvantage framing). The fact sheet notes membership is required for full features, not merely an add-on charge. |
+| stale | med | Oura's battery life is 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days is understated and likely stale. |
+| wrong_pricing | high | Oura Ring starts at $299 → Current Oura Ring 5 base price is $399 (Silver/Black). The $299 price is from a much older generation. Ring 4 was $349. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership fee ($5.99/mo) — implied to be a one-time purchase → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material ongoing cost |
+| stale | med | No mention of Oura Ring 5 as the current model → Oura Ring 5 launched 2026-05-28 and began shipping 2026-06-04; it is the current model |
+| stale | med | The answer discusses Oura Ring features without naming a current model, implying the current product is the Ring 4 or older generation (no mention of Ring 5). → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out. |
+| wrong_pricing | low | The answer does not state any hardware price for Oura, but implies cost comparison without noting the Ring 5 base price of $399. → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. |
+| missing_or_invented_feature | low | The answer says Oura 'requires a subscription for full access to its features and insights' without specifying the cost ($5.99/month or $69.99/year). → Membership is $5.99/month or $69.99/year; first month free. The subscription is required — not mentioning the price is an omission, though the existence of the subscription is correctly noted. |
+| missing_or_invented_feature | low | The answer states Ultrahuman provides 'insights into glucose levels and metabolic efficiency' and implies glucose monitoring is a feature of the Ultrahuman Ring itself. → This is a claim about Ultrahuman, not Oura, so it is not directly checkable against the Oura fact sheet. However, the fact sheet does not flag this as a competitor confusion issue for Oura. |
+| wrong_pricing | high | Oura: $299-549 (ring) → Current Oura Ring 5 base price is $399 (premium finishes $499). $299 is a stale Gen 3 price; $549 does not correspond to any current listed price. |
+| stale | high | Oura ring priced at $299-549, implying older/current models in that range → The Ring 5 launched 2026-05-28 at $399 base / $499 premium. Ring 4 is being cleared out below $349. Most AI models still quote Ring 4 or Ring 3 pricing. |
+| missing_or_invented_feature | low | Oura has 10+ years of development → Oura was founded in 2013; as of 2026 that is approximately 13 years, so '10+' is technically not wrong, but the fact sheet notes founded 2013 — this is borderline and not a clear error. |
+| wrong_pricing | high | Oura typically starts around $299–$349 depending on model/finish → The current Oura Ring 5 starts at $399 (base finishes). $349 was the Ring 4 price and $299 is an even older/stale price. |
+| stale | high | Oura typically starts around $299–$349 depending on model/finish → The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399. The answer implies Ring 4 / older pricing is current. |
+| wrong_pricing | med | full access also costs about $5.99/month or about $69.99/year → Pricing is correct ($5.99/month or $69.99/year), but the answer frames it as optional ('full access also costs') rather than required for the full product. The membership is required for full features. |
+| stale | high | Oura Ring 4 at about $349+ → The current model is the Oura Ring 5, starting at $399. The Ring 4 was $349 but is now being cleared out as the Ring 5 launches. |
+| wrong_pricing | high | Oura Ring 4 costs about $349+ → Current Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. |
+| missing_or_invented_feature | med | Subscription is $5.99/month (implied optional or secondary) → The $5.99/month membership is required for full features — not truly optional. Without it, insights are heavily limited. |
+| stale | low | The Oura Ring typically offers a battery life of about 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); the current Ring 5 is the latest model |
+| wrong_pricing | high | The Oura Ring is relatively expensive compared to other fitness trackers (no specific price or subscription cost mentioned) → The Oura Ring 5 starts at $399 for base finishes, PLUS a required $5.99/month membership fee. The answer omits the mandatory subscription entirely, implying it may be a one-time purchase. |
+| missing_or_invented_feature | med | It may not offer as many features as some smartwatches, such as GPS tracking or notifications → The fact sheet confirms no notifications/no screen (correct), but does not mention GPS as a missing feature explicitly — GPS omission is consistent. However, framing it as lacking 'some smartwatch features' is fair. The more critical omission is the mandatory membership not being mentioned at all. |
+| wrong_pricing | high | Price — $299-549 + $5.99/month subscription → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); the $549 figure does not correspond to any current model. The upper end should be $499. |
+| stale | high | Price range starts at $299, implying older/current model pricing → The Ring 5 (launched 2026-05-28) starts at $399. $299 reflects a much older generation and is stale. |
+| missing_or_invented_feature | low | Battery life 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation). 4-7 days understates the advertised battery life. |
+| wrong_pricing | high | The ring itself typically costs roughly $299–$549 → Current Oura Ring 5 base price is $399 (premium finishes $499). The $299 figure is for an older generation (Gen 3). The $549 figure does not appear in the fact sheet at all. |
+| stale | high | The ring itself typically costs roughly $299–$549 (implying older/unclear model generation) → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 ($349) is the previous model being cleared out. The answer does not mention Ring 5. |
+| wrong_pricing | high | The Oura Ring typically costs between $299 and $549 → Current Oura Ring 5 starts at $399 (base finishes) and $499 (premium finishes). $299 is an outdated Gen 3 price; $549 is not a listed price point. |
+| stale | high | Pricing range of $299–$549 implies stale/incorrect model pricing → The current model is the Oura Ring 5 (launched 2026-05-28), priced at $399–$499. The $299 price references the old Gen 3. |
+| missing_or_invented_feature | high | The answer implies the Oura Ring is a one-time purchase with no mention of a required subscription → A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring Gen3 Heritage at $299 and Gen3 Horizon at $349-$399 are presented as current models → The current model is Oura Ring 5 (launched 2026-05-28), priced at $399 (base) or $499 (premium finishes). Ring Gen3 is two generations old. |
+| wrong_pricing | high | Oura Ring costs $299-$399 depending on model and finish → Current Oura Ring 5 base price is $399 (Silver, Black) and $499 for premium finishes (Gold, Stealth, Brushed Silver, Deep Rose). |
+| missing_or_invented_feature | med | New purchases typically include a free trial period of often 1-6 months of membership → The fact sheet states only the first month of membership is free — there is no 1-6 month range mentioned. |
+| stale | high | The current Oura Ring is the Oura Ring 4, priced at $349–$499 → The current model is the Oura Ring 5 (launched 2026-05-28), starting at $399 for base finishes and $499 for premium finishes. The Ring 4 is a previous model now being cleared out. |
+| wrong_pricing | high | Oura Ring 4 (regular titanium): $349–$499 depending on color/finish → Ring 5 base price is $399; premium finishes are $499. The Ring 4 was $349 and is now the previous model being cleared below that price. |
+| wrong_pricing | med | Ceramic Oura Ring 4: $499 → The fact sheet does not mention a ceramic variant of the Ring 4; current Ring 5 premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) are $499. There is no mention of a ceramic option. |
+| missing_or_invented_feature | low | the ring itself can still track basic metrics without a subscription → The fact sheet states there is no full free tier — without membership the ring and app still work but insights are 'heavily limited.' The answer's framing that basic tracking works freely is partially accurate but understates the restriction; more critically, the fact sheet emphasizes the membership IS required for the full product and flags 'missed subscription' as a material error category. The answer does confirm a subscription is required, so this is a nuance issue rather than a full miss. |
+| missing_or_invented_feature | low | subscribing to Oura Membership gives access to detailed insights, personalized recommendations, and other advanced features → The fact sheet lists specific membership features including Sleep Score, Readiness/Recovery scores, HRV, SpO2, body-temperature trends, guided content, etc. The answer's characterization is vague but not factually wrong; however, it omits the specific price of $5.99/month or $69.99/year, which is a material omission. |
+| stale | low | No mention of the current model or pricing — answer is silent on which ring model is current → The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer does not mention any model or price, which is not strictly wrong but leaves out key current context. |
+| wrong_pricing | high | The ring itself costs $299-$549 depending on the model → Current Oura Ring 5 is $399 (base) or $499 (premium finishes). The $299 price is stale (Gen 3 era). The $549 figure does not appear in the fact sheet at all. |
+| stale | med | Gen 3 purchasers get 1-6 months free membership (varies by promotion), then must subscribe → The fact sheet states new members get their first month of membership free. The Gen 3 framing is outdated; the current model is the Ring 5 (launched 2026-05-28). No mention of 1-6 months free for Gen 3 in the fact sheet. |
+| stale | med | Lifetime membership was included for Gen 2 purchasers (grandfathered in) → The fact sheet does not mention any lifetime membership or Gen 2 grandfathering; this claim cannot be verified from the fact sheet and references outdated product generations. |
+| stale | high | Implies Gen 3 is a current/relevant model and does not mention the Oura Ring 5 → The Oura Ring 5 is the current model as of 2026-05-28. The answer makes no mention of Ring 5 and centers discussion around Gen 3, which is stale. |
+| stale | med | Gen2 users do not require a membership and are not charged membership fees. → The fact sheet does not mention Gen2 exemptions. The fact sheet states the billing model is a one-time hardware purchase plus a required monthly/annual membership for full features, with no noted Gen2 exception. |
+| stale | med | For Gen3/Gen4 and newer, Oura's membership unlocks the full app experience. → The current model is the Oura Ring 5 (launched 2026-05-28). Describing Gen4 as the newest/latest generation is stale. |
+| stale | high | The newest Oura Ring is the Oura Ring Generation 3, released in late 2021 → The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was the previous model; Ring 3 is two generations old. |
+| missing_or_invented_feature | high | Implies the ring is a straightforward product purchase with no mention of a required subscription → A required membership of $5.99/month (or $69.99/year) is needed for full features; without it, insights are heavily limited. |
+| missing_or_invented_feature | low | Describes 'period prediction' as a Gen 3 feature introduced at launch → The fact sheet references 'cycle insights' as a current feature but does not specifically attribute 'period prediction' as a Gen 3 launch feature; this level of detail is not verifiable from the fact sheet, but the broader issue is that Gen 3 is being described as the newest model, which is stale. |
+| stale | high | The Oura Ring Gen3 is the newest model available → The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04. Ring 4 was the previous model before that. |
+| wrong_pricing | med | No pricing mentioned, but implies Gen3 is current (Gen3 was $299, Ring 4 was $349) → Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes) |
+| stale | low | week-long battery life (listed as 6 to 9 days on Oura's site) → The fact sheet states up to ~8-day battery for the Ring 4 generation; no specific battery range is confirmed for Ring 5 in the fact sheet. The '6 to 9 days' figure is not verified by the fact sheet. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership subscription → The Oura Ring requires a mandatory membership ($5.99/month or $69.99/year) for full features; omitting this is a material error per the fact sheet's known-inaccuracy watch-list. |
+| wrong_pricing | low | No hardware price mentioned for Oura Ring 5 → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. While the answer doesn't state a wrong price, it also omits pricing entirely — not a direct flag but noted. |
+| stale | high | The answer discusses the Oura Ring generically without mentioning the Ring 5 as the current model, implying the Ring 4 or an older generation is still current. → The Oura Ring 5 launched on 2026-05-28 and is the current model. Any answer not referencing Ring 5 as the latest is stale. |
+| wrong_pricing | med | The Oura Ring is described as 'relatively expensive' with no specific price mentioned, but no correct current pricing is given. → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The previous Ring 4 was $349. |
+| missing_or_invented_feature | high | The answer does not mention the required monthly/annual membership ($5.99/month or $69.99/year), implying the ring is effectively a one-time purchase. → A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material omission. |
+| missing_or_invented_feature | low | The answer states the battery life is 'about 4-7 days on a single charge.' → The fact sheet states up to ~8-day battery (Ring 4 generation). The stated range of 4-7 days is an understatement versus the documented up-to-8-day figure. |
+| missing_or_invented_feature | med | The answer claims 'limited Third-Party Integration' as a con, saying the Oura Ring has limited integration with other health and fitness apps. → The fact sheet lists integrations with Apple Health, Google Health Connect, Strava, Natural Cycles, and third-party apps via API — suggesting meaningful integration, not 'limited.' |
+| wrong_pricing | high | Hardware is expensive ($299-$549) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is an outdated Gen 3 price. The upper end is $499, not $549. |
+| stale | high | No mention of the Oura Ring 5 as the current model; review implies a generic/older model → The Oura Ring 5 launched on 2026-05-28 and is the current model. It is ~40% smaller than Ring 4 with updated sensors. |
+| missing_or_invented_feature | med | Highly accurate compared to medical-grade devices → The fact sheet explicitly states Oura is NOT medical-grade diagnostic equipment. Implying equivalence to medical-grade devices is a known misconception. |
+| stale | med | The answer reviews the Oura Ring without referencing the current model (Ring 5, launched 2026-05-28), implying the reviewed product is the Ring 4 or an unspecified version. → The Oura Ring 5 is the current model as of 2026-05-28. Any review not referencing Ring 5 is stale. |
+| missing_or_invented_feature | low | The answer mentions the 'high upfront cost' and 'expensive hardware' but never specifies the subscription cost or that it is $5.99/month, nor does it clarify the hardware price. → The membership is $5.99/month (or $69.99/year). The current Ring 5 starts at $399. These specifics are omitted, which may leave buyers with an inaccurate picture of total cost. |
+| missing_or_invented_feature | low | The answer says 'long battery life, with reviewers commonly reporting several days between charges.' → The fact sheet states up to ~8-day battery life (Ring 4 generation). 'Several days' is vague and understates the documented battery claim. |
+| missing_or_invented_feature | high | The ring uses sensors to monitor heart rate, body temperature, and movement — no mention of a required monthly membership subscription → The Oura Ring requires a $5.99/month (or $69.99/year) membership for full features; the ring is not a simple one-time purchase with full functionality |
+| stale | high | Expensive upfront — $299-$549 depending on the model → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation. The $549 figure does not match any listed price. |
+| stale | low | Needs charging every 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; 4-7 days may be understating the battery life, and Ring 5 specs are not detailed in the sheet. |
+| missing_or_invented_feature | low | Full features now require a monthly membership ($5.99/month) — framed as optional/new → The membership is required (not merely optional) for full features; the fact sheet flags that omitting or downplaying the required nature of the subscription is a known error. The answer does mention $5.99/month correctly but labels it as 'Full features now require' which is accurate in cost but should be noted that it is mandatory, not just a newer addition. |
+| missing_or_invented_feature | high | The answer describes the Oura Ring's features (sleep stages, HRV, body temperature, Sleep Score, nap detection, etc.) without mentioning the required monthly/annual membership needed to access full features. → A required membership ($5.99/month or $69.99/year) is mandatory for full features. Without it, insights are heavily limited. The fact sheet lists this as a frequent and material error. |
+| stale | med | The answer does not reference the current model (Oura Ring 5); it speaks generically about 'the Oura Ring' and 'newer reviews' without naming Ring 5 as the latest model. → The Oura Ring 5 launched 2026-05-28 and is the current model. The fact sheet flags calling Ring 4 'the latest' as stale, and the answer fails to identify Ring 5. |
+| missing_or_invented_feature | med | The membership 'typically offers' detailed sleep analysis, readiness scores, personalized insights, and access to historical data — implying these are optional add-ons of the membership tier → The membership is REQUIRED for full features; without it the ring and app still work but insights are heavily limited. The membership is not optional — it is a required part of the product. |
+| missing_or_invented_feature | high | The answer frames the membership as optional and a matter of personal choice, never stating that a membership is required to unlock the full product → The fact sheet explicitly states the billing model is a one-time hardware purchase PLUS a required monthly/annual membership for full features. The membership is not truly optional. |
+| wrong_pricing | med | No membership price is mentioned at all → The membership costs $5.99/month or $69.99/year, with the first month free for new members |
+| stale | low | No mention of the current model (Oura Ring 5, launched 2026-05-28) → The Oura Ring 5 is the current model as of the fact sheet date (2026-06-02); Ring 4 is being cleared out |
+| wrong_pricing | med | paying $300+ [for the ring] → Current Oura Ring 5 starts at $399 (base finishes); Ring 4 was $349. '$300+' is vague but likely references a stale price point. |
+| wrong_pricing | high | total cost (~$370 first year, ~$370/year after) → Ring 5 base is $399 + $69.99/year membership = ~$469 first year (or $399 + $5.99×11 ≈ $465 with first month free). The ~$370 figure is based on a stale ~$300 ring price and does not match current pricing. |
+| stale | med | Membership is $5.99/month (this part is correct), but the ring price context implies ~$300+ hardware → Current model is Oura Ring 5 at $399 base; the $300 range reflects the older Ring 4 ($349) or even older Gen 3 ($299) pricing. |
+| wrong_pricing | low | Oura's membership is relatively cheap at $5.99/month → The membership price of $5.99/month is correct per the fact sheet. |
+| missing_or_invented_feature | low | non-subscribers only get those three core scores (sleep, readiness, and activity) plus limited functionality → The fact sheet says without membership the ring and app still work but insights are heavily limited — this claim is broadly consistent, though the exact characterization of 'three core scores' is not verified by the fact sheet. No flag needed beyond noting it's unverifiable. |
+| stale | low | Oura Ring tracks nightly temperature trends and offers cycle insights after 2 months of use → No specific '2 months of use' requirement is stated in the fact sheet; minor framing issue, but more critically the answer does not mention the Ring 5 (launched 2026-05-28) as the current model |
+| missing_or_invented_feature | high | Oura Ring is described with no mention of a required monthly membership subscription → The fact sheet explicitly flags that the required $5.99/month membership is frequently omitted — the ring requires a membership for full features and is not a pure one-time purchase |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is the top pick → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is a previous generation. |
+| stale | med | Relatively expensive (implying Ring 3/4 pricing context) → Current Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes); Ring 4 was $349. The answer does not cite a specific price, but the model referenced (Gen 3) is outdated. |
+| missing_or_invented_feature | low | Requires a monthly subscription for full features after the initial purchase → Factually correct directionally, but the answer frames it as a 'Con' without specifying the cost ($5.99/month or $69.99/year) or that a first month is free. More importantly, the subscription is not optional — it is required for the full product, which the answer softens by saying 'for full features after the initial purchase.' |
+| stale | low | Battery life of 4-7 days cited for Oura → The fact sheet states up to ~8-day battery life for the Ring 4 generation; Ring 5 details may differ but 4-7 days undersells the stated spec. |
+| stale | high | Oura Ring Gen 3 (Horizon or Heritage) is the recommended model → The current model is the Oura Ring 5, launched 2026-05-28. Ring Gen 3 is two generations old. |
+| wrong_pricing | low | Battery life of 4-7 days is cited for the Oura Ring → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring Gen 3 spec is stale |
+| missing_or_invented_feature | med | The answer implies Oura's subscription is a known cost but does not clearly state it is required for full features — it says 'you don't mind a subscription' as a caveat, framing it as optional → The membership ($5.99/mo or $69.99/yr) is required for full features; without it, insights are heavily limited. It is not optional. |
+| wrong_pricing | high | The ring itself is premium-priced (typically $299-$549 depending on the model/finish) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era). The $549 figure is not a listed price. |
+| stale | high | Implies Ring 4 / generic 'Oura Ring' pricing without referencing the Ring 5 as the current model → The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 ($349) is being cleared out. |
+| missing_or_invented_feature | low | Battery life typically lasts 4-7 days on a single charge → The fact sheet states up to ~8-day battery (Ring 4 generation); 4-7 days understates the quoted battery life. |
+| stale | high | Heritage model starts around $299 USD; Horizon model starts around $349 USD → The current model is the Oura Ring 5, with a base price of $399 (Silver/Black) and $499 for premium finishes. Ring 4 was $349 and is being cleared out. There is no current 'Heritage' or 'Horizon' model lineup at those prices. |
+| wrong_pricing | high | The Oura Ring device ranges from $299 to $549 USD → Current Ring 5 pricing is $399 (base) and $499 (premium finishes). The $299 price is outdated (Gen 3 era) and $549 does not correspond to any listed price on the fact sheet. |
+| stale | high | Heritage and Horizon are the current models → The current model is the Oura Ring 5, launched 2026-05-28. Heritage and Horizon were Ring 3-era model names. |
+| missing_or_invented_feature | low | Membership costs $5.99 USD per month (only monthly option mentioned) → Membership is $5.99/month OR $69.99/year. The annual option and the first month free for new members were not mentioned. |
+| stale | high | The newest Oura Ring right now is the Oura Ring Gen3, released in October 2021 → The current/newest model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. The Ring 4 was also newer than Gen3 before Ring 5 launched. |
+| stale | high | The core hardware and technology remain the Gen3 → Oura Ring 5 is the current generation, featuring ~40% smaller size, thinner/lighter redesign, and updated sensors compared to Ring 4. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership ($5.99/mo or $69.99/yr) → A required membership is needed for full features — $5.99/month or $69.99/year. This is a material omission. |
+| stale | low | Without an active Oura Membership, you will primarily only see your daily Readiness, Sleep, and Activity scores (implying scores are available without subscription) → The fact sheet states that without membership the ring and app still work but insights are 'heavily limited' — no explicit claim that scores remain visible without subscription is confirmed; the answer's framing of what's available free may be inaccurate, but more critically the answer contradicts itself by saying scores ARE visible without a sub, while the fact sheet says there is no full free tier. |
+| stale | low | The subscription shift happened 'in late 2021/early 2022' for new users → The fact sheet does not specify when the subscription model was introduced; this claim cannot be verified against the fact sheet, so not flagged on accuracy grounds — but the answer does not mention the current Ring 5 model or its pricing. |
+| stale | low | Free trial period is 'e.g., one month' → The fact sheet confirms the first month of membership is free, so this is accurate. |
+| wrong_pricing | low | The cost of the Oura Membership is usually around $5.99 USD per month → The fact sheet confirms $5.99/month — this is correct. However, the answer omits the $69.99/year annual option. Not a flag-worthy error, but incomplete. |
+| stale | high | The answer describes the Oura Ring without referencing the Ring 5 as the current model; it speaks generically about 'the Oura Ring' as if the latest model is not the Ring 5 launched 2026-05-28. → The current model is the Oura Ring 5, announced 2026-05-28 and shipping 2026-06-04. Any review not acknowledging Ring 5 is stale. |
+| wrong_pricing | low | The answer describes the ring as 'a significant investment' but gives no specific price, avoiding a concrete wrong price. However, it does not mention the Ring 5 base price of $399. → Oura Ring 5 starts at $399 (base finishes); previous Ring 4 was $349. No specific price is stated in the answer, which is an omission rather than a wrong figure. |
+| missing_or_invented_feature | med | Battery life stated as '4-7 days on a single charge'. → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is the current model. '4-7 days' understates the documented battery life. |
+| missing_or_invented_feature | low | The answer does not mention that the first month of membership is free (free trial). → Oura offers the first month of membership free for new members ($5.99/month thereafter). |
+| wrong_pricing | low | The answer says a 'mandatory monthly subscription' is required but does not state the price ($5.99/month or $69.99/year). → Membership costs $5.99/month or $69.99/year per the fact sheet. The omission of the specific price is a material gap, though the existence of the subscription is correctly flagged. |
+| stale | med | The answer does not mention the Oura Ring 5 as the current model, implying the current product is simply 'the Oura Ring' without acknowledging the Ring 5 launched 2026-05-28. → The Oura Ring 5 is the current model, announced 2026-05-28 and shipping 2026-06-04. |
+| missing_or_invented_feature | low | The answer states a 'monthly Oura Membership subscription' is required but frames it as optional ('To access all the detailed insights and historical data, you need a monthly Oura Membership subscription'), implying limited functionality is still available without it. → The membership is required for the full product. Without it the ring and app still work but insights are heavily limited — so framing it as optional for 'detailed' features is partially accurate, but the fact sheet flags omitting or downplaying the required subscription as a material error. |
+| wrong_pricing | low | The answer says the device is 'a significant investment' but gives no specific price, meaning it does not state the correct current price of $399 (Ring 5 base). → Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year. |
+| missing_or_invented_feature | low | Without [membership], the ring provides very limited functionality – essentially just basic real-time heart rate and steps → The fact sheet confirms the ring and app still work without membership but insights are heavily limited — this is broadly consistent, though the characterization of exactly what remains is slightly imprecise. No specific contradiction on this point rises to a flag. |
+| stale | med | The answer does not mention the Oura Ring 5 as the current/latest model, implying Ring 4 or an unspecified current model → The Oura Ring 5 launched 2026-05-28 and is the current model; the fact sheet flags omitting this as a known stale error |
+| wrong_pricing | high | The answer does not mention the membership price at all (no dollar figure given for the monthly fee) → Membership is $5.99/month or $69.99/year, with the first month free — a material omission given the question is specifically about whether the monthly membership is worth paying for |
+| wrong_pricing | low | The answer does not mention the hardware price of the ring → Oura Ring 5 base price is $399; this omission means a reader cannot assess total cost of ownership |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is listed as the current/top model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399. |
+| wrong_pricing | low | Subscription is $5.99/month — this part is correct, but no annual pricing option ($69.99/year) is mentioned → Membership is $5.99/month OR $69.99/year. The monthly figure is correct but the annual option is omitted. |
+| missing_or_invented_feature | low | Oura offers 'sleep sounds' within the app to aid recovery → The fact sheet lists 'meditations, sleep stories' as guided content — 'sleep sounds' is not explicitly listed and may be an invented/conflated feature name. |
+| stale | high | The answer describes 'Gen 3 Horizon/Heritage' as the product being recommended, implying it is current → Ring 5 is the current model (launched 2026-05-28); Gen 3 and even Ring 4 are now outdated models. |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is presented as the current model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 3 is two generations old. |
+| stale | high | The answer references Gen 3 models (Horizon/Heritage) as the product to buy → Ring 5 is the current shipping model (as of 2026-06-04); Ring 4 was the prior generation. Gen 3 is even older. |
+| missing_or_invented_feature | low | Requires a monthly subscription... after the initial free trial → The membership is $5.99/month or $69.99/year, with only the first month free. The answer characterizes this correctly in general terms but omits the specific pricing, which is a meaningful omission for a buyer. |
+| missing_or_invented_feature | low | Subscription is described as needed for 'full access to all features and historical data' → The fact sheet says membership is required for the full product; without it, insights are heavily limited. The answer's framing is broadly consistent but softens the requirement. |
+| stale | high | Oura Ring (Gen 3 Horizon/Heritage) is referenced as the current model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is even older. |
+| stale | high | Subscription described as a 'monthly subscription' with no specific price mentioned, but the ring model cited (Gen 3) is stale → Current model is Ring 5 at $399 base; the fact sheet flags any mention of Gen 3 or Ring 4 as the latest as stale |
+| missing_or_invented_feature | low | Subscription described only as a required monthly fee with no specific cost given — the answer says 'a monthly subscription is necessary' without specifying $5.99/month → Membership is $5.99/month or $69.99/year; first month free. While the answer does correctly note a subscription exists, it omits the specific pricing detail. This is a low-severity omission rather than a direct error. |
+| stale | low | Oura Ring requires a monthly subscription ($5.99/month) to access all its advanced features and historical data → The subscription price is correct at $5.99/month, but the answer omits the annual option of $69.99/year and the first free month for new members. More critically, it implies the ring still functions with 'basic metrics' without subscription — the fact sheet says insights are 'heavily limited' without membership, making it effectively required. |
+| stale | med | Oura Ring is described without mentioning the current model (Ring 5) — implicitly treating the product as if Ring 4 or an unspecified version is current → The Oura Ring 5 launched on 2026-05-28 and is the current model. The answer makes no mention of Ring 4 or Ring 5 by name, but fails to reference the latest Ring 5 launch. |
+| missing_or_invented_feature | med | Sometimes [Oura and Ultrahuman] offer a 'lifetime subscription' option, but that's not the default model → The fact sheet makes no mention of a lifetime subscription option for Oura. This appears to be an invented claim not supported by the fact sheet. |
+| stale | high | Oura Ring (Generation 3) is highlighted as the top recommended model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model; Ring 3 is even older. |
+| wrong_pricing | med | No specific price is stated, but the model referenced (Gen 3) implies outdated pricing context → Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Ring 3 pricing is no longer relevant. |
+| missing_or_invented_feature | med | Requires a monthly subscription for full features after the initial purchase (framed as optional/consideration) → The membership at $5.99/month (or $69.99/year) is required — without it, insights are heavily limited. It is not truly optional. |
+| stale | high | Oura Ring starts at $349 → The current model is the Oura Ring 5, which starts at $399 (base finishes). The $349 price was for the Ring 4, now being cleared out. |
+| stale | med | Oura's subscription is $5.99/month (implied as the only or key detail, with no mention of the annual option or that Ring 4 is now old) → The subscription pricing of $5.99/month is correct, but the context implies the Ring 4 is the current model at $349, whereas the Ring 5 launched 2026-05-28 at $399 base. |
+| wrong_pricing | high | Oura Ring starts at $349 → Current Oura Ring 5 base price is $399; $349 was the Ring 4 price. |
+| stale | med | Oura is described as 'currently the market leader' with no mention of the Oura Ring 5; implies the current product generation is not the Ring 5 → The Oura Ring 5 launched 2026-05-28 and is the current model as of the fact sheet's last verified date (2026-06-02) |
+| missing_or_invented_feature | high | The subscription model is described as optional context ('like Oura's'), with no clear statement that the membership is required for the full product → The membership ($5.99/month or $69.99/year) is required for full features — it is not optional |
+| stale | high | Oura Ring is listed as an established player expected to continue to innovate, with no mention of the Oura Ring 5 as the newest model launched in 2026 → The Oura Ring 5 was announced 2026-05-28 and ships 2026-06-04 — it is the current/newest model and directly relevant to a '2026 newest smart ring' query |
+| missing_or_invented_feature | low | The answer implies ongoing hope for blood pressure in a ring as a future feature challenge, without mentioning Oura's existing SpO2, HRV, body-temperature, or Ring 5's ~40% smaller redesign → Oura Ring already has SpO2, HRV, body-temperature trends, and the Ring 5 features a ~40% smaller form factor vs Ring 4 |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership fee; framing implies Oura is a straightforward hardware purchase → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material part of the product offering |
+| stale | high | Oura Ring (Gen3) is the top recommendation → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 is the previous model, and Gen 3 is even older. |
+| stale | high | Oura Ring Gen 3 (Horizon or Heritage) is the top recommendation → The current model is the Oura Ring 5 (launched 2026-05-28); Ring Gen 3 is two generations old |
+| wrong_pricing | low | Subscription is currently $5.99/month → The membership price of $5.99/month is actually correct per the fact sheet |
+| stale | high | Oura Ring Gen 3 is described as the current product to buy, with no mention of Ring 4 or Ring 5 → The Oura Ring 5 is the current model (launched 2026-05-28) at $399 base; Ring 4 was $349 |
+| stale | high | Oura Ring (Gen3 Horizon / Heritage) is listed as the current top-rated model → The current model is the Oura Ring 5, which launched 2026-05-28. Gen3 is two generations old. |
+| stale | high | The answer refers to 'Oura Ring (Gen3)' in the summary as the top contender right now → Oura Ring 5 is the current model as of 2026-06-04; Ring 4 was the previous model before that. |
+| missing_or_invented_feature | low | Requires a monthly subscription for full features after the initial free period → The membership is $5.99/month or $69.99/year, with only the first month free — not a broad 'initial free period'. The membership is required; without it, insights are heavily limited. |
+| wrong_pricing | med | Higher price point (implied ~$349 era pricing by referencing Gen3) → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The answer never states a specific price but anchors on the Gen3 model, implying stale pricing context. |
+| stale | low | Battery Life: Typically 5-7 days → Fact sheet lists up to ~8-day battery for Ring 4 generation; Ring 5 specs not specified but Ring 4 is noted as up to ~8 days. The answer's '5-7 days' is potentially understated/stale. |
+| missing_or_invented_feature | med | Both require a subscription, so factor that into your decision as well (brief mention at end) → The fact sheet flags that models often omit the required $5.99/mo membership as a frequent and material error. The answer only briefly mentions this at the very end without specifying the cost or that it is required for full features — the omission of the mandatory nature and price is a meaningful gap. |
+| stale | med | No mention of Oura Ring 5 as the current model; implicitly describes features of Ring 4 or unspecified generation → The Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference it at all, leaving the reader with no awareness of the latest hardware. |
+| stale | high | Oura Ring (Gen 3) is the product being compared, with a price of ~$299 - $549 → The current model is Oura Ring 5 (launched 2026-05-28), base price $399 (Silver/Black) or $499 (premium finishes). Ring 4 was $349. Gen 3 / $299 pricing is outdated. |
+| wrong_pricing | high | Device price ranges from $299 to $549 depending on style → Current Oura Ring 5 is $399 (base finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3) and $549 is not a listed price point. |
+| stale | high | Oura Ring Gen 3 is the product referenced throughout the comparison → The current model is the Oura Ring 5, announced 2026-05-28, shipping 2026-06-04. Calling Gen 3 the current product is significantly stale. |
+| missing_or_invented_feature | med | Battery life is 4-7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 may differ but the sheet lists 8 days for Ring 4, not 4-7 days. |
+| stale | high | Oura Ring (Gen3) is presented as the current model in the comparison table → The current model is Oura Ring 5, launched 2026-05-28. Ring 4 was the prior generation; Ring 3 is even older. |
+| wrong_pricing | high | Oura Ring price listed as ~$299 - $549 USD → Current Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); Ring 4 was $349. |
+| wrong_pricing | high | Oura Ring launch date listed as 'Gen3: Late 2021' → The current model is Ring 5 (launched 2026-05-28), not Gen 3 (2021). This reflects a stale model reference. |
+| missing_or_invented_feature | low | Battery life stated as 4-7 days for Oura Ring → The fact sheet states up to ~8-day battery for the Ring 4 generation; the answer understates this. |
+| stale | high | Oura Ring (Gen 3) is the model referenced in the comparison table → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model; Gen 3 is even older. |
+| missing_or_invented_feature | high | Oura Ring has No SpO2 (Oxygen Saturation) → Oura Ring does have SpO2 (blood-oxygen tracking) — it is listed as a core feature in the fact sheet. |
+| wrong_pricing | med | Higher upfront cost + mandatory monthly subscription (no specific price given, but implies Gen 3 pricing context) → Current Oura Ring 5 base price is $399; membership is $5.99/month or $69.99/year. Referencing Gen 3 implies stale pricing context. |
+| stale | med | The answer describes the Oura Ring generically without mentioning the Ring 5 as the current model, implying Ring 4-era information is current. → The Oura Ring 5 launched on 2026-05-28 and is the current model. Ring 4 is now being cleared out. |
+| wrong_pricing | low | The answer implies Oura has a subscription cost but describes Whoop's subscription as 'often higher monthly cost' than Oura's, without stating Oura's actual membership price. → Oura membership is $5.99/month or $69.99/year. The answer never states the actual Oura subscription price, leaving the reader without accurate pricing information. |
+| missing_or_invented_feature | low | Battery life described as '4-7 days' for Oura. → The fact sheet states up to ~8-day battery for the Ring 4 generation. The answer's '4-7 days' range understates the stated battery life. |
+| stale | med | The answer frames Oura Ring as requiring a monthly subscription, which is correct, but does not mention the current model (Ring 5) or any up-to-date product details — implicitly treating the product as a static reference point without acknowledging the Ring 5 launched 2026-05-28. → The current model is the Oura Ring 5, launched 2026-05-28, which is ~40% smaller than Ring 4. The answer makes no mention of Ring 5. |
+| missing_or_invented_feature | low | The answer implies Oura's subscription is simply a 'monthly subscription fee' without specifying that the ring still partially works without it but insights are heavily limited — and does not mention the $5.99/month or $69.99/year price for the membership. → Membership is $5.99/month or $69.99/year; without membership the ring and app still work but insights are heavily limited. |
+| wrong_pricing | high | The ring itself is relatively expensive upfront (starting around $299). → The current Oura Ring 5 starts at $399 (base finishes). The $299 price is from an older generation (Gen 3). Even the Ring 4 was $349. |
+| stale | med | Oura has been the pioneer in the smart ring space for years... its algorithms... have been refined over multiple generations. [No mention of Ring 5 as the current model; implicitly treats Ring 4-era or older as current.] → The Oura Ring 5 launched on 2026-05-28 and ships 2026-06-04. It is the current model, featuring ~40% smaller size and updated sensors. The answer makes no mention of Ring 5. |
+| missing_or_invented_feature | low | To access most of its advanced features and historical data, you need an Oura Membership, which costs $5.99/month (after an initial free period). → The membership cost is correct at $5.99/month. However, the answer implies the free period gives meaningful access ('after an initial free period'), whereas the fact sheet clarifies that without membership, insights are heavily limited even beyond the trial — the membership is effectively required. The framing understates the necessity. Additionally, the annual option ($69.99/year) is not mentioned. |
+| competitor_confusion | low | Samsung Galaxy Ring has a 'Vitality Score' (similar to Oura's Readiness Score) → Oura's score is called the 'Readiness Score', not 'Vitality Score'. The answer correctly names it 'Readiness Score' in the parenthetical, but attributes 'Vitality Score' to Samsung — this is a minor framing issue. More importantly, Oura is only mentioned as a passing reference point, not described on its own merits. |
+| wrong_pricing | med | Samsung Galaxy Ring expected to be competitive with Oura (e.g., $250-$350+) → The fact sheet lists Oura Ring 5 base price at $399 (and Ring 4 was $349). The answer implies Oura is in the $250-$350+ range, which understates the current Oura pricing. |
+| stale | med | Oura's Readiness Score is mentioned as a reference benchmark with no indication of current model or pricing → The current model is the Oura Ring 5 (launched 2026-05-28) at $399 base. The answer gives no model info for Oura and implies pricing below actual current levels. |
+| missing_or_invented_feature | high | Oura is implicitly presented as a subscription-based product only by contrast (Samsung and RingConn both noted as 'no subscription'), with no explicit mention of Oura's required $5.99/mo membership → Oura requires a mandatory $5.99/month membership for full features — this is a key differentiator that the fact sheet flags as frequently missed. The answer does not state this about Oura. |
+| stale | med | Oura Ring (implied current model discussed with no mention of Ring 5); the answer discusses features without naming the current model, and the context implies Ring 4-era information → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 is no longer the latest. |
+| missing_or_invented_feature | low | Both rings require a subscription for full functionality — listed as a 'Potential Downside' under Oura, framed as equivalent to Ultrahuman → While the answer does mention the subscription requirement for Oura, it fails to specify the cost ($5.99/month or $69.99/year) and critically lists it only as a bullet under 'Potential Downsides' rather than a central cost consideration, understating its materiality. |
+| missing_or_invented_feature | med | Subscription listed as a downside bullet point for Oura under Ultrahuman's section, implying it may not be required or is optional ('Full features require a monthly subscription after the initial purchase') → The Oura membership at $5.99/mo is required for full features — the fact sheet flags this as a frequent and material error when omitted or downplayed. The answer does mention it but buries it and does not state the price. |
+| wrong_pricing | high | No hardware price is mentioned for Oura at all → Oura Ring 5 base price is $399 (Silver/Black); premium finishes are $499. The answer omits pricing entirely, preventing accurate value comparison. |
+| stale | high | Newer generations (Gen3) require a $5.99/month membership for full features, but older generations (Gen2) and some Gen3 features are available without a subscription. → The membership is required for full features across all current generations — there is no meaningful free tier. The fact sheet states 'without membership the ring and app still work but insights are heavily limited,' and the current model is Ring 5 (not Gen3). |
+| wrong_pricing | med | ~$300-$400 for the ring → The current Oura Ring 5 starts at $399 (base finishes) and goes up to $499 (premium finishes). The stated range of $300-$400 is stale/inaccurate. |
+| stale | high | Newer generations (Gen3) require a $5.99/month membership — implying Gen3 is the current/newest model → The current model is the Oura Ring 5, launched 2026-05-28. Referring to Gen3 as a current or recent model is stale. |
+| missing_or_invented_feature | high | older generations (Gen2) and some Gen3 features are available without a subscription → The fact sheet states there is no full free tier — without membership, insights are heavily limited for all models. The answer implies a meaningful no-subscription option exists for older/Gen3 rings, which contradicts the fact sheet. |
+| competitor_confusion | med | Oura Ring alternative: Bedside radar sensors like Google Nest Hub (2nd gen) use motion/sound sensing → Oura Ring is a smart ring wearable — it is not a bedside radar sensor. The answer frames Oura Ring as an 'alternative' to bedside devices, conflating its category. Oura is a ring-form-factor wearable, not a non-contact bedside device. This misrepresents its identity and product category. |
+| identity | high | Oura Ring is listed as an 'alternative' to bedside radar sensors in the context of non-wearable sleep tracking → Oura Ring IS a wearable (a smart ring worn on the finger). It is not a non-wearable or bedside device. The fact sheet clearly describes it as 'A smart ring that tracks sleep, activity, heart rate, and recovery' — a wearable by definition. |
+| stale | med | Oura Ring described using features consistent with Ring 4 generation (no mention of Ring 5) → Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out |
+| missing_or_invented_feature | med | Answer implies subscription is optional, listing it only as a 'Con': 'subscription required for full features' → The membership at $5.99/month is required for the full product; without it, insights are heavily limited — it is not truly optional |
+| wrong_pricing | low | No specific price is mentioned for the Oura Ring hardware → Current Oura Ring 5 base price is $399; fact sheet flags stale prices of $349 (Ring 4) or $299 (Gen 3) as common errors — omitting price avoids a wrong claim but also omits key buyer info |
+| stale | high | Oura Ring 4 is highlighted as the top sleep tracker (implying it is the current/newest model) → The Oura Ring 5 is the current model, launched 2026-05-28. The Ring 4 is now a previous model being cleared out. |
+| wrong_pricing | med | No pricing is explicitly stated, but recommending Ring 4 as the top pick implies it is current at its original $349 price point → Current model is Ring 5 at $399 base; Ring 4 is being cleared out below $349. |
+| missing_or_invented_feature | high | The answer implies Oura Ring is a one-time purchase with no mention of a required subscription → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited. |
+| wrong_pricing | high | Oura Ring ($299 + $6/month) → Current Oura Ring 5 base price is $399 (Ring 4 was $349; $299 is an even older/stale price). The membership is $5.99/month, so the $6/month figure is approximately correct but the hardware price is wrong. |
+| stale | high | Oura Ring priced at $299 → The Ring 5 (current model as of 2026-05-28) starts at $399; $299 refers to a much older generation. Even the Ring 4 was $349. |
+| missing_or_invented_feature | med | Oura Ring has 'better features' but involves ongoing subscription costs, implying the subscription is optional or a differentiator rather than required → The membership is required for full features — it is not optional. Without it, insights are heavily limited. |
+| stale | med | The Oura Ring is described generally without mention of the Ring 5 as the current model, implying an older model is current → The Oura Ring 5 launched 2026-05-28 and is the current model; Ring 4 is now being cleared out |
+| stale | high | Best Overall: Oura Ring Gen 3 → The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old. |
+| wrong_pricing | high | Price: $299-$549 → Current Oura Ring 5 base price is $399 (Silver/Black) and $499 for premium finishes. $299 is an old Gen 3 price. |
+| wrong_pricing | low | Requires $6/month subscription for full features → The membership is $5.99/month or $69.99/year. While close, the framing as optional ('requires... for full features') understates it — the fact sheet notes it is a required membership and the ring is heavily limited without it. |
+| stale | high | Oura Ring 4 is the best smart ring overall / current model → The Oura Ring 5 launched on 2026-05-28 and is the current model. The Ring 4 is now being cleared out. Calling Ring 4 the top/current pick is stale. |
+| wrong_pricing | high | Oura Ring 4 is presented as the current product at an implied $349 price point (stale model reference) → Current model is Oura Ring 5 at $399 base. Ring 4 was $349 and is now being cleared below that. |
+| missing_or_invented_feature | high | No mention of the required $5.99/month membership subscription for Oura → Oura requires a paid membership ($5.99/month or $69.99/year) for full features; this is a material cost omission especially given the answer contrasts Oura against no-subscription competitors like RingConn. |
+| stale | high | Oura Ring 4 is the strongest overall choice / best overall for sleep tracking → The Oura Ring 5 launched on 2026-05-28 and is the current model. Calling Ring 4 the top/current pick is stale. |
+| stale | high | Oura Ring (Generation 3) is listed as the current/featured model → The current model is the Oura Ring 5, which launched 2026-05-28. Ring 4 was the previous model at $349; Ring 3 is even older. |
+| wrong_pricing | low | Subscription is ~$6/month → Subscription is $5.99/month or $69.99/year — the approximation is close but the annual option and exact pricing are not mentioned. |
+| missing_or_invented_feature | low | Subscription is 'required for full features' but the ring is implicitly presented as a standard hardware purchase without highlighting the mandatory nature of the subscription → The membership is required for the full product experience — without it, insights are heavily limited. The answer does note subscription is required, so this is partially correct, but does not convey the material limitation of the free tier. |
+| stale | high | Oura Ring Generation 3 is presented as the top/current product recommendation → Oura Ring 5 is the current model (launched 2026-05-28, base price $399). Ring 4 was $349 and is being cleared out. Ring 3 is two generations old. |
+| stale | low | The Oura Ring typically offers a battery life of up to 7 days → The fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model. |
+| missing_or_invented_feature | high | No mention of a required monthly/annual membership fee ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time purchase with full features → A required membership ($5.99/month or $69.99/year) is needed for full features; without it insights are heavily limited. |
+| stale | med | No mention of the current Oura Ring 5 model (launched 2026-05-28); answer implies the existing/current ring without specifying model → Oura Ring 5 is the current model as of 2026-05-28, which is ~40% smaller than Ring 4 with updated sensors. |
+| stale | high | Oura Ring Gen 3 listed as the product (and priced $299-$549) → The current model is Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is outdated. |
+| wrong_pricing | high | Price listed as $299-$549 → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is stale (Gen 3 era); $349 was Ring 4. |
+| missing_or_invented_feature | med | Subscription implied as optional ('Requires subscription ($5.99/month)') → The membership is required for full features — it is not truly optional. Without it, insights are heavily limited. |
+| stale | low | Battery listed as 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; Ring 5 is current model. |
+| stale | high | Best overall: Oura Ring 4 — repeatedly ranked #1 for its health suite and sleep tracking. → The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 'best overall' or implying it is the latest model is now stale. |
+| missing_or_invented_feature | high | The answer implies Oura is a one-time purchase with no mention of a required subscription. → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features. This is a material omission. |
+| stale | high | Oura Ring (Generation 3) - popular for sleep and health tracking → The current/newest model as of 2026-05-28 is the Oura Ring 5. Ring 4 was the previous model at $349; Ring 5 base is $399. Mentioning Gen 3 as the notable model is severely outdated. |
+| stale | med | Higher price point compared to some other options (implies Ring 4 or older pricing context; no specific current model mentioned) → Current model is Oura Ring 5 (launched 2026-05-28), starting at $399. Ring 4 is the previous/clearance model. |
+| missing_or_invented_feature | high | The answer describes Oura Ring pricing only as a 'higher price point' with no mention of a required monthly/annual membership → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features — this is a material cost omission |
+| stale | high | Oura Ring (Gen 3) — Best Overall, listed as the top pick → The current model is the Oura Ring 5 (launched 2026-05-28). Ring Gen 3 is two generations old; even Ring 4 is now superseded. |
+| wrong_pricing | high | Price: ~$299 + $5.99/month membership → The current Oura Ring 5 starts at $399 (base finishes) or $499 (premium finishes). $299 was the Gen 3 price, which is stale. |
+| missing_or_invented_feature | low | Battery: 4-7 days → The fact sheet states up to ~8-day battery for the Ring 4 generation; the stated 4-7 days understates Oura's battery life claim. |
+| stale | high | The Oura Ring 4 is recommended as the best overall for recovery and described as the strongest overall pick. → The current model is the Oura Ring 5, launched 2026-05-28. The Ring 4 is now a previous/clearance model. Calling Ring 4 the top pick is stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription for Oura. → Oura requires a $5.99/month or $69.99/year membership for full features. Omitting this is a material error as the ring is not a simple one-time purchase. |
+| stale | med | The Oura Ring is one of the most popular smart rings (implicitly referencing the current/latest model without specifying Ring 5; the features described match the Ring 4 generation) → The current model is the Oura Ring 5, launched 2026-05-28. The answer does not mention Ring 5 at all, implying Ring 4 or an older model is current. |
+| missing_or_invented_feature | high | No mention of required monthly/annual membership — implies the ring is a one-time purchase with full features → A required membership of $5.99/month or $69.99/year is needed for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring (Generation 3) is listed as the current/top model → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous generation; Ring 3 is two generations old. |
+| wrong_pricing | high | Price: ~$299-$549 → Oura Ring 5 base price is $399 (Silver/Black) or $499 (premium finishes). $299 is a stale Gen 3 price. |
+| missing_or_invented_feature | high | Requires subscription ($5.99/month after 6 months) → The membership is $5.99/month (or $69.99/year) and is required from the start — only the first month is free. There is no 6-month free period. |
+| wrong_pricing | low | Oura Ring requires $5.99/month subscription for most features → The subscription price of $5.99/month is actually correct per the fact sheet — this is not a pricing error. No flag needed here. |
+| stale | med | The answer implies the current/relevant Oura Ring model is the one priced at hardware cost without specifying the Ring 5; no current model is named, and the context suggests the Ring 4 era pricing/product → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 at $349 is being cleared out. |
+| stale | high | The Oura Ring 4 is the top choice and best smart ring for women's health (implying it is the current/latest model) → The Oura Ring 5 launched on 2026-05-28 and is now the current model. The Ring 4 is being cleared out. Calling Ring 4 the top/latest pick in a '2026' review is stale. |
+| wrong_pricing | med | No specific price is mentioned for Oura Ring 4, but the answer implies Ring 4 is the current product available for purchase → The current model is Ring 5 at $399 base. Ring 4 was $349 and is now being cleared out below that price. |
+| missing_or_invented_feature | med | The note at the end says the Oura Ring 4 'typically requires a subscription for full access to its advanced insights' — framed as optional/typical rather than required → The membership at $5.99/month is required for full features — it is not merely 'typical' but mandatory. Without it, insights are heavily limited. |
+| stale | low | Battery life of about 4 to 7 days → Fact sheet states up to ~8-day battery (Ring 4 generation); Ring 5 is the current model and its battery life is not specified differently in the sheet, but the stated range of 4-7 days understates the documented ~8-day figure. |
+| stale | med | No mention of Oura Ring 5 as the current/latest model; answer implies a generic/older model is current → Oura Ring 5 launched 2026-05-28 and is the current model. The answer does not reference Ring 5 at all. |
+| wrong_pricing | high | No pricing mentioned, but no subscription cost is referenced — implies ring is effectively a one-time purchase by omission → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features; omitting this is a material accuracy error per the fact sheet. |
+| stale | high | Oura Ring Gen 3 is listed as the current/recommended product → The current model is the Oura Ring 5, launched 2026-05-28. Ring 4 was the previous model at $349; Ring 5 base is $399. |
+| wrong_pricing | med | No explicit hardware price is stated, but the model referenced (Gen 3) implies stale pricing context → Current Oura Ring 5 base price is $399 (Silver/Black); Ring 4 was $349. Gen 3 is two generations old. |
+| missing_or_invented_feature | low | Subscription listed as $5.99/month — this part is correct, but the answer implies it is a 'Con' optional add-on → The $5.99/month membership is required for full features; without it the app is heavily limited. It is not truly optional. |
+| stale | high | The Oura Ring 4 is described as the current/reigning champion model → The Oura Ring 5 launched 2026-05-28 and is now the current model; Ring 4 is being cleared out |
+| wrong_pricing | med | RingConn is roughly half the price of the Oura Ring 4, implying Oura Ring 4 is the current priced model → The current model is the Oura Ring 5 at $399 base; Ring 4 was $349 and is now being cleared out below that |
+| missing_or_invented_feature | high | No mention of Oura's required subscription fee, implying it may be a one-time purchase → Oura requires a mandatory $5.99/month (or $69.99/year) membership for full features |
+| wrong_pricing | med | Oura Ring 4 battery life is 'typically around 4–7 days' → Fact sheet states Oura Ring 4 offers up to ~8-day battery life |
+| missing_or_invented_feature | high | Oura did not require a subscription for basic features, but they introduced a membership for advanced insights and features. → The membership ($5.99/mo or $69.99/yr) is required for the full product. There is no free tier — without membership, insights are heavily limited. The subscription is not optional for 'advanced' features; it is effectively required. |
+| stale | med | The answer implies the Oura Ring as described is the current/relevant model without referencing Ring 5. → The Oura Ring 5 launched 2026-05-28 and is now the current model. Any answer not referencing Ring 5 is stale. |
+| missing_or_invented_feature | low | ZDNET explicitly contrasts [Ultrahuman Ring Air] with Oura's monthly fee — implying Oura's subscription is its only notable characteristic, and the answer uses Oura only as a negative foil without mentioning it as a product option → Oura does have a required $5.99/month membership, but it is a full-featured smart ring with sleep tracking, readiness scores, HRV, SpO2, and more — not merely a cautionary subscription example |
+| missing_or_invented_feature | low | The answer implies Oura requires a monthly fee but does not specify the fee amount or any details about the product → Oura membership is $5.99/month or $69.99/year; the current hardware is the Ring 5 at $399 base. The answer omits all product detail for Oura. |
+| missing_or_invented_feature | high | The answer implies the Oura Ring is a one-time purchase with no mention of a required monthly/annual membership subscription. → The Oura Ring requires a mandatory $5.99/month (or $69.99/year) membership for full features; without it, insights are heavily limited. |
+| stale | high | Oura Ring (Gen 3) is listed as the current/featured model → The current model is the Oura Ring 5 (launched 2026-05-28). Ring 4 was the previous model at $349; Ring 3 is two generations old. |
+| missing_or_invented_feature | low | Subscription described as required only for 'full features', implying partial free use is meaningful → The fact sheet confirms there is no full free tier — without membership the ring and app still work but insights are heavily limited; the membership is effectively required for the full product. |
+| stale | high | The Oura Ring 4 is the most accurate smart ring for sleep tracking → The Oura Ring 5 is the current model, launched 2026-05-28. Calling Ring 4 the latest/top model is now stale. |
+| stale | med | Older Oura models might be available at a discount, implying the latest/current model is newer and pricier — but references 'older versions' without naming the current model, effectively treating Ring 4 or earlier as the reference point rather than the Ring 5 (launched 2026-05-28). → The current model is the Oura Ring 5, launched 2026-05-28, starting at $399. The Ring 4 is the previous model being cleared out. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo or $69.99/yr) — implies the ring is effectively a one-time discounted hardware purchase. → A membership is required for full features at $5.99/month or $69.99/year. Without it, insights are heavily limited. This is a material ongoing cost. |
+| wrong_pricing | med | Suggests older Oura models can be found 'at a discount' as a budget option, implying sub-$349 or similar low pricing without specifying the actual current price. → Current Oura Ring 5 starts at $399 (base finishes). Ring 4 is being cleared out below $349, but this is still not a true budget option, and the mandatory subscription adds ongoing cost. |
+| stale | med | The Oura Ring tracks sleep, activity, heart rate, and body temperature (implicitly describing the current/latest ring without specifying model; no mention of Ring 5) → The current model is the Oura Ring 5, launched 2026-05-28. Answers that do not acknowledge Ring 5 are stale. |
+| missing_or_invented_feature | high | No mention of the required monthly/annual membership subscription ($5.99/mo) — implying the Oura Ring is a one-time purchase → Oura requires a mandatory membership at $5.99/month or $69.99/year for full features; this is a material cost omission. |
+| stale | high | Oura Ring priced at $299-$549 → Current Oura Ring 5 base price is $399 (standard finishes) or $499 (premium finishes). The $299 figure is from an older generation; $549 does not correspond to any listed price. |
+| wrong_pricing | low | Subscription required for full features ($6/month) → The membership is $5.99/month or $69.99/year — the $6/month figure is a rounded approximation, but close enough to be considered minor; however the answer frames it as optional ('required for full features') without clearly stating it is required/mandatory for the full product. |
 
 ## Per-Engine — Client
 
 | Engine | Mention rate | Citation rate |
 | --- | --- | --- |
-| anthropic | 64% | 0% |
-| gemini | 69% | 0% |
+| anthropic | 67% | 0% |
+| gemini | 73% | 0% |
 | openai | 58% | 0% |
-| perplexity | 60% | 0% |
+| perplexity | 64% | 0% |
 
 ## Top Cited Domains
 
