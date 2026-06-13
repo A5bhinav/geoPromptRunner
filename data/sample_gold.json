@@ -1,43 +1,55 @@
 {
-  "_comment": "Illustrative gold set. Replace with ~20-40 hand-labeled REAL answers from a proxy run. Labels are human judgments of present/prominence/framing per brand.",
+  "_comment": "Illustrative gold set (v2). Replace with ~25-40 hand-labeled REAL answers per category from a proxy run. Labels are human judgments of present/prominence/framing per brand; expected_flags are the real client errors (typed); fact_sheet_candidates are claims the sheet doesn't cover (judge must NOT flag them).",
   "items": [
     {
       "query": "best budgeting app for college students",
       "answer": "For students, YNAB is the top recommendation thanks to its planning features. Rocket Money is a solid runner-up. Centsible is a newer option but pricier and only on iOS.",
       "client": "Centsible",
       "competitors": ["YNAB", "Rocket Money"],
+      "category": "budgeting app",
+      "engine": "openai",
       "fact_sheet": "Centsible pricing: free tier + $5/month premium. Platforms: iOS and Android.",
       "labels": {
         "Centsible": { "present": true, "prominence": "also_ran", "framing": "negative" },
         "YNAB": { "present": true, "prominence": "recommended_first", "framing": "positive" },
         "Rocket Money": { "present": true, "prominence": "mid_pack", "framing": "positive" }
       },
-      "expect_accuracy_flags": true
+      "expected_flags": [
+        { "type": "missing_or_invented_feature", "severity": "med", "note": "says iOS-only; fact sheet lists iOS and Android" },
+        { "type": "wrong_pricing", "severity": "low", "note": "frames as 'pricier' despite a free tier" }
+      ]
     },
     {
       "query": "YNAB alternatives",
       "answer": "Good YNAB alternatives include Monarch Money and Copilot. Both offer strong budgeting and syncing.",
       "client": "Centsible",
       "competitors": ["Monarch Money", "Copilot"],
+      "category": "budgeting app",
+      "engine": "perplexity",
       "fact_sheet": null,
       "labels": {
         "Centsible": { "present": false, "prominence": "absent", "framing": "neutral" },
         "Monarch Money": { "present": true, "prominence": "recommended_first", "framing": "positive" },
         "Copilot": { "present": true, "prominence": "mid_pack", "framing": "positive" }
       },
-      "expect_accuracy_flags": false
+      "expected_flags": []
     },
     {
       "query": "is Centsible worth it for budgeting?",
       "answer": "Centsible is a capable budgeting app with a clean interface and a free tier. Many users find it worth trying, though it has fewer integrations than YNAB.",
       "client": "Centsible",
       "competitors": ["YNAB"],
+      "category": "budgeting app",
+      "engine": "anthropic",
       "fact_sheet": "Centsible pricing: free tier + $5/month premium. Platforms: iOS and Android.",
       "labels": {
         "Centsible": { "present": true, "prominence": "recommended_first", "framing": "positive" },
         "YNAB": { "present": true, "prominence": "also_ran", "framing": "neutral" }
       },
-      "expect_accuracy_flags": false
+      "expected_flags": [],
+      "fact_sheet_candidates": [
+        "fewer integrations than YNAB — the fact sheet says nothing about integrations, so this is uncoverable, NOT a flag"
+      ]
     }
   ]
 }

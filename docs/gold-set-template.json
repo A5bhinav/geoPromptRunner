@@ -1,42 +1,53 @@
 {
-  "_comment": "Gold-set template — the canonical format read by src/pipeline/calibration.py (load_gold_set). Replace the skeleton items with ~20-40 REAL answers from a proxy run, hand-labeled by a human (never by a model — independence is the point). Run: python -m src.pipeline.calibration",
+  "_comment": "Gold-set template (v2) — the canonical format read by src/pipeline/calibration.py (load_gold_set). Replace the skeleton items with ~25-40 REAL answers per category from a proxy run (pull straight from docs/answers.md), hand-labeled by a human (never by a model — independence is the point). Run: python -m src.pipeline.calibration",
   "_labeling_rules": [
     "present: true/false — is the brand mentioned at all in the answer?",
     "prominence: one of recommended_first | mid_pack | buried | also_ran | absent. Relative within the answer (who is named first vs. buried). absent if and only if present=false.",
     "framing: one of positive | neutral | negative. NO 'n/a' — absent brands get 'neutral' (matches the judge's default).",
     "labels: include one entry per brand for the client AND every competitor listed on the item, even when absent.",
-    "fact_sheet: inline text (paste the relevant facts) or null. Only items WITH a fact sheet count toward flag-detection agreement.",
-    "expect_accuracy_flags: boolean — should the judge flag at least one wrong claim about the CLIENT in this answer? (v1 calibration is binary: flagged-when-expected. Note specific expected flags in _notes for future type-level calibration.)",
-    "Freeze the file once judge testing starts; keep a few of the clearest items aside as judge-prompt examples and never calibrate on those."
+    "fact_sheet: inline text (paste the relevant facts) or null. Only items WITH a fact sheet count toward flag precision/recall.",
+    "expected_flags (v2): the human's TYPED list of the real client errors the answer makes — [{type, severity, note}]. type from {wrong_pricing, missing_or_invented_feature, competitor_confusion, identity, stale}; severity from {high, med, low}; note is free text (not scored). An empty list [] means 'checked, accurate'. Provide expected_flags on every item you label — it drives flag precision/recall. (Legacy items with only the old expect_accuracy_flags boolean still load.)",
+    "fact_sheet_candidates (v2, optional): claims the answer makes that the fact sheet does NOT cover, so the judge must NOT flag them. Listing them documents the over-flagging trap; a judge flag landing on a candidate is a precision error.",
+    "engine / category (v2, optional): set these so the report breaks agreement down per engine and per category — the slices reveal whether accuracy is uniform or concentrated.",
+    "Freeze the file once judge testing starts; split into a tune subset and a held-out subset, report only on held-out, and draw any judge-prompt few-shot examples ONLY from the tune subset."
   ],
   "items": [
     {
-      "_notes": "Skeleton item 1 — replace every field. Example shape: client mentioned but with a wrong claim -> expect_accuracy_flags true.",
+      "_notes": "Skeleton item 1 — client mentioned WITH a wrong claim. List each real error in expected_flags (typed).",
       "query": "{verbatim buyer query}",
       "answer": "{paste the FULL raw engine answer here}",
       "client": "{Client}",
       "competitors": ["{Competitor A}", "{Competitor B}"],
+      "category": "{category, e.g. smart ring}",
+      "engine": "{openai | anthropic | gemini | perplexity}",
       "fact_sheet": "{relevant ground-truth facts, or null}",
       "labels": {
         "{Client}": { "present": true, "prominence": "mid_pack", "framing": "neutral" },
         "{Competitor A}": { "present": true, "prominence": "recommended_first", "framing": "positive" },
         "{Competitor B}": { "present": false, "prominence": "absent", "framing": "neutral" }
       },
-      "expect_accuracy_flags": true
+      "expected_flags": [
+        { "type": "wrong_pricing", "severity": "high", "note": "answer said $X; fact sheet says $Y" }
+      ],
+      "fact_sheet_candidates": [
+        "{any claim the answer makes that the sheet does not cover — the judge must NOT flag it}"
+      ]
     },
     {
-      "_notes": "Skeleton item 2 — a 'losing query': client absent, no fact sheet (accuracy not assessed for this item).",
+      "_notes": "Skeleton item 2 — a 'losing query': client absent, no fact sheet (accuracy not assessed). expected_flags is [] (accurate / nothing to flag).",
       "query": "{verbatim buyer query}",
       "answer": "{paste the FULL raw engine answer here}",
       "client": "{Client}",
       "competitors": ["{Competitor A}", "{Competitor B}"],
+      "category": "{category}",
+      "engine": "{engine}",
       "fact_sheet": null,
       "labels": {
         "{Client}": { "present": false, "prominence": "absent", "framing": "neutral" },
         "{Competitor A}": { "present": true, "prominence": "recommended_first", "framing": "positive" },
         "{Competitor B}": { "present": true, "prominence": "mid_pack", "framing": "neutral" }
       },
-      "expect_accuracy_flags": false
+      "expected_flags": []
     }
   ]
 }
