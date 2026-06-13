@@ -6,7 +6,18 @@
 
 **The loop this plan builds.** Accuracy isn't a one-shot setting; it's a loop: **calibrate → diagnose failures → fix the judge prompt/rubric → re-calibrate on held-out data.** The work below upgrades both halves — the *measurement* (so it exposes real failures) and the *judge* (so the failures get fixed) — and the hygiene that keeps the number honest.
 
+**Two layers, both must be calibrated.** A perfect judge feeding arbitrary weights still produces an arbitrary report, so accuracy is two problems:
+
+- **Layer 1 — does the judge *read* each answer like a human?** (present / prominence / framing / typed flags). Parts 1–6.
+- **Layer 2 — do the *scores and inputs built on top* match human and business judgment?** The A–F grade weights, severity, per-query weights, run-count (K), the trend "real-move" threshold, and the ground-truth inputs (fact sheet, alias lists). Parts 7–10.
+
+The Oura **F** is the proof both are needed: it's as much a Layer-2 question (*are the −0.15/−0.07/−0.03 penalty weights right?*) as a Layer-1 one (*are the 156 flags right?*).
+
 ---
+
+# Layer 1 — Judge reading accuracy
+
+*Does the judge label each answer the way a human would? This is what the gold set measures.*
 
 ## Part 1 · Richer gold labels (`GoldItem` v2)
 
@@ -73,6 +84,36 @@ Calibration is the instrument; these are the fixes it will validate. Each ships,
 
 ---
 
+# Layer 2 — Scoring & input calibration
+
+*Even with a perfect judge, the numbers built on top have free parameters. These are arbitrary v1 values today; they need calibrating against human/business judgment, not against the gold set.*
+
+## Part 7 · The grade formula (highest Layer-2 leverage)
+
+The A–F grade = prominence-weighted visibility **−** a severity-weighted accuracy penalty (`high −0.15`, `med −0.07`, `low −0.03` per flag), floored at 0, mapped to bands (`judge_metrics.visibility_grade`). Every one of those numbers is a guess — and they produced the result that should make this obvious: a category-*leading* 0.56 visibility was driven to **0.00 → F** purely by flag count. Is "F" the verdict a human analyst would give the most-recommended brand in its category?
+
+**Calibrate it:** have Josh + Abhi (and ideally a third proxy) **gut-grade ~12–15 real client situations** A–F from the raw numbers, *before* looking at the formula's output. Then fit the penalty magnitudes, the floor behavior, and the band cutoffs so the formula **reproduces the human grades**. Output: a grade that's defensible to a client because it tracks expert intuition, not an unexamined constant.
+
+## Part 8 · Severity weighting & per-query weights
+
+- **Severity → grade.** Layer 1 checks the judge's `high/med/low` against human labels; Layer 2 checks the *penalty those severities carry*. Confirm the per-severity weights (Part 7) reflect "high = would change a buyer's decision," since a slightly trigger-happy "high" swings the grade hard.
+- **Per-query commercial-value weights.** The `weight` field (problem 1.0 → brand 2.0) silently scales share-of-model and the Step-6 Impact formula. These are business judgments — set them **on purpose**, document the rationale, and hold them constant across cycles so trends stay comparable.
+
+## Part 9 · Measurement stability — run count (K) and the trend noise floor
+
+- **Set K from data, not the default.** The Oura report ran at **K=1** (single draws, no nondeterminism averaging). Run the `determinism` baseline (`geo verify determinism`, `suggest_runs_per_query`) to measure each engine's run-to-run agreement and pick the K that actually stabilizes the measurement — higher for the retrieval surfaces, where live results vary even at temperature 0.
+- **Calibrate the trend "real-move" threshold.** When `geo compare` diffs two cadence runs, a delta only matters if it exceeds the measurement noise. Set that threshold = the noise band from the determinism baseline, so the §3 trend (the moat) reports real movement, not jitter.
+
+## Part 10 · Ground-truth inputs (the GIGO layer)
+
+The judge can't be more correct than what it's checked against.
+
+- **The fact sheet.** Some "false flags" may be *fact-sheet* errors, not judge errors (the Oura sheet was built from public info, not client-verified). Spot-validate it; for a real client it's confirmed *with them* at Step-0 intake. No flag in the held-out set should trace to a wrong/stale fact-sheet line.
+- **Alias / `name_variant` lists.** They drive mention detection — too narrow → false absences, too broad → over-matching (worst for brand names that are common words). Validate they catch real mentions without false hits (the gold set's `present` field measures this directly).
+- **Peripheral thresholds, where live.** The technical-check rendering heuristic (text-length → "SPA shell"), the competitor-**discovery** frequency gate, and any citation **source-class** rules each carry a threshold that should be spot-checked against known cases. And if the deterministic rubric layer (PScore weights, RANKING/DEMOTION/POS/NEG vocabularies) is ever switched on, every one of those is a v1 seed needing the same discipline.
+
+---
+
 ## Build order
 
 | # | Item | Type | Owner |
@@ -85,17 +126,28 @@ Calibration is the instrument; these are the fixes it will validate. Each ships,
 | 6 | Second-category gold set (Centsible) → pooled + per-category agreement | process | Josh + Abhi |
 | 7 | Remaining judge fixes (type discipline, prominence boundaries, few-shot) as the matrices dictate | code + verify | Abhi |
 | 8 | Per-category gate + drift re-run into the SOP / `left.md` | process | both |
+| **L2-1** | **Calibrate the grade formula** — analysts gut-grade ~12–15 situations; fit penalty weights, floor, bands to reproduce them | process + code | both |
+| **L2-2** | **Set K from the determinism baseline**; define the trend "real-move" threshold from the measured noise band | code + verify | Abhi |
+| **L2-3** | **Validate ground truth** — fact sheet (no flag traces to a sheet error) + alias lists (catch real mentions); spot-check peripheral thresholds | process | Josh + Abhi |
+| **L2-4** | **Lock per-query weights on purpose** + document rationale | process | Josh |
 
-Items 1–3 are the unlock: they convert the report's central number from *hoped-correct* to *measured*. Everything after is the loop that drives accuracy up and proves it holds beyond Oura.
+Items 1–3 are the unlock for Layer 1: they convert the report's central number from *hoped-correct* to *measured*. L2-1 is the unlock for Layer 2 — it does the same for the headline grade. The two layers can proceed in parallel (different owners); both must clear the bar before a report goes to a prospect.
 
 ---
 
 ## Success criteria (what "accurate enough to show a client" means)
 
-Measured **on held-out data, pooled across ≥2 categories**, at or above the human inter-rater ceiling where it's lower:
+**Layer 1 — judge reading**, measured **on held-out data, pooled across ≥2 categories**, at or above the human inter-rater ceiling where it's lower:
 
 - present agreement ≥ 95% · prominence ≥ 85% · framing ≥ 90%
 - **flag precision ≥ 90%** (few false flags — the credibility gate) · flag recall ≥ 80% · type-accuracy ≥ 90%
 - no single engine or category slice more than ~10 points below the pooled number
 
-Until those hold, the report's flag counts and grade are labeled "uncalibrated — internal only," exactly as the current `report.md` §6.3 already, honestly, does.
+**Layer 2 — scoring & inputs:**
+
+- the grade formula reproduces the analysts' gut-grades within **~1 letter** on the calibration situations
+- **K** chosen so each engine's modal-answer agreement clears the determinism bar; the trend "real-move" threshold ≥ the measured noise band
+- in the held-out set, **no accuracy flag traces to a fact-sheet error**, and alias lists catch ≥ 95% of true client mentions
+- per-query weights are documented and frozen
+
+Until **both layers** clear these bars, the report's flag counts and grade stay labeled "uncalibrated — internal only," exactly as the current `report.md` §6.3 already, honestly, does. A high Layer-1 score with an uncalibrated grade formula is still not client-ready — that's the whole point of separating them.
