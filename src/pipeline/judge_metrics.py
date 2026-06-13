@@ -14,6 +14,9 @@ __all__ = [
     "leaderboard",
     "framing_breakdown",
     "collect_accuracy_flags",
+    "GradePolicy",
+    "DEFAULT_GRADE_POLICY",
+    "grade_from",
     "visibility_grade",
     "losing_cells",
     "judge_sections",
@@ -129,6 +132,8 @@ def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag
 # How much each distinct client accuracy flag drags the grade down. A confident
 # wrong claim ("it's $20/mo" when it's free) erodes trust even when visibility is
 # fine, so the grade is visibility *discounted* by what the model gets wrong.
+# These magnitudes + the band cutoffs are v1 guesses — calibration (Layer 2 of
+# the calibration plan) fits them to analyst gut-grades via GradePolicy.
 _FLAG_PENALTY: dict[str, float] = {
     Severity.HIGH.value: 0.15,
     Severity.MED.value: 0.07,
@@ -144,6 +149,44 @@ _GRADE_BANDS: tuple[tuple[float, str], ...] = (
 
 
 @dataclass(frozen=True)
+class GradePolicy:
+    """The tunable Layer-2 parameters of the A-F grade: per-severity flag
+    penalties and the score→letter band cutoffs. Defaults are the v1 guesses;
+    ``grade_calibration`` fits a policy to human gut-grades."""
+
+    penalty: dict[str, float]
+    bands: tuple[tuple[float, str], ...]
+
+
+DEFAULT_GRADE_POLICY = GradePolicy(penalty=dict(_FLAG_PENALTY), bands=_GRADE_BANDS)
+
+
+def grade_from(
+    raw_visibility: float, flag_severities: list[str], policy: GradePolicy = DEFAULT_GRADE_POLICY
+) -> VisibilityGrade:
+    """Pure grade core: prominence-weighted visibility discounted by a
+    severity-weighted flag penalty, floored at 0, mapped to a band. Shared by
+    ``visibility_grade`` (live judgments) and the grade-calibration harness
+    (raw numbers), so both score a policy identically.
+    """
+    low = policy.penalty.get(Severity.LOW.value, 0.0)
+    penalty = sum(policy.penalty.get(sev, low) for sev in flag_severities)
+    score = max(0.0, raw_visibility - penalty)
+    letter = next((g for threshold, g in policy.bands if score >= threshold), "F")
+    rationale = f"visibility {raw_visibility:.2f}"
+    if flag_severities:
+        rationale += f" − {penalty:.2f} for {len(flag_severities)} accuracy flag(s) → {score:.2f}"
+    return VisibilityGrade(
+        letter=letter,
+        score=score,
+        raw_score=raw_visibility,
+        accuracy_penalty=penalty,
+        n_flags=len(flag_severities),
+        rationale=rationale,
+    )
+
+
+@dataclass(frozen=True)
 class VisibilityGrade:
     """The §1 A-F headline: prominence-weighted visibility, discounted by the
     client accuracy flags the judge raised."""
@@ -156,30 +199,19 @@ class VisibilityGrade:
     rationale: str
 
 
-def visibility_grade(judgments: list[AnswerJudgment], client: str) -> VisibilityGrade:
+def visibility_grade(
+    judgments: list[AnswerJudgment], client: str, policy: GradePolicy = DEFAULT_GRADE_POLICY
+) -> VisibilityGrade:
     """Roll the client's judge metrics up into an A-F grade.
 
     Base is the prominence-weighted ``visibility_score`` (recommended-first beats
     buried); each distinct client accuracy flag subtracts a severity-weighted
-    penalty, floored at 0. Pure — derives entirely from data already produced.
+    penalty, floored at 0. ``policy`` carries the (calibratable) penalty weights
+    and band cutoffs. Pure — derives entirely from data already produced.
     """
     raw = visibility_score(judgments, client)
-    flags = collect_accuracy_flags(judgments)
-    penalty = sum(_FLAG_PENALTY.get(f.severity, _FLAG_PENALTY[Severity.LOW.value]) for f in flags)
-    score = max(0.0, raw - penalty)
-    letter = next((g for threshold, g in _GRADE_BANDS if score >= threshold), "F")
-
-    rationale = f"visibility {raw:.2f}"
-    if flags:
-        rationale += f" − {penalty:.2f} for {len(flags)} accuracy flag(s) → {score:.2f}"
-    return VisibilityGrade(
-        letter=letter,
-        score=score,
-        raw_score=raw,
-        accuracy_penalty=penalty,
-        n_flags=len(flags),
-        rationale=rationale,
-    )
+    severities = [f.severity for f in collect_accuracy_flags(judgments)]
+    return grade_from(raw, severities, policy)
 
 
 def losing_cells(

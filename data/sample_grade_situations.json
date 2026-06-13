@@ -1,0 +1,19 @@
+{
+  "_comment": "ILLUSTRATIVE placeholder situations for the Layer-2 grade calibration (data/sample_grade_situations.json). Replace with ~12-15 REAL situations that Josh + Abhi each gut-grade A-F from the raw numbers BEFORE seeing the formula's output. flag_severities is the list of the run's distinct client accuracy flags by severity. Run: python -m src.pipeline.grade_calibration",
+  "_fields": {
+    "label": "short name for the situation",
+    "raw_visibility": "prominence-weighted visibility in [0,1] (the leaderboard number, pre-penalty)",
+    "flag_severities": "list of severities of the distinct client accuracy flags, e.g. [\"high\",\"high\",\"med\",\"low\"]",
+    "human_grade": "the analyst's gut letter A-F, decided before looking at the formula"
+  },
+  "situations": [
+    { "label": "clean category leader", "raw_visibility": 0.78, "flag_severities": [], "human_grade": "A" },
+    { "label": "leader, a few real errors", "raw_visibility": 0.65, "flag_severities": ["high", "low"], "human_grade": "B" },
+    { "label": "category leader, inaccurate (Oura-like, post-fix)", "raw_visibility": 0.55, "flag_severities": ["high", "high", "high", "med", "med", "low"], "human_grade": "C" },
+    { "label": "mid-pack, two decisive errors", "raw_visibility": 0.45, "flag_severities": ["high", "high"], "human_grade": "C" },
+    { "label": "weak presence, several errors", "raw_visibility": 0.30, "flag_severities": ["high", "high", "high"], "human_grade": "D" },
+    { "label": "barely present, accurate", "raw_visibility": 0.10, "flag_severities": [], "human_grade": "D" },
+    { "label": "absent / invisible", "raw_visibility": 0.03, "flag_severities": [], "human_grade": "F" },
+    { "label": "present but riddled with high-severity errors", "raw_visibility": 0.40, "flag_severities": ["high", "high", "high", "high", "high"], "human_grade": "F" }
+  ]
+}
