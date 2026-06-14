@@ -9,6 +9,7 @@ from anthropic import Anthropic
 from anthropic.types import Message, ToolChoiceToolParam, ToolParam
 
 from src.config import settings
+from src.pipeline.judge_cache import JudgeCache
 from src.storage.models import (
     AccuracyFlag,
     AccuracyFlagType,
@@ -244,6 +245,7 @@ class Judge:
         competitors: list[str],
         fact_sheet: str | None = None,
         progress: bool = False,
+        cache: JudgeCache | None = None,
     ) -> list[AnswerJudgment]:
         """Judge every answered result. Identical answers (temp 0 repeats) are
         judged once and reused, so multi-run cycles don't multiply judge calls.
@@ -252,6 +254,13 @@ class Judge:
         an independent, stateless API call), then re-joined to the results in
         their original order, so dedup, ordering, and the verdicts are identical
         to the sequential version — only faster.
+
+        ``cache`` — an optional persistent ``JudgeCache``. A verdict is fully
+        determined by (judge model, client, competitors, fact sheet, prompt,
+        answer), so an answer already judged under those exact inputs is reused
+        with no API call — across resumes, re-runs, and cadence re-checks. Only
+        the genuinely-new answers cost anything; editing the fact sheet changes
+        the key and correctly forces a re-judge.
 
         ``progress`` prints an incremental count to stdout (every 20 answers plus
         the last) — a re-judge is many API calls, so a long run is otherwise
@@ -270,31 +279,63 @@ class Judge:
                 seen.add(key)
                 unique_keys.append(key)
 
-        cache: dict[tuple[str, str], tuple[list[BrandJudgment], list[AccuracyFlag], bool]] = {}
+        verdicts: dict[tuple[str, str], tuple[list[BrandJudgment], list[AccuracyFlag], bool]] = {}
         if unique_keys:
-            total = len(unique_keys)
-            workers = max(1, min(settings.ENGINE_CONCURRENCY, total))
+
+            def cache_key(prompt: str, answer: str) -> str | None:
+                if cache is None:
+                    return None
+                return cache.key(
+                    model=self._model,
+                    client=client,
+                    competitors=competitors,
+                    fact_sheet=fact_sheet,
+                    prompt=prompt,
+                    answer=answer,
+                )
+
+            # Split into answers already judged (free reuse) and the rest.
+            to_judge: list[tuple[str, str]] = []
+            reused = 0
+            for key in unique_keys:
+                prompt, answer = key
+                ck = cache_key(prompt, answer)
+                hit = cache.get(ck) if (cache is not None and ck is not None) else None
+                if hit is not None:
+                    verdicts[key] = hit
+                    reused += 1
+                else:
+                    to_judge.append(key)
+            if reused and progress:
+                print(f"  reused {reused} cached judgments", flush=True)
 
             def judge_key(
                 key: tuple[str, str],
             ) -> tuple[tuple[str, str], tuple[list[BrandJudgment], list[AccuracyFlag], bool]]:
                 prompt, answer = key
-                return key, self.judge_answer(prompt, answer, client, competitors, fact_sheet)
+                verdict = self.judge_answer(prompt, answer, client, competitors, fact_sheet)
+                ck = cache_key(prompt, answer)
+                if cache is not None and ck is not None:
+                    cache.put(ck, verdict)
+                return key, verdict
 
-            done = 0
-            with ThreadPoolExecutor(max_workers=workers) as pool:
-                for key, verdict in pool.map(judge_key, unique_keys):
-                    cache[key] = verdict
-                    done += 1
-                    if progress and (done % 20 == 0 or done == total):
-                        print(f"  judged {done}/{total} answers", flush=True)
+            if to_judge:
+                total = len(to_judge)
+                workers = max(1, min(settings.ENGINE_CONCURRENCY, total))
+                done = 0
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    for key, verdict in pool.map(judge_key, to_judge):
+                        verdicts[key] = verdict
+                        done += 1
+                        if progress and (done % 20 == 0 or done == total):
+                            print(f"  judged {done}/{total} answers", flush=True)
 
         judgments: list[AnswerJudgment] = []
         for r in results:
             answer = r["response"]
             if answer is None:
                 continue
-            brands, flags, assessed = cache[(r["prompt"], answer)]
+            brands, flags, assessed = verdicts[(r["prompt"], answer)]
             judgments.append(
                 AnswerJudgment(
                     query_id=r["query_id"],

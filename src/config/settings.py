@@ -51,8 +51,17 @@ PAYLOAD_LOG_PATH: str | None = os.getenv("PAYLOAD_LOG_PATH")
 
 # The LLM judge — ONE held-constant model scores every answer from every engine,
 # so cross-engine comparisons stay valid. Held constant > which model. Uses the
-# Anthropic API (ANTHROPIC_API_KEY). Sonnet 4.6 is the economical-but-accurate
-# default for high-volume runs (~40% cheaper than Opus); set JUDGE_MODEL to
-# claude-opus-4-8 for max accuracy or claude-haiku-4-5 for max economy. Note:
-# Claude is itself a measured surface — for stricter neutrality use a non-measured model.
-JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-sonnet-4-6")
+# Anthropic API (ANTHROPIC_API_KEY). The judge runs once per unique answer, so on
+# a multi-engine/multi-run audit it is the dominant Anthropic cost. Haiku 4.5 is
+# the economical default ($1/$5 per MTok — 3x cheaper than Sonnet) and handles
+# the presence/prominence classification well; set JUDGE_MODEL to
+# claude-sonnet-4-6 or claude-opus-4-8 for stricter accuracy-flag judgments.
+# Note: Claude is itself a measured surface — for neutrality use a non-measured model.
+JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-haiku-4-5")
+
+# Persistent judge cache. A verdict is fully determined by (judge model, client,
+# competitors, fact sheet, prompt, answer), so once an answer is judged it never
+# needs re-judging — across resumes, re-runs, or cadence re-checks. This content-
+# addressed SQLite cache stores each verdict so repeated answers cost no API call.
+# Set JUDGE_CACHE_PATH="" to disable (e.g. to force a fresh judge pass).
+JUDGE_CACHE_PATH: str = os.getenv("JUDGE_CACHE_PATH", "data/judge_cache.sqlite")

@@ -7,6 +7,7 @@ from pathlib import Path
 from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
 from src.audit.technical_audit import render_technical, run_competitive
+from src.config import settings
 from src.engines.ai_overviews_engine import AIOverviewsEngine
 from src.engines.anthropic_engine import AnthropicEngine
 from src.engines.anthropic_search_engine import AnthropicSearchEngine
@@ -20,6 +21,7 @@ from src.pipeline.calibration import calibrate, load_gold_set, render_calibratio
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
 from src.pipeline.judge import Judge
+from src.pipeline.judge_cache import JudgeCache
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
@@ -119,7 +121,12 @@ def _cmd_audit(args: argparse.Namespace) -> int:
         try:
             judge = Judge()
             judgments = judge.judge_results(
-                outcome.results, outcome.client_name, outcome.competitors, fact_sheet, progress=True
+                outcome.results,
+                outcome.client_name,
+                outcome.competitors,
+                fact_sheet,
+                progress=True,
+                cache=JudgeCache(settings.JUDGE_CACHE_PATH),
             )
             if outcome.run_id and not args.no_persist:
                 try:
@@ -201,7 +208,12 @@ def _cmd_judge(args: argparse.Namespace) -> int:
         print(exc)
         return 1
     judgments = judge.judge_results(
-        outcome.results, outcome.client_name, outcome.competitors, fact_sheet, progress=True
+        outcome.results,
+        outcome.client_name,
+        outcome.competitors,
+        fact_sheet,
+        progress=True,
+        cache=JudgeCache(settings.JUDGE_CACHE_PATH),
     )
     if not args.no_persist:
         try:

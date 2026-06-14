@@ -300,7 +300,9 @@ def _run_judge(state: _RunState) -> None:
 
     Skipped (not fatal) if the judge can't be built (no OPENAI_API_KEY).
     """
+    from src.config import settings
     from src.pipeline.judge import Judge
+    from src.pipeline.judge_cache import JudgeCache
 
     cfg = state.audit.config
     try:
@@ -308,9 +310,20 @@ def _run_judge(state: _RunState) -> None:
     except ValueError as exc:
         logger.info("Judge skipped: %s", exc)
         return
-    state.judgments = judge.judge_results(
-        state.results, cfg.client_name, cfg.competitors, state.audit.fact_sheet
-    )
+    # Persistent verdict cache: an answer already judged under these exact inputs
+    # (model, client, competitors, fact sheet, prompt) is reused, not re-judged —
+    # so resumes and re-runs don't re-pay for the same answers.
+    cache = JudgeCache(settings.JUDGE_CACHE_PATH)
+    try:
+        state.judgments = judge.judge_results(
+            state.results,
+            cfg.client_name,
+            cfg.competitors,
+            state.audit.fact_sheet,
+            cache=cache,
+        )
+    finally:
+        cache.close()
     if state.db_run_id is not None:
         try:
             db.save_judgments(state.db_run_id, state.judgments)
