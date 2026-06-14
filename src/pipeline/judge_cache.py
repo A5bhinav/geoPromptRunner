@@ -24,10 +24,16 @@ import logging
 import sqlite3
 import threading
 from collections.abc import Iterable
-from dataclasses import asdict
 from pathlib import Path
 
-from src.storage.models import AccuracyFlag, BrandJudgment
+from src.storage.models import (
+    AccuracyFlag,
+    BrandJudgment,
+    brand_from_dict,
+    brand_to_dict,
+    flag_from_dict,
+    flag_to_dict,
+)
 
 __all__ = ["JudgeCache", "Verdict"]
 
@@ -45,6 +51,7 @@ _SCHEMA_VERSION = "v1"
 def _verdict_key(
     *,
     model: str,
+    prompt_fingerprint: str,
     client: str,
     competitors: Iterable[str],
     fact_sheet: str | None,
@@ -53,11 +60,26 @@ def _verdict_key(
 ) -> str:
     """A stable hash over every input that determines a verdict.
 
-    Brand order is normalized so the key doesn't change just because the
-    competitor list was passed in a different order.
+    ``prompt_fingerprint`` is a hash of the judge's own system prompt + tool
+    schema, so editing the judge prompt (a determinant of the verdict the
+    inputs don't otherwise capture) changes the key and forces a re-judge —
+    rather than relying on someone remembering to bump ``_SCHEMA_VERSION``.
+    Competitor order is normalized so the key doesn't change just because the
+    list was passed in a different order. The client is recorded both on its own
+    and inside the brand set so swapping which brand is "the client" (same brand
+    set) still yields a distinct key.
     """
     brands = "\x1f".join(sorted({client, *competitors}))
-    parts = [_SCHEMA_VERSION, model, client, brands, fact_sheet or "", prompt, answer]
+    parts = [
+        _SCHEMA_VERSION,
+        model,
+        prompt_fingerprint,
+        client,
+        brands,
+        fact_sheet or "",
+        prompt,
+        answer,
+    ]
     return hashlib.sha256("\x1e".join(parts).encode("utf-8")).hexdigest()
 
 
@@ -74,6 +96,10 @@ class JudgeCache:
             # check_same_thread=False + our own lock: the judge pool calls from
             # many threads, but every access is serialized through self._lock.
             conn = sqlite3.connect(path, check_same_thread=False)
+            # WAL lets readers proceed without blocking on writers' commits —
+            # matters because the judge pool reads and writes the cache from
+            # several threads at once.
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("CREATE TABLE IF NOT EXISTS verdicts (key TEXT PRIMARY KEY, value TEXT)")
             conn.commit()
             self._conn = conn
@@ -85,6 +111,7 @@ class JudgeCache:
         self,
         *,
         model: str,
+        prompt_fingerprint: str,
         client: str,
         competitors: Iterable[str],
         fact_sheet: str | None,
@@ -93,6 +120,7 @@ class JudgeCache:
     ) -> str:
         return _verdict_key(
             model=model,
+            prompt_fingerprint=prompt_fingerprint,
             client=client,
             competitors=competitors,
             fact_sheet=fact_sheet,
@@ -136,6 +164,29 @@ class JudgeCache:
         except sqlite3.Error as exc:
             logger.info("Judge cache write failed (continuing): %s", exc)
 
+    def put_many(self, items: Iterable[tuple[str, Verdict]]) -> None:
+        """Store many verdicts in ONE transaction — a single commit/fsync for the
+        whole batch instead of one per answer, so the concurrent judge isn't
+        throttled by per-write disk syncs."""
+        if self._conn is None:
+            return
+        rows: list[tuple[str, str]] = []
+        for key, verdict in items:
+            try:
+                rows.append((key, _encode(verdict)))
+            except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
+                logger.info("Judge cache encode failed (skipping one): %s", exc)
+        if not rows:
+            return
+        try:
+            with self._lock:
+                self._conn.executemany(
+                    "INSERT OR REPLACE INTO verdicts (key, value) VALUES (?, ?)", rows
+                )
+                self._conn.commit()
+        except sqlite3.Error as exc:
+            logger.info("Judge cache batch write failed (continuing): %s", exc)
+
     def close(self) -> None:
         with self._lock:
             if self._conn is not None:
@@ -147,8 +198,8 @@ def _encode(verdict: Verdict) -> str:
     brands, flags, assessed = verdict
     return json.dumps(
         {
-            "brands": [asdict(b) for b in brands],
-            "flags": [asdict(f) for f in flags],
+            "brands": [brand_to_dict(b) for b in brands],
+            "flags": [flag_to_dict(f) for f in flags],
             "assessed": assessed,
         }
     )
@@ -156,6 +207,6 @@ def _encode(verdict: Verdict) -> str:
 
 def _decode(payload: str) -> Verdict:
     data = json.loads(payload)
-    brands = [BrandJudgment(**b) for b in data["brands"]]
-    flags = [AccuracyFlag(**f) for f in data["flags"]]
+    brands = [brand_from_dict(b) for b in data["brands"]]
+    flags = [flag_from_dict(f) for f in data["flags"]]
     return brands, flags, bool(data["assessed"])

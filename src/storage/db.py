@@ -11,14 +11,16 @@ from supabase import Client, create_client
 from src.config import settings
 from src.pipeline.metrics import domain_of
 from src.storage.models import (
-    AccuracyFlag,
     AnswerJudgment,
-    BrandJudgment,
     BrandMention,
     Citation,
     PromptResult,
     QueryResult,
     RubricScore,
+    brand_from_dict,
+    brand_to_dict,
+    flag_from_dict,
+    flag_to_dict,
 )
 
 __all__ = [
@@ -467,42 +469,21 @@ def _judgment_to_row(run_id: str, j: AnswerJudgment) -> dict[str, Any]:
         "intent": j.intent,
         "run_index": j.run_index,
         "assessed": j.assessed,
-        "brands": [
-            {
-                "brand": b.brand,
-                "present": b.present,
-                "prominence": b.prominence,
-                "framing": b.framing,
-            }
-            for b in j.brands
-        ],
-        "accuracy_flags": [
-            {"type": f.type, "claim": f.claim, "reality": f.reality, "severity": f.severity}
-            for f in j.accuracy_flags
-        ],
+        "brands": [brand_to_dict(b) for b in j.brands],
+        "accuracy_flags": [flag_to_dict(f) for f in j.accuracy_flags],
     }
 
 
 def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
     raw_brands = row.get("brands")
     brands = [
-        BrandJudgment(
-            brand=str(b.get("brand", "")),
-            present=bool(b.get("present", False)),
-            prominence=str(b.get("prominence", "")),
-            framing=str(b.get("framing", "")),
-        )
+        brand_from_dict(b)
         for b in (raw_brands if isinstance(raw_brands, list) else [])
         if isinstance(b, dict)
     ]
     raw_flags = row.get("accuracy_flags")
     flags = [
-        AccuracyFlag(
-            type=str(f.get("type", "")),
-            claim=str(f.get("claim", "")),
-            reality=str(f.get("reality", "")),
-            severity=str(f.get("severity", "")),
-        )
+        flag_from_dict(f)
         for f in (raw_flags if isinstance(raw_flags, list) else [])
         if isinstance(f, dict)
     ]

@@ -19,6 +19,10 @@ __all__ = [
     "BrandJudgment",
     "AccuracyFlag",
     "AnswerJudgment",
+    "brand_to_dict",
+    "brand_from_dict",
+    "flag_to_dict",
+    "flag_from_dict",
 ]
 
 
@@ -169,3 +173,40 @@ class AnswerJudgment:
     assessed: bool  # False = judge failed -> "not assessed", never crashes
     brands: list[BrandJudgment]
     accuracy_flags: list[AccuracyFlag]  # client only; empty without a fact sheet
+
+
+# Canonical (de)serialization for the two judgment value types — one source of
+# truth shared by the storage layer (db.py) and the judge cache (judge_cache.py)
+# so a field change can't make the two drift. The ``from_dict`` readers coerce
+# defensively (str()/bool() with defaults) so a partial/legacy row never crashes.
+
+
+def brand_to_dict(b: BrandJudgment) -> dict[str, object]:
+    return {
+        "brand": b.brand,
+        "present": b.present,
+        "prominence": b.prominence,
+        "framing": b.framing,
+    }
+
+
+def brand_from_dict(d: dict[str, object]) -> BrandJudgment:
+    return BrandJudgment(
+        brand=str(d.get("brand", "")),
+        present=bool(d.get("present", False)),
+        prominence=str(d.get("prominence", "")),
+        framing=str(d.get("framing", "")),
+    )
+
+
+def flag_to_dict(f: AccuracyFlag) -> dict[str, object]:
+    return {"type": f.type, "claim": f.claim, "reality": f.reality, "severity": f.severity}
+
+
+def flag_from_dict(d: dict[str, object]) -> AccuracyFlag:
+    return AccuracyFlag(
+        type=str(d.get("type", "")),
+        claim=str(d.get("claim", "")),
+        reality=str(d.get("reality", "")),
+        severity=str(d.get("severity", "")),
+    )

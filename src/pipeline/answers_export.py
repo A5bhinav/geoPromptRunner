@@ -115,21 +115,25 @@ def build_answers_markdown(
     run_date: str = "",
     runs_per_query: int = 1,
     engine_order: list[str] | None = None,
+    query_order: list[str] | None = None,
 ) -> str:
     """Render a readable answers document: each query, every raw response, and
     the judge's verdict for that response inline.
 
-    Grouped by query (in the run's order), then by engine, then by run index.
-    ``client`` drives which brand is bolded in the judge verdicts. Works from
-    the stored results alone — query text and intent come off each row.
+    Grouped by query, then by engine, then by run index. ``client`` drives which
+    brand is bolded in the judge verdicts. Works from the stored results alone —
+    query text and intent come off each row. ``query_order`` pins the section
+    order to the query set when a caller has it (the runner emits results in
+    finish order under concurrency, so first-seen order would be scrambled);
+    omit it to fall back to first-seen order.
     """
     engine_order = engine_order or []
     judgment_by_cell: dict[tuple[str, str, int], AnswerJudgment] = {
         (j.query_id, j.engine_name, j.run_index): j for j in (judgments or [])
     }
 
-    # Group rows by query, preserving first-seen order; keep the query text and
-    # intent from the first row of each group.
+    # Group rows by query; keep the query text and intent from the first row of
+    # each group. Section order follows query_order when given, else first-seen.
     by_query: dict[str, list[QueryResult]] = defaultdict(list)
     query_text: dict[str, str] = {}
     query_intent: dict[str, str] = {}
@@ -137,6 +141,11 @@ def build_answers_markdown(
         by_query[r["query_id"]].append(r)
         query_text.setdefault(r["query_id"], r["prompt"])
         query_intent.setdefault(r["query_id"], r["intent"])
+    if query_order:
+        ordered_query_ids = [q for q in query_order if q in by_query]
+        ordered_query_ids += [q for q in by_query if q not in set(query_order)]
+    else:
+        ordered_query_ids = list(by_query)
 
     lines: list[str] = []
     lines.append(f"# {client} — GEO Audit: Raw Answers + Judge Verdicts")
@@ -152,7 +161,7 @@ def build_answers_markdown(
     lines.append("")
     lines.append("---")
 
-    for query_id in by_query:
+    for query_id in ordered_query_ids:
         rows = by_query[query_id]
         lines.append("")
         lines.append(f"## {query_id} · _{query_intent[query_id]}_")

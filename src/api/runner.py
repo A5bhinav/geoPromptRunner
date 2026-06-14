@@ -254,7 +254,12 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
                 try:
                     db.save_query_results(state.db_run_id, pending)
                 except db.StorageError as exc:
-                    logger.info("Failed to persist a batch (continuing): %s", exc)
+                    # Keep the batch and retry on the next flush rather than
+                    # dropping it — clearing here would lose those answers from
+                    # storage while completed_calls had already counted them,
+                    # leaving the persisted progress ahead of the actual rows.
+                    logger.info("Failed to persist a batch (will retry next flush): %s", exc)
+                    return
             pending.clear()
             _persist_state(state)
 

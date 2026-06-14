@@ -143,6 +143,11 @@ def run_query_set(
         # engine failure, preserving the cell so resume can refill it.
         try:
             with gate.get(engine.ENGINE_NAME):
+                # Re-check after acquiring the gate: a cell can wait here behind
+                # the per-provider semaphore while a cancel arrives — bail rather
+                # than spend the API call we were queued for.
+                if should_cancel is not None and should_cancel():
+                    return None
                 response, citations = engine.query_with_citations(query.text)
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning(

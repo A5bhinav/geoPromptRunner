@@ -148,10 +148,23 @@ def audit_report(run_id: str) -> dict[str, object]:
     return dict(report)
 
 
+def _guard_export_ready(run_id: str) -> None:
+    """409 while a run is still producing answers — an export taken mid-run would
+    be a silently partial file presented (via Content-Disposition) as complete.
+    Terminal states (done/failed/cancelled) export whatever was collected."""
+    status = runner.get_status(run_id)
+    if status is not None and status.state in ("queued", "running"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"run {run_id} is still {status.state}; export once it finishes",
+        )
+
+
 @app.get("/audits/{run_id}/results.csv")
 def audit_results_csv(run_id: str) -> Response:
     """Raw answers as CSV — one row per (query, engine, run): the query text and
     the full model response as columns."""
+    _guard_export_ready(run_id)
     csv_text = runner.get_results_csv(run_id)
     if csv_text is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
@@ -168,6 +181,7 @@ def audit_results_csv(run_id: str) -> Response:
 def audit_answers_markdown(run_id: str) -> Response:
     """Raw answers as a readable markdown doc — each query, every response, and
     the judge's verdict inline."""
+    _guard_export_ready(run_id)
     md = runner.get_answers_markdown(run_id)
     if md is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
