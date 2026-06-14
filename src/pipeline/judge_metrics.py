@@ -9,6 +9,7 @@ from src.storage.models import Severity
 __all__ = [
     "BrandCell",
     "VisibilityGrade",
+    "brand_cells_map",
     "mention_rate",
     "visibility_score",
     "leaderboard",
@@ -87,32 +88,96 @@ def _brand_cells(judgments: list[AnswerJudgment], brand: str) -> list[BrandCell]
     return cells
 
 
-def mention_rate(judgments: list[AnswerJudgment], brand: str) -> float:
+def brand_cells_map(
+    judgments: list[AnswerJudgment], brands: list[str]
+) -> dict[str, list[BrandCell]]:
+    """Every brand's cells from a SINGLE pass over the judgments.
+
+    Equivalent to ``{b: _brand_cells(judgments, b) for b in brands}`` but walks
+    the judgments once instead of once per brand — the report needs cells for the
+    client and all competitors, so this replaces N full passes with one. Per
+    brand the result matches ``_brand_cells`` (same aggregation), so callers use
+    them interchangeably.
+    """
+    wanted = set(brands)
+    raw: dict[tuple[str, str, str], list[tuple[bool, str, str]]] = {}
+    intents: dict[tuple[str, str, str], str] = {}
+    for j in _assessed(judgments):
+        for bj in j.brands:
+            if bj.brand not in wanted:
+                continue
+            key = (bj.brand, j.query_id, j.engine_name)
+            raw.setdefault(key, []).append((bj.present, bj.prominence, bj.framing))
+            intents[key] = j.intent
+    out: dict[str, list[BrandCell]] = {b: [] for b in brands}
+    for (brand, query_id, engine), rows in raw.items():
+        present = sum(1 for p, _, _ in rows if p) * 2 >= len(rows)
+        present_proms = [prom for p, prom, _ in rows if p]
+        prominence = (
+            min(present_proms, key=lambda p: _PROM_RANK.get(p, 4))
+            if present and present_proms
+            else Prominence.ABSENT.value
+        )
+        framing = Counter(f for _, _, f in rows).most_common(1)[0][0]
+        out[brand].append(
+            BrandCell(
+                query_id, engine, intents[(brand, query_id, engine)], brand, present,
+                prominence, framing,
+            )
+        )
+    return out
+
+
+def _cells_for(
+    judgments: list[AnswerJudgment], brand: str, cells: list[BrandCell] | None
+) -> list[BrandCell]:
+    """Use precomputed cells when a caller has them, else compute for one brand."""
+    return cells if cells is not None else _brand_cells(judgments, brand)
+
+
+def mention_rate(
+    judgments: list[AnswerJudgment], brand: str, *, cells: list[BrandCell] | None = None
+) -> float:
     """Fraction of (query, engine) cells where ``brand`` is present."""
-    cells = _brand_cells(judgments, brand)
+    cells = _cells_for(judgments, brand, cells)
     return sum(1 for c in cells if c.present) / len(cells) if cells else 0.0
 
 
-def visibility_score(judgments: list[AnswerJudgment], brand: str) -> float:
+def visibility_score(
+    judgments: list[AnswerJudgment], brand: str, *, cells: list[BrandCell] | None = None
+) -> float:
     """Prominence-weighted visibility in [0, 1] — the leaderboard metric.
 
     Rewards being recommended first over being buried, unlike a flat mention rate.
     """
-    cells = _brand_cells(judgments, brand)
+    cells = _cells_for(judgments, brand, cells)
     return sum(_PROM_SCORE.get(c.prominence, 0.0) for c in cells) / len(cells) if cells else 0.0
 
 
 def leaderboard(
-    judgments: list[AnswerJudgment], brands: list[str]
+    judgments: list[AnswerJudgment],
+    brands: list[str],
+    *,
+    cells_map: dict[str, list[BrandCell]] | None = None,
 ) -> list[tuple[str, float, float]]:
     """(brand, visibility_score, mention_rate) ranked by visibility, best first."""
-    rows = [(b, visibility_score(judgments, b), mention_rate(judgments, b)) for b in brands]
+    cm = cells_map if cells_map is not None else brand_cells_map(judgments, brands)
+    rows = [
+        (
+            b,
+            visibility_score(judgments, b, cells=cm.get(b, [])),
+            mention_rate(judgments, b, cells=cm.get(b, [])),
+        )
+        for b in brands
+    ]
     return sorted(rows, key=lambda r: r[1], reverse=True)
 
 
-def framing_breakdown(judgments: list[AnswerJudgment], brand: str) -> dict[str, int]:
+def framing_breakdown(
+    judgments: list[AnswerJudgment], brand: str, *, cells: list[BrandCell] | None = None
+) -> dict[str, int]:
     """Counts of positive/neutral/negative framing over the cells where present."""
-    counts = Counter(c.framing for c in _brand_cells(judgments, brand) if c.present)
+    counts = Counter(c.framing for c in _cells_for(judgments, brand, cells) if c.present)
     return {f.value: counts.get(f.value, 0) for f in Framing}
 
 
@@ -200,32 +265,42 @@ class VisibilityGrade:
 
 
 def visibility_grade(
-    judgments: list[AnswerJudgment], client: str, policy: GradePolicy = DEFAULT_GRADE_POLICY
+    judgments: list[AnswerJudgment],
+    client: str,
+    policy: GradePolicy = DEFAULT_GRADE_POLICY,
+    *,
+    cells: list[BrandCell] | None = None,
+    flags: list[AccuracyFlag] | None = None,
 ) -> VisibilityGrade:
     """Roll the client's judge metrics up into an A-F grade.
 
     Base is the prominence-weighted ``visibility_score`` (recommended-first beats
     buried); each distinct client accuracy flag subtracts a severity-weighted
     penalty, floored at 0. ``policy`` carries the (calibratable) penalty weights
-    and band cutoffs. Pure — derives entirely from data already produced.
+    and band cutoffs. ``cells``/``flags`` let a caller pass already-computed data
+    to avoid recomputing. Pure — derives entirely from data already produced.
     """
-    raw = visibility_score(judgments, client)
-    severities = [f.severity for f in collect_accuracy_flags(judgments)]
+    raw = visibility_score(judgments, client, cells=cells)
+    flags = flags if flags is not None else collect_accuracy_flags(judgments)
+    severities = [f.severity for f in flags]
     return grade_from(raw, severities, policy)
 
 
 def losing_cells(
-    judgments: list[AnswerJudgment], client: str, competitors: list[str]
+    judgments: list[AnswerJudgment],
+    client: str,
+    competitors: list[str],
+    *,
+    cells_map: dict[str, list[BrandCell]] | None = None,
 ) -> list[BrandCell]:
     """(query, engine) cells where the client is absent but a competitor is
     recommended-first — the judge-powered "symptom -> cause" view.
     """
-    client_present = {
-        (c.query_id, c.engine_name) for c in _brand_cells(judgments, client) if c.present
-    }
+    cm = cells_map if cells_map is not None else brand_cells_map(judgments, [client, *competitors])
+    client_present = {(c.query_id, c.engine_name) for c in cm.get(client, []) if c.present}
     losses: list[BrandCell] = []
     for comp in competitors:
-        for c in _brand_cells(judgments, comp):
+        for c in cm.get(comp) or _brand_cells(judgments, comp):
             if (
                 c.present
                 and c.prominence == Prominence.RECOMMENDED_FIRST.value
@@ -246,8 +321,14 @@ def judge_sections(
     source of truth shared by the standalone judge report and the unified audit
     report: visibility leaderboard, framing, losing queries, and accuracy flags.
     """
+    # Compute every brand's cells and the accuracy flags once, then thread them
+    # through the section builders (each used to re-walk the judgments).
+    brands = [client, *competitors]
+    cells_map = brand_cells_map(judgments, brands)
+    flags = collect_accuracy_flags(judgments)
+
     lines: list[str] = []
-    grade = visibility_grade(judgments, client)
+    grade = visibility_grade(judgments, client, cells=cells_map.get(client), flags=flags)
     lines.append("## AI Visibility Grade")
     lines.append("")
     lines.append(f"**{grade.letter}** — {grade.rationale}")
@@ -257,12 +338,12 @@ def judge_sections(
     lines.append("")
     lines.append("| Brand | Visibility | Mention rate |")
     lines.append("| --- | --- | --- |")
-    for brand, vis, mention in leaderboard(judgments, [client, *competitors]):
+    for brand, vis, mention in leaderboard(judgments, brands, cells_map=cells_map):
         marker = " (client)" if brand == client else ""
         lines.append(f"| {brand}{marker} | {vis:.2f} | {_pct(mention)} |")
     lines.append("")
 
-    fb = framing_breakdown(judgments, client)
+    fb = framing_breakdown(judgments, client, cells=cells_map.get(client))
     lines.append("## Client Framing")
     lines.append("")
     lines.append(
@@ -270,7 +351,7 @@ def judge_sections(
     )
     lines.append("")
 
-    losses = losing_cells(judgments, client, competitors)
+    losses = losing_cells(judgments, client, competitors, cells_map=cells_map)
     lines.append(f"## Losing Queries ({len(losses)})")
     lines.append("")
     if losses:
@@ -282,7 +363,6 @@ def judge_sections(
         lines.append("_None: the client is present wherever a competitor leads._")
     lines.append("")
 
-    flags = collect_accuracy_flags(judgments)
     lines.append(f"## Client Accuracy Flags ({len(flags)})")
     lines.append("")
     if not flags:

@@ -59,6 +59,19 @@ def _ordered(results: list[QueryResult], engine_order: list[str]) -> list[QueryR
     return sorted(results, key=key)
 
 
+def _csv_safe(value: str) -> str:
+    """Neutralize spreadsheet formula injection.
+
+    A cell beginning with ``= + - @`` (or a leading tab/CR) is executed as a
+    formula by Excel/Sheets. Query text comes from an uploaded CSV and responses
+    are model output — both attacker-influenceable — so prefix any such cell with
+    a single quote, which spreadsheets treat as "render as literal text".
+    """
+    if value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
 def build_results_csv(
     results: list[QueryResult], engine_order: list[str] | None = None
 ) -> str:
@@ -66,7 +79,8 @@ def build_results_csv(
 
     A ``None`` response (an engine error/no-answer) becomes an empty response
     cell, so the row still records that the engine was queried. ``csv`` handles
-    quoting, so newlines/commas inside a model response are preserved verbatim.
+    quoting, so newlines/commas inside a model response are preserved verbatim;
+    ``_csv_safe`` additionally neutralizes formula-injection in text cells.
     """
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -78,9 +92,9 @@ def build_results_csv(
                 r["intent"],
                 r["engine_name"],
                 r["run_index"],
-                r["prompt"],
-                r["response"] or "",
-                "; ".join(r["citations"]),
+                _csv_safe(r["prompt"]),
+                _csv_safe(r["response"] or ""),
+                _csv_safe("; ".join(r["citations"])),
                 r["timestamp"],
             ]
         )

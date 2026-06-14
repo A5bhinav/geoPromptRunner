@@ -8,6 +8,8 @@ from urllib.robotparser import RobotFileParser
 
 import httpx
 
+from src.net_guard import UnsafeUrlError, safe_get
+
 __all__ = [
     "CheckResult",
     "check_robots_txt",
@@ -89,16 +91,23 @@ def _base_url(domain: str) -> str:
     return f"https://{domain.rstrip('/')}"
 
 
+# Pooled client reused across checks; redirects are followed by safe_get (which
+# SSRF-validates every hop), so the client itself must not auto-follow.
+_HTTP = httpx.Client(timeout=TIMEOUT_SECONDS, follow_redirects=False)
+
+
 def _get(url: str, user_agent: str | None = None) -> httpx.Response | None:
     """GET a URL with a 10s timeout, following redirects. None on transport error.
 
+    User-supplied domains are fetched here, so every hop is SSRF-checked
+    (``safe_get`` rejects non-http(s) and private/loopback/metadata targets).
     Pass ``user_agent`` to probe how the site responds to a specific crawler UA.
     """
     headers = {"User-Agent": user_agent} if user_agent else None
     try:
-        return httpx.get(url, timeout=TIMEOUT_SECONDS, follow_redirects=True, headers=headers)
-    except httpx.HTTPError as exc:
-        logger.warning("Request to %s failed: %s", url, exc)
+        return safe_get(_HTTP, url, headers=headers)
+    except (httpx.HTTPError, UnsafeUrlError) as exc:
+        logger.warning("Request to %s failed: %s", url, type(exc).__name__)
         return None
 
 
@@ -192,7 +201,7 @@ def check_sitemap(domain: str) -> CheckResult:
             details="sitemap.xml reachable but no <urlset>/<sitemapindex> root found.",
         )
 
-    lastmods = re.findall(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})", body)
+    lastmods = _LASTMOD_RE.findall(body)
     if not lastmods:
         return CheckResult(
             status="pass",
@@ -214,6 +223,7 @@ def check_sitemap(domain: str) -> CheckResult:
     )
 
 
+_LASTMOD_RE = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
 _SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
 _COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 _TAG_RE = re.compile(r"<[^>]+>")

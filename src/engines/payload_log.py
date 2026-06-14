@@ -18,8 +18,21 @@ _SECRET_KEYS = frozenset({"api_key", "apikey", "key", "token", "authorization"})
 
 
 def _scrub(payload: dict[str, Any]) -> dict[str, Any]:
-    """Return a copy of ``payload`` with secret-bearing keys redacted."""
-    return {k: ("[redacted]" if k.lower() in _SECRET_KEYS else v) for k, v in payload.items()}
+    """Return a copy of ``payload`` with secret-bearing keys redacted, at any
+    depth — a key buried in a nested dict/list (e.g. a query-param object) is
+    redacted too, not just at the top level."""
+
+    def scrub_value(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                k: ("[redacted]" if k.lower() in _SECRET_KEYS else scrub_value(v))
+                for k, v in value.items()
+            }
+        if isinstance(value, list):
+            return [scrub_value(v) for v in value]
+        return value
+
+    return scrub_value(payload)  # type: ignore[no-any-return]
 
 
 def record_payload(engine_name: str, payload: dict[str, Any]) -> None:

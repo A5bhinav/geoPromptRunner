@@ -3,6 +3,39 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
 
+// Fail fast on a misconfigured origin rather than silently POSTing uploads
+// (which carry client facts/competitor data) to a bad host.
+{
+  let ok = false;
+  try {
+    const u = new URL(API_BASE);
+    ok = u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    ok = false;
+  }
+  if (!ok) throw new Error(`Invalid NEXT_PUBLIC_API_URL: ${API_BASE}`);
+}
+
+// Shared API key sent on every request. Note: NEXT_PUBLIC_* ships to the browser,
+// so this gates anonymous access (and pairs with the backend GEO_API_KEY); it is
+// not a per-user secret. Keep the frontend itself access-controlled for real
+// isolation, or proxy the API through a server route to keep the key server-side.
+const API_KEY = process.env.NEXT_PUBLIC_GEO_API_KEY || "";
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  return { ...(API_KEY ? { "X-API-Key": API_KEY } : {}), ...(extra ?? {}) };
+}
+
+async function saveBlob(res: Response, filename: string): Promise<void> {
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // --- Parse / preview types (src/prompts/csv_loader.py) ---
 
 export interface ValidationIssue {
@@ -176,6 +209,7 @@ export async function previewAudit(files: File[]): Promise<ParsePreview> {
   const res = await fetch(`${API_BASE}/audits/preview`, {
     method: "POST",
     body: filesToForm(files),
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`preview failed (${res.status})`);
   return res.json();
@@ -187,6 +221,7 @@ export async function createAudit(
   const res = await fetch(`${API_BASE}/audits`, {
     method: "POST",
     body: filesToForm(files),
+    headers: authHeaders(),
   });
   if (res.status === 422) {
     const body = await res.json();
@@ -197,27 +232,56 @@ export async function createAudit(
 }
 
 export async function listAudits(): Promise<RunSummary[]> {
-  const res = await fetch(`${API_BASE}/audits`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/audits`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`list failed (${res.status})`);
   return res.json();
 }
 
 export async function getStatus(runId: string): Promise<RunStatus> {
-  const res = await fetch(`${API_BASE}/audits/${runId}/status`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/status`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error(`status failed (${res.status})`);
   return res.json();
 }
 
 export async function getReport(runId: string): Promise<ReportPayload> {
-  const res = await fetch(`${API_BASE}/audits/${runId}/report`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/report`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error(`report failed (${res.status})`);
   return res.json();
 }
 
 export async function cancelAudit(runId: string): Promise<void> {
-  await fetch(`${API_BASE}/audits/${runId}/cancel`, { method: "POST" });
+  await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/cancel`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
 }
 
-export function templateUrl(): string {
-  return `${API_BASE}/template.csv`;
+// Downloads go through fetch (not an <a href>) so the X-API-Key header is sent;
+// the response is saved as a blob.
+export async function downloadAudit(
+  runId: string,
+  kind: "results.csv" | "answers.md",
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/${kind}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`download failed (${res.status})`);
+  const ext = kind === "results.csv" ? "csv" : "md";
+  await saveBlob(res, `geo-audit-${runId}-answers.${ext}`);
+}
+
+export async function downloadTemplate(): Promise<void> {
+  const res = await fetch(`${API_BASE}/template.csv`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`template failed (${res.status})`);
+  await saveBlob(res, "geo-audit-template.csv");
 }

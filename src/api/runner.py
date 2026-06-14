@@ -8,9 +8,10 @@ from datetime import UTC, datetime
 
 from src.api.engine_registry import build_engines
 from src.api.reports import ReportPayload, build_report
+from src.config import settings
 from src.engines.base import BaseEngine
 from src.pipeline.answers_export import build_answers_markdown, build_results_csv
-from src.pipeline.cost import estimate_cost
+from src.pipeline.cost import CostBudgetExceeded, estimate_total_cost
 from src.pipeline.orchestrator import AuditOutcome, engine_models
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.csv_loader import ParsedAudit, RunConfig
@@ -66,6 +67,44 @@ class _RunState:
 
 _RUNS: dict[str, _RunState] = {}
 _LOCK = threading.Lock()
+
+# Once a run is "done" its report is immutable, but the UI may re-fetch it and a
+# restarted process rebuilds it from 3 Supabase round-trips + full aggregation
+# every time. Cache the built ReportPayload for done runs (done is terminal-final
+# — interrupted/queued runs are what get resumed, never done ones — so no
+# invalidation is needed).
+_REPORT_CACHE: dict[str, ReportPayload] = {}
+_REPORT_CACHE_LOCK = threading.Lock()
+
+# Running total of estimated USD spend for audits accepted this process. The hard
+# guard against burning credits: a single audit over MAX_AUDIT_COST_USD, or one
+# that would push this total past MAX_TOTAL_SPEND_USD, is refused before any LLM
+# call. Resets on restart (rough budgeting, not billing).
+_spend_lock = threading.Lock()
+_estimated_spend_usd = 0.0
+
+
+def _reserve_budget(estimated_usd: float) -> None:
+    """Charge ``estimated_usd`` against the spend caps or raise CostBudgetExceeded.
+
+    Checked before a run starts. The per-audit cap rejects one oversized audit;
+    the cumulative cap rejects once the process's accepted spend would exceed the
+    ceiling. Either cap set to 0 disables it.
+    """
+    global _estimated_spend_usd
+    audit_cap = settings.MAX_AUDIT_COST_USD
+    total_cap = settings.MAX_TOTAL_SPEND_USD
+    if audit_cap > 0 and estimated_usd > audit_cap:
+        raise CostBudgetExceeded(
+            f"estimated ${estimated_usd:.2f} exceeds the per-audit cap of ${audit_cap:.2f}"
+        )
+    with _spend_lock:
+        if total_cap > 0 and _estimated_spend_usd + estimated_usd > total_cap:
+            raise CostBudgetExceeded(
+                f"estimated ${estimated_usd:.2f} would exceed the remaining budget "
+                f"(${max(0.0, total_cap - _estimated_spend_usd):.2f} of ${total_cap:.2f} left)"
+            )
+        _estimated_spend_usd += estimated_usd
 
 
 # --- Public status / summary types (plain dicts for JSON serialization) ------
@@ -144,9 +183,12 @@ def start_run(audit: ParsedAudit) -> str:
     # Cost/total are estimated against the engines that will actually build, so
     # the progress denominator matches what runs (a missing key drops calls).
     engines, skipped = build_engines(cfg.engines, cfg.client_name, cfg.competitors)
-    _estimated, total_calls = estimate_cost(
-        len(audit.query_set.queries), engines, cfg.runs_per_query
+    estimated, total_calls = estimate_total_cost(
+        len(audit.query_set.queries), engines, cfg.runs_per_query, cfg.judge
     )
+    # Refuse before spending anything if this would blow the per-audit or
+    # cumulative budget (raises CostBudgetExceeded → 402 at the API layer).
+    _reserve_budget(estimated)
     state = _RunState(
         run_id=run_id,
         audit=audit,
@@ -294,9 +336,11 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         state.state = "done"
         _persist_state(state)
     except Exception as exc:  # defensive: a run thread must never die silently
+        # Log the real type server-side; surface only a generic message to the
+        # client so internal details aren't disclosed.
         logger.warning("Run %s failed: %s", state.run_id, type(exc).__name__)
         state.state = "failed"
-        state.error = f"run failed: {type(exc).__name__}"
+        state.error = "run failed (see server logs)"
         _persist_state(state, state.error)
 
 
@@ -399,12 +443,16 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
     except db.StorageError:
         return None
     outcome = _outcome_from_row(row, results)
-    return build_report(
+    report = build_report(
         outcome,
         judgments=judgments or None,
         fact_sheet_present=bool(row.get("fact_sheet_present")),
         run_date=str(row.get("created_at", ""))[:10],
     )
+    if str(row.get("status") or "") == "done":
+        with _REPORT_CACHE_LOCK:
+            _REPORT_CACHE[run_id] = report
+    return report
 
 
 def get_status(run_id: str) -> RunStatus | None:
@@ -441,15 +489,23 @@ def get_status(run_id: str) -> RunStatus | None:
 
 
 def get_report(run_id: str) -> ReportPayload | None:
+    with _REPORT_CACHE_LOCK:
+        cached = _REPORT_CACHE.get(run_id)
+    if cached is not None:
+        return cached
     state = _get(run_id)
     if state is None:
         return _report_from_db(run_id)
-    return build_report(
+    report = build_report(
         _outcome(state),
         judgments=state.judgments or None,
         fact_sheet_present=state.audit.fact_sheet is not None,
         run_date=state.created_at[:10],
     )
+    if state.state == "done":
+        with _REPORT_CACHE_LOCK:
+            _REPORT_CACHE[run_id] = report
+    return report
 
 
 @dataclass(frozen=True)

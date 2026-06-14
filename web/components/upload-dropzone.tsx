@@ -4,7 +4,11 @@ import * as React from "react";
 import { UploadCloud, FileText, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { templateUrl, type FileProvenance } from "@/lib/api";
+import { downloadTemplate, type FileProvenance } from "@/lib/api";
+
+// Mirror of the backend MAX_UPLOAD_BYTES (5 MB) for a fast client-side reject.
+// The server enforces the real cap; this is just UX.
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 interface Props {
   files: File[];
@@ -20,7 +24,9 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
   const handleFiles = (list: FileList | null) => {
     if (!list) return;
     const csvs = Array.from(list).filter(
-      (f) => f.name.toLowerCase().endsWith(".csv") || f.type === "text/csv",
+      (f) =>
+        (f.name.toLowerCase().endsWith(".csv") || f.type === "text/csv") &&
+        f.size <= MAX_UPLOAD_BYTES,
     );
     if (csvs.length) onAdd(csvs);
   };
@@ -76,12 +82,13 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
         <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
           Add file
         </Button>
-        <a
-          href={templateUrl()}
+        <button
+          type="button"
+          onClick={() => void downloadTemplate()}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
           <Download className="h-4 w-4" /> Download template
-        </a>
+        </button>
       </div>
 
       {files.length > 0 && (

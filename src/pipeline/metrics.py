@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from functools import lru_cache
 from urllib.parse import urlparse
 
 from src.pipeline.parser import MentionType, detect_mention
@@ -25,8 +26,13 @@ __all__ = [
 ]
 
 
+@lru_cache(maxsize=8192)
 def domain_of(url: str) -> str:
-    """Return the bare host of ``url`` (lowercased, leading ``www.`` stripped)."""
+    """Return the bare host of ``url`` (lowercased, leading ``www.`` stripped).
+
+    Cached: the same citation URLs are parsed many times across a report (brand
+    citation checks, per-bucket rates, top-domain ranking), so memoize the parse.
+    """
     netloc = urlparse(url).netloc.lower()
     return netloc[4:] if netloc.startswith("www.") else netloc
 

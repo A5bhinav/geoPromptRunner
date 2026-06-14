@@ -13,7 +13,8 @@ import {
   type RunStatus,
 } from "@/lib/api";
 
-const POLL_MS = 1200;
+const POLL_MIN_MS = 1200;
+const POLL_MAX_MS = 8000;
 
 export default function AuditPage({ params }: { params: { id: string } }) {
   const runId = params.id;
@@ -23,12 +24,24 @@ export default function AuditPage({ params }: { params: { id: string } }) {
   const [elapsed, setElapsed] = React.useState(0);
   const startRef = React.useRef<number>(Date.now());
 
-  // Poll status until the run reaches a terminal state.
+  // Poll status until the run reaches a terminal state. Backs off from 1.2s up
+  // to 8s so a long run doesn't hammer the API ~50x/min, and pauses entirely
+  // while the tab is hidden (resuming on focus) to stop background churn.
   React.useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
+    let delay = POLL_MIN_MS;
+
+    const schedule = () => {
+      timer = setTimeout(tick, delay);
+      delay = Math.min(delay * 1.5, POLL_MAX_MS);
+    };
 
     const tick = async () => {
+      if (document.visibilityState === "hidden") {
+        timer = setTimeout(tick, POLL_MIN_MS); // re-check soon, but make no request
+        return;
+      }
       try {
         const st = await getStatus(runId);
         if (!active) return;
@@ -41,15 +54,23 @@ export default function AuditPage({ params }: { params: { id: string } }) {
         }
         if (st.state === "failed" || st.state === "cancelled" || st.state === "interrupted")
           return;
-        timer = setTimeout(tick, POLL_MS);
+        schedule();
       } catch {
         if (active) setError("Run not found, or the API is unreachable.");
       }
     };
+
+    const onVisible = () => {
+      if (active && document.visibilityState === "visible") {
+        delay = POLL_MIN_MS; // resume promptly when the user comes back
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
     tick();
     return () => {
       active = false;
       clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [runId]);
 

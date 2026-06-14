@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from src.pipeline import judge_metrics, metrics
 from src.pipeline.orchestrator import AuditOutcome
-from src.storage.models import AnswerJudgment
+from src.storage.models import AccuracyFlag, AnswerJudgment
 
 __all__ = [
     "GradePayload",
@@ -137,12 +137,24 @@ def build_report(
     run_date = run_date or datetime.now(UTC).date().isoformat()
     has_judge = bool(judgments) and any(j.assessed for j in (judgments or []))
 
+    # Compute every brand's cells and the accuracy flags ONCE on the judge path,
+    # then reuse them across mention/visibility/grade/losing — instead of each
+    # metric re-walking the judgments (and re-aggregating) per brand.
+    cells_map: dict[str, list[judge_metrics.BrandCell]] = {}
+    judge_flags: list[AccuracyFlag] = []
+    if has_judge:
+        assert judgments is not None
+        cells_map = judge_metrics.brand_cells_map(judgments, brands)
+        judge_flags = judge_metrics.collect_accuracy_flags(judgments)
+
     # --- Per-brand mention rate + leaderboard ---
     if has_judge:
         assert judgments is not None
-        mention_by_brand = {b: judge_metrics.mention_rate(judgments, b) for b in brands}
+        mention_by_brand = {
+            b: judge_metrics.mention_rate(judgments, b, cells=cells_map[b]) for b in brands
+        }
         visibility_by_brand: dict[str, float | None] = {
-            b: judge_metrics.visibility_score(judgments, b) for b in brands
+            b: judge_metrics.visibility_score(judgments, b, cells=cells_map[b]) for b in brands
         }
     else:
         mention_by_brand = {b: metrics.mention_rate(results, b) for b in brands}
@@ -183,8 +195,7 @@ def build_report(
     # --- Accuracy flags (judge only) ---
     accuracy_flags: list[FlagRow] = []
     if has_judge:
-        assert judgments is not None
-        for f in judge_metrics.collect_accuracy_flags(judgments):
+        for f in judge_flags:
             accuracy_flags.append(
                 FlagRow(type=f.type, severity=f.severity, claim=f.claim, reality=f.reality)
             )
@@ -199,7 +210,9 @@ def build_report(
     losing_queries: list[LosingRow] = []
     if has_judge:
         assert judgments is not None
-        for cell in judge_metrics.losing_cells(judgments, client, competitors):
+        for cell in judge_metrics.losing_cells(
+            judgments, client, competitors, cells_map=cells_map
+        ):
             losing_queries.append(
                 LosingRow(
                     query_id=cell.query_id,
@@ -223,7 +236,11 @@ def build_report(
     grade_payload: GradePayload | None = None
     if has_judge:
         assert judgments is not None
-        grade_payload = _grade_payload(judge_metrics.visibility_grade(judgments, client))
+        grade_payload = _grade_payload(
+            judge_metrics.visibility_grade(
+                judgments, client, cells=cells_map.get(client), flags=judge_flags
+            )
+        )
 
     citation_rate_client = metrics.citation_rate(results, domains) if domains else None
 

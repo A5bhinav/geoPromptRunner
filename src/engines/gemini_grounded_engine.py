@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 
 import httpx
 from google import genai
@@ -10,6 +13,7 @@ from google.genai import types
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.engines.payload_log import record_payload
+from src.net_guard import UnsafeUrlError, safe_get
 
 __all__ = ["GeminiGroundedEngine"]
 
@@ -59,7 +63,13 @@ class GeminiGroundedEngine(BaseEngine):
             temperature=settings.ENGINE_TEMPERATURE,
         )
         # Persistent client (pooled) for resolving grounding redirect URLs.
-        self._http = httpx.Client(timeout=_RESOLVE_TIMEOUT, follow_redirects=True)
+        # follow_redirects is off — safe_get follows hops manually so each is
+        # SSRF-checked. A cache avoids re-fetching the same redirect across cells
+        # (the engine instance is shared by the concurrent runner pool, so guard
+        # the cache with a lock).
+        self._http = httpx.Client(timeout=_RESOLVE_TIMEOUT, follow_redirects=False)
+        self._resolve_cache: dict[str, str] = {}
+        self._resolve_lock = threading.Lock()
 
     def close(self) -> None:
         """Close the redirect-resolver HTTP client."""
@@ -74,18 +84,29 @@ class GeminiGroundedEngine(BaseEngine):
     def _resolve(self, url: str) -> str:
         """Follow a Gemini grounding redirect to its real URL; best-effort.
 
-        Non-redirect URLs and any failure return the input unchanged, so the
-        citation is never lost — at worst it stays the redirect URL.
+        Only URLs whose host is exactly the Vertex redirector are followed (an
+        earlier substring check could be tricked by ``...?x=<host>``). Redirects
+        are followed manually with per-hop SSRF validation. Non-redirect URLs,
+        unsafe targets, and any failure return the input unchanged, so the
+        citation is never lost — at worst it stays the redirect URL. Results are
+        cached since the same redirector URL recurs across cells.
         """
-        if _REDIRECT_HOST not in url:
+        if urlparse(url).hostname != _REDIRECT_HOST:
             return url
+        with self._resolve_lock:
+            cached = self._resolve_cache.get(url)
+        if cached is not None:
+            return cached
         try:
-            # stream so we resolve the redirect chain without downloading the body
-            with self._http.stream("GET", url) as response:
-                final = str(response.url)
-        except httpx.HTTPError:
-            return url
-        return final if _REDIRECT_HOST not in final else url
+            response = safe_get(self._http, url)
+            final = str(response.url)
+        except (httpx.HTTPError, UnsafeUrlError):
+            final = url
+        if urlparse(final).hostname == _REDIRECT_HOST:
+            final = url  # never resolved past the redirector
+        with self._resolve_lock:
+            self._resolve_cache[url] = final
+        return final
 
     def query(self, prompt: str) -> str | None:
         text, _citations = self.query_with_citations(prompt)
@@ -112,7 +133,7 @@ class GeminiGroundedEngine(BaseEngine):
             return None, []
 
         text = getattr(response, "text", None)
-        urls: list[str] = []
+        raw_uris: list[str] = []
         candidates = getattr(response, "candidates", None) or []
         if candidates:
             grounding = getattr(candidates[0], "grounding_metadata", None)
@@ -120,7 +141,14 @@ class GeminiGroundedEngine(BaseEngine):
                 web = getattr(chunk, "web", None)
                 uri = getattr(web, "uri", None)
                 if uri:
-                    urls.append(self._resolve(str(uri)))
+                    raw_uris.append(str(uri))
+        # Resolve the redirect URLs concurrently (each is an independent network
+        # hop); order is preserved. Cached hops return immediately.
+        if len(raw_uris) > 1:
+            with ThreadPoolExecutor(max_workers=min(8, len(raw_uris))) as pool:
+                urls = list(pool.map(self._resolve, raw_uris))
+        else:
+            urls = [self._resolve(u) for u in raw_uris]
         if not text:
             return None, urls
         return text, urls

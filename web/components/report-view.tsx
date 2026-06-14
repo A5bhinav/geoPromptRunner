@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   Printer,
   Download,
@@ -26,9 +27,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { IntentBadge, SeverityBadge } from "@/components/badges";
-import { BucketChart, LeaderboardChart, ShareDonut, SourcesChart } from "@/components/charts";
+// Charts pull in recharts (the heaviest dependency). Load them lazily on the
+// client so recharts ships in a report-only chunk, not the shared bundle.
+const chartFallback = <div className="h-40 animate-pulse rounded-lg bg-secondary/40" />;
+const LeaderboardChart = dynamic(
+  () => import("@/components/charts").then((m) => m.LeaderboardChart),
+  { ssr: false, loading: () => chartFallback },
+);
+const ShareDonut = dynamic(() => import("@/components/charts").then((m) => m.ShareDonut), {
+  ssr: false,
+  loading: () => chartFallback,
+});
+const BucketChart = dynamic(() => import("@/components/charts").then((m) => m.BucketChart), {
+  ssr: false,
+  loading: () => chartFallback,
+});
+const SourcesChart = dynamic(() => import("@/components/charts").then((m) => m.SourcesChart), {
+  ssr: false,
+  loading: () => chartFallback,
+});
 import { pct } from "@/lib/utils";
-import { API_BASE, type ReportPayload } from "@/lib/api";
+import { downloadAudit, type ReportPayload } from "@/lib/api";
 
 function MetricCard({
   icon,
@@ -94,13 +113,11 @@ export function ReportView({ report, runId }: { report: ReportPayload; runId?: s
     URL.revokeObjectURL(url);
   };
 
-  // Raw per-call answers (query text + full model response) live on the API,
-  // streamed straight to a download by its Content-Disposition header.
+  // Raw per-call answers (query text + full model response). Fetched with the
+  // API key and saved as a blob (an <a href> couldn't carry the auth header).
   const downloadAnswers = (ext: "results.csv" | "answers.md") => {
     if (!runId) return;
-    const a = document.createElement("a");
-    a.href = `${API_BASE}/audits/${runId}/${ext}`;
-    a.click();
+    void downloadAudit(runId, ext);
   };
 
   return (

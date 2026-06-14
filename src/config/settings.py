@@ -49,6 +49,28 @@ ENGINE_SEED: int = int(os.getenv("ENGINE_SEED", "42"))
 # file so any run is reconstructable. Unset = debug logging only.
 PAYLOAD_LOG_PATH: str | None = os.getenv("PAYLOAD_LOG_PATH")
 
+# --- API security / abuse limits (the FastAPI layer) ---
+# Shared API key required on every endpoint via the X-API-Key header. Unset =
+# auth disabled (local dev only) — set GEO_API_KEY before exposing the API.
+GEO_API_KEY: str | None = os.getenv("GEO_API_KEY")
+# Comma-separated allowed CORS origins for the browser frontend. Default is the
+# local Next.js dev origin; set GEO_CORS_ORIGINS to your deployed frontend URL(s).
+# Never "*" in production — combined with the API key, only known origins script it.
+GEO_CORS_ORIGINS: str = os.getenv("GEO_CORS_ORIGINS", "http://localhost:3000")
+# Hard ceilings on a single uploaded audit, enforced before any LLM call, so an
+# upload can't run an unbounded bill or OOM the server (financial/DoS guard).
+MAX_UPLOAD_BYTES: int = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))  # 5 MB
+MAX_QUERIES: int = int(os.getenv("MAX_QUERIES", "200"))
+MAX_ENGINES: int = int(os.getenv("MAX_ENGINES", "8"))
+MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
+# Spend guard (rough estimated USD, engines + judge). A single audit estimated
+# above MAX_AUDIT_COST_USD is rejected; once the running total of accepted audits
+# this process would exceed MAX_TOTAL_SPEND_USD, further audits are rejected.
+# The cumulative total resets when the API process restarts. Set either to 0 to
+# disable that check. These are the hard guard against burning through credits.
+MAX_AUDIT_COST_USD: float = float(os.getenv("MAX_AUDIT_COST_USD", "25"))
+MAX_TOTAL_SPEND_USD: float = float(os.getenv("MAX_TOTAL_SPEND_USD", "200"))
+
 # The LLM judge — ONE held-constant model scores every answer from every engine,
 # so cross-engine comparisons stay valid. Held constant > which model. Uses the
 # Anthropic API (ANTHROPIC_API_KEY). The judge runs once per unique answer, so on

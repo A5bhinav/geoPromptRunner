@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   Bar,
   BarChart,
@@ -46,12 +47,20 @@ const tooltipStyle = {
 };
 
 /** Horizontal share-of-model bars (client highlighted). */
-export function LeaderboardChart({ rows }: { rows: LeaderRow[] }) {
-  const data = rows.map((r) => ({
-    brand: r.brand,
-    share: Math.round(r.share_of_model * 100),
-    isClient: r.is_client,
-  }));
+export const LeaderboardChart = React.memo(function LeaderboardChart({
+  rows,
+}: {
+  rows: LeaderRow[];
+}) {
+  const data = React.useMemo(
+    () =>
+      rows.map((r) => ({
+        brand: r.brand,
+        share: Math.round(r.share_of_model * 100),
+        isClient: r.is_client,
+      })),
+    [rows],
+  );
   const height = Math.max(120, data.length * 46);
 
   return (
@@ -81,13 +90,21 @@ export function LeaderboardChart({ rows }: { rows: LeaderRow[] }) {
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
 
 /** Donut of share-of-model across all brands. */
-export function ShareDonut({ rows }: { rows: LeaderRow[] }) {
-  const data = rows
-    .map((r) => ({ name: r.brand, value: Math.round(r.share_of_model * 100), isClient: r.is_client }))
-    .filter((d) => d.value > 0);
+export const ShareDonut = React.memo(function ShareDonut({ rows }: { rows: LeaderRow[] }) {
+  const data = React.useMemo(
+    () =>
+      rows
+        .map((r) => ({
+          name: r.brand,
+          value: Math.round(r.share_of_model * 100),
+          isClient: r.is_client,
+        }))
+        .filter((d) => d.value > 0),
+    [rows],
+  );
 
   if (data.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No share to show.</p>;
@@ -125,16 +142,20 @@ export function ShareDonut({ rows }: { rows: LeaderRow[] }) {
       </PieChart>
     </ResponsiveContainer>
   );
-}
+});
 
 /** Grouped bars of mention (and citation, when present) per intent bucket. */
-export function BucketChart({ rows }: { rows: BucketRow[] }) {
+export const BucketChart = React.memo(function BucketChart({ rows }: { rows: BucketRow[] }) {
   const hasCitation = rows.some((r) => r.citation_rate !== null);
-  const data = rows.map((r) => ({
-    bucket: INTENT_LABELS[r.bucket] ?? r.bucket,
-    mention: Math.round(r.mention_rate * 100),
-    citation: r.citation_rate === null ? 0 : Math.round(r.citation_rate * 100),
-  }));
+  const data = React.useMemo(
+    () =>
+      rows.map((r) => ({
+        bucket: INTENT_LABELS[r.bucket] ?? r.bucket,
+        mention: Math.round(r.mention_rate * 100),
+        citation: r.citation_rate === null ? 0 : Math.round(r.citation_rate * 100),
+      })),
+    [rows],
+  );
 
   if (data.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">No data.</p>;
@@ -154,11 +175,14 @@ export function BucketChart({ rows }: { rows: BucketRow[] }) {
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
 
 /** Horizontal bars of the most-cited domains. */
-export function SourcesChart({ rows }: { rows: SourceRow[] }) {
-  const data = rows.slice(0, 8).map((r) => ({ domain: r.domain, count: r.count }));
+export const SourcesChart = React.memo(function SourcesChart({ rows }: { rows: SourceRow[] }) {
+  const data = React.useMemo(
+    () => rows.slice(0, 8).map((r) => ({ domain: r.domain, count: r.count })),
+    [rows],
+  );
   if (data.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -194,4 +218,4 @@ export function SourcesChart({ rows }: { rows: SourceRow[] }) {
       </BarChart>
     </ResponsiveContainer>
   );
-}
+});
