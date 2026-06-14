@@ -3,6 +3,8 @@
 import {
   Printer,
   Download,
+  FileText,
+  FileSpreadsheet,
   Trophy,
   Target,
   Quote,
@@ -26,7 +28,7 @@ import {
 import { IntentBadge, SeverityBadge } from "@/components/badges";
 import { BucketChart, LeaderboardChart, ShareDonut, SourcesChart } from "@/components/charts";
 import { pct } from "@/lib/utils";
-import type { ReportPayload } from "@/lib/api";
+import { API_BASE, type ReportPayload } from "@/lib/api";
 
 function MetricCard({
   icon,
@@ -78,7 +80,7 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
-export function ReportView({ report }: { report: ReportPayload }) {
+export function ReportView({ report, runId }: { report: ReportPayload; runId?: string }) {
   const s = report.scorecard;
   const topComp = s.top_competitor;
 
@@ -90,6 +92,15 @@ export function ReportView({ report }: { report: ReportPayload }) {
     a.download = `geo-audit-${report.client_name.replace(/\s+/g, "-").toLowerCase()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Raw per-call answers (query text + full model response) live on the API,
+  // streamed straight to a download by its Content-Disposition header.
+  const downloadAnswers = (ext: "results.csv" | "answers.md") => {
+    if (!runId) return;
+    const a = document.createElement("a");
+    a.href = `${API_BASE}/audits/${runId}/${ext}`;
+    a.click();
   };
 
   return (
@@ -116,6 +127,26 @@ export function ReportView({ report }: { report: ReportPayload }) {
           </div>
         </div>
         <div className="no-print flex gap-2">
+          {runId && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadAnswers("results.csv")}
+                title="Every query and the full model response, one row per call"
+              >
+                <FileSpreadsheet className="h-4 w-4" /> Answers CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadAnswers("answers.md")}
+                title="Readable answers doc with the judge's verdict inline"
+              >
+                <FileText className="h-4 w-4" /> Answers MD
+              </Button>
+            </>
+          )}
           <Button variant="outline" size="sm" onClick={downloadJson}>
             <Download className="h-4 w-4" /> JSON
           </Button>

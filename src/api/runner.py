@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from src.api.engine_registry import build_engines
 from src.api.reports import ReportPayload, build_report
 from src.engines.base import BaseEngine
+from src.pipeline.answers_export import build_answers_markdown, build_results_csv
 from src.pipeline.cost import estimate_cost
 from src.pipeline.orchestrator import AuditOutcome, engine_models
 from src.pipeline.prompt_runner import run_query_set
@@ -31,6 +32,11 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+# How many completed cells to buffer before a storage write + progress snapshot.
+# Batched so a fully-parallel run doesn't hammer the DB once per call, while
+# still persisting often enough that a crash loses little and resume is cheap.
+_PERSIST_BATCH = 15
 
 
 @dataclass
@@ -233,26 +239,44 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
                 )
 
     try:
-        for query in qs.queries:
-            if state.cancel_requested:
-                state.state = "cancelled"
-                _persist_state(state)
+        # The whole query set runs as one concurrent fan-out (every
+        # query/engine/run cell in flight at once, bounded by the pool), instead
+        # of one query at a time. Results stream back via ``on_result`` — called
+        # serialized, so no extra locking — where we update progress and persist
+        # in batches. ``should_cancel`` lets a cancel stop issuing new calls
+        # promptly; cells already done are skipped via ``done_cells``.
+        pending: list[QueryResult] = []
+
+        def flush() -> None:
+            if not pending:
                 return
-            cell = run_query_set([query], engines, cfg.runs_per_query, done_cells=done_cells)
-            if not cell:
-                continue
-            state.results.extend(cell)
-            state.completed_calls += len(cell)
-            for r in cell:
-                state.engine_completed[r["engine_name"]] = (
-                    state.engine_completed.get(r["engine_name"], 0) + 1
-                )
             if state.db_run_id is not None:
                 try:
-                    db.save_query_results(state.db_run_id, cell)
+                    db.save_query_results(state.db_run_id, pending)
                 except db.StorageError as exc:
-                    logger.info("Failed to persist a cell (continuing): %s", exc)
+                    logger.info("Failed to persist a batch (continuing): %s", exc)
+            pending.clear()
             _persist_state(state)
+
+        def on_result(r: QueryResult) -> None:
+            state.results.append(r)
+            state.completed_calls += 1
+            state.engine_completed[r["engine_name"]] = (
+                state.engine_completed.get(r["engine_name"], 0) + 1
+            )
+            pending.append(r)
+            if len(pending) >= _PERSIST_BATCH:
+                flush()
+
+        run_query_set(
+            qs.queries,
+            engines,
+            cfg.runs_per_query,
+            done_cells=done_cells,
+            on_result=on_result,
+            should_cancel=lambda: state.cancel_requested,
+        )
+        flush()  # persist whatever didn't fill a final batch
 
         if state.cancel_requested:
             state.state = "cancelled"
@@ -407,6 +431,78 @@ def get_report(run_id: str) -> ReportPayload | None:
         judgments=state.judgments or None,
         fact_sheet_present=state.audit.fact_sheet is not None,
         run_date=state.created_at[:10],
+    )
+
+
+@dataclass(frozen=True)
+class _ExportInputs:
+    client: str
+    competitors: list[str]
+    results: list[QueryResult]
+    judgments: list[AnswerJudgment]
+    runs_per_query: int
+    engine_order: list[str]
+    run_date: str
+
+
+def _export_inputs(run_id: str) -> _ExportInputs | None:
+    """Gather a run's raw answers + judgments for export — in-memory if the run
+    is live, else rebuilt from storage (same memory→DB fallback as the report)."""
+    state = _get(run_id)
+    if state is not None:
+        cfg = state.audit.config
+        return _ExportInputs(
+            client=cfg.client_name,
+            competitors=list(cfg.competitors),
+            results=list(state.results),
+            judgments=list(state.judgments),
+            runs_per_query=cfg.runs_per_query,
+            engine_order=list(state.active_engines) or list(cfg.engines),
+            run_date=state.created_at[:10],
+        )
+    try:
+        row = db.get_audit_run(run_id)
+        if row is None:
+            return None
+        results = db.get_query_results(run_id)
+        judgments = db.get_judgments(run_id)
+    except db.StorageError:
+        return None
+    return _ExportInputs(
+        client=str(row.get("client_name", "")),
+        competitors=_str_list(row.get("competitors")),
+        results=results,
+        judgments=judgments,
+        runs_per_query=int(str(row.get("runs_per_query") or 1)),
+        engine_order=_str_list(row.get("engines")),
+        run_date=str(row.get("created_at", ""))[:10],
+    )
+
+
+def get_results_csv(run_id: str) -> str | None:
+    """Every (query, engine, run) cell as CSV — query text + full response per
+    row. ``None`` if the run is unknown."""
+    data = _export_inputs(run_id)
+    if data is None:
+        return None
+    return build_results_csv(data.results, data.engine_order)
+
+
+def get_answers_markdown(run_id: str) -> str | None:
+    """The readable answers doc — each query, every raw response, judge verdict
+    inline. ``None`` if the run is unknown."""
+    data = _export_inputs(run_id)
+    if data is None:
+        return None
+    return build_answers_markdown(
+        client=data.client,
+        competitors=data.competitors,
+        results=data.results,
+        judgments=data.judgments,
+        run_id=run_id,
+        run_date=data.run_date,
+        runs_per_query=data.runs_per_query,
+        engine_order=data.engine_order,
     )
 
 

@@ -78,7 +78,9 @@ export default function AuditPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
-      {status && status.state === "done" && report && <ReportView report={report} />}
+      {status && status.state === "done" && report && (
+        <ReportView report={report} runId={runId} />
+      )}
 
       {status && status.state === "done" && !report && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

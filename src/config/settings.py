@@ -28,6 +28,14 @@ SEARCHAPI_API_KEY: str | None = os.getenv("SEARCHAPI_API_KEY")
 # cannot stall the synchronous pipeline run. Overridable via env for tuning.
 ENGINE_TIMEOUT_SECONDS: float = float(os.getenv("ENGINE_TIMEOUT_SECONDS", "60"))
 ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))
+# Concurrency for the prompt runner. Each (query, engine, run) cell is an
+# independent, I/O-bound API call, so the runner fans them out across threads
+# instead of blocking on each in turn. ENGINE_CONCURRENCY caps total in-flight
+# calls; ENGINE_PROVIDER_CONCURRENCY caps calls to any single provider so we
+# parallelize across providers without tripping one provider's rate limit. Set
+# ENGINE_CONCURRENCY=1 to restore fully-sequential behavior.
+ENGINE_CONCURRENCY: int = int(os.getenv("ENGINE_CONCURRENCY", "12"))
+ENGINE_PROVIDER_CONCURRENCY: int = int(os.getenv("ENGINE_PROVIDER_CONCURRENCY", "4"))
 # Pin sampling low so repeated runs of the same query are reproducible — the
 # methodology runs each query multiple times to average noise, not to amplify it.
 ENGINE_TEMPERATURE: float = float(os.getenv("ENGINE_TEMPERATURE", "0"))

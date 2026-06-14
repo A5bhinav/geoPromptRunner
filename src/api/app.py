@@ -148,6 +148,38 @@ def audit_report(run_id: str) -> dict[str, object]:
     return dict(report)
 
 
+@app.get("/audits/{run_id}/results.csv")
+def audit_results_csv(run_id: str) -> Response:
+    """Raw answers as CSV — one row per (query, engine, run): the query text and
+    the full model response as columns."""
+    csv_text = runner.get_results_csv(run_id)
+    if csv_text is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="geo-audit-{run_id}-answers.csv"'
+        },
+    )
+
+
+@app.get("/audits/{run_id}/answers.md")
+def audit_answers_markdown(run_id: str) -> Response:
+    """Raw answers as a readable markdown doc — each query, every response, and
+    the judge's verdict inline."""
+    md = runner.get_answers_markdown(run_id)
+    if md is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    return Response(
+        content=md,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f'attachment; filename="geo-audit-{run_id}-answers.md"'
+        },
+    )
+
+
 @app.post("/audits/{run_id}/cancel")
 def cancel_audit(run_id: str) -> dict[str, str]:
     if not runner.request_cancel(run_id):
