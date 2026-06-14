@@ -2,7 +2,7 @@ block,key,value,intent,persona
 config,client_name,Fort,,
 config,category,strength training wearable,,
 config,competitors,Whoop;Garmin;Apple Watch;Oura;Vitruve,,
-config,engines,openai_search;anthropic_search;gemini_grounded;perplexity;google_ai_overviews,,
+config,engines,openai_search;anthropic_search;gemini_grounded;perplexity,,
 config,runs_per_query,3,,
 config,client_domains,fort.cx,,
 config,judge,true,,
