@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.pipeline.judge import AccuracyFlag, BrandJudgment, Judge
+from src.pipeline.judge_cache import JudgeCache
 from src.storage.models import Framing, Prominence, Severity
 
 __all__ = [
@@ -366,12 +367,23 @@ def _tally(evals: list[_Eval], breakdowns: bool = True) -> CalibrationReport:
     )
 
 
-def calibrate(judge: Judge, gold: list[GoldItem], progress: bool = False) -> CalibrationReport:
-    """Run the judge over the gold set and tally agreement with the human labels."""
+def calibrate(
+    judge: Judge,
+    gold: list[GoldItem],
+    progress: bool = False,
+    cache: JudgeCache | None = None,
+) -> CalibrationReport:
+    """Run the judge over the gold set and tally agreement with the human labels.
+
+    ``cache`` (optional) reuses verdicts keyed by the judge prompt + inputs, so a
+    re-run over an unchanged gold set is free and byte-identical (which also
+    removes the residual temperature-0 jitter on repeats). Editing the judge
+    prompt changes the key and correctly forces a fresh judge pass.
+    """
     evals: list[_Eval] = []
     for i, item in enumerate(gold, start=1):
-        brands, flags, assessed = judge.judge_answer(
-            item.query, item.answer, item.client, item.competitors, item.fact_sheet
+        brands, flags, assessed = judge.judge_answer_cached(
+            item.query, item.answer, item.client, item.competitors, item.fact_sheet, cache
         )
         evals.append(_Eval(item=item, brands=brands, flags=flags, assessed=assessed))
         if progress and (i % 10 == 0 or i == len(gold)):

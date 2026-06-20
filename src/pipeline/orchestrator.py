@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 
+from src.config import settings
 from src.engines.base import BaseEngine
 from src.pipeline.cost import CostBudgetExceeded, estimate_cost
 from src.pipeline.prompt_runner import run_query_set
@@ -48,7 +49,7 @@ def run_audit(
     query_set: QuerySet,
     engines: list[BaseEngine],
     client_domains: list[str] | None = None,
-    runs_per_query: int = 3,
+    runs_per_query: int = settings.DEFAULT_RUNS_PER_QUERY,
     persist: bool = True,
     progress: bool = True,
     max_cost: float | None = None,

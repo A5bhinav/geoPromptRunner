@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from src.config import settings
 from src.prompts.intent import IntentBucket
 from src.prompts.query_set import Query, QuerySet
 
@@ -53,7 +54,7 @@ _BLOCKS: frozenset[str] = frozenset({"config", "fact", "query"})
 # Cell-internal list separator (so commas stay the CSV delimiter).
 _LIST_SEP = ";"
 
-_DEFAULT_RUNS_PER_QUERY = 3
+_DEFAULT_RUNS_PER_QUERY = settings.DEFAULT_RUNS_PER_QUERY
 
 
 @dataclass(frozen=True)

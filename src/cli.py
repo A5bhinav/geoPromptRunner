@@ -96,11 +96,11 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     # CLI default — mixed run counts within one run skew aggregation.
     runs = args.runs
     if runs is None:
-        runs = 3
+        runs = settings.DEFAULT_RUNS_PER_QUERY
         if args.resume:
             stored = db.get_audit_run(args.resume)
             if stored is not None:
-                runs = int(str(stored.get("runs_per_query") or 3))
+                runs = int(str(stored.get("runs_per_query") or settings.DEFAULT_RUNS_PER_QUERY))
     try:
         outcome = run_audit(
             qs,

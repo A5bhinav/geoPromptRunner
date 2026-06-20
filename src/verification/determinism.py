@@ -15,6 +15,13 @@ __all__ = [
     "suggest_runs_per_query",
     "measure_determinism",
     "render_baseline",
+    "BrandLabel",
+    "LabelDeterminismStats",
+    "LabelDeterminismBaseline",
+    "label_agreement_stats",
+    "suggest_runs_from_labels",
+    "measure_label_determinism",
+    "render_label_baseline",
 ]
 
 logger = logging.getLogger(__name__)
@@ -68,20 +75,26 @@ def agreement_stats(responses: Sequence[str | None]) -> DeterminismStats:
     )
 
 
-def suggest_runs_per_query(stats: DeterminismStats) -> int:
-    """Recommend the runner's K from the measured noise band.
-
-    High agreement means few repeats wash out the residual randomness; low
-    agreement (typical of retrieval surfaces) needs more. Calibrates whether
-    the default runs_per_query=3 is enough — or must rise.
-    """
-    if stats.answered == 0:
+def _k_from_agreement(modal_agreement: float, answered: int) -> int:
+    """Recommend K from a measured modal-agreement band. High agreement means few
+    repeats wash out the residual randomness; low agreement (retrieval surfaces)
+    needs more. Shared by the text-level and label-level baselines."""
+    if answered == 0:
         return 3  # nothing measured; keep the default rather than guess
-    if stats.modal_agreement >= 0.8:
+    if modal_agreement >= 0.8:
         return 3
-    if stats.modal_agreement >= 0.5:
+    if modal_agreement >= 0.5:
         return 5
     return 10
+
+
+def suggest_runs_per_query(stats: DeterminismStats) -> int:
+    """Recommend the runner's K from the measured *text* noise band. NOTE: at
+    temperature 0 the engines rarely repeat a long answer verbatim, so text
+    agreement understates real stability — prefer ``suggest_runs_from_labels``,
+    which measures whether the *brand read* (present/prominence/framing) is
+    stable, the thing the audit metrics and trends actually depend on."""
+    return _k_from_agreement(stats.modal_agreement, stats.answered)
 
 
 def measure_determinism(
@@ -120,6 +133,114 @@ def render_baseline(baselines: list[DeterminismBaseline]) -> str:
         "surfaces vary by design (the live web) — read their numbers as the "
         "expected noise band, not as a defect."
     )
+    return "\n".join(lines)
+
+
+# --- Label-level determinism (the audit-relevant signal) -------------------
+# Text never repeats verbatim at temp 0, but what the audit measures is the
+# JUDGE's brand read. So the determinism that matters is: across K fresh answers
+# to one query, does the brand's (present, prominence, framing) stay the same?
+# The judge runs at temperature 0 (deterministic), so any disagreement here is
+# ENGINE variance carrying through to a different read — exactly the audit noise.
+
+BrandLabel = tuple[bool, str, str]  # (present, prominence, framing)
+
+
+@dataclass(frozen=True)
+class LabelDeterminismStats:
+    """How stable the per-brand label is across K fresh repeats of one query."""
+
+    k: int
+    answered: int
+    per_brand: dict[str, float]  # brand -> modal (present,prominence,framing) agreement
+
+    @property
+    def min_agreement(self) -> float:
+        """Worst-stabilized brand — the conservative basis for K."""
+        return min(self.per_brand.values()) if self.per_brand else 0.0
+
+    @property
+    def mean_agreement(self) -> float:
+        return sum(self.per_brand.values()) / len(self.per_brand) if self.per_brand else 0.0
+
+
+@dataclass(frozen=True)
+class LabelDeterminismBaseline:
+    engine_name: str
+    query: str
+    client: str
+    stats: LabelDeterminismStats
+
+
+def label_agreement_stats(runs: Sequence[dict[str, BrandLabel] | None]) -> LabelDeterminismStats:
+    """Per-brand modal agreement of the label tuple across runs (pure)."""
+    answered = [r for r in runs if r is not None]
+    brands = sorted({b for r in answered for b in r})
+    per_brand: dict[str, float] = {}
+    for b in brands:
+        labels = [r[b] for r in answered if b in r]
+        if not labels:
+            continue
+        modal = Counter(labels).most_common(1)[0][1]
+        per_brand[b] = modal / len(labels)
+    return LabelDeterminismStats(k=len(runs), answered=len(answered), per_brand=per_brand)
+
+
+def suggest_runs_from_labels(stats: LabelDeterminismStats) -> int:
+    """Recommend K from the label noise band — the audit-relevant version."""
+    return _k_from_agreement(stats.min_agreement, stats.answered)
+
+
+def measure_label_determinism(
+    engine: BaseEngine,
+    judge: object,  # src.pipeline.judge.Judge — typed loosely to avoid an import cycle
+    query: str,
+    client: str,
+    competitors: list[str],
+    k: int = DEFAULT_K,
+) -> LabelDeterminismBaseline:
+    """K fresh answers to one query, each judged (no fact sheet → labels only),
+    profiled for how stably the brand read reproduces. K live engine calls."""
+    if k < 2:
+        raise ValueError(f"k must be >= 2 to measure agreement, got {k}")
+    runs: list[dict[str, BrandLabel] | None] = []
+    for _ in range(k):
+        answer = engine.query(query)
+        if answer is None:
+            runs.append(None)
+            continue
+        brands, _flags, assessed = judge.judge_answer(  # type: ignore[attr-defined]
+            query, answer, client, competitors, None
+        )
+        labels = {b.brand: (b.present, b.prominence, b.framing) for b in brands}
+        runs.append(labels if assessed else None)
+    return LabelDeterminismBaseline(
+        engine_name=engine.ENGINE_NAME,
+        query=query,
+        client=client,
+        stats=label_agreement_stats(runs),
+    )
+
+
+def render_label_baseline(baselines: list[LabelDeterminismBaseline]) -> str:
+    """Label-level noise-band table + the suggested K and trend noise floor."""
+    lines = ["Label-level determinism — does the brand READ stay stable across repeats?", ""]
+    worst = 1.0
+    for b in baselines:
+        s = b.stats
+        k = suggest_runs_from_labels(s)
+        worst = min(worst, s.min_agreement) if s.answered else worst
+        lines.append(
+            f"  {b.engine_name:<22} k={s.k:<3} answered={s.answered:<3} "
+            f"min-agreement={s.min_agreement:.0%} mean={s.mean_agreement:.0%} "
+            f"-> suggested runs_per_query={k}"
+        )
+    floor = round(1 - worst, 2)
+    lines += [
+        "",
+        f"Suggested trend real-move threshold (noise floor): ±{floor * 100:.0f} pts "
+        f"(1 − worst label agreement). Pass as --noise-floor {floor} to `geo compare`.",
+    ]
     return "\n".join(lines)
 
 

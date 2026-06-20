@@ -15,6 +15,7 @@ __all__ = [
     "leaderboard",
     "framing_breakdown",
     "collect_accuracy_flags",
+    "grade_penalty_flags",
     "GradePolicy",
     "DEFAULT_GRADE_POLICY",
     "grade_from",
@@ -182,7 +183,11 @@ def framing_breakdown(
 
 
 def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
-    """All distinct client accuracy flags across the run (deduped by type+claim)."""
+    """All distinct client accuracy flags across the run (deduped by type+claim).
+
+    This is the *display* list (the report's flag listing). The grade penalty uses
+    ``grade_penalty_flags`` instead — a coarser dedup that repetition can't game.
+    """
     seen: set[tuple[str, str]] = set()
     out: list[AccuracyFlag] = []
     for j in _assessed(judgments):
@@ -191,6 +196,40 @@ def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag
             if key not in seen:
                 seen.add(key)
                 out.append(f)
+    return out
+
+
+# Severity as an ordinal so "the worst flag of this type wins" is well-defined.
+_SEVERITY_RANK: dict[str, int] = {
+    Severity.HIGH.value: 0,
+    Severity.MED.value: 1,
+    Severity.LOW.value: 2,
+}
+
+
+def grade_penalty_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
+    """The flags that drive the A-F grade penalty, deduped so repetition can't
+    compound it (the Layer-2 guard against an over-flagging judge tanking the
+    grade).
+
+    WITHIN each answer, the same error *type* counts once, highest severity wins:
+    a reply that says "Ring 4" three times has one stale problem, not three —
+    `collect_accuracy_flags` keeps all three (different claim text) for display,
+    but the grade must not be penalized thrice for one mistake. ACROSS answers,
+    each answer's distinct-type problems are kept, so a pervasive error (many
+    replies make it) still weighs more than a one-off.
+    """
+    out: list[AccuracyFlag] = []
+    def rank(sev: str) -> int:  # lower rank = worse severity
+        return _SEVERITY_RANK.get(sev, 1)
+
+    for j in _assessed(judgments):
+        best: dict[str, AccuracyFlag] = {}
+        for f in j.accuracy_flags:
+            cur = best.get(f.type)
+            if cur is None or rank(f.severity) < rank(cur.severity):
+                best[f.type] = f
+        out.extend(best.values())
     return out
 
 
@@ -281,7 +320,9 @@ def visibility_grade(
     to avoid recomputing. Pure — derives entirely from data already produced.
     """
     raw = visibility_score(judgments, client, cells=cells)
-    flags = flags if flags is not None else collect_accuracy_flags(judgments)
+    # The grade penalty uses the deduped problem set, not the per-claim display
+    # list — repetition of one error must not multiply the penalty.
+    flags = flags if flags is not None else grade_penalty_flags(judgments)
     severities = [f.severity for f in flags]
     return grade_from(raw, severities, policy)
 
@@ -328,7 +369,7 @@ def judge_sections(
     flags = collect_accuracy_flags(judgments)
 
     lines: list[str] = []
-    grade = visibility_grade(judgments, client, cells=cells_map.get(client), flags=flags)
+    grade = visibility_grade(judgments, client, cells=cells_map.get(client))
     lines.append("## AI Visibility Grade")
     lines.append("")
     lines.append(f"**{grade.letter}** — {grade.rationale}")

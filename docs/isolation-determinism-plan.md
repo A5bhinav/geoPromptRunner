@@ -78,3 +78,27 @@ None of these change results; they convert an implicit property into a proven, g
 ## One-line confirmation for the team
 
 On the API, each query is already a clean-room: one isolated call, one message, no memory of the queries before it — the opposite of the chat-app context web. What this plan adds is the *proof* (the canary + payload tests), the *anti-regression guard*, and the model/seed pins that keep two measurement cycles comparable. The only variance we can't remove is the live web itself on the retrieval surfaces — and that we handle by running tight in time and aggregating, not by pretending it's zero.
+
+---
+
+## Determinism baseline result (2026-06-19) — K is set
+
+Ran `scripts/run_determinism.py --surface both` (probe: *"best smart ring for sleep tracking"*, client Oura, k=5) across the parametric + retrieval surfaces:
+
+| Engine | Surface | Text agreement | **Label agreement** (min / mean) | Suggested K |
+|---|---|---|---|---|
+| openai | memory · parametric | 20% (5/5 unique) | **100% / 100%** | **3** |
+| anthropic | memory · parametric | 20% (5/5 unique) | **100% / 100%** | **3** |
+| gemini | memory · parametric | 80% (2 unique) | **60% / 92%** | **5** |
+| perplexity | memory · retrieval | 20% (5/5 unique) | **60% / 88%** | **5** |
+| gemini_grounded | search · retrieval | 20% (5/5 unique) | **40% / 68%** | **10** |
+
+**The finding:** text agreement is ~20% (answers are verbatim-unique at temp 0) and would *spuriously* suggest K=10 — but the **label-level** read is what the audit measures, and it splits cleanly by surface:
+
+- **Memory parametric (openai, anthropic): 100% stable → K=3.** Rock-solid.
+- **Gemini (memory parametric): 60% min / 92% mean → K=5.** One brand wobbles; gemini is noisier than the OpenAI/Anthropic pair even off-retrieval.
+- **Retrieval surfaces (perplexity → K=5, gemini_grounded → K=10):** they re-rank brands run-to-run as the live web shifts — expected, not a defect.
+
+**K decision:** **K=3** if an audit uses only openai+anthropic; **K=5** for the standard *memory-surface* audit (the Oura/Fort path — openai/anthropic/gemini/perplexity), to stabilize gemini + perplexity; **K=10** for retrieval-heavy audits that include `gemini_grounded`. The current CLI default is 3 — **bump it to 5 for any audit that includes gemini or perplexity** (both are in the standard memory set).
+
+**Trend noise floor is surface-dependent — do not use one global value.** Memory parametric ≈ ±0–8 pts; gemini/perplexity ≈ ±10–15 pts (mean) or up to ±40 (worst single brand, small k=5 sample); gemini_grounded ≈ ±30–60 pts. The harness's single global floor (1 − worst, here ±60) is too blunt across mixed surfaces — set the trend `--noise-floor` **per surface** (memory ≈ 0.10–0.15; retrieval ≈ 0.40). A fuller run (higher K, several probe queries) will tighten these.

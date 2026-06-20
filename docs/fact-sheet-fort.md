@@ -73,3 +73,7 @@
 
 - **Two big asks before the audit:** (1) **lock the competitor set** (the site names none — pick 3–5 by category overlap, e.g. Whoop / Oura / Apple Watch / Garmin + a strength-specific tracker), and (2) expect a very different shape from Oura: Fort is **pre-launch and obscure**, so the story is likely "the AI engines barely know you exist, and where they do, they may invent details" — an *absence/visibility* problem more than the *stale-facts* problem Oura had. That's still a strong demo for a founder ("buyers asking AI about strength wearables never hear your name").
 - A few site facts are deliberately left blank (founding year, HQ, exact founder names) because they aren't stated publicly — per the "blank is safe" rule, the judge simply won't accuracy-check those dimensions.
+
+---
+
+**Ground-truth validation (2026-06-19):** identity + features re-verified against Athletech News, New Atlas, Wellworthy, and fort.cx — Fort is a **screenless wristband** (ex-Tesla, SF) that auto-tracks reps / velocity / range-of-motion / proximity-to-failure across 50+ exercises, plus cardio / sleep / stress; pre-order **$289**, retail **$319 + $79.99/yr** (press's $349 is the known discrepancy); ships **Q3 2026**. The 3 Fort gold flags (the item-10 "Fortis" hallucination) rest on these confirmed facts.

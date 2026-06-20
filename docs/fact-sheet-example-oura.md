@@ -57,3 +57,7 @@
 ---
 
 *How to read this: when an engine answers a query like "best smart ring 2026" or "is the Oura Ring worth it," the judge compares the answer to Sections A–E. "The Oura Ring 4 is the newest, $349, no subscription needed" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*
+
+---
+
+**Ground-truth validation (2026-06-19):** the load-bearing facts — Oura Ring 5 as the current model (announced 2026-05-28, ships 2026-06-04), base **$399** / premium **$499** — re-verified against TechCrunch, BusinessWire, and Tech Advisor. **17 of the 18 Oura gold flags depend on this single fact**; it is confirmed correct, so no held-out flag traces to a wrong sheet line. (The 18th depends on Oura having SpO2 — a long-standing Gen3+ feature, defensible.)

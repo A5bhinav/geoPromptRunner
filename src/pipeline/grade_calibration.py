@@ -190,8 +190,20 @@ def render_grade_calibration(
 
 
 if __name__ == "__main__":
-    sample = Path(__file__).resolve().parents[2] / "data" / "sample_grade_situations.json"
-    situations = load_grade_situations(sample)
-    baseline = score_policy(DEFAULT_GRADE_POLICY, situations)
-    fitted, fit = fit_grade_policy(situations)
+    import sys
+
+    default = Path(__file__).resolve().parents[2] / "data" / "grade_situations.json"
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else default
+    situations = load_grade_situations(path)
+    graded = [s for s in situations if s.human_grade in _LETTER_RANK]
+    if not graded:
+        print(
+            f"Loaded {len(situations)} situations from {path.name}, but none are graded yet.\n"
+            "Gut-grade each 'human_grade' (A/B/C/D/F) from the raw numbers, then re-run "
+            "to fit the policy."
+        )
+        raise SystemExit(0)
+    print(f"Fitting on {len(graded)}/{len(situations)} graded situations.\n")
+    baseline = score_policy(DEFAULT_GRADE_POLICY, graded)
+    fitted, fit = fit_grade_policy(graded)
     print(render_grade_calibration(fitted, fit, baseline))

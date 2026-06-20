@@ -20,9 +20,11 @@ from src.verification.canary import (
 )
 from src.verification.determinism import (
     agreement_stats,
+    label_agreement_stats,
     measure_determinism,
     normalize_answer,
     render_baseline,
+    suggest_runs_from_labels,
     suggest_runs_per_query,
 )
 from src.verification.shuffle import (
@@ -152,6 +154,23 @@ def test_suggest_runs_per_query_bands() -> None:
     assert suggest_runs_per_query(agreement_stats(["a"] * 10)) == 3
     assert suggest_runs_per_query(agreement_stats(["a"] * 6 + ["b"] * 4)) == 5
     assert suggest_runs_per_query(agreement_stats(["a", "b", "c", "d", "e"])) == 10
+
+
+def test_label_agreement_stats_modal_per_brand() -> None:
+    # 3 answered repeats + 1 failed; Oura's read flips once, Whoop's once.
+    rf, mp, ab = "recommended_first", "mid_pack", "absent"
+    runs = [
+        {"Oura": (True, rf, "positive"), "Whoop": (False, ab, "neutral")},
+        {"Oura": (True, rf, "positive"), "Whoop": (True, mp, "neutral")},
+        {"Oura": (True, mp, "positive"), "Whoop": (False, ab, "neutral")},
+        None,  # an unanswered repeat is ignored, not counted as disagreement
+    ]
+    s = label_agreement_stats(runs)
+    assert s.answered == 3
+    assert s.per_brand["Oura"] == pytest.approx(2 / 3)  # modal read 2 of 3
+    assert s.per_brand["Whoop"] == pytest.approx(2 / 3)
+    assert s.min_agreement == pytest.approx(2 / 3)
+    assert suggest_runs_from_labels(s) == 5  # 0.67 in [0.5, 0.8) -> 5 runs
     assert suggest_runs_per_query(agreement_stats([None, None])) == 3
 
 

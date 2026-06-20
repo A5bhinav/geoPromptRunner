@@ -3,7 +3,9 @@ from __future__ import annotations
 from src.pipeline.calibration import compare
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, BrandJudgment
 from src.pipeline.judge_metrics import (
+    DEFAULT_GRADE_POLICY,
     collect_accuracy_flags,
+    grade_penalty_flags,
     leaderboard,
     losing_cells,
     mention_rate,
@@ -86,6 +88,24 @@ def test_collect_accuracy_flags_dedupes() -> None:
         _aj("q1", "anthropic", [_bj("Centsible", True, "buried")], [f]),  # same flag, deduped
     ]
     assert len(collect_accuracy_flags(js)) == 1
+
+
+def test_grade_dedupes_repeated_error_within_answer() -> None:
+    # One answer flags the SAME error type twice (different claim text, as an
+    # over-flagging judge does). It must count once toward the grade penalty —
+    # repetition of one mistake cannot compound the score — and keep the worst
+    # severity. (collect_accuracy_flags still lists both for display.)
+    f_hi = AccuracyFlag("stale", "Ring 4 is the newest", "Ring 5 is current", "high")
+    f_lo = AccuracyFlag("stale", "compare Ring 4 vs RingConn", "Ring 5 is current", "low")
+    twice = [_aj("q1", "gemini", [_bj("Centsible", True, "recommended_first")], [f_hi, f_lo])]
+    once = [_aj("q1", "gemini", [_bj("Centsible", True, "recommended_first")], [f_hi])]
+
+    assert len(grade_penalty_flags(twice)) == 1  # collapsed to one stale problem
+    assert len(collect_accuracy_flags(twice)) == 2  # but both still shown in the report
+    g_twice, g_once = visibility_grade(twice, "Centsible"), visibility_grade(once, "Centsible")
+    assert g_twice.n_flags == 1
+    assert g_twice.score == g_once.score  # repetition did not compound the penalty
+    assert g_twice.accuracy_penalty == DEFAULT_GRADE_POLICY.penalty["high"]  # worst severity kept
 
 
 def test_calibration_compare_counts_matches() -> None:

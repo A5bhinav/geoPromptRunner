@@ -2,7 +2,6 @@
   "_comment": "BLIND gold skeleton from run 204e7854-d4cc-4e9c-869e-81cdf594148e (40 items). Hand-label every item (judge verdicts intentionally omitted). Then split into tune/held-out and run: python -m src.pipeline.calibration",
   "items": [
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-01",
       "query": "how does heart rate variability relate to recovery?",
       "engine": "anthropic",
@@ -47,7 +46,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-02",
       "query": "what's a healthy resting heart rate during sleep?",
       "engine": "anthropic",
@@ -92,7 +90,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-03",
       "query": "how much deep sleep do I actually need each night?",
       "engine": "gemini",
@@ -137,7 +134,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-04",
       "query": "how can I use body temperature to track my menstrual cycle?",
       "engine": "gemini",
@@ -182,7 +178,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-05",
       "query": "what's a good HRV score and how do I improve it?",
       "engine": "openai",
@@ -227,7 +222,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-06",
       "query": "how do I know if I'm actually getting enough quality sleep?",
       "engine": "openai",
@@ -272,7 +266,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "adj-07",
       "query": "how does alcohol affect sleep and recovery?",
       "engine": "perplexity",
@@ -317,7 +310,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-01",
       "query": "is the Oura Ring worth it?",
       "engine": "perplexity",
@@ -333,13 +325,13 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "recommended_first",
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Ultrahuman": {
@@ -358,11 +350,16 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "wrong_pricing",
+          "severity": "low",
+          "note": "quotes $299-$549; current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-03",
       "query": "does the Oura Ring require a subscription?",
       "engine": "anthropic",
@@ -378,9 +375,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "negative"
         },
         "Whoop": {
           "present": false,
@@ -403,11 +400,21 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "med",
+          "note": "refers to 'the Gen 3 ring' as current; current model Ring 5 (launched 2026-05-28)"
+        },
+        {
+          "type": "wrong_pricing",
+          "severity": "low",
+          "note": "quotes $299-$549; current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-04",
       "query": "what's the newest Oura Ring right now?",
       "engine": "anthropic",
@@ -423,8 +430,8 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "recommended_first",
           "framing": "neutral"
         },
         "Whoop": {
@@ -448,11 +455,16 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "high",
+          "note": "query asks newest; answer says Gen 3 is newest (released 2021); current model Ring 5 (launched 2026-05-28)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-05",
       "query": "Oura Ring review: pros and cons",
       "engine": "gemini",
@@ -468,8 +480,8 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "recommended_first",
           "framing": "neutral"
         },
         "Whoop": {
@@ -497,7 +509,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-06",
       "query": "is the Oura Ring good for sleep tracking?",
       "engine": "gemini",
@@ -513,9 +524,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -542,7 +553,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "brd-07",
       "query": "is the Oura Ring membership worth paying for monthly?",
       "engine": "openai",
@@ -558,8 +568,8 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "recommended_first",
           "framing": "neutral"
         },
         "Whoop": {
@@ -587,7 +597,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-01",
       "query": "best smart ring",
       "engine": "openai",
@@ -603,9 +612,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -632,7 +641,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-02",
       "query": "best smart ring for sleep tracking",
       "engine": "perplexity",
@@ -648,9 +656,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -658,9 +666,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -668,16 +676,21 @@
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "low",
+          "note": "recommends 'Oura Ring 4'; current model Ring 5 (launched 2026-05-28) (Ring 4 prior gen)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-03",
       "query": "best smart ring for athletes and recovery",
       "engine": "perplexity",
@@ -693,9 +706,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -703,26 +716,31 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "low",
+          "note": "names 'Oura Ring 4' as overall pick; current model Ring 5 (launched 2026-05-28)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-05",
       "query": "best smart ring with long battery life",
       "engine": "anthropic",
@@ -738,9 +756,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -748,8 +766,8 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "mid_pack",
           "framing": "neutral"
         },
         "Samsung Galaxy Ring": {
@@ -758,16 +776,21 @@
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "high",
+          "note": "presents Oura Ring Gen 3 as current best overall; current model Ring 5 (launched 2026-05-28)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-06",
       "query": "best smart ring without a monthly subscription",
       "engine": "anthropic",
@@ -783,9 +806,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "also_ran",
+          "framing": "negative"
         },
         "Whoop": {
           "present": false,
@@ -793,9 +816,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -803,16 +826,15 @@
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         }
       },
       "expected_flags": [],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-07",
       "query": "most accurate smart ring for sleep",
       "engine": "gemini",
@@ -828,9 +850,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -838,9 +860,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -853,11 +875,16 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "med",
+          "note": "repeatedly calls current Oura 'Generation 3' (header/body/conclusion); current model Ring 5 (launched 2026-05-28)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-08",
       "query": "best budget smart ring",
       "engine": "gemini",
@@ -873,9 +900,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "also_ran",
+          "framing": "negative"
         },
         "Whoop": {
           "present": false,
@@ -883,9 +910,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "also_ran",
+          "framing": "negative"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -893,16 +920,21 @@
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "wrong_pricing",
+          "severity": "med",
+          "note": "says Oura starts at $349 (prior Ring 4 price); current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-09",
       "query": "best smart ring 2026",
       "engine": "openai",
@@ -947,7 +979,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-10",
       "query": "what's the newest smart ring in 2026?",
       "engine": "openai",
@@ -992,7 +1023,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-11",
       "query": "best health tracker you don't wear on your wrist",
       "engine": "perplexity",
@@ -1037,7 +1067,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cat-13",
       "query": "best smart ring for beginners",
       "engine": "perplexity",
@@ -1053,8 +1082,8 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Whoop": {
@@ -1068,21 +1097,26 @@
           "framing": "neutral"
         },
         "Samsung Galaxy Ring": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "low",
+          "note": "references 'Oura Ring 4' as current premium; current model Ring 5 (launched 2026-05-28)"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-01",
       "query": "Oura Ring vs Whoop for recovery",
       "engine": "anthropic",
@@ -1098,14 +1132,14 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Ultrahuman": {
           "present": false,
@@ -1127,7 +1161,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-02",
       "query": "Oura vs Samsung Galaxy Ring — which is better?",
       "engine": "anthropic",
@@ -1143,9 +1176,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -1158,9 +1191,9 @@
           "framing": "neutral"
         },
         "Samsung Galaxy Ring": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "RingConn": {
           "present": false,
@@ -1168,11 +1201,21 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "med",
+          "note": "header 'Oura Ring (Gen 3)'; current model Ring 5 (launched 2026-05-28)"
+        },
+        {
+          "type": "wrong_pricing",
+          "severity": "low",
+          "note": "quotes $299-$549; current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-03",
       "query": "Oura Ring vs Ultrahuman Ring Air",
       "engine": "gemini",
@@ -1188,9 +1231,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -1198,9 +1241,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -1213,11 +1256,21 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "high",
+          "note": "table labels Oura Gen3, Launch Date Late 2021; current model Ring 5 (launched 2026-05-28)"
+        },
+        {
+          "type": "wrong_pricing",
+          "severity": "med",
+          "note": "quotes ~$299-$549; current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-04",
       "query": "Oura vs RingConn for sleep tracking",
       "engine": "gemini",
@@ -1233,9 +1286,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -1253,16 +1306,26 @@
           "framing": "neutral"
         },
         "RingConn": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "stale",
+          "severity": "med",
+          "note": "table 'Oura Ring (Gen 3)'; current model Ring 5 (launched 2026-05-28)"
+        },
+        {
+          "type": "missing_or_invented_feature",
+          "severity": "med",
+          "note": "answer's table says Oura has 'No SpO2'; fact sheet lists blood-oxygen (SpO2) as a core feature Oura DOES have"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-05",
       "query": "best alternatives to the Oura Ring",
       "engine": "openai",
@@ -1278,14 +1341,14 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Ultrahuman": {
           "present": false,
@@ -1307,7 +1370,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-06",
       "query": "Oura Ring alternatives without a monthly subscription",
       "engine": "openai",
@@ -1323,14 +1385,14 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Ultrahuman": {
           "present": false,
@@ -1352,7 +1414,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-07",
       "query": "is the Samsung Galaxy Ring better than Oura?",
       "engine": "perplexity",
@@ -1368,9 +1429,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -1383,9 +1444,9 @@
           "framing": "neutral"
         },
         "Samsung Galaxy Ring": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "RingConn": {
           "present": false,
@@ -1393,11 +1454,16 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "wrong_pricing",
+          "severity": "med",
+          "note": "table 'Oura Starts at $299' (stale Gen3 price); current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-08",
       "query": "Whoop vs Ultrahuman for athletes",
       "engine": "perplexity",
@@ -1418,14 +1484,14 @@
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -1442,7 +1508,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-10",
       "query": "which is better value, Oura or Ultrahuman?",
       "engine": "anthropic",
@@ -1458,9 +1523,9 @@
       "fact_sheet": "# Client Fact Sheet — Oura (Example, B2C)\n\n*Worked example of the fact sheet on a real B2C startup. Facts pulled from public sources; this is what the LLM judge would check AI answers against.*\n\n> **Meta**\n> - Brand / legal name: Oura / Ōura Health Oy\n> - Prepared by: {analyst} · **Last verified: 2026-06-02** · Verified with client? No — public sources\n> - Primary source(s): ouraring.com/store, ouraring.com/membership, TechCrunch (2026-05-28), Fortune (2026-02-04)\n\n---\n\n## A · Identity & basics\n\n- **What it is (one line):** A smart ring that tracks sleep, activity, heart rate, and recovery, paired with a health app.\n- **Category / how it should be described:** Smart ring / health-and-sleep wearable.\n- **Name variants & aliases:** \"Oura\", \"Ōura\", \"Oura Ring\", legal entity \"Ōura Health Oy\".\n- **Founded / HQ:** Founded 2013 in Oulu, Finland · now dual HQ San Francisco, USA + Oulu, Finland.\n- **Founders / key people:** Co-founders incl. Petteri Lahtela, Kari Kivelä, Markku Koskela · CEO **Tom Hale**.\n- **Company stage / size:** Private, venture-backed · reported ~**$11B** valuation (Fortune, Feb 2026).\n- **Website:** ouraring.com\n\n## B · Pricing\n*(as of 2026-06-02)*\n\n- **Billing model:** One-time hardware purchase **+ a required monthly/annual membership** for full features.\n- **Hardware — Oura Ring 5 (current model):**\n  - Base finishes (Silver, Black) — **$399**\n  - Premium finishes (Gold, Stealth, Brushed Silver, Deep Rose) — **$499**\n- **Previous model — Oura Ring 4:** was **$349**; now being cleared out below that as Ring 5 launches.\n- **Membership:** **$5.99/month** or **$69.99/year**. First month free for new members.\n- **Free tier?** No full free tier — without membership the ring and app still work but insights are heavily limited.\n- **Free trial?** First month of membership free.\n\n## C · Features & capabilities\n\n- **Core features they DO have:** Sleep tracking (stages, Sleep Score), Readiness and Recovery scores, 24/7 heart rate, HRV, blood-oxygen (SpO2), body-temperature trends, activity/steps, cycle insights, guided content (meditations, sleep stories) in the app.\n- **Recently shipped:** **Oura Ring 5** (announced 2026-05-28, ships 2026-06-04) — ~**40% smaller** than Ring 4, thinner/lighter redesign, updated sensors.\n- **Things they explicitly do NOT do / common misconceptions:** It is **not a smartwatch** — no screen, no notifications, no on-device display. It is **not free** — the membership is required for the full product. It is **not medical-grade diagnostic** equipment.\n- **Key integrations:** Apple Health, Google Health Connect, Strava, Natural Cycles; third-party apps via API.\n\n## D · Positioning & competitors\n\n- **Ideal customer / who it's for:** Health-conscious consumers focused on sleep, recovery, and longevity who want a discreet, screenless wearable.\n- **Key differentiators (factual):** Screenless ring form factor; strong sleep/recovery software; long-standing clinical-credibility positioning; up to ~8-day battery (Ring 4 generation).\n- **Named competitors:** Whoop, Ultrahuman (Ring Air / Ring Pro), Samsung Galaxy Ring (~$399), RingConn.\n- **Most often confused with:** Ultrahuman and Samsung Galaxy Ring (same ring form factor); Whoop (recovery focus, but a screenless band, not a ring).\n\n## E · Known-inaccuracy watch-list\n*The high-value section — the specific things AI models are likely to get wrong right now.*\n\n- **Wrong current model:** Most models will still say the **Ring 4** (or even Ring 3) is the newest — the **Ring 5 launched 2026-05-28**. Anything calling Ring 4 \"the latest\" is now stale.\n- **Wrong price:** Expect stale quotes of **$349** (Ring 4) or older **$299** (Gen 3). Current Ring 5 base is **$399**.\n- **Missed subscription:** Models often omit the **required $5.99/mo membership**, implying the ring is a one-time purchase. This is a frequent and material error.\n- **Founding/geography:** Sometimes described as a US company; it was **founded in Finland (2013)**.\n- **Acquisitions models may miss:** Oura has acquired companies (e.g., Proxy, Veri, Sparta Science) — answers may not reflect this.\n\n---\n\n*How to read this: when an engine answers a query like \"best smart ring 2026\" or \"is the Oura Ring worth it,\" the judge compares the answer to Sections A–E. \"The Oura Ring 4 is the newest, $349, no subscription needed\" would trip three flags here — stale model (E), wrong price (B), and missed subscription (C) — and those three flags are exactly the visceral findings a demo leads with.*\n",
       "labels": {
         "Oura": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "recommended_first",
+          "framing": "positive"
         },
         "Whoop": {
           "present": false,
@@ -1468,9 +1533,9 @@
           "framing": "neutral"
         },
         "Ultrahuman": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
+          "present": true,
+          "prominence": "mid_pack",
+          "framing": "positive"
         },
         "Samsung Galaxy Ring": {
           "present": false,
@@ -1483,11 +1548,16 @@
           "framing": "neutral"
         }
       },
-      "expected_flags": [],
+      "expected_flags": [
+        {
+          "type": "wrong_pricing",
+          "severity": "low",
+          "note": "quotes $299-549; current Ring 5 base $399 / $499 premium"
+        }
+      ],
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "cmp-11",
       "query": "cheaper alternatives to Whoop",
       "engine": "anthropic",
@@ -1508,8 +1578,8 @@
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Ultrahuman": {
@@ -1532,7 +1602,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-01",
       "query": "why do I wake up exhausted even after sleeping 8 hours?",
       "engine": "gemini",
@@ -1577,7 +1646,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-02",
       "query": "how can I figure out why my sleep is so bad lately?",
       "engine": "gemini",
@@ -1622,7 +1690,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-03",
       "query": "what's the best way to track my sleep and recovery without wearing a watch?",
       "engine": "openai",
@@ -1643,8 +1710,8 @@
           "framing": "neutral"
         },
         "Whoop": {
-          "present": false,
-          "prominence": "absent",
+          "present": true,
+          "prominence": "buried",
           "framing": "neutral"
         },
         "Ultrahuman": {
@@ -1667,7 +1734,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-04",
       "query": "how do I know if I'm overtraining and need to rest?",
       "engine": "openai",
@@ -1712,7 +1778,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-05",
       "query": "how can I actually improve my deep sleep?",
       "engine": "perplexity",
@@ -1757,7 +1822,6 @@
       "fact_sheet_candidates": []
     },
     {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
       "query_id": "pa-06",
       "query": "is there a way to tell if my body is recovered enough to work out hard today?",
       "engine": "perplexity",

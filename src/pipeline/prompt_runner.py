@@ -65,7 +65,7 @@ def run_prompts(prompts: list[str], engines: list[BaseEngine]) -> list[PromptRes
 def run_query_set(
     queries: list[Query],
     engines: list[BaseEngine],
-    runs_per_query: int = 3,
+    runs_per_query: int = settings.DEFAULT_RUNS_PER_QUERY,
     *,
     done_cells: set[tuple[str, str, int]] | None = None,
     max_workers: int | None = None,

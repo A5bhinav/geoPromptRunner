@@ -237,9 +237,7 @@ def build_report(
     if has_judge:
         assert judgments is not None
         grade_payload = _grade_payload(
-            judge_metrics.visibility_grade(
-                judgments, client, cells=cells_map.get(client), flags=judge_flags
-            )
+            judge_metrics.visibility_grade(judgments, client, cells=cells_map.get(client))
         )
 
     citation_rate_client = metrics.citation_rate(results, domains) if domains else None

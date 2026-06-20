@@ -63,6 +63,11 @@ MAX_UPLOAD_BYTES: int = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 MAX_QUERIES: int = int(os.getenv("MAX_QUERIES", "200"))
 MAX_ENGINES: int = int(os.getenv("MAX_ENGINES", "8"))
 MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
+# Default repeats per (query, engine). The determinism baseline (2026-06-19,
+# docs/isolation-determinism-plan.md) found the brand READ is 100% stable on
+# openai/anthropic but wobbles on gemini + perplexity (~60% worst-brand), and the
+# standard memory audit includes both — so K=5 is the data-driven default.
+DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "5"))
 # Spend guard (rough estimated USD, engines + judge). A single audit estimated
 # above MAX_AUDIT_COST_USD is rejected; once the running total of accepted audits
 # this process would exceed MAX_TOTAL_SPEND_USD, further audits are rejected.
@@ -73,13 +78,16 @@ MAX_TOTAL_SPEND_USD: float = float(os.getenv("MAX_TOTAL_SPEND_USD", "200"))
 
 # The LLM judge — ONE held-constant model scores every answer from every engine,
 # so cross-engine comparisons stay valid. Held constant > which model. Uses the
-# Anthropic API (ANTHROPIC_API_KEY). The judge runs once per unique answer, so on
-# a multi-engine/multi-run audit it is the dominant Anthropic cost. Haiku 4.5 is
-# the economical default ($1/$5 per MTok — 3x cheaper than Sonnet) and handles
-# the presence/prominence classification well; set JUDGE_MODEL to
-# claude-sonnet-4-6 or claude-opus-4-8 for stricter accuracy-flag judgments.
+# Anthropic API (ANTHROPIC_API_KEY). The judge runs once per unique answer
+# (cached), so on a multi-engine/multi-run audit it is the dominant Anthropic
+# cost. Sonnet 4.5 is the default: calibration (2026-06, Oura+Fort gold sets)
+# showed it gives 100% accuracy-flag recall — it never misses a real client error
+# — vs Haiku's ~67%, at equal present/prominence/framing agreement. Haiku 4.5 is
+# ~3x cheaper ($1/$5 vs $3/$15 per MTok) and fine for the reading layer, but
+# misses real flags; set JUDGE_MODEL=claude-haiku-4-5 only if cost dominates and
+# flag recall doesn't matter.
 # Note: Claude is itself a measured surface — for neutrality use a non-measured model.
-JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-haiku-4-5")
+JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-sonnet-4-5-20250929")
 
 # Persistent judge cache. A verdict is fully determined by (judge model, client,
 # competitors, fact sheet, prompt, answer), so once an answer is judged it never
