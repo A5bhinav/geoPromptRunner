@@ -42,20 +42,25 @@ The right design is:
 
 ## 3. Current state in the codebase
 
+_Updated after commit `fb3e7a2` ("Add Site Audit pipeline") — the pipeline below is
+now **built and tested**, not just planned. Remaining work is the build-out backlog
+in §11 plus the gold-set calibration in §7._
+
 | Category | Status | Where |
 |---|---|---|
-| 1 · Technical Accessibility | **Built** | `src/audit/technical_check.py`, `technical_audit.py` |
-| 2 · Content Coverage / Internal Linking | Manual (checklist strings only) | `src/audit/rubric.py` `DEFAULT_CHECKLIST` |
-| 3 · Content Structure & Extractability | Manual | `rubric.py` |
-| 4 · Content Substance / E-E-A-T | Manual | `rubric.py` |
-| 5 · Structured Data / Schema | Manual | `rubric.py` |
-| 6 · Offsite Authority & Entity Consensus | Manual | `rubric.py` |
+| 1 · Technical Accessibility | **Built** (fidelity gaps — §11) | `src/audit/technical_check.py` |
+| 2 · Content Coverage / Internal Linking | **Built** (minor enhancement — §11) | `src/audit/checks/links.py` |
+| 3 · Content Structure & Extractability | **Built**, LLM judge **gated** on gold set | `checks/content_judge.py`, `content_primitives.py` |
+| 4 · Content Substance / E-E-A-T | **Built**, LLM judge **gated** on gold set | `checks/content_judge.py`, `content_primitives.py` |
+| 5 · Structured Data / Schema | **Built** (gaps — §11) | `src/audit/checks/schema.py` |
+| 6 · Offsite Authority & Entity Consensus | **Built** (minor enhancement — §11) | `src/audit/offsite/agent.py`, `tools.py` |
 | 7 · Baseline Measurement | **Built** | `src/engines/*`, `src/pipeline/*` |
 
-Category 1's six functions are the curl recipes from the doc's Comments 1–6,
-already translated into safe, SSRF-guarded Python. The same shape —
-`fn(domain) -> CheckResult{status, details}` — is the template for everything
-below.
+Orchestration lives in `src/audit/site_audit.py`; it runs as a concurrent best-effort
+phase in `src/api/runner.py` (the §6 design) and persists to `site_audit_*` Supabase
+tables (`data/schema_site_audit.sql`). The original Category-1 curl recipes (Comments
+1–6) became `fn(domain) -> CheckResult{status, details}` functions — the template the
+rest follows. A fidelity audit against those recipes found the gaps tracked in §11.
 
 ## 4. Per-category automation map
 
@@ -417,6 +422,36 @@ from scraping to the official API.
   sub-processor (DPA + client disclosure). Subprocess-per-crawl gives isolation while
   keeping client content in our perimeter. See implementation guide §6.5 (locked
   decisions) for the full browser-memory mitigation ladder.
+
+## 11. Build-out backlog (post-build gaps) — CLOSED
+
+A fidelity audit of the shipped pipeline against the transcript's 27 curl-recipe
+comments found checks that dropped a recipe step or measured a generic client view
+instead of the GPTBot view. **All P1–P3 items are now closed** (post-`fb3e7a2`
+follow-up); full per-item detail of what shipped is in **implementation guide §9**.
+
+**P1 — correctness/fidelity:** ✅
+- Robots → **Protego** matcher (+ crawler honors Disallow/Crawl-delay via `crawl/robots.py`).
+- llms.txt **Content-Type check** — `200 + text/html` app-shell → absent (C4).
+- Gated content **real recipe** — GPTBot UA, walk priority pages, detect redirect-to-login /
+  401-403 / login stub (C6).
+- WAF: **Cloudflare challenge body at 200** detected; **OAI-SearchBot** added to the probe (C2).
+
+**P2 — completeness:** ✅
+- **GPTBot UA** on rendering/sitemap/llms.txt/gated checks (C3/C5/C6).
+- Sitemap **Content-Type check + `<loc>` count** (C5).
+- Schema **features→types should-have inference** (C11) + **sameAs extraction/classification**
+  (C13; offline — live profile resolution deferred to the offsite layer).
+
+**P3 — enhancement:** ✅
+- Links: sitemap-coverage evidence (`sitemap_not_internally_linked`) from the full
+  discovered sitemap (C7).
+- Per-competitor on-site **"X vs {competitor}" comparison coverage** check (C19).
+
+**Separate from the backlog — the gold set (§7).** The Cat 3/4 LLM judge
+(`content_judge.py`) is built but gated until a hand-labeled page gold set reaches
+κ ≥ 0.6. That's a human labeling task, not a coding task, and it's the critical path to
+a *complete* audit (P1–P3 above are about making the already-live checks faithful).
 
 ---
 

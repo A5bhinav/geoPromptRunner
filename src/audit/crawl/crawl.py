@@ -50,15 +50,36 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
     from src.audit.crawl import cache
     from src.audit.crawl.fetcher import PlaywrightRenderer, fetch_page
     from src.audit.crawl.models import PageCategory
-    from src.audit.crawl.page_select import select_pages
+    from src.audit.crawl.page_select import discover_sitemap_urls, select_pages
+    from src.audit.crawl.robots import RobotsPolicy, load_robots
 
     cfg = config or FetchConfig()
     crawl_id = _new_crawl_id()
     result = CrawlResult(run_id=run_id, domain=domain, crawl_id=crawl_id, started_at=_utcnow_iso())
 
-    pages = select_pages(domain)
-    logger.info("crawl %s: selected %d pages (crawl_id=%s)", domain, len(pages), crawl_id)
-    gate = asyncio.Semaphore(cfg.max_render_concurrency)
+    # robots.txt: skip Disallow-ed pages and honor Crawl-delay (§1.5). A
+    # disallowed page is recorded — being invisible to GPTBot is itself a finding.
+    policy = load_robots(domain) if cfg.respect_robots else RobotsPolicy(None)
+    home = domain if "://" in domain else f"https://{domain}"
+    result.sitemap_urls = discover_sitemap_urls(home)  # full set for orphan-vs-sitemap
+    selected = select_pages(domain, sitemap_urls=result.sitemap_urls or None)
+    pages = []
+    for url, category in selected:
+        if not policy.allowed(url):
+            result.errors.append(f"{url}: robots-disallowed")
+        else:
+            pages.append((url, category))
+    delay = policy.crawl_delay()
+    logger.info(
+        "crawl %s: %d/%d pages allowed (crawl_id=%s, delay=%s)",
+        domain,
+        len(pages),
+        len(selected),
+        crawl_id,
+        delay,
+    )
+    # A Crawl-delay means serialize and pause between fetches; otherwise fan out.
+    gate = asyncio.Semaphore(1 if delay else cfg.max_render_concurrency)
 
     async def _crawl_one(url: str, category: PageCategory, renderer: object | None) -> None:
         async with gate:
@@ -68,6 +89,9 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
                 logger.warning("page fetch failed %s: %s", url, type(exc).__name__)
                 result.errors.append(f"{url}: fetch {type(exc).__name__}: {exc}")
                 return
+            finally:
+                if delay:
+                    await asyncio.sleep(delay)  # politeness pause, inside the gate
             result.pages.append(page)
             try:
                 cache.save_page(run_id, crawl_id, page)

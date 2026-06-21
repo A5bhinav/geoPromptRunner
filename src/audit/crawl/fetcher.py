@@ -94,6 +94,9 @@ class FetchConfig:
     retry_base_wait_s: float = 0.5
     retry_max_wait_s: float = 10.0
     render_ua: str = BROWSER_UA
+    # Honor robots.txt Disallow + Crawl-delay (§1.5). Off lets an owner audit a
+    # site that blocks crawlers; on (default) is the polite, faithful behavior.
+    respect_robots: bool = True
     # Bound concurrent headless renders (RAM ~700MB–1GB/slot, §6.5 Layer 0).
     max_render_concurrency: int = 3
     # Per-render nav + wall-clock caps — Playwright can *hang* on OOM (§6.5 locked #2).

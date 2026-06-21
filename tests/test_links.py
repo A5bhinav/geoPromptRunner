@@ -95,3 +95,26 @@ def test_external_links_excluded() -> None:
 def test_too_few_pages_ungradeable() -> None:
     pages = _site("<p><a href='/pricing'>pricing</a></p>", "<p>x</p>")[:2]
     assert analyze_link_graph(pages, "x.com").classification is LinkGraphClass.UNGRADEABLE
+
+
+def test_sitemap_coverage_evidence() -> None:
+    pages = _site(
+        "<p>See <a href='/pricing'>detailed pricing plans</a>, "
+        "<a href='/product'>product features overview</a>, "
+        "<a href='/blog'>latest blog articles</a>.</p>",
+        "<p>Back to <a href='/'>the homepage</a>.</p>",
+    )
+    sitemap = [
+        "https://x.com/",
+        "https://x.com/pricing",
+        "https://x.com/product",
+        "https://x.com/blog",
+        "https://x.com/orphaned-only-in-sitemap",  # never linked in-content
+    ]
+    result = analyze_link_graph(pages, "x.com", sitemap_urls=sitemap)
+    assert result.evidence["sitemap_size"] == 5
+    # homepage + pricing/product/blog are all reached by an in-content link.
+    assert result.evidence["sitemap_linked_in_content"] == 4
+    assert (
+        "https://x.com/orphaned-only-in-sitemap" in result.evidence["sitemap_not_internally_linked"]
+    )

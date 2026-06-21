@@ -18,6 +18,12 @@ from src.audit.checks.content_judge import (
     ContentJudgeResult,
     finalize_check,
 )
+from src.audit.checks.content_primitives import (
+    PRIMITIVE_CHECKS,
+    ContentPrimitivesResult,
+    PrimitiveCheck,
+    check_content_primitives,
+)
 from src.audit.checks.links import (
     AnchorIssue,
     LinkGraphClass,
@@ -55,4 +61,8 @@ __all__ = [
     "CONTENT_CHECKS",
     "CONTENT_RUBRIC_VERSION",
     "finalize_check",
+    "check_content_primitives",
+    "ContentPrimitivesResult",
+    "PrimitiveCheck",
+    "PRIMITIVE_CHECKS",
 ]

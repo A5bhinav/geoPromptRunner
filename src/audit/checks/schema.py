@@ -320,6 +320,67 @@ def _check_content(nodes: list[dict[str, Any]], visible_text: str) -> list[Conte
     return mismatches
 
 
+# --- features → expected types, and sameAs (Comments 11 / 13) ----------------
+
+# Types a page of each category ought to expose, so a missing one is a real gap.
+_CATEGORY_EXPECTED: dict[str, set[str]] = {
+    "homepage": {"Organization"},
+    "pricing": {"Product", "Offer"},
+    "product": {"Product"},
+    "comparison": {"Product"},
+    "blog": {"Article"},
+}
+_ARTICLE_FAMILY = {"Article", "NewsArticle", "BlogPosting"}
+_ENTITY_TYPES = {"Organization", "Person", "Brand", "LocalBusiness"}
+_IDENTITY_PLATFORMS = (
+    "twitter.com",
+    "x.com",
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "youtube.com",
+    "tiktok.com",
+    "github.com",
+    "wikipedia.org",
+    "wikidata.org",
+    "crunchbase.com",
+)
+
+
+def _should_have_types(page: PageRecord, types_found: set[str]) -> list[str]:
+    """Infer the rich-result types this page ought to expose, minus what's present."""
+    expected = set(_CATEGORY_EXPECTED.get(page.category.value, set()))
+    url = page.url.lower()
+    text = (page.extracted_text or "").lower()
+    if "/faq" in url or "frequently asked question" in text:
+        expected.add("FAQPage")
+    if any(seg in url for seg in ("/about", "/team", "/leadership", "/founder")):
+        expected.add("Person")
+    # Any Article-family type satisfies the blog "Article" expectation.
+    if "Article" in expected and (types_found & _ARTICLE_FAMILY):
+        expected.discard("Article")
+    return sorted(t for t in expected if t not in types_found)
+
+
+def _sameas_analysis(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Extract entity ``sameAs`` links and classify them by identity platform.
+
+    Resolution to the live profile belongs to the offsite layer (network); here we
+    surface what's declared and which known platforms it points at, so a missing or
+    implausible identity-link set is visible.
+    """
+    urls: list[str] = []
+    for node in nodes:
+        if _types_of(node) & _ENTITY_TYPES:
+            same_as = node.get("sameAs")
+            if isinstance(same_as, str):
+                urls.append(same_as)
+            elif isinstance(same_as, list):
+                urls.extend(u for u in same_as if isinstance(u, str))
+    platforms = sorted({p for url in urls for p in _IDENTITY_PLATFORMS if p in url.lower()})
+    return {"count": len(urls), "platforms": platforms, "urls": urls[:10]}
+
+
 # --- top-level check ---------------------------------------------------------
 
 
@@ -327,6 +388,8 @@ def check_schema(page: PageRecord) -> SchemaResult:
     """Validate a crawled page's structured data (Cat 5)."""
     nodes = flatten_typed_nodes(page.json_ld)
     types_found = sorted({t for node in nodes for t in _types_of(node)})
+    expected_missing = _should_have_types(page, set(types_found))
+    same_as = _sameas_analysis(nodes)
 
     if not nodes:
         if page.fetch_meta.blocked:
@@ -336,7 +399,7 @@ def check_schema(page: PageRecord) -> SchemaResult:
                 [],
                 [],
                 "page blocked — schema absence not meaningful",
-                _evidence([], []),
+                _evidence([], [], expected_missing, same_as),
             )
         return SchemaResult(
             SchemaClass.FAIL,
@@ -344,7 +407,7 @@ def check_schema(page: PageRecord) -> SchemaResult:
             [],
             [],
             "no JSON-LD structured data found",
-            _evidence([], []),
+            _evidence([], [], expected_missing, same_as),
         )
 
     findings = [
@@ -355,7 +418,7 @@ def check_schema(page: PageRecord) -> SchemaResult:
     mismatches = _check_content(nodes, page.extracted_text or "")
 
     incomplete = [f for f in findings if not f.satisfied]
-    evidence = _evidence(types_found, findings)
+    evidence = _evidence(types_found, findings, expected_missing, same_as)
 
     if mismatches:
         return SchemaResult(
@@ -376,6 +439,15 @@ def check_schema(page: PageRecord) -> SchemaResult:
             f"schema present but missing required props on: {names}",
             evidence,
         )
+    if expected_missing:
+        return SchemaResult(
+            SchemaClass.PARTIAL,
+            types_found,
+            findings,
+            mismatches,
+            f"valid schema, but this page should also expose: {', '.join(expected_missing)}",
+            evidence,
+        )
     return SchemaResult(
         SchemaClass.PASS,
         types_found,
@@ -386,10 +458,17 @@ def check_schema(page: PageRecord) -> SchemaResult:
     )
 
 
-def _evidence(types_found: list[str], findings: list[TypeFinding]) -> dict[str, Any]:
+def _evidence(
+    types_found: list[str],
+    findings: list[TypeFinding],
+    expected_missing: list[str],
+    same_as: dict[str, Any],
+) -> dict[str, Any]:
     return {
         "requirements_version": SCHEMA_REQUIREMENTS_VERSION,
         "types_found": types_found,
         "recommended_gaps": sorted({prop for f in findings for prop in f.missing_recommended}),
         "organization_present": "Organization" in types_found,
+        "missing_expected_types": expected_missing,
+        "same_as": same_as,
     }

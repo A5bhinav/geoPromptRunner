@@ -675,6 +675,66 @@ MVP. (Firecrawl is in the free-install table above so it's ready when you get th
 
 ---
 
+## 9. Build-out backlog (gaps found auditing the shipped pipeline vs. the transcript recipes)
+
+A fidelity audit against the 27 curl-recipe comments found places where a check dropped
+a step the recipe specifies, or measured a *generic* client view instead of the *GPTBot*
+view the recipe assumes. **All P1–P3 items below are now CLOSED** (post-`fb3e7a2`
+follow-up); each is annotated with what shipped and where. Priority: **P1** =
+correctness/fidelity, **P2** = completeness, **P3** = enhancement.
+
+### Cat 1 — Technical accessibility (`src/audit/technical_check.py`)
+- **[P1] ✅ Robots matcher → Protego.** `urllib.robotparser` removed; `check_robots_txt`
+  now uses `Protego.parse(...).can_fetch(url, ua)` (RFC 9309-compliant). The crawler
+  also gained `crawl/robots.py` (honors Disallow + Crawl-delay). (Plan §9.3.)
+- **[P1] ✅ llms.txt Content-Type check.** `check_llms_txt` fetches as GPTBot; a
+  `200 + text/html` (or HTML body) app-shell response now scores **fail/absent**, only
+  `text/plain`/markdown passes.
+- **[P1] ✅ Gated content real recipe.** `check_gated_content` walks homepage + priority
+  pages (via `page_select`) **as GPTBot** and flags 401/403, a redirect that lands on
+  `/login|/signup|/auth|/subscribe`, or a thin login/paywall stub. Gated homepage → fail.
+- **[P1] ✅ WAF challenge body at 200.** `check_crawler_access` flags a Cloudflare
+  "Just a moment…" challenge served at 200 (new `_is_challenge`), and **OAI-SearchBot**
+  is in the `AI_CRAWLER_UAS` probe.
+- **[P2] ✅ Sitemap Content-Type + `<loc>` count.** `check_sitemap` catches the HTML
+  app-shell trap and reports the `<loc>` count (and flags an empty sitemap).
+- **[P2] ✅ UA fidelity.** `check_rendering`/`check_sitemap`/`check_llms_txt`/
+  `check_gated_content` all fetch with the GPTBot UA now.
+
+### Cat 5 — Schema (`src/audit/checks/schema.py`)
+- **[P2] ✅ features→types "should-have" inference.** `_should_have_types` infers expected
+  types from page category + content (pricing → `Product`/`Offer`, FAQ → `FAQPage`,
+  about/team → `Person`, blog → `Article`); a missing expected type downgrades to PARTIAL
+  and is listed in `evidence.missing_expected_types`.
+- **[P2] ✅ sameAs analysis.** `_sameas_analysis` extracts entity `sameAs` links and
+  classifies them by identity platform (`evidence.same_as`). *Offline* (extraction +
+  platform classification); live HEAD-resolution to confirm each profile is brand-owned
+  is intentionally left to the offsite layer to keep the deterministic checker network-free.
+
+### Cat 2 — Internal linking (`src/audit/checks/links.py`) — P3 ✅
+- `analyze_link_graph` accepts the full discovered sitemap (now captured on
+  `CrawlResult.sitemap_urls`) and reports `sitemap_size` / `sitemap_linked_in_content` /
+  `sitemap_not_internally_linked` (evidence, not a hard fail — a capped crawl can't see
+  links from uncrawled pages). Explicit pillar→cluster judgment remains implicit in
+  PageRank/click-depth (intentional).
+
+### Cat 6 — Offsite / on-site comparison — P3 ✅
+- **Per-competitor comparison coverage.** New site-level `comparison_coverage` check in
+  `site_audit.py` (`_run_comparison_coverage`): competitors are threaded from the runner,
+  and each is matched against crawled pages for "X vs {competitor}" / alternatives
+  content; a missing one is a named gap that flows into the roadmap.
+
+### Not gaps (verified — don't "fix" these)
+- **Cat 3/4 content judge** (`content_judge.py`) is built but intentionally **gated**
+  until the page gold set hits κ ≥ 0.6 (plan §7). Wiring it live before calibration is
+  the wrong move, not a gap.
+- **Cat 4 last-updated date** is implemented in `content_primitives.py` (htmldate +
+  JSON-LD `dateModified` + visible regex) — already faithful to Comment 26.
+- **SSR** (`ssr.py`) deliberately uses a raw-vs-rendered word-count ratio instead of
+  Comment 3's grep-a-phrase — an intentional upgrade (§2), not a regression.
+
+---
+
 _This guide is the implementation layer under `site-audit-agent-plan.md` §5. Each
 section's "ideal vs. practical" calls are the parts most likely to bite if skipped —
 they are deliberately called out rather than buried._

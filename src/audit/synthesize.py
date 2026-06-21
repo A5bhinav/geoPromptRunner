@@ -56,6 +56,25 @@ _CHECK_MAP: dict[str, tuple[RubricCategory, str, float]] = {
         "schema.org markup present and valid",
         1.5,
     ),
+    # Deterministic Cat 3/4 content primitives (§3.3).
+    "headings_questions": (
+        RubricCategory.CONTENT_STRUCTURE,
+        "headings written as buyer questions",
+        1.0,
+    ),
+    "scannable_format": (
+        RubricCategory.CONTENT_STRUCTURE,
+        "scannable formatting (lists/tables)",
+        1.0,
+    ),
+    "alt_text": (RubricCategory.CONTENT_STRUCTURE, "alt text on images", 0.5),
+    "fact_density": (RubricCategory.CONTENT_SUBSTANCE, "fact density / statistics", 1.5),
+    "freshness_date": (RubricCategory.CONTENT_SUBSTANCE, "visible last-updated date", 1.0),
+    "comparison_coverage": (
+        RubricCategory.CONTENT_SUBSTANCE,
+        "on-site comparison content (X vs competitors)",
+        1.5,
+    ),
 }
 
 # Cat 3 = structure, Cat 4 = substance (E-E-A-T) — the content-judge categories.

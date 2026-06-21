@@ -15,7 +15,12 @@ import logging
 from typing import Any
 
 from src.api.reports import RoadmapRow, SiteAuditPayload, SiteCheckRow, SiteFindingRow
-from src.audit.checks import analyze_link_graph, check_schema, classify_ssr
+from src.audit.checks import (
+    analyze_link_graph,
+    check_content_primitives,
+    check_schema,
+    classify_ssr,
+)
 from src.audit.checks.links import LinkGraphResult
 from src.audit.checks.schema import SchemaResult
 from src.audit.checks.ssr import SSRResult
@@ -120,14 +125,20 @@ def _summary(checks: list[SiteCheckRow]) -> dict[str, int]:
 
 
 def run_site_audit(
-    run_id: str, domain: str, *, brand: str | None = None, persist: bool = True
+    run_id: str,
+    domain: str,
+    *,
+    brand: str | None = None,
+    competitors: list[str] | None = None,
+    persist: bool = True,
 ) -> SiteAuditPayload:
     """Crawl ``domain``, run the on-site checks, and (if ``brand`` given) Cat 6 offsite.
 
     Persists per-page verdicts to ``site_audit_check`` when ``persist`` is set
     (best-effort — a storage failure is logged, not raised). The crawl itself is
     already best-effort per page, so a single bad page never sinks the phase. The
-    offsite research (Cat 6) runs only when ``brand`` is provided.
+    offsite research (Cat 6) runs only when ``brand`` is provided; per-competitor
+    on-site comparison coverage runs when ``competitors`` are given.
     """
     crawl = run_site_audit_blocking(run_id, domain)
 
@@ -136,8 +147,12 @@ def run_site_audit(
     for page in crawl.pages:
         checks.append(_run_ssr(run_id, page, rows))
         checks.append(_run_schema(run_id, page, rows))
+        checks.extend(_run_primitives(run_id, page, rows))
     if crawl.pages:
         checks.append(_run_links(run_id, crawl, rows))
+        coverage = _run_comparison_coverage(run_id, crawl.pages, competitors or [], rows)
+        if coverage is not None:
+            checks.append(coverage)
 
     if persist and rows:
         try:
@@ -271,9 +286,93 @@ def _run_schema(run_id: str, page: PageRecord, rows: list[dict[str, Any]]) -> Si
     )
 
 
+_COMPARISON_CUES = (" vs ", "versus", "alternative", "comparison", "/compare", "compare ")
+
+
+def _run_comparison_coverage(
+    run_id: str, pages: list[PageRecord], competitors: list[str], rows: list[dict[str, Any]]
+) -> SiteCheckRow | None:
+    """Per-competitor on-site 'X vs {competitor}' / alternatives coverage (Comment 19).
+
+    Site-level check (page_url empty). Returns ``None`` when no competitors are
+    given. A competitor is 'covered' if a crawled page mentions it in a comparison
+    context (a comparison-category page, or a vs/alternative/compare cue nearby).
+    """
+    valid = [c for c in competitors if c.strip()]
+    if not valid:
+        return None
+    haystacks = [
+        (page.category.value, f"{page.url.lower()} {(page.extracted_text or '').lower()}")
+        for page in pages
+    ]
+    covered = []
+    for competitor in valid:
+        name = competitor.lower().strip()
+        if any(
+            name in hay
+            and (category == "comparison" or any(cue in hay for cue in _COMPARISON_CUES))
+            for category, hay in haystacks
+        ):
+            covered.append(competitor)
+    uncovered = [c for c in valid if c not in covered]
+    if not uncovered:
+        status = "pass"
+        detail = f"on-site comparison content covers all {len(valid)} competitor(s)"
+    elif not covered:
+        status = "fail"
+        detail = f"no on-site 'vs {{competitor}}' / alternatives content for: {', '.join(valid)}"
+    else:
+        status = "partial"
+        detail = f"missing comparison content for: {', '.join(uncovered)}"
+    rows.append(
+        _check_row(
+            run_id,
+            "comparison_coverage",
+            4,
+            "",
+            status,
+            {"reason": detail, "covered": covered, "uncovered": uncovered},
+            {},
+        )
+    )
+    return SiteCheckRow(
+        check_key="comparison_coverage", category=4, page_url="", status=status, detail=detail
+    )
+
+
+def _run_primitives(
+    run_id: str, page: PageRecord, rows: list[dict[str, Any]]
+) -> list[SiteCheckRow]:
+    """Deterministic Cat 3/4 content primitives — several verdicts per page."""
+    result = check_content_primitives(page)
+    out: list[SiteCheckRow] = []
+    for check in result.checks:
+        rows.append(
+            _check_row(
+                run_id,
+                check.check_key,
+                check.category,
+                page.url,
+                check.status,
+                {"reason": check.detail, **check.metrics},
+                {},
+            )
+        )
+        out.append(
+            SiteCheckRow(
+                check_key=check.check_key,
+                category=check.category,
+                page_url=page.url,
+                status=check.status,
+                detail=check.detail,
+            )
+        )
+    return out
+
+
 def _run_links(run_id: str, crawl: CrawlResult, rows: list[dict[str, Any]]) -> SiteCheckRow:
     # Site-level verdict (page_url empty) — built once over the whole crawl.
-    result = analyze_link_graph(crawl.pages, crawl.domain)
+    result = analyze_link_graph(crawl.pages, crawl.domain, sitemap_urls=crawl.sitemap_urls)
     rows.append(
         _check_row(
             run_id,

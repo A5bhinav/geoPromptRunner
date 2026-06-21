@@ -72,13 +72,10 @@ def test_run_site_audit_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = site_audit.run_site_audit("rid", "acme.com", persist=False)
     assert payload["present"] is True
     assert payload["pages_crawled"] == 2
-    # ssr + schema verdict per page (4), plus one site-level internal_linking check.
-    assert len(payload["checks"]) == 5
-    assert {c["check_key"] for c in payload["checks"]} == {
-        "ssr_rendering",
-        "schema_valid",
-        "internal_linking",
-    }
+    keys = {c["check_key"] for c in payload["checks"]}
+    # Per-page checks (ssr/schema + 5 content primitives) plus the site-level link check.
+    assert {"ssr_rendering", "schema_valid", "internal_linking"} <= keys
+    assert {"headings_questions", "fact_density", "freshness_date"} <= keys
     # Both pages are server-rendered (no escalation) -> SSR passes.
     assert payload["summary"].get("ssr_rendering.pass") == 2
     # The internal_linking check is site-level (empty page_url).

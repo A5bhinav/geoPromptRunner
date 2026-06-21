@@ -15,11 +15,12 @@ def _page(
     visible_text: str = "",
     *,
     blocked: bool = False,
+    category: PageCategory = PageCategory.OTHER,
 ) -> PageRecord:
     return PageRecord(
         url="https://x.com/",
         normalized_url="https://x.com/",
-        category=PageCategory.PRODUCT,
+        category=category,
         fetch_meta=FetchMeta(
             status_code=200,
             final_url="https://x.com/",
@@ -116,3 +117,24 @@ def test_recommended_gaps_surface_without_failing() -> None:
     result = check_schema(_page([{"@type": "Organization", "name": "Acme"}], "Acme"))
     assert result.classification is SchemaClass.PASS
     assert "logo" in result.evidence["recommended_gaps"]
+
+
+def test_missing_expected_type_is_partial() -> None:
+    # A pricing page with only Organization schema should expose Product/Offer.
+    result = check_schema(
+        _page([{"@type": "Organization", "name": "Acme"}], "Acme", category=PageCategory.PRICING)
+    )
+    assert result.classification is SchemaClass.PARTIAL
+    assert set(result.evidence["missing_expected_types"]) == {"Product", "Offer"}
+
+
+def test_sameas_links_extracted_and_classified() -> None:
+    org = {
+        "@type": "Organization",
+        "name": "Acme",
+        "sameAs": ["https://twitter.com/acme", "https://www.linkedin.com/company/acme"],
+    }
+    result = check_schema(_page([org], "Acme"))
+    same_as = result.evidence["same_as"]
+    assert same_as["count"] == 2
+    assert set(same_as["platforms"]) == {"twitter.com", "linkedin.com"}

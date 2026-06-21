@@ -21,6 +21,7 @@ __all__ = [
     "GLOBAL_PAGE_CAP",
     "classify_url",
     "select_pages",
+    "discover_sitemap_urls",
 ]
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ def select_pages(
     home_host = urlsplit(home).hostname
 
     if sitemap_urls is None:
-        sitemap_urls = _discover_sitemap_urls(home)
+        sitemap_urls = discover_sitemap_urls(home)
 
     # Classify candidates, keep only same-host non-homepage non-junk URLs.
     by_category: dict[PageCategory, list[str]] = {}
@@ -144,7 +145,7 @@ def _strip_locale(url: str) -> str:
     return parts._replace(path=stripped).geturl()
 
 
-def _discover_sitemap_urls(homepage: str) -> list[str]:
+def discover_sitemap_urls(homepage: str) -> list[str]:
     """Discover URLs from the domain's sitemap(s); empty list on failure (best-effort).
 
     trafilatura probes several candidate sitemap paths and logs each 404 at

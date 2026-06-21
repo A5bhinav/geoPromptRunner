@@ -86,3 +86,4 @@ class CrawlResult:
     started_at: str  # ISO-8601 UTC
     pages: list[PageRecord] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    sitemap_urls: list[str] = field(default_factory=list)  # full discovered set (for orphan checks)

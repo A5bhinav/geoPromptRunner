@@ -388,7 +388,11 @@ def _run_site_audit_phase(state: _RunState) -> None:
         from src.audit.site_audit import run_site_audit
 
         state.site_audit = run_site_audit(
-            state.run_id, domain, brand=cfg.client_name, persist=state.db_run_id is not None
+            state.run_id,
+            domain,
+            brand=cfg.client_name,
+            competitors=cfg.competitors,
+            persist=state.db_run_id is not None,
         )
     except Exception as exc:  # phase is additive — its failure never fails the run
         logger.warning("Site audit failed for run %s: %s", state.run_id, type(exc).__name__)

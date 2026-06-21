@@ -237,8 +237,16 @@ def _homepage_node(pages: list[PageRecord], nodes: set[str]) -> str:
     return min(nodes, key=lambda u: len([s for s in urlsplit(u).path.split("/") if s]))
 
 
-def analyze_link_graph(pages: list[PageRecord], domain: str) -> LinkGraphResult:
-    """Build the in-content internal link graph and grade internal linking (Cat 2)."""
+def analyze_link_graph(
+    pages: list[PageRecord], domain: str, sitemap_urls: list[str] | None = None
+) -> LinkGraphResult:
+    """Build the in-content internal link graph and grade internal linking (Cat 2).
+
+    When ``sitemap_urls`` is given, also report how many sitemap URLs are reached by
+    an in-content link from the crawled set — surfacing pages that are only
+    discoverable via the sitemap (Comment 7 step 4). It's reported as evidence, not
+    a hard fail: with a capped crawl we can't see links from uncrawled pages.
+    """
     gradable = [p for p in pages if not p.fetch_meta.blocked and _effective_html(p)]
     nodes = {normalize_url(p.url) for p in gradable}
     if len(nodes) < _MIN_PAGES_TO_GRADE:
@@ -269,10 +277,12 @@ def analyze_link_graph(pages: list[PageRecord], domain: str) -> LinkGraphResult:
     graph.add_nodes_from(nodes)
     anchor_issues: list[AnchorIssue] = []
     in_content_links = 0
+    in_content_targets: set[str] = set()  # all same-site in-content link targets
     for link in all_links:
         if link.dom_boilerplate or link.target in repeated:
             continue
         in_content_links += 1
+        in_content_targets.add(link.target)
         issue = _anchor_issue(link.anchor)
         if issue is not None:
             anchor_issues.append(AnchorIssue(link.source, link.target, link.anchor, issue))
@@ -304,7 +314,7 @@ def analyze_link_graph(pages: list[PageRecord], domain: str) -> LinkGraphResult:
     considered = len(nodes) - 1  # exclude homepage
     orphan_ratio = len(orphans) / considered if considered else 0.0
     anchor_ratio = len(anchor_issues) / in_content_links if in_content_links else 0.0
-    evidence = {
+    evidence: dict[str, object] = {
         "n_pages": len(nodes),
         "n_in_content_links": in_content_links,
         "n_edges": graph.number_of_edges(),
@@ -313,6 +323,16 @@ def analyze_link_graph(pages: list[PageRecord], domain: str) -> LinkGraphResult:
         "max_click_depth": max((d for d in depths.values()), default=0),
         "homepage": home,
     }
+
+    if sitemap_urls:
+        sitemap_norm = {
+            normalize_url(u) for u in sitemap_urls if _registered_domain(u) == site_domain
+        }
+        not_linked = sorted(sitemap_norm - in_content_targets - {home})
+        evidence["sitemap_size"] = len(sitemap_norm)
+        evidence["sitemap_linked_in_content"] = len(sitemap_norm & in_content_targets)
+        # Capped sample — these may still be linked from pages we didn't crawl.
+        evidence["sitemap_not_internally_linked"] = not_linked[:25]
 
     if orphan_ratio >= _ORPHAN_FAIL_RATIO:
         cls = LinkGraphClass.FAIL

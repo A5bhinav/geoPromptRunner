@@ -33,6 +33,12 @@ const CHECK_LABELS: Record<string, string> = {
   ssr_rendering: "Server-rendered (AI-crawler visible)",
   internal_linking: "Internal linking",
   schema_valid: "Schema.org markup",
+  headings_questions: "Headings as questions",
+  scannable_format: "Scannable formatting",
+  alt_text: "Image alt text",
+  fact_density: "Fact density",
+  freshness_date: "Last-updated date",
+  comparison_coverage: "Competitor comparison content",
 };
 
 // Roll the per-page check verdicts into one status per check: fail > partial >
