@@ -180,6 +180,41 @@ export interface ScorecardPayload {
   accuracy_flag_count: number | null;
 }
 
+export interface SiteCheckRow {
+  check_key: string;
+  category: number;
+  page_url: string;
+  status: string; // pass | partial | fail | ungradeable
+  detail: string;
+}
+
+export interface SiteFindingRow {
+  finding_type: string;
+  title: string;
+  url: string | null;
+  confidence: string; // high | medium | low
+}
+
+export interface RoadmapRow {
+  category: string;
+  check_name: string;
+  status: string; // partial | fail
+  impact_label: string; // High | Medium | Low
+  effort: string; // low | medium | high
+  phase: number; // 1..4
+}
+
+export interface SiteAuditPayload {
+  present: boolean;
+  domain: string;
+  pages_crawled: number;
+  checks: SiteCheckRow[];
+  summary: Record<string, number>;
+  errors: number;
+  offsite: SiteFindingRow[];
+  roadmap: RoadmapRow[];
+}
+
 export interface ReportPayload {
   client_name: string;
   run_date: string;
@@ -195,6 +230,7 @@ export interface ReportPayload {
   accuracy_flags: FlagRow[];
   sources: SourceRow[];
   losing_queries: LosingRow[];
+  site_audit: SiteAuditPayload | null;
 }
 
 // --- Calls ---

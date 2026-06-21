@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { IntentBadge, SeverityBadge } from "@/components/badges";
+import { SiteAuditSection } from "@/components/site-audit-section";
 // Charts pull in recharts (the heaviest dependency). Load them lazily on the
 // client so recharts ships in a report-only chunk, not the shared bundle.
 const chartFallback = <div className="h-40 animate-pulse rounded-lg bg-secondary/40" />;
@@ -438,6 +439,9 @@ export function ReportView({ report, runId }: { report: ReportPayload; runId?: s
           </Card>
         </div>
       </section>
+
+      {/* §5 On-site & off-site audit (technique checklist Cat 1–6) */}
+      {report.site_audit?.present && <SiteAuditSection siteAudit={report.site_audit} />}
     </div>
   );
 }

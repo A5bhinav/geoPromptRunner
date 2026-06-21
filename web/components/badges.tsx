@@ -42,6 +42,30 @@ export function SeverityBadge({ severity }: { severity: string }) {
   );
 }
 
+export function CheckStatusBadge({ status }: { status: string }) {
+  const map: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
+    pass: "success",
+    partial: "warning",
+    fail: "destructive",
+    ungradeable: "secondary",
+    unknown: "secondary",
+  };
+  return (
+    <Badge variant={map[status] ?? "secondary"} className="capitalize">
+      {status}
+    </Badge>
+  );
+}
+
+export function ImpactBadge({ impact }: { impact: string }) {
+  const variant = impact === "High" ? "destructive" : impact === "Medium" ? "warning" : "secondary";
+  return (
+    <Badge variant={variant} className="capitalize">
+      {impact}
+    </Badge>
+  );
+}
+
 export function StateBadge({ state }: { state: string }) {
   const map: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
     done: "success",

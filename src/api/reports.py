@@ -15,6 +15,10 @@ __all__ = [
     "FlagRow",
     "SourceRow",
     "LosingRow",
+    "SiteCheckRow",
+    "SiteFindingRow",
+    "RoadmapRow",
+    "SiteAuditPayload",
     "ReportPayload",
     "build_report",
 ]
@@ -62,6 +66,41 @@ class LosingRow(TypedDict):
     competitor: str
 
 
+class SiteCheckRow(TypedDict):
+    check_key: str  # "ssr_rendering" | "schema_valid" | "internal_linking"
+    category: int  # the technique-checklist category (1..6)
+    page_url: str
+    status: str  # pass | partial | fail | ungradeable
+    detail: str
+
+
+class SiteFindingRow(TypedDict):
+    finding_type: str  # wikidata | community | reviews | backlinks | listicle | press | ...
+    title: str
+    url: str | None
+    confidence: str  # high | medium | low
+
+
+class RoadmapRow(TypedDict):
+    category: str
+    check_name: str
+    status: str  # partial | fail (passing checks aren't gaps)
+    impact_label: str  # High | Medium | Low
+    effort: str  # low | medium | high
+    phase: int  # 1 accessibility → 2 content → 3 off-site → 4 measurement
+
+
+class SiteAuditPayload(TypedDict):
+    present: bool  # False when no domain was crawled / the audit didn't run
+    domain: str
+    pages_crawled: int
+    checks: list[SiteCheckRow]
+    summary: dict[str, int]  # status counts keyed "<check_key>.<status>"
+    errors: int  # per-page crawl failures (best-effort)
+    offsite: list[SiteFindingRow]  # Cat 6 offsite findings (empty if not run)
+    roadmap: list[RoadmapRow]  # §5 prioritized gaps synthesized from the audit
+
+
 class ScorecardPayload(TypedDict):
     visibility_grade: GradePayload | None
     share_of_model_client: float
@@ -89,6 +128,7 @@ class ReportPayload(TypedDict):
     accuracy_flags: list[FlagRow]
     sources: list[SourceRow]
     losing_queries: list[LosingRow]
+    site_audit: SiteAuditPayload | None  # on-site technique checks (Cat 1–5); None if not run
 
 
 def _grade_payload(grade: judge_metrics.VisibilityGrade) -> GradePayload:
@@ -120,13 +160,17 @@ def build_report(
     judgments: list[AnswerJudgment] | None = None,
     fact_sheet_present: bool = False,
     run_date: str | None = None,
+    site_audit: SiteAuditPayload | None = None,
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
     Judge-aware: when judgments are present (and any were assessed) the grade,
     visibility, framing and accuracy come from the LLM judge; otherwise it falls
     back to regex mention detection (no grade, no accuracy). Bucket rates,
-    citations and sources are results-based and render in either mode. Pure.
+    citations and sources are results-based and render in either mode. The
+    ``site_audit`` block (on-site technique checks) is additive and best-effort —
+    the report renders with it absent (``None``) so a late/failed crawl never
+    blocks the answer report. Pure.
     """
     client = outcome.client_name
     competitors = outcome.competitors
@@ -210,9 +254,7 @@ def build_report(
     losing_queries: list[LosingRow] = []
     if has_judge:
         assert judgments is not None
-        for cell in judge_metrics.losing_cells(
-            judgments, client, competitors, cells_map=cells_map
-        ):
+        for cell in judge_metrics.losing_cells(judgments, client, competitors, cells_map=cells_map):
             losing_queries.append(
                 LosingRow(
                     query_id=cell.query_id,
@@ -281,6 +323,7 @@ def build_report(
         accuracy_flags=accuracy_flags,
         sources=sources,
         losing_queries=losing_queries,
+        site_audit=site_audit,
     )
 
 

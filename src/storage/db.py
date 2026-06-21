@@ -31,6 +31,14 @@ __all__ = [
     "get_audit_run",
     "save_judgments",
     "get_judgments",
+    "upsert_site_audit_pages",
+    "get_site_audit_pages",
+    "upload_site_audit_html",
+    "download_site_audit_html",
+    "upsert_site_audit_checks",
+    "get_site_audit_checks",
+    "replace_site_audit_findings",
+    "get_site_audit_findings",
 ]
 
 logger = logging.getLogger(__name__)
@@ -42,6 +50,15 @@ TABLE_AUDIT_RUNS = "audit_runs"
 TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_JUDGMENTS = "judgments"
+
+# Site-audit pipeline tables (see data/schema_site_audit.sql).
+TABLE_SITE_AUDIT_PHASE = "site_audit_phase"
+TABLE_SITE_AUDIT_PAGE = "site_audit_page"
+TABLE_SITE_AUDIT_CHECK = "site_audit_check"
+TABLE_SITE_AUDIT_OFFSITE = "site_audit_offsite_finding"
+
+# Private Storage bucket for gzipped raw/rendered HTML blobs (large, not row data).
+BUCKET_SITE_AUDIT_HTML = "site-audit-html"
 
 
 class StorageError(Exception):
@@ -283,6 +300,105 @@ def get_audit_run(run_id: str) -> dict[str, object] | None:
     """Fetch a single audit-run row by id, or None if absent."""
     rows = _select_rows(TABLE_AUDIT_RUNS, run_id, key="id")
     return rows[0] if rows else None
+
+
+# --- Site-audit page cache ---------------------------------------------------
+
+
+def upsert_site_audit_pages(run_id: str, rows: list[dict[str, Any]]) -> None:
+    """Upsert crawled-page rows, idempotent on ``(run_id, normalized_url)``.
+
+    A retried crawl overwrites the prior row for a URL rather than duplicating it
+    (the table's unique constraint is the conflict target). Callers in the audit
+    layer build the row dicts (the ``PageRecord``→row mapping is audit-domain
+    knowledge); this function owns the Supabase write and its error wrapping so no
+    audit code touches Supabase directly.
+    """
+    if not rows:
+        return
+    _execute(
+        f"upsert_site_audit_pages for run {run_id}",
+        lambda c: (
+            c.table(TABLE_SITE_AUDIT_PAGE)
+            .upsert(rows, on_conflict="run_id,normalized_url")
+            .execute()
+        ),
+    )
+
+
+def get_site_audit_pages(run_id: str) -> list[dict[str, object]]:
+    """Return all cached page rows for a run (raw row dicts; caller rehydrates)."""
+    return _select_rows(TABLE_SITE_AUDIT_PAGE, run_id)
+
+
+def upload_site_audit_html(path: str, data: bytes) -> None:
+    """Upload a gzipped HTML blob to the private site-audit bucket (upsert).
+
+    Large HTML lives in object storage, not table rows (§1.6); the
+    ``site_audit_page`` row keeps only the ``storage_path`` pointer. ``upsert`` is
+    on so a re-crawl overwrites the same content-addressed object.
+    """
+    _execute(
+        f"upload_site_audit_html {path}",
+        lambda c: c.storage.from_(BUCKET_SITE_AUDIT_HTML).upload(
+            path=path,
+            file=data,
+            file_options={"content-type": "application/gzip", "upsert": "true"},
+        ),
+    )
+
+
+def download_site_audit_html(path: str) -> bytes:
+    """Download a gzipped HTML blob from the private site-audit bucket."""
+    return _execute(
+        f"download_site_audit_html {path}",
+        lambda c: c.storage.from_(BUCKET_SITE_AUDIT_HTML).download(path),
+    )
+
+
+def upsert_site_audit_checks(run_id: str, rows: list[dict[str, Any]]) -> None:
+    """Upsert per-page check verdicts, idempotent on ``(run_id, check_key, page_url)``.
+
+    A re-run overwrites a page's prior verdict for a given check rather than
+    duplicating it. Callers in the audit layer build the rows; this owns the write.
+    """
+    if not rows:
+        return
+    _execute(
+        f"upsert_site_audit_checks for run {run_id}",
+        lambda c: (
+            c.table(TABLE_SITE_AUDIT_CHECK)
+            .upsert(rows, on_conflict="run_id,check_key,page_url")
+            .execute()
+        ),
+    )
+
+
+def get_site_audit_checks(run_id: str) -> list[dict[str, object]]:
+    """Return all site-audit check verdict rows for a run (raw row dicts)."""
+    return _select_rows(TABLE_SITE_AUDIT_CHECK, run_id)
+
+
+def replace_site_audit_findings(run_id: str, rows: list[dict[str, Any]]) -> None:
+    """Replace a run's offsite findings (delete-then-insert — findings aren't keyed).
+
+    Mirrors ``save_judgments``: a re-run swaps the whole set rather than
+    accumulating duplicates across runs.
+    """
+    _execute(
+        f"clear site_audit findings for run {run_id}",
+        lambda c: c.table(TABLE_SITE_AUDIT_OFFSITE).delete().eq("run_id", run_id).execute(),
+    )
+    if rows:
+        _execute(
+            f"insert site_audit findings for run {run_id}",
+            lambda c: c.table(TABLE_SITE_AUDIT_OFFSITE).insert(rows).execute(),
+        )
+
+
+def get_site_audit_findings(run_id: str) -> list[dict[str, object]]:
+    """Return all offsite finding rows for a run (raw row dicts)."""
+    return _select_rows(TABLE_SITE_AUDIT_OFFSITE, run_id)
 
 
 def list_audit_runs(client_name: str) -> list[dict[str, object]]:

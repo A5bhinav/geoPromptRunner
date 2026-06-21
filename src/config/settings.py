@@ -95,3 +95,20 @@ JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-sonnet-4-5-20250929")
 # addressed SQLite cache stores each verdict so repeated answers cost no API call.
 # Set JUDGE_CACHE_PATH="" to disable (e.g. to force a fresh judge pass).
 JUDGE_CACHE_PATH: str = os.getenv("JUDGE_CACHE_PATH", "data/judge_cache.sqlite")
+
+# --- Cat 6 offsite research agent (all optional) ---
+# Each offsite tool degrades gracefully to "unavailable" when its key is unset, so
+# the agent runs with whatever data sources are configured (Wikidata needs none).
+# Serper.dev — Google SERP data ($1/1k) used for the agent's search + review/
+# listicle presence detection.
+SERPER_API_KEY: str | None = os.getenv("SERPER_API_KEY")
+# Reddit Data API (OAuth2 client-credentials) for community-presence search. A
+# descriptive User-Agent is mandatory per Reddit's API rules.
+REDDIT_CLIENT_ID: str | None = os.getenv("REDDIT_CLIENT_ID")
+REDDIT_CLIENT_SECRET: str | None = os.getenv("REDDIT_CLIENT_SECRET")
+REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "geo-audit/0.1 (offsite research)")
+# DataForSEO (HTTP Basic auth) — cheapest backlinks summary source (~$0.02/call).
+DATAFORSEO_LOGIN: str | None = os.getenv("DATAFORSEO_LOGIN")
+DATAFORSEO_PASSWORD: str | None = os.getenv("DATAFORSEO_PASSWORD")
+# Agent model (reuses the judge model by default — a non-measured, capable model).
+OFFSITE_AGENT_MODEL: str = os.getenv("OFFSITE_AGENT_MODEL", JUDGE_MODEL)

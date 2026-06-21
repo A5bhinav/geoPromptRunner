@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from src.api.engine_registry import build_engines
-from src.api.reports import ReportPayload, build_report
+from src.api.reports import ReportPayload, SiteAuditPayload, build_report
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.pipeline.answers_export import build_answers_markdown, build_results_csv
@@ -59,6 +59,7 @@ class _RunState:
     db_run_id: str | None = None
     results: list[QueryResult] = field(default_factory=list)
     judgments: list[AnswerJudgment] = field(default_factory=list)
+    site_audit: SiteAuditPayload | None = None
     engine_completed: dict[str, int] = field(default_factory=dict)
     active_engines: list[str] = field(default_factory=list)
     skipped_engines: list[tuple[str, str]] = field(default_factory=list)
@@ -128,6 +129,10 @@ class RunStatus:
     total: int
     per_engine: list[EngineStatus]
     error: str | None
+    # Parallel site-audit progress (additive — existing consumers ignore these).
+    # None when no domain was given / the audit wasn't requested for this run.
+    site_audit_state: str | None = None  # running | done | failed
+    site_audit_pages: int = 0
 
 
 @dataclass(frozen=True)
@@ -260,6 +265,21 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
     state.state = "running"
     qs = state.audit.query_set
 
+    # Site audit (Cat 1–5 on-site checks) runs concurrently with the engine
+    # fan-out — the scrape doesn't need the answers and vice versa (plan §6), so
+    # "linear for the user" isn't "slower under the hood". Best-effort: it writes
+    # to state.site_audit and is joined before the report; a crawl failure never
+    # touches the engine phase or the run's terminal state.
+    site_thread: threading.Thread | None = None
+    if cfg.client_domains:
+        site_thread = threading.Thread(
+            target=_run_site_audit_phase,
+            args=(state,),
+            name=f"siteaudit-{state.run_id[:8]}",
+            daemon=True,
+        )
+        site_thread.start()
+
     # Resume support: any cells already persisted for this run are reloaded and
     # skipped at (query_id, engine, run_index) granularity, so an interrupted
     # run continues exactly where it stopped — including filling in an engine
@@ -326,6 +346,7 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         flush()  # persist whatever didn't fill a final batch
 
         if state.cancel_requested:
+            _join_site_audit(site_thread)
             state.state = "cancelled"
             _persist_state(state)
             return
@@ -333,15 +354,44 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         if cfg.judge:
             _run_judge(state)
 
+        # Wait for the concurrent site audit so the report includes it.
+        _join_site_audit(site_thread)
         state.state = "done"
         _persist_state(state)
     except Exception as exc:  # defensive: a run thread must never die silently
         # Log the real type server-side; surface only a generic message to the
         # client so internal details aren't disclosed.
         logger.warning("Run %s failed: %s", state.run_id, type(exc).__name__)
+        _join_site_audit(site_thread, timeout=30.0)
         state.state = "failed"
         state.error = "run failed (see server logs)"
         _persist_state(state, state.error)
+
+
+def _join_site_audit(site_thread: threading.Thread | None, timeout: float | None = None) -> None:
+    """Join the concurrent site-audit thread (best-effort; never raises)."""
+    if site_thread is not None:
+        site_thread.join(timeout)
+
+
+def _run_site_audit_phase(state: _RunState) -> None:
+    """Crawl the client domain and run the on-site checks (best-effort, never raises).
+
+    Writes the result to ``state.site_audit``. Imported lazily so the crawl deps
+    (Playwright/trafilatura/extruct) aren't pulled into the API import path, and
+    so a missing crawl dependency degrades to "no site audit" rather than breaking
+    the run — exactly the pattern ``_run_judge`` uses.
+    """
+    cfg = state.audit.config
+    domain = cfg.client_domains[0]
+    try:
+        from src.audit.site_audit import run_site_audit
+
+        state.site_audit = run_site_audit(
+            state.run_id, domain, brand=cfg.client_name, persist=state.db_run_id is not None
+        )
+    except Exception as exc:  # phase is additive — its failure never fails the run
+        logger.warning("Site audit failed for run %s: %s", state.run_id, type(exc).__name__)
 
 
 def _run_judge(state: _RunState) -> None:
@@ -432,6 +482,26 @@ def _status_from_db(run_id: str) -> RunStatus | None:
     )
 
 
+def _site_audit_from_db(run_id: str, domains: list[str], brand: str) -> SiteAuditPayload | None:
+    """Rebuild the site-audit block from stored check + finding rows (best-effort).
+
+    Self-contained so a site-audit storage hiccup degrades to "no site audit"
+    rather than aborting the whole report rebuild.
+    """
+    try:
+        rows = db.get_site_audit_checks(run_id)
+        finding_rows = db.get_site_audit_findings(run_id)
+    except db.StorageError:
+        return None
+    if not rows and not finding_rows:
+        return None
+    from src.audit.site_audit import site_audit_payload_from_rows
+
+    return site_audit_payload_from_rows(
+        domains[0] if domains else "", rows, finding_rows, brand=brand
+    )
+
+
 def _report_from_db(run_id: str) -> ReportPayload | None:
     """Rebuild the report from storage for a run not in this process's memory."""
     try:
@@ -440,6 +510,9 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
             return None
         results = db.get_query_results(run_id)
         judgments = db.get_judgments(run_id)
+        site_audit = _site_audit_from_db(
+            run_id, _str_list(row.get("client_domains")), str(row.get("client_name", ""))
+        )
     except db.StorageError:
         return None
     outcome = _outcome_from_row(row, results)
@@ -448,6 +521,7 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         judgments=judgments or None,
         fact_sheet_present=bool(row.get("fact_sheet_present")),
         run_date=str(row.get("created_at", ""))[:10],
+        site_audit=site_audit,
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -477,6 +551,18 @@ def get_status(run_id: str) -> RunStatus | None:
         per_engine.append(
             EngineStatus(name=name, state="failed", completed=0, total=0, detail=reason)
         )
+
+    site_audit_state: str | None = None
+    site_audit_pages = 0
+    if cfg.client_domains:
+        if state.site_audit is not None:
+            site_audit_state = "done"
+            site_audit_pages = state.site_audit["pages_crawled"]
+        elif state.state in ("done", "cancelled", "failed"):
+            site_audit_state = state.state  # finished without a payload
+        else:
+            site_audit_state = "running"
+
     return RunStatus(
         run_id=state.run_id,
         client_name=cfg.client_name,
@@ -485,6 +571,8 @@ def get_status(run_id: str) -> RunStatus | None:
         total=state.total_calls,
         per_engine=per_engine,
         error=state.error,
+        site_audit_state=site_audit_state,
+        site_audit_pages=site_audit_pages,
     )
 
 
@@ -501,6 +589,7 @@ def get_report(run_id: str) -> ReportPayload | None:
         judgments=state.judgments or None,
         fact_sheet_present=state.audit.fact_sheet is not None,
         run_date=state.created_at[:10],
+        site_audit=state.site_audit,
     )
     if state.state == "done":
         with _REPORT_CACHE_LOCK:

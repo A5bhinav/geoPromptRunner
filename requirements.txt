@@ -26,3 +26,22 @@ pytest>=8.0.0
 # Linting / formatting / type checking
 ruff>=0.5.0
 mypy>=1.10.0
+
+# --- Site Audit: fetch & cache layer (Categories 1–5) ---
+# Two-tier crawler (raw httpx → headless render only when needed) plus the
+# extraction/parse stack the deterministic checkers read from. See
+# docs/site-audit-implementation-guide.md §1. Run `playwright install chromium`
+# after installing (the browser binary is not a pip package).
+playwright>=1.40        # headless render escalation; browser binary via `playwright install chromium`
+trafilatura>=1.12       # main-content extraction (top-benchmarked) + sitemap discovery
+htmldate>=1.8           # robust published/updated date extraction (Cat 4)
+extruct>=0.18           # authoritative JSON-LD / microdata / RDFa / OpenGraph graph (Cat 5)
+selectolax>=0.3.21      # fast lexbor HTML parser for the hot path (link graph, DOM checks)
+protego>=0.3            # RFC 9309-correct robots.txt matcher (replaces urllib.robotparser)
+w3lib>=2.1              # URL canonicalization for the link graph (Cat 2)
+tldextract>=5.1         # eTLD+1 same-site classification (Cat 2)
+tenacity>=8.2           # retry/backoff for fetches (honors Retry-After)
+rapidfuzz>=3.6          # fuzzy schema-vs-visible-content matching (Cat 5)
+networkx>=3.2           # internal link graph: orphans, pagerank, click-depth (Cat 2)
+# NOTE: advertools (richer sitemap parsing) is deferred — it pulls pandas, and
+# trafilatura's built-in sitemap_search() covers the MVP. Add later if needed.
