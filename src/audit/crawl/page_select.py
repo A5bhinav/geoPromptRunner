@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 from src.audit.crawl.models import PageCategory
 
@@ -22,6 +22,7 @@ __all__ = [
     "classify_url",
     "select_pages",
     "discover_sitemap_urls",
+    "discover_nav_links",
 ]
 
 logger = logging.getLogger(__name__)
@@ -98,10 +99,11 @@ def select_pages(
     """Return the capped, prioritized ``(url, category)`` set to crawl for ``domain``.
 
     Homepage is always first. When ``sitemap_urls`` is ``None`` the sitemap is
-    discovered via trafilatura ``sitemap_search``; with no sitemap the set is just
-    the homepage (nav-link fallback is a later refinement). Applies
-    :data:`CATEGORY_CAPS` then :data:`GLOBAL_PAGE_CAP`, preferring shallow paths
-    and dropping pagination/tag/author/locale duplicates.
+    discovered via trafilatura ``sitemap_search``; on a sitemap-less site it falls
+    back to homepage nav-link discovery (guide §1.4 / §7.5 — the in-house version of
+    a deep-crawl fallback). Applies :data:`CATEGORY_CAPS` then
+    :data:`GLOBAL_PAGE_CAP`, preferring shallow paths and dropping
+    pagination/tag/author/locale duplicates.
     """
     home = _homepage(domain)
     selected: list[tuple[str, PageCategory]] = [(home, PageCategory.HOMEPAGE)]
@@ -109,6 +111,8 @@ def select_pages(
 
     if sitemap_urls is None:
         sitemap_urls = discover_sitemap_urls(home)
+    if not sitemap_urls:
+        sitemap_urls = discover_nav_links(home)  # sitemap-less fallback
 
     # Classify candidates, keep only same-host non-homepage non-junk URLs.
     by_category: dict[PageCategory, list[str]] = {}
@@ -143,6 +147,57 @@ def _strip_locale(url: str) -> str:
     path = parts.path or "/"
     stripped = _LOCALE_SEGMENT_RE.sub("/", path)
     return parts._replace(path=stripped).geturl()
+
+
+def discover_nav_links(homepage: str, max_links: int = 200) -> list[str]:
+    """Fallback URL discovery for sitemap-less sites: same-host links off the homepage.
+
+    The in-house version of guide §7.5's "deep-crawl for sitemap-less sites" — one
+    level (the homepage's nav + in-content links), fed back into the same scorer.
+    This closes the homepage-only gap without coupling the pipeline to the pre-1.0
+    Crawl4AI library (the docs' explicit "augment, don't replace" caution). Fetched
+    as GPTBot through net_guard; best-effort (empty list on any failure).
+    """
+    import httpx
+    from selectolax.parser import HTMLParser
+
+    from src.audit.crawl.fetcher import GPTBOT_UA
+    from src.net_guard import UnsafeUrlError, assert_public_url
+
+    try:
+        assert_public_url(homepage)
+        response = httpx.get(
+            homepage, headers={"User-Agent": GPTBOT_UA}, timeout=15.0, follow_redirects=True
+        )
+    except (httpx.HTTPError, UnsafeUrlError) as exc:
+        logger.info("nav-link discovery fetch failed for %s: %s", homepage, type(exc).__name__)
+        return []
+    if response.status_code >= 400:
+        return []
+    try:
+        tree = HTMLParser(response.text)
+    except Exception as exc:  # malformed HTML
+        logger.info("nav-link discovery parse failed for %s: %s", homepage, type(exc).__name__)
+        return []
+
+    home_host = urlsplit(homepage).hostname
+    out: list[str] = []
+    seen: set[str] = set()
+    for node in tree.css("a"):
+        href = (node.attributes.get("href") or "").strip()
+        if not href or href.startswith(("#", "mailto:", "tel:", "javascript:")):
+            continue
+        absolute = urljoin(homepage, href).split("#")[0]
+        parts = urlsplit(absolute)
+        if parts.scheme not in ("http", "https") or parts.hostname != home_host:
+            continue
+        if absolute in seen:
+            continue
+        seen.add(absolute)
+        out.append(absolute)
+        if len(out) >= max_links:
+            break
+    return out
 
 
 def discover_sitemap_urls(homepage: str) -> list[str]:

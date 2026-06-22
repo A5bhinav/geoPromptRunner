@@ -160,7 +160,9 @@ Cross-reference findings against the runner's "sources behind the category."
 > **Implementation detail lives in `site-audit-implementation-guide.md`** — the
 > code-level how-to for each tier below (library calls, concrete thresholds,
 > production gotchas, and ideal-vs-practical verdicts), backed by a second research
-> pass.
+> pass. Tooling evaluations also live there — e.g. **Crawl4AI** was assessed for
+> deep-crawl URL discovery on sitemap-less sites and as an isolated out-of-process
+> browser, with the verdict "augment, don't replace; MCP for dev/agent only" (guide §7.5).
 
 A **Site Audit pipeline** under `src/audit/`, one orchestrator over four tiers:
 
@@ -447,6 +449,17 @@ follow-up); full per-item detail of what shipped is in **implementation guide §
 - Links: sitemap-coverage evidence (`sitemap_not_internally_linked`) from the full
   discovered sitemap (C7).
 - Per-competitor on-site **"X vs {competitor}" comparison coverage** check (C19).
+
+**Evaluated future options (not gaps).** **Crawl4AI** was assessed as an augmentation.
+Its deep-crawl URL-discovery role for **sitemap-less sites is now closed in-house** —
+`page_select.discover_nav_links` discovers homepage nav/in-content links (fetched as
+GPTBot through `net_guard`) and feeds them into the existing scorer when no sitemap
+exists, so a sitemap-less site is no longer audited homepage-only. No Crawl4AI dependency
+was taken on. The remaining Crawl4AI options stay deferred: its Docker server as an
+**isolated out-of-process browser** (§6.5 Layer-4 — adopt only if render volume justifies
+operating a service; subprocess-per-crawl is likely sufficient), and its **MCP for
+dev-time + the offsite agent** (never the calibrated batch pipeline). Verdict: augment,
+don't replace — full analysis in **implementation guide §7.5**.
 
 **Separate from the backlog — the gold set (§7).** The Cat 3/4 LLM judge
 (`content_judge.py`) is built but gated until a hand-labeled page gold set reaches

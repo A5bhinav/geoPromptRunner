@@ -62,7 +62,9 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
     policy = load_robots(domain) if cfg.respect_robots else RobotsPolicy(None)
     home = domain if "://" in domain else f"https://{domain}"
     result.sitemap_urls = discover_sitemap_urls(home)  # full set for orphan-vs-sitemap
-    selected = select_pages(domain, sitemap_urls=result.sitemap_urls or None)
+    # Pass the discovered list (even when empty) so select_pages doesn't re-probe and
+    # falls back to homepage nav-link discovery on a sitemap-less site (§7.5).
+    selected = select_pages(domain, sitemap_urls=result.sitemap_urls)
     pages = []
     for url, category in selected:
         if not policy.allowed(url):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.audit.checks.ssr import SSRClass, classify_ssr
 from src.audit.crawl.dom import spa_shell_state
 from src.audit.crawl.fetcher import FetchConfig, should_escalate
@@ -130,6 +132,31 @@ def test_classify_url() -> None:
     assert classify_url("https://x.com/compare/a-vs-b") is PageCategory.COMPARISON
     assert classify_url("https://x.com/docs/api") is PageCategory.DOCS
     assert classify_url("https://x.com/about") is PageCategory.OTHER
+
+
+def test_select_pages_navlink_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    import httpx
+
+    import src.audit.crawl.page_select as ps
+
+    html = (
+        "<html><body><nav>"
+        "<a href='/pricing'>Pricing</a><a href='/blog/post'>Blog</a>"
+        "<a href='https://other.com/y'>External</a><a href='#top'>Top</a>"
+        "</nav></body></html>"
+    )
+    monkeypatch.setattr(
+        httpx,
+        "get",
+        lambda url, **kw: httpx.Response(200, text=html, request=httpx.Request("GET", url)),
+    )
+    # Empty sitemap -> homepage nav-link discovery feeds the scorer (§7.5).
+    selected = ps.select_pages("x.com", sitemap_urls=[])
+    urls = [u for u, _ in selected]
+    cats = {c for _, c in selected}
+    assert "https://x.com/pricing" in urls
+    assert PageCategory.PRICING in cats and PageCategory.BLOG in cats
+    assert all("other.com" not in u for u in urls)  # external link excluded
 
 
 def test_select_pages_caps_and_filters() -> None:

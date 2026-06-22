@@ -495,8 +495,9 @@ recycling would kill the API — so it only becomes clean once the crawl lives i
 separate worker. Adopt when volume forces it, not before.
 
 **Layer 4 — Hosted / self-hosted-isolated browser (mostly later, with one caveat now).**
-A separate **self-hosted browser container** (Steel — open-source, cleanest license; or
-Browserless — has audit-handy Lighthouse/PDF endpoints but an ambiguous SSPL license)
+A separate **self-hosted browser container** (Steel — open-source, cleanest license;
+Browserless — audit-handy Lighthouse/PDF endpoints but an ambiguous SSPL license; or the
+**Crawl4AI Docker server**, which adds a managed browser pool + deep crawl — see §7.5)
 that the runner connects to over CDP (`connect_over_cdp`) gives the strongest isolation
 *and* keeps client data on your infra. Fully **hosted** services (Browserbase/Browserless
 cloud/Steel cloud) are worth it only when you hit anti-bot/Cloudflare walls or need real
@@ -664,6 +665,72 @@ MVP. (Firecrawl is in the free-install table above so it's ready when you get th
 > to buy than build.
 
 ---
+
+### 7.5 Crawl4AI — where it fits (and where it doesn't)
+
+Crawl4AI (`unclecode/crawl4ai`, Apache-2.0, ~68k stars) is a mature, Playwright-based,
+LLM-oriented crawler with an **official MCP server** baked into its Docker image. Because
+it's *itself* httpx/Playwright + content extraction, it overlaps heavily with the crawler
+we already shipped (`src/audit/crawl/` = httpx→Playwright→trafilatura→extruct). The
+research verdict is clear:
+
+**Verdict: do NOT replace the crawler; adopt it in at most two narrow spots; use its MCP
+only for dev-time and the offsite agent — never the calibrated batch pipeline.**
+
+**Why not replace.** Markdown/"fit_markdown" overlaps trafilatura; JSON-CSS/LLM
+extraction overlaps extruct + our deterministic checkers; its `CacheMode` is a downgrade
+from our Supabase cache; its `MemoryAdaptiveDispatcher` ignores our per-host politeness +
+SSRF guard. Crucially, **it has no JSON-LD/schema.org extractor** — extruct keeps us
+*ahead* there. And routing extraction/markdown through a fast-moving 0.x library
+(v0.5→v0.9 in ~a year, with documented filter/markdown behavior changes) would force a
+**gold-set re-freeze** on every minor bump — exactly the reproducibility coupling we
+avoid. If ever used as a fetcher, use it as a **dumb fetcher**: it exposes `result.html`
+(raw bytes), `response_headers`, `status_code`, and a custom `user_agent`, so fetching
+**as GPTBot** and our raw-vs-rendered SSR diff still work — but keep trafilatura/extruct/
+our checkers as the deterministic transform layer.
+
+**The two places it genuinely earns a spot:**
+1. **Deep-crawl URL discovery for sitemap-less sites (the *library*).** Our page
+   selection is sitemap-driven (`page_select.py`); Crawl4AI's `BFSDeepCrawlStrategy` /
+   best-first traversal (with `max_depth`/`max_pages` + crash recovery) closes the gap on
+   sites with missing/broken sitemaps. Use it purely as a URL-discovery fallback, then
+   feed discovered URLs back into our existing fetch + checker path. *Low migration cost,
+   isolated module, no checker changes.*
+   **✅ Now closed in-house** without the Crawl4AI dependency: `page_select.discover_nav_links`
+   does one-level homepage nav/in-content link discovery (fetched as GPTBot via `net_guard`)
+   and `select_pages` falls back to it when sitemap discovery returns nothing. Crawl4AI's
+   multi-level BFS would only matter for a site whose priority pages aren't linked from the
+   homepage at all — adopt the library then, not before.
+2. **Isolated out-of-process browser (the *Docker REST server*) — a Layer-4 option
+   (§6.5).** `docker run -d -p 11235:11235 --shm-size=1g unclecode/crawl4ai:latest` runs
+   Chromium fully out-of-process behind a REST API on `:11235`, with a managed 3-tier
+   browser pool + page pre-warming. That's a *better-engineered* answer to "don't run
+   Chromium in the API process" than hand-rolled subprocess-per-crawl — **if render
+   volume justifies operating a service.** Call `/crawl` over REST from the escalation
+   path, take `result.html` + headers + status back into our transform, and **pin the
+   image tag** for reproducibility. Decision rule: since we render only the minority of
+   pages that fail the `is_probably_readerable` gate, **subprocess-per-crawl (§6.5 Layer
+   2) is likely sufficient; benchmark the Crawl4AI server head-to-head only if render
+   volume becomes the bottleneck.**
+
+**The MCP specifically — dev-time + the offsite agent only.** The official MCP server
+ships with the Docker image and exposes tools `md`, `html`, `crawl`, `screenshot`, `pdf`,
+`execute_js`, `ask` over **SSE** (`/mcp/sse`) and **WebSocket** (`/mcp/ws`); connect with
+`claude mcp add --transport sse c4ai http://localhost:11235/mcp/sse`. MCP is an *agent*
+protocol — it adds a tool-call translation layer and gives *less* deterministic batch
+control, so keep it out of the reproducible pipeline. It's a good fit for (a) **dev-time**
+("crawl this URL, show me the markdown/DOM" while building/calibrating checks) and (b) the
+**offsite research agent** (§5), the one genuinely agentic, non-reproducible part — there
+it could serve as the agent's `web_fetch`/`crawl` tool.
+
+**Caveats before self-hosting (real, recent):** Crawl4AI is **pre-1.0** (expect breaking
+changes) and had a run of CVEs through 0.8.x — **SSRF via proxy settings, RCE, a
+`litellm` supply-chain compromise, and a critical Redis CVE**. If you self-host the Docker
+API, **upgrade to the latest / the v0.9.0 "secure-by-default" release, enable its auth
+token, bind to loopback, and keep our own `net_guard` SSRF checks** around any URL we hand
+it (don't trust the server's own SSRF posture). Use `--shm-size=1g` (Chromium's `/dev/shm`
+floor); note in-container memory-leak reports under sustained load, so cap container
+memory per §6.5 Layer 1.
 
 ## 8. Pinned dependency set (implied by the above)
 
