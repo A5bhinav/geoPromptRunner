@@ -57,3 +57,12 @@ pytest tests/        # tests
 ```
 
 See `docs/CLAUDE.md` for the full development guide and methodology.
+
+## Teaser generator (`teaser/`)
+
+[`teaser/`](teaser/) is a TypeScript/Node tool that turns a prospect's URL into a
+reviewable one-page teaser. It's a thin layer over this platform: with
+`GEO_PLATFORM_URL` set it submits an audit to the API ([src/api/app.py](src/api/app.py)),
+polls to completion, then fetches the report and verbatim answers to assemble the
+draft. Runs fully offline with mock adapters otherwise. See
+[teaser/README.md](teaser/README.md).

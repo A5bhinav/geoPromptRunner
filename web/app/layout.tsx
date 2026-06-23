@@ -26,6 +26,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span className="ml-2 text-sm text-muted-foreground">
               AI visibility measurement
             </span>
+            <nav className="ml-auto flex items-center gap-4 text-sm">
+              <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
+                Audit
+              </Link>
+              <Link href="/teaser" className="text-muted-foreground transition-colors hover:text-foreground">
+                Teaser
+              </Link>
+            </nav>
           </div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
