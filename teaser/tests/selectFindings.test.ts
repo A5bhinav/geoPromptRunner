@@ -110,3 +110,71 @@ test("headline counts client absent, competitor present", () => {
   assert.equal(r.headline.competitorAppears, 2);
   assert.equal(r.headline.n, 2);
 });
+
+// Regression for the hero-engine-overrides-intent bug: a high-intent finding on a
+// LESS credible engine must still win the lead over a low-intent finding on the
+// most credible engine. The old code picked the hero engine by credibility alone,
+// then took the best row on it — which discarded the comparison cell below.
+test("lead follows intent even when the comparison is on a less-credible engine", () => {
+  const report = baseReport({
+    losing_queries: [
+      // comparison (intent 5) on openai (cred 3) -> score 53
+      { query_id: "q1", intent: "comparison", engine_name: "openai", competitor: "Salesforce" },
+      // brand (intent 1) on perplexity (cred 5) -> score 15
+      { query_id: "q2", intent: "brand", engine_name: "perplexity", competitor: "Salesforce" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    {
+      query_id: "q1", intent: "comparison", prompt: "best CRM vs Salesforce?",
+      engine_name: "openai", run_index: 0, response: "Salesforce wins.", citations: [], timestamp: "t",
+    },
+    {
+      query_id: "q2", intent: "brand", prompt: "is Acme any good?",
+      engine_name: "perplexity", run_index: 0, response: "Salesforce is better.", citations: [], timestamp: "t",
+    },
+  ];
+  const r = selectFindings(profile(), report, ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  // The comparison cell (q1) outscores the brand cell, so it leads — and the hero
+  // engine follows the lead rather than being chosen on credibility alone.
+  assert.equal(r.lead.queryId, "q1");
+  assert.equal(r.lead.intent, "comparison");
+  assert.equal(r.heroEngine, "openai");
+});
+
+// Regression for #2: a competitor named only by an alias still counts in the
+// headline. Salesforce's alias "SFDC" appears in q1's answer; the bare-name
+// matcher would have missed it and undercounted competitorAppears.
+test("headline counts competitor mentioned only by an alias", () => {
+  const p = profile();
+  p.competitors = [{ name: "Salesforce", aliases: ["SFDC"], confirmed: true }];
+  const ans: AnswerRecord[] = [
+    {
+      query_id: "q1", intent: "category", prompt: "best CRM?", engine_name: "openai",
+      run_index: 0, response: "SFDC is the leader.", citations: [], timestamp: "t",
+    },
+    {
+      query_id: "q2", intent: "comparison", prompt: "alternatives?", engine_name: "perplexity",
+      run_index: 0, response: "Salesforce alternatives include HubSpot.", citations: [], timestamp: "t",
+    },
+  ];
+  const r = selectFindings(p, baseReport(), ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  // Both queries name the competitor (q1 via alias, q2 by name).
+  assert.equal(r.headline.competitorAppears, 2);
+});
+
+// Regression for #4: a losing row with no named competitor is not printable.
+test("losing rows without a named competitor are refused", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "q1", intent: "comparison", engine_name: "perplexity", competitor: "  " },
+      { query_id: "q2", intent: "category", engine_name: "openai", competitor: "" },
+    ],
+  });
+  const r = selectFindings(profile(), report, answers());
+  assert.equal(r.ok, false);
+});

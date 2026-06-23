@@ -3,8 +3,10 @@
  * finding + 2 pattern-table rows, and computes the headline number.
  *
  * Rule (BUILD_PLAN.md §7 #8): the highest-intent losing cell (comparison >
- * category > ...), on the most credible engine, with a named competitor. The
- * pattern table is the next 2 DISTINCT queries (so it's clearly not cherry-picked).
+ * category > ...) that names a competitor, with engine credibility breaking
+ * ties between equal-intent cells. The hero engine follows the lead (it's the
+ * lead's engine), so the proof card and headline stay on one engine. The pattern
+ * table is the next 2 DISTINCT queries (so it's clearly not cherry-picked).
  *
  * Deterministic and pure — no clocks, no randomness. This is teaserAuto's IP.
  */
@@ -49,7 +51,10 @@ function engineScore(engine: string): number {
 }
 
 function scoreRow(row: LosingRow): number {
-  return INTENT_PRIORITY[row.intent] * 10 + engineScore(row.engine_name);
+  // `?? 0` guards against an intent the platform adds that we don't yet weight:
+  // without it the lookup is undefined and the whole score becomes NaN, which
+  // silently corrupts the sort. Unknown intent ranks last, like unknown engines.
+  return (INTENT_PRIORITY[row.intent] ?? 0) * 10 + engineScore(row.engine_name);
 }
 
 export type SelectionResult =
@@ -89,16 +94,17 @@ function toFinding(
 
 function computeHeadline(
   profile: CompanyProfile,
-  report: ReportPayload,
   answers: AnswerRecord[],
   competitorName: string,
 ): HeadlineNumber {
-  const clientMatch = buildMatcher(
-    profile.name,
-    profile.competitors.flatMap(() => []), // client aliases would go here
-  );
-  const competitor = report.competitors.find((c) => c === competitorName) ?? competitorName;
-  const competitorMatch = buildMatcher(competitor);
+  // The client has no alias source in CompanyProfile today, so match on its name.
+  const clientMatch = buildMatcher(profile.name);
+  // Feed the competitor's known aliases so an answer that names it only by an
+  // alias (e.g. "SFDC" for Salesforce) still counts toward competitorAppears —
+  // otherwise the headline understates the gap the teaser exists to show.
+  const competitorAliases =
+    profile.competitors.find((c) => c.name === competitorName)?.aliases ?? [];
+  const competitorMatch = buildMatcher(competitorName, competitorAliases);
 
   const byQuery = new Map<string, { client: boolean; competitor: boolean }>();
   for (const a of answers) {
@@ -118,7 +124,7 @@ function computeHeadline(
   return {
     companyAppears,
     competitorAppears,
-    competitorName: competitor,
+    competitorName,
     n: byQuery.size,
   };
 }
@@ -138,16 +144,23 @@ export function selectFindings(
     return { ok: false, reason: "no losing queries — the client is not being left out" };
   }
 
-  const ranked = [...report.losing_queries].sort((a, b) => scoreRow(b) - scoreRow(a));
+  // Only rows that name a competitor are printable — the teaser names the rival
+  // the client is losing to (BUILD_PLAN.md §7 #8: "with a named competitor").
+  const named = report.losing_queries.filter((r) => r.competitor.trim() !== "");
+  if (named.length === 0) {
+    return { ok: false, reason: "no losing query names a competitor — nothing to print against" };
+  }
 
-  // Hero engine = the most credible engine that actually appears in a losing cell.
-  const heroEngine = ranked
-    .map((r) => r.engine_name)
-    .sort((a, b) => engineScore(b) - engineScore(a))[0]!;
+  // Rank by score: intent dominates (×10), engine credibility breaks ties.
+  const ranked = [...named].sort((a, b) => scoreRow(b) - scoreRow(a));
 
-  // Lead: top-ranked losing cell, preferring the hero engine.
-  const leadRow =
-    ranked.find((r) => r.engine_name === heroEngine) ?? ranked[0]!;
+  // Lead = the single highest-scored losing cell. The hero engine is whatever
+  // engine that lead lands on — NOT the globally-most-credible engine. Selecting
+  // the engine first (by credibility, ignoring intent) could pull the lead onto a
+  // low-intent cell while a higher-intent finding on a less-credible engine was
+  // discarded; that contradicts scoreRow, which weights intent above engine.
+  const leadRow = ranked[0]!;
+  const heroEngine = leadRow.engine_name;
   const lead = toFinding(leadRow, "lead", answers);
   if (!lead) {
     return { ok: false, reason: "could not join the lead finding to a verbatim answer" };
@@ -165,7 +178,7 @@ export function selectFindings(
     table.push(f);
   }
 
-  const headline = computeHeadline(profile, report, answers, leadRow.competitor);
+  const headline = computeHeadline(profile, answers, leadRow.competitor);
 
   return { ok: true, lead, table, headline, heroEngine };
 }
