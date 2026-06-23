@@ -163,14 +163,39 @@ function patternRow(f: Finding, companyName: string): string {
     </tr>`;
 }
 
-export function renderTeaserHtml(t: TeaserDraft): string {
+/**
+ * Reviewer copy overrides for the printable one-pager. Each field, when present,
+ * replaces the draft's generated copy at render time — this is how human edits
+ * made in the review UI actually reach the downloaded PDF/HTML. Mirrors the
+ * `edited_fields` columns (TeaserEditedFields in web/lib/api.ts).
+ */
+export interface TeaserEdits {
+  headline?: string;
+  leadSentence?: string;
+  stakesLine?: string;
+  cta?: string;
+}
+
+function nonEmpty(s: string | undefined): string | null {
+  return s && s.trim() ? s : null;
+}
+
+export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): string {
   const h = t.headlineNumber;
 
-  const heroLead =
-    `Ask ${escapeHtml(engineLabel(t.lead.engineName))} ` +
-    `<span class="q">“${escapeHtml(t.lead.verbatimQuery)}”</span> and it recommends ` +
-    `<span class="rival">${escapeHtml(t.lead.competitor)}</span> — ` +
-    `${escapeHtml(t.companyName)} is nowhere in the answer.`;
+  const headline = nonEmpty(edits.headline) ?? t.headline;
+  const stakesLine = nonEmpty(edits.stakesLine) ?? t.stakesLine;
+  const ctaText = nonEmpty(edits.cta) ?? nonEmpty(t.cta) ?? ctaLine(t.companyName);
+
+  // A reviewer-edited lead sentence is rendered verbatim (escaped); otherwise we
+  // build the default rich hero lead from the lead finding.
+  const editedLead = nonEmpty(edits.leadSentence) ?? nonEmpty(t.leadSentence);
+  const heroLead = editedLead
+    ? escapeHtml(editedLead)
+    : `Ask ${escapeHtml(engineLabel(t.lead.engineName))} ` +
+      `<span class="q">“${escapeHtml(t.lead.verbatimQuery)}”</span> and it recommends ` +
+      `<span class="rival">${escapeHtml(t.lead.competitor)}</span> — ` +
+      `${escapeHtml(t.companyName)} is nowhere in the answer.`;
 
   const tableRows = [t.lead, ...t.table].map((f) => patternRow(f, t.companyName)).join("");
 
@@ -190,7 +215,7 @@ export function renderTeaserHtml(t: TeaserDraft): string {
     <main class="page">
       <header class="hero">
         <div class="eyebrow"><span>AI Answer Audit</span><span class="date">${escapeHtml(t.runDate)}</span></div>
-        <h1>${escapeHtml(t.headline)}</h1>
+        <h1>${escapeHtml(headline)}</h1>
         <p class="lead">${heroLead}</p>
       </header>
 
@@ -222,10 +247,10 @@ export function renderTeaserHtml(t: TeaserDraft): string {
         <p class="caption">${escapeHtml(headlineNumberSentence(t.companyName, h))}</p>
       </section>
 
-      <div class="stakes"><p>${escapeHtml(t.stakesLine)}</p></div>
+      <div class="stakes"><p>${escapeHtml(stakesLine)}</p></div>
 
       <div class="cta">
-        <div class="txt">${escapeHtml(t.cta || ctaLine(t.companyName))}</div>
+        <div class="txt">${escapeHtml(ctaText)}</div>
         <div class="btn">Book 15 min →</div>
       </div>
 

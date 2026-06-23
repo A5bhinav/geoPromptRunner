@@ -104,10 +104,22 @@ function userPrompt(profile: CompanyProfile): string {
   ].join("\n");
 }
 
-/** Case-insensitive whole-ish-word presence of `name` in `text`. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Case-insensitive WHOLE-WORD presence of `name` in `text`. Bounded by Unicode
+ * letter/number lookarounds rather than a bare substring so a client named with
+ * a common word ("Notion", "Loop", "Cash") doesn't match "notional", "loophole",
+ * or "cashflow" — a substring match here over-drops valid category/comparison
+ * queries as false rule-1 violations.
+ */
 function mentions(text: string, name: string): boolean {
-  if (!name.trim()) return false;
-  return text.toLowerCase().includes(name.trim().toLowerCase());
+  const n = name.trim();
+  if (!n) return false;
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(n)}(?![\\p{L}\\p{N}])`, "iu");
+  return re.test(text);
 }
 
 /**
@@ -174,11 +186,19 @@ export function validateAndRepair(
   );
 }
 
-/** Synthesize up to `n` client-free comparison queries from competitors. */
+/**
+ * Synthesize up to `n` client-free comparison queries from REAL competitors.
+ * Every synthesized query names an actual competitor (rule 3) — so when the
+ * profile has no competitors we synthesize nothing rather than emitting bogus
+ * "alternatives to the market leader" queries that name no real rival (which
+ * would make the comparison audit meaningless and corrupt the headline number).
+ */
 function synthComparisons(profile: CompanyProfile, n: number): RawQuery[] {
+  const comps = profile.competitors.map((c) => c.name).filter(Boolean);
+  if (comps.length === 0 || n <= 0) return [];
   const cat = profile.category;
-  const c1 = profile.competitors[0]?.name ?? "the market leader";
-  const c2 = profile.competitors[1]?.name ?? c1;
+  const c1 = comps[0];
+  const c2 = comps[1] ?? comps[0];
   const candidates: RawQuery[] = [
     { intent: "comparison", text: `What are the best alternatives to ${c2}?` },
     {
@@ -187,7 +207,7 @@ function synthComparisons(profile: CompanyProfile, n: number): RawQuery[] {
     },
     { intent: "comparison", text: `Is ${c1} or ${c2} better for most people?` },
   ];
-  return candidates.slice(0, Math.max(0, n));
+  return candidates.slice(0, n);
 }
 
 function brandTemplate(client: string): string {
@@ -201,15 +221,29 @@ function brandTemplate(client: string): string {
 function templateQueries(profile: CompanyProfile): RawQuery[] {
   const cat = profile.category;
   const client = profile.name;
-  const c2 = profile.competitors[1]?.name ?? profile.competitors[0]?.name ?? "the market leader";
+  const comps = profile.competitors.map((c) => c.name).filter(Boolean);
+  // Comparison queries are only valid when we have a real competitor to name
+  // (rule 3). Without one, fall back to extra category/problem queries so the
+  // set stays usable instead of naming a placeholder "market leader".
+  const comparisons: RawQuery[] = comps.length
+    ? [
+        { intent: "comparison", text: `What are the best alternatives to ${comps[0]}?` },
+        {
+          intent: "comparison",
+          text: `${comps[0]} vs other ${cat} options — which should I pick?`,
+        },
+      ]
+    : [
+        { intent: "category", text: `What ${cat} do people switch to and why?` },
+        {
+          intent: "problem_aware",
+          text: `What should I look for when comparing my options?`,
+        },
+      ];
   return [
     { intent: "category", text: `What's the best ${cat} for a growing startup?` },
     { intent: "category", text: `Which ${cat} do people recommend in 2026?` },
-    { intent: "comparison", text: `What are the best alternatives to ${c2}?` },
-    {
-      intent: "comparison",
-      text: `${c2} vs other ${cat} options — which should I pick?`,
-    },
+    ...comparisons,
     {
       intent: "problem_aware",
       text: `How do I choose something that scales with my needs?`,

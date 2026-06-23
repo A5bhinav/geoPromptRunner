@@ -114,7 +114,7 @@ if __name__ == "__main__":
         raise SystemExit(0) from None
 
     answer, urls = engine.query_with_citations(
-        "What are the best CRM tools for early-stage B2B SaaS startups?"
+        "What are the best budgeting apps for someone just starting out?"
     )
     print(f"[{PerplexityEngine.ENGINE_NAME}] response: {answer}")
     print(f"[{PerplexityEngine.ENGINE_NAME}] citations ({len(urls)}): {urls}")

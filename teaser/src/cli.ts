@@ -21,7 +21,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { buildDeps, usingMocks, usingMockPlatform } from "./config.ts";
 import { runTeaserPipeline, type PipelineOptions } from "./pipeline.ts";
-import { renderHtml } from "./render/pdf.ts";
+import { renderHtml, renderPdf } from "./render/pdf.ts";
 
 interface Args {
   url: string | null;
@@ -101,11 +101,17 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Human mode: warn about adapter mode, then write the files.
-  if (usingMocks()) {
-    console.warn("⚠️  Running with MOCK adapters (no platform/scraper/LLM). Findings are synthetic.\n");
+  // Human mode: warn about adapter mode, then write the files. The platform-wait
+  // message keys off the PLATFORM adapter only (usingMockPlatform): whenever
+  // GEO_PLATFORM_URL is set the audit really can take minutes, regardless of
+  // whether the resolver/query-set generator are still mocks.
+  if (usingMockPlatform()) {
+    console.warn("⚠️  MOCK platform (no GEO_PLATFORM_URL) — findings are synthetic.\n");
   } else {
     console.log("→ Running against the real platform (GEO_PLATFORM_URL). This can take several minutes.\n");
+    if (usingMocks()) {
+      console.warn("⚠️  Some adapters (resolver/query-set) are still mocks — parts of the input are synthetic.\n");
+    }
   }
   if (!result.ok) {
     console.error(`✗ pipeline stopped at [${result.stage}]: ${result.reason}`);
@@ -119,9 +125,21 @@ async function main(): Promise<void> {
   const slug = slugify(draft.companyName);
   const htmlPath = join(outDir, `${slug}.html`);
   const jsonPath = join(outDir, `${slug}.json`);
+  const pdfPath = join(outDir, `${slug}.pdf`);
 
   await writeFile(htmlPath, renderHtml(draft), "utf8");
   await writeFile(jsonPath, JSON.stringify(draft, null, 2), "utf8");
+
+  // The PDF is the deliverable. Best-effort: if Playwright/Chromium isn't
+  // installed, keep the run successful (the .html is print-ready) and tell the
+  // user how to enable PDF export.
+  let pdfWritten = false;
+  try {
+    await writeFile(pdfPath, await renderPdf(draft));
+    pdfWritten = true;
+  } catch (err) {
+    console.warn(`⚠️  PDF not written: ${err instanceof Error ? err.message : String(err)}\n`);
+  }
 
   const h = draft.headlineNumber;
   console.log(`✓ Draft teaser for ${draft.companyName} (${draft.prospectUrl})`);
@@ -131,7 +149,12 @@ async function main(): Promise<void> {
   console.log(`  table rows  : ${draft.table.length}`);
   console.log(`\n  → ${htmlPath}`);
   console.log(`  → ${jsonPath}`);
-  console.log(`\n  Open the .html to review. Approve + PDF export are the next steps (renderPdf stub).`);
+  if (pdfWritten) console.log(`  → ${pdfPath}`);
+  console.log(
+    pdfWritten
+      ? `\n  Open the .pdf (the deliverable) or the .html to review.`
+      : `\n  Open the .html to review (print-ready). Run \`npx playwright install chromium\` to enable PDF export.`,
+  );
 }
 
 main().catch((err) => {

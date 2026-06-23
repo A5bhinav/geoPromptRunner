@@ -126,7 +126,10 @@ export default function TeaserPage() {
           setRecord(await getTeaser(teaser_id));
           void refreshSaved();
         } catch {
-          setSavedError("Generated, but could not save for review (Supabase not configured?).");
+          setSavedError(
+            "Generated — preview and downloads work, but it could not be saved, so " +
+              "approve / edit / reject are unavailable (is the platform / Supabase configured?).",
+          );
         }
       }
     } catch {
@@ -315,6 +318,26 @@ function TeaserResultView({
 
   const status: TeaserStatus | null = record?.status ?? null;
   const edited = record?.edited_fields ?? {};
+  // The freshest printable HTML: a reviewer-edited re-render (record.html) wins
+  // over the originally generated html, so preview + downloads reflect edits.
+  const currentHtml = record?.html ?? html;
+
+  // Re-render the one-pager with reviewer edits applied (teaser render endpoint).
+  // Returns undefined on failure so the edit still persists as edited_fields.
+  const rerenderHtml = async (fields: TeaserEditedFields): Promise<string | undefined> => {
+    try {
+      const res = await fetch("/api/teaser/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft, edited_fields: fields }),
+      });
+      if (!res.ok) return undefined;
+      const data = (await res.json()) as { ok?: boolean; html?: string };
+      return data.ok && typeof data.html === "string" ? data.html : undefined;
+    } catch {
+      return undefined;
+    }
+  };
 
   const run = async (
     kind: "approve" | "reject" | "edit",
@@ -345,7 +368,7 @@ function TeaserResultView({
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => download(`${slug}.html`, html, "text/html")}>
+          <Button variant="outline" onClick={() => download(`${slug}.html`, currentHtml, "text/html")}>
             <Download className="h-4 w-4" /> HTML
           </Button>
           <Button
@@ -424,14 +447,20 @@ function TeaserResultView({
                 initial={edited}
                 busy={busy === "edit"}
                 onSave={(fields) =>
-                  run("edit", () => editTeaser(record.id, fields)).then(() => setEditing(false))
+                  run("edit", async () => {
+                    // Re-render with the edits applied so the persisted html (and
+                    // thus the downloaded PDF/HTML) reflects them; fall back to a
+                    // text-only edit if the renderer is unavailable.
+                    const rendered = await rerenderHtml(fields);
+                    return editTeaser(record.id, fields, rendered);
+                  }).then(() => setEditing(false))
                 }
               />
             )}
 
-            {record.reject_reason && status === "rejected" && (
+            {status === "rejected" && (
               <p className="text-sm text-muted-foreground">
-                Reject reason: {record.reject_reason}
+                Reject reason: {record.reject_reason || "(none given)"}
               </p>
             )}
             {actionError && <p className="text-sm text-destructive">{actionError}</p>}
@@ -441,8 +470,9 @@ function TeaserResultView({
         savedError && <p className="text-sm text-muted-foreground">{savedError}</p>
       )}
 
-      {/* Saved copy edits reflected above the preview (the print HTML re-render
-          is a pipeline concern; here we surface the reviewer's overrides). */}
+      {/* Saved copy edits, surfaced above the preview. The printable HTML is
+          re-rendered with these edits on save (see rerenderHtml), so the preview
+          and downloads below already reflect them. */}
       {record && Object.values(edited).some((v) => v) && (
         <Card>
           <CardHeader>
@@ -475,7 +505,7 @@ function TeaserResultView({
 
       <iframe
         title="teaser preview"
-        srcDoc={html}
+        srcDoc={currentHtml}
         className="h-[1000px] w-full rounded-lg border bg-white"
       />
     </div>

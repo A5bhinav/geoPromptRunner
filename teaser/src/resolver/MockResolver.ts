@@ -46,7 +46,7 @@ export class MockResolver implements Resolver {
     return {
       url,
       name,
-      category: "B2B SaaS tool", // placeholder; real resolver classifies the category
+      category: "consumer mobile app", // placeholder; real resolver classifies the category (niche: B2C consumer)
       competitors,
       clientDomains: [host],
       productClaims: [],

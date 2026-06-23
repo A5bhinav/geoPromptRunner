@@ -1,30 +1,56 @@
 /**
- * PDF rendering — the PDF is the deliverable (BUILD_PLAN.md). This is the seam.
+ * PDF rendering — the PDF is the deliverable (BUILD_PLAN.md §0). We render the
+ * self-contained HTML (template.ts) and print it to PDF with Playwright's
+ * headless Chromium.
  *
- * MVP: we write the self-contained HTML and (when Playwright/Puppeteer is
- * installed) print it to PDF. To keep the placeholder build dependency-free,
- * renderPdf is a stub that throws a clear "not wired yet" error pointing at the
- * HTML output. Wire a real printer here in Phase 1 finish — no other code changes.
+ * Playwright is loaded lazily (dynamic import) so the rest of the package — and
+ * the test suite — never depend on the browser binaries being installed. If the
+ * `playwright` package or its Chromium build is missing, renderPdf throws a
+ * clear, actionable error and callers can fall back to the print-ready .html.
  */
 
 import type { TeaserDraft } from "../types/domain.ts";
 import { renderTeaserHtml } from "./template.ts";
+import type { TeaserEdits } from "./template.ts";
 
-export function renderHtml(draft: TeaserDraft): string {
-  return renderTeaserHtml(draft);
+export function renderHtml(draft: TeaserDraft, edits?: TeaserEdits): string {
+  return renderTeaserHtml(draft, edits);
 }
 
-export async function renderPdf(_draft: TeaserDraft): Promise<Uint8Array> {
-  // Intentional placeholder. Real impl (later):
-  //   import { chromium } from "playwright";
-  //   const browser = await chromium.launch();
-  //   const page = await browser.newPage();
-  //   await page.setContent(renderHtml(_draft), { waitUntil: "networkidle" });
-  //   const pdf = await page.pdf({ format: "A4", printBackground: true });
-  //   await browser.close();
-  //   return pdf;
-  throw new Error(
-    "renderPdf is not wired yet — install playwright and complete src/render/pdf.ts. " +
-      "For now, open the generated .html (it is print-ready).",
-  );
+const INSTALL_HINT =
+  "PDF export needs Playwright + Chromium — run `npm install` in teaser/ then " +
+  "`npx playwright install chromium`. The generated .html is print-ready in the meantime.";
+
+/** Print the teaser one-pager to an A4 PDF via headless Chromium. */
+export async function renderPdf(draft: TeaserDraft, edits?: TeaserEdits): Promise<Uint8Array> {
+  // Variable specifier so tsc treats this as a dynamic `any` import — the build
+  // and typecheck stay green whether or not `playwright` is installed.
+  const spec = "playwright";
+  let chromium: { launch: () => Promise<unknown> } | undefined;
+  try {
+    ({ chromium } = (await import(spec)) as { chromium: { launch: () => Promise<unknown> } });
+  } catch {
+    throw new Error(INSTALL_HINT);
+  }
+
+  type Page = {
+    setContent: (html: string, opts: { waitUntil: string }) => Promise<void>;
+    pdf: (opts: { format: string; printBackground: boolean }) => Promise<Uint8Array>;
+  };
+  type Browser = { newPage: () => Promise<Page>; close: () => Promise<void> };
+
+  let browser: Browser;
+  try {
+    browser = (await chromium.launch()) as Browser;
+  } catch (err) {
+    // Package present but the Chromium binary isn't installed (or failed to launch).
+    throw new Error(`${INSTALL_HINT} (${err instanceof Error ? err.message : String(err)})`);
+  }
+  try {
+    const page = await browser.newPage();
+    await page.setContent(renderHtml(draft, edits), { waitUntil: "networkidle" });
+    return await page.pdf({ format: "A4", printBackground: true });
+  } finally {
+    await browser.close();
+  }
 }

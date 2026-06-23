@@ -10,7 +10,7 @@
 
 > **Meta**
 > - Brand name / legal entity: {Brand} / {Legal name}
-> - Business type: {B2B / B2C} · Category: {how it should be described}
+> - Business type: B2C consumer · Category: {how it should be described}
 > - Prepared by: {name} · **Last verified: {YYYY-MM-DD}** · Verification: {confirmed with client / public sources only}
 > - Primary sources: {pricing page, docs, press, etc. — link the pages each fact came from}
 

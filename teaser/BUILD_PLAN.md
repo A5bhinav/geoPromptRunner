@@ -236,7 +236,7 @@ Auth: `X-API-Key` header. Caps: `MAX_QUERIES=200`, `MAX_ENGINES=8`, `MAX_RUNS_PE
 
 **Recommendation: A**, with a `MockPlatformClient` so teaserAuto is built before the platform is deployed. The one shared concern — **query-set generation** — see §7 #2.
 
-**Open questions for the co-founder:** Is the API deployed somewhere (URL), or only local (`run-api.sh` on :8000)? Is a `GEO_API_KEY` set? Does it run the **search surface** by default (the teaser needs live-retrieval engines, not parametric memory — `--surface search`)? Which Supabase project should teaserAuto use? Are the B2C-consumer query examples a problem for **B2B-SaaS** prospects (see §7 #4)?
+**Open questions for the co-founder:** Is the API deployed somewhere (URL), or only local (`run-api.sh` on :8000)? Is a `GEO_API_KEY` set? Does it run the **search surface** by default (the teaser needs live-retrieval engines, not parametric memory — `--surface search`)? Which Supabase project should teaserAuto use? (Niche resolved to **B2C consumer** — query examples already match; see §7 #4.)
 
 ### (b) URL → teaser-grade query set — *the actual new hard part*
 
@@ -318,7 +318,7 @@ Effort is rough (solo-dev-days equivalent). The platform existing collapses the 
 
 ### Phase 3 — Proof & query-set polish *(2–3 days)*
 - Annotation quality on the branded card (highlight competitor, mark absence, clean attribution + citations + `run_date`).
-- Tighten query-set generation against the methodology hard-rules; per-vertical tuning (esp. **B2B-SaaS** vs the platform's B2C examples — §7 #4).
+- Tighten query-set generation against the methodology hard-rules; per-vertical tuning across **B2C consumer** categories (§7 #4).
 - *Exit:* proof reads as unmistakably "this is what the engine actually said"; query sets feel on-category.
 
 ### Phase 4 — Throughput & review UX *(2–3 days)*
@@ -344,7 +344,7 @@ Effort is rough (solo-dev-days equivalent). The platform existing collapses the 
 | 1 | **Integration model** (separate consumer vs extend the platform repo) | **Separate consumer (A).** The API is exactly the right seam; keeps your teaser product decoupled from the co-founder's engine. |
 | 2 | **Where query-set generation lives** (teaserAuto in TS, or contributed to the platform in Python as shared methodology) | Lean **teaserAuto/TS** for speed now; if the co-founder wants audits and teasers to generate sets identically, promote it into the platform later. Encode the methodology rules either way. |
 | 3 | **Supabase project** (share the platform's vs a separate teaserAuto project) | **Separate teaserAuto project**, referencing platform runs by `run_id`. Avoids coupling schemas; the platform's data stays the co-founder's. |
-| 4 | **B2C-vs-B2B mismatch** — the platform's README niche + query examples are B2C consumer; your GTM is B2B SaaS | Engine is category-agnostic, but **tune query-set generation + fact-sheet examples for B2B SaaS.** Validate the first few teasers on real SaaS prospects before volume. |
+| 4 | **Niche — RESOLVED: B2C consumer** | The GTM is **B2C consumer startups** (Berkeley/SV), matching the platform's README niche + query examples. Engine is category-agnostic; keep query-set generation + fact-sheet examples tuned for **B2C consumer**. Validate the first few teasers on real consumer prospects before volume. |
 | 5 | **Competitor sourcing** | **LLM-proposes, human-confirms** at the input gate. A wrong competitor poisons the whole teaser. |
 | 6 | **Engines for the teaser** | Run the **search surface** (live retrieval) across `perplexity` + `ai_overviews` as hero candidates; include `openai`/`anthropic`/`gemini` search for the pattern table. Confirm the platform defaults to search, not parametric. |
 | 7 | **Input confirm gate on/off** | **On** at ≤20/day — cheap insurance before paying for an audit. Make it a per-run toggle for later. |
@@ -358,7 +358,7 @@ Effort is rough (solo-dev-days equivalent). The platform existing collapses the 
 |---|---|---|
 | Judge over-flags → false claim in a teaser | **High (reputational)** | Mandatory human gate; every claim traces to a verbatim answer span; require `detection: "judge"`; calibrate vs the existing gold set; asymmetric precision bar on client-absent. |
 | Platform not deployed / no API key / local-only | High (blocking) | `MockPlatformClient` from `data/*_gold.json`; confirm deployment + key in Phase 0. |
-| Auto-generated query set is off-category (esp. B2B) | Medium | Human confirm gate; methodology hard-rules; per-vertical tuning (§7 #4). |
+| Auto-generated query set is off-category (esp. niche consumer verticals) | Medium | Human confirm gate; methodology hard-rules; per-vertical tuning (§7 #4). |
 | Wrong competitor resolved | Medium | Human-confirmed competitor list (§7 #5). |
 | Engine answers drift week-to-week | Medium | Cache `ReportPayload` + verbatim answers on the teaser; shelf-life; 90-day re-run diff (platform `compare`). |
 | Proof reads as "not a real screenshot" | Medium | Verbatim answer + unambiguous engine/query/date attribution + citations; upgrade hero to real screenshot if the platform adds capture. |
@@ -370,7 +370,7 @@ Effort is rough (solo-dev-days equivalent). The platform existing collapses the 
 
 1. **Platform access:** API base URL (or confirm local `run-api.sh` on :8000), the `GEO_API_KEY`, and which **Supabase project** teaserAuto should use. Whether the judge runs by default (needs `OPENAI_API_KEY`) and whether the **search surface** is the default.
 2. **Confirm the integration model** (§7 #1) and where query-set generation should live (§7 #2).
-3. **A target vertical + 2–3 real B2B-SaaS prospect URLs** to validate the resolver + query-set generator against (the platform's examples are B2C).
+3. **A target vertical + 2–3 real B2C consumer prospect URLs** to validate the resolver + query-set generator against (matching the platform's B2C examples).
 4. Sign-off (or edits) on the **stack** (§2) and **Phase 0→1 scope**.
 
 With platform access + a couple of test URLs, Phase 0 (wire-up + `MockPlatformClient`) can start immediately and Phase 1 produces the first real teaser PDF.

@@ -85,6 +85,16 @@ export async function extractJson<T>(
     output_config: { format: { type: "json_schema", schema } },
   });
 
+  // A max_tokens stop means the JSON is truncated — JSON.parse would throw a
+  // confusing "non-JSON text" error. Surface the real cause (and the fix) so the
+  // resolver/query-set generator don't silently treat truncation as malformed.
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(
+      `Claude hit max_tokens (${maxTokens}) before completing the JSON — the output is ` +
+        `truncated. Raise maxTokens for this extraction or shorten the input.`,
+    );
+  }
+
   // Find the text content block (responses may interleave thinking/text blocks).
   let text: string | null = null;
   for (const block of response.content) {

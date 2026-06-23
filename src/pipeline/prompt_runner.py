@@ -213,9 +213,9 @@ if __name__ == "__main__":
             print(f"Skipping {cls.__name__}: {exc}")
 
     sample_prompts = [
-        "What is the best CRM for early-stage B2B SaaS startups?",
-        "Which project management tool do developers recommend?",
-        "Name a good analytics platform for product teams.",
+        "What is the best budgeting app for someone just starting out?",
+        "Which sleep tracker do people recommend?",
+        "Name a good language-learning app for beginners.",
     ]
 
     run_results = run_prompts(sample_prompts, engines)

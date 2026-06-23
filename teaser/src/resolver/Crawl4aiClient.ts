@@ -27,12 +27,16 @@ export interface MarkdownResult {
   success: boolean;
 }
 
-/** Per-result shape of POST /crawl — `markdown` is an OBJECT here, not a string. */
+/**
+ * Per-result shape of POST /crawl. `markdown` is normally an OBJECT
+ * ({fit,raw}), but some crawl4ai builds/items return it as a bare string (or
+ * omit it on a degraded page), so we model it as a union and normalize at use.
+ */
 export interface CrawlResultItem {
   url: string;
   success: boolean;
   status_code: number | null;
-  markdown: { raw_markdown: string; fit_markdown: string };
+  markdown?: { raw_markdown?: string; fit_markdown?: string } | string | null;
   links?: {
     internal?: { href: string; text: string }[];
     external?: { href: string; text: string }[];
@@ -51,6 +55,24 @@ const DEFAULT_BASE_URL = "http://localhost:11235";
 
 /** Internal-link / common-slug match for pricing-style pages. */
 const PRICING_LIKE = /pricing|plans|compare|comparison|alternativ|\/vs\b/i;
+
+/** Normalize a /crawl item's markdown (object {fit,raw} | string | absent) to a string. */
+function markdownString(
+  md: { raw_markdown?: string; fit_markdown?: string } | string | null | undefined,
+): string {
+  if (!md) return "";
+  if (typeof md === "string") return md;
+  return md.fit_markdown || md.raw_markdown || "";
+}
+
+/** Resolve a possibly-relative href against the page it was found on. */
+function absolutize(href: string, base: string): string {
+  try {
+    return new URL(href, base).toString();
+  } catch {
+    return href;
+  }
+}
 
 export class Crawl4aiClient {
   private readonly baseUrl: string;
@@ -177,14 +199,17 @@ export class Crawl4aiClient {
     const results = await this.crawl([homepageUrl]);
     const home = results[0];
     if (home?.success) {
-      const md = home.markdown.fit_markdown || home.markdown.raw_markdown;
+      const md = markdownString(home.markdown);
       if (md) out.push({ url: home.url, markdown: md });
     }
 
     const targets = pickInternalTargets(home?.links?.internal ?? [], maxInternal);
     for (const u of targets) {
+      // links.internal hrefs are often site-relative ("/pricing"); resolve them
+      // against the homepage before fetching or /md can't find the page.
+      const abs = absolutize(u, home?.url ?? homepageUrl);
       try {
-        out.push({ url: u, markdown: await this.getMarkdown(u, { f: "fit" }) });
+        out.push({ url: abs, markdown: await this.getMarkdown(abs, { f: "fit" }) });
       } catch {
         // Best-effort — a missing/blocked internal page shouldn't fail the run.
       }

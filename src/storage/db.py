@@ -552,12 +552,17 @@ def get_teaser(teaser_id: str) -> dict[str, object] | None:
 
 
 def list_teasers(limit: int = 100) -> list[dict[str, object]]:
-    """The most recent teasers — the basis for the "Saved teasers" panel."""
+    """The most recent teasers — the basis for the "Saved teasers" panel.
+
+    Projects only the columns the list view (TeaserSummary) needs — NOT the large
+    ``draft`` jsonb or rendered ``html`` — so the panel stays light as teasers
+    accumulate (the detail view fetches the full row via get_teaser).
+    """
     response = _execute(
         "list_teasers",
         lambda c: (
             c.table(TABLE_TEASERS)
-            .select("*")
+            .select("id, company_name, status, created_at")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()

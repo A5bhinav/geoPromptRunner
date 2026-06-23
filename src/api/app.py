@@ -391,9 +391,12 @@ def edit_teaser(teaser_id: str, body: EditTeaserBody) -> dict[str, object]:
 @api.post("/teasers/{teaser_id}/reject")
 def reject_teaser(teaser_id: str, body: RejectTeaserBody) -> dict[str, object]:
     _teaser_or_404(teaser_id)
+    # Store a blank reason as NULL (not ""), so a rejected-without-reason teaser
+    # is cleanly distinguishable from one whose reason failed to persist.
+    reason = (body.reason or "").strip() or None
     try:
         row = db.update_teaser_status(
-            teaser_id, status="rejected", reject_reason=body.reason or ""
+            teaser_id, status="rejected", reject_reason=reason
         )
     except db.StorageError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
