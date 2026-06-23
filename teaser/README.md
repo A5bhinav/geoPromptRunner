@@ -8,11 +8,12 @@ queries, judges the answers, and computes the losing-queries / accuracy findings
 [BUILD_PLAN.md](./BUILD_PLAN.md) for the full architecture and roadmap.
 
 > **Status.** Every external service is behind an interface with a **Mock**, so
-> the whole flow runs **with zero credentials** (synthetic findings). The
-> **platform adapter is now wired**: set `GEO_PLATFORM_URL` and the teaser runs
-> real audits against geoPromptRunner (see *Connecting to the real platform*).
-> The resolver and query-set generator are still mocks — drop their real adapters
-> in the same way (see *Swapping in real adapters*).
+> the whole flow runs **with zero credentials** (synthetic findings). All three
+> real adapters are now **wired** behind env gates: the **platform adapter**
+> (`GEO_PLATFORM_URL`), the **resolver** (crawl4ai + Claude — `CRAWL4AI_BASE_URL`
+> + `ANTHROPIC_API_KEY`), and the **query-set generator** (Claude —
+> `ANTHROPIC_API_KEY`). Unset env falls back to the mock for each (see *Swapping
+> in real adapters*).
 
 ## Requirements
 
@@ -68,27 +69,64 @@ Lifecycle and component detail: [BUILD_PLAN.md §1](./BUILD_PLAN.md).
 ```
 src/
   types/        platform.ts (mirrors geoPromptRunner's ReportPayload/answers), domain.ts
-  resolver/     Resolver interface + MockResolver           (URL → company profile)
-  queryset/     QuerySetGenerator interface + Mock          (profile → buyer queries)
+  llm/          claude.ts (thin @anthropic-ai/sdk wrapper: json_schema structured extraction)
+  resolver/     Resolver + MockResolver + Crawl4aiClient + Crawl4aiClaudeResolver (URL → profile)
+  queryset/     QuerySetGenerator + Mock + ClaudeQuerySetGenerator (profile → buyer queries)
   platform/     PlatformClient interface + MockPlatformClient + csv.ts (audit input)
   select/       selectFindings.ts (REAL ranking logic) + entity.ts
   render/       copy.ts, proofCard.ts, template.ts (HTML one-pager), pdf.ts (stub)
   pipeline.ts   orchestration (deps injected)
-  config.ts     wires Mock adapters today; real adapters drop in here
+  config.ts     wires Mock or real adapters per env gate
   cli.ts        URL → draft teaser on disk
-tests/          selectFindings + end-to-end pipeline (all mock, no network)
+tests/          selectFindings + pipeline + querySetGenerator + resolver (all pure, no network)
 ```
 
 ## Swapping in real adapters
 
-Each Mock implements the same interface as its eventual real counterpart. Wire the
-real one in `src/config.ts`, gated by an env var — nothing else changes:
+Each Mock implements the same interface as its real counterpart. The real
+resolver and query-set generator are now **wired** in `src/config.ts`, gated by
+env vars — nothing else changes:
 
-| Mock | Real (later) | Trigger |
+| Mock | Real | Trigger |
 |---|---|---|
 | `MockPlatformClient` | `HttpPlatformClient` ✅ wired (calls the FastAPI `/audits` endpoints) | `GEO_PLATFORM_URL` (+ `GEO_PLATFORM_API_KEY` if the platform sets `GEO_API_KEY`) |
-| `MockResolver` | Firecrawl/Jina + Claude | `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY` |
-| `MockQuerySetGenerator` | Claude, using the methodology rules as the spec | `ANTHROPIC_API_KEY` |
+| `MockResolver` | `Crawl4aiClaudeResolver` ✅ wired (crawl4ai markdown → Claude extraction) | `CRAWL4AI_BASE_URL` (or `CRAWL4AI_API_TOKEN`) **and** `ANTHROPIC_API_KEY` |
+| `MockQuerySetGenerator` | `ClaudeQuerySetGenerator` ✅ wired (Claude, with the methodology hard rules + deterministic repair) | `ANTHROPIC_API_KEY` |
 | `renderPdf` stub | Playwright/Puppeteer print-to-PDF | install `playwright` |
 
 The selector, copy, proof card, template, and pipeline are real and adapter-agnostic.
+
+### Real resolver + query-set generator (crawl4ai + Claude)
+
+```bash
+# Self-hosted crawl4ai (image series 0.8.x), default port 11235:
+docker run -d -p 11235:11235 --name crawl4ai --shm-size=1g unclecode/crawl4ai:0.8.6
+
+# Run the teaser with the real resolver + query generator:
+CRAWL4AI_BASE_URL=http://localhost:11235 \
+ANTHROPIC_API_KEY=sk-ant-...               \
+npm run teaser -- https://www.example.com
+```
+
+Environment variables:
+
+- `ANTHROPIC_API_KEY` *(required for both real adapters)* — the **same** key the
+  platform uses; no separate key var is introduced. The resolver uses Claude to
+  extract a `CompanyProfile` from the crawled markdown; the query-set generator
+  uses Claude to draft the buyer queries.
+- `TEASER_CLAUDE_MODEL` *(optional)* — the Claude model id, **separately
+  configurable** from the key (default `claude-haiku-4-5`). Lets you point the
+  teaser at a different model without touching the platform's own model config.
+- `CRAWL4AI_BASE_URL` *(default `http://localhost:11235`)* — the self-hosted
+  crawl4ai REST server. Its presence (with a Claude key) selects the real resolver.
+- `CRAWL4AI_API_TOKEN` *(optional)* — sent as `Authorization: Bearer` **only when
+  set** (the server binds loopback-only and needs no auth otherwise).
+
+The resolver crawls the homepage (and best-effort one discovered pricing/
+comparison page) for clean `fit_markdown`, then Claude extracts the name,
+category, competitors (always returned **unconfirmed** — the human input gate
+confirms them), client domains, and product claims. The query-set generator
+prompts Claude with the methodology hard rules, then **validates and repairs the
+output deterministically** (≥2 comparison queries that don't name the client;
+client named only in the brand query; competitors named in comparison queries),
+falling back to a template set if the LLM output is unusable.

@@ -39,6 +39,10 @@ __all__ = [
     "get_site_audit_checks",
     "replace_site_audit_findings",
     "get_site_audit_findings",
+    "save_teaser",
+    "get_teaser",
+    "list_teasers",
+    "update_teaser_status",
 ]
 
 logger = logging.getLogger(__name__)
@@ -59,6 +63,9 @@ TABLE_SITE_AUDIT_OFFSITE = "site_audit_offsite_finding"
 
 # Private Storage bucket for gzipped raw/rendered HTML blobs (large, not row data).
 BUCKET_SITE_AUDIT_HTML = "site-audit-html"
+
+# Teaser one-pagers + their review lifecycle (see data/schema_teasers.sql).
+TABLE_TEASERS = "teasers"
 
 
 class StorageError(Exception):
@@ -497,6 +504,98 @@ def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
 def get_judgments(run_id: str) -> list[AnswerJudgment]:
     """Reconstruct stored judge output for a run (no re-judging needed)."""
     return [_row_to_judgment(r) for r in _select_rows(TABLE_JUDGMENTS, run_id)]
+
+
+# --- Teaser persistence + human review --------------------------------------
+
+
+def save_teaser(draft: dict[str, Any], html: str | None, teaser_id: str | None = None) -> str:
+    """Insert a teaser row from a freshly generated draft, returning its id.
+
+    Stores the full ``TeaserDraft`` as jsonb plus a few denormalized columns the
+    list/detail views read without unpacking ``draft``. The row starts in
+    ``status='draft'``; the review endpoints move it to approved/rejected and/or
+    save reviewer copy edits into ``edited_fields``.
+    """
+    teaser_id = teaser_id or str(uuid.uuid4())
+    headline = draft.get("headlineNumber")
+    lead = draft.get("lead")
+    table = draft.get("table")
+    row: dict[str, Any] = {
+        "id": teaser_id,
+        "prospect_url": draft.get("prospectUrl"),
+        "company_name": draft.get("companyName"),
+        "category": draft.get("category"),
+        "run_date": draft.get("runDate"),
+        "hero_engine": draft.get("heroEngine"),
+        "headline_number": headline if isinstance(headline, dict) else {},
+        "lead": lead if isinstance(lead, dict) else {},
+        "table_findings": table if isinstance(table, list) else [],
+        "draft": draft,
+        "html": html,
+        "status": "draft",
+        "edited_fields": {},
+        "created_at": _now(),
+        "updated_at": _now(),
+    }
+    _execute(
+        f"save_teaser for {draft.get('companyName') or teaser_id}",
+        lambda c: c.table(TABLE_TEASERS).insert(row).execute(),
+    )
+    return teaser_id
+
+
+def get_teaser(teaser_id: str) -> dict[str, object] | None:
+    """Fetch a single teaser row by id, or None if absent."""
+    rows = _select_rows(TABLE_TEASERS, teaser_id, key="id")
+    return rows[0] if rows else None
+
+
+def list_teasers(limit: int = 100) -> list[dict[str, object]]:
+    """The most recent teasers — the basis for the "Saved teasers" panel."""
+    response = _execute(
+        "list_teasers",
+        lambda c: (
+            c.table(TABLE_TEASERS)
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return list(data)
+
+
+def update_teaser_status(
+    teaser_id: str,
+    status: str | None = None,
+    edited_fields: dict[str, Any] | None = None,
+    reject_reason: str | None = None,
+    reviewed_by: str | None = None,
+    html: str | None = None,
+) -> dict[str, object] | None:
+    """Advance a teaser's review state and/or save reviewer copy edits.
+
+    Any argument left as ``None`` is untouched (a partial update). Returns the
+    updated row so the API can echo the new state straight back to the UI.
+    """
+    row: dict[str, Any] = {"updated_at": _now()}
+    if status is not None:
+        row["status"] = status
+    if edited_fields is not None:
+        row["edited_fields"] = edited_fields
+    if reject_reason is not None:
+        row["reject_reason"] = reject_reason
+    if reviewed_by is not None:
+        row["reviewed_by"] = reviewed_by
+    if html is not None:
+        row["html"] = html
+    _execute(
+        f"update_teaser_status for teaser {teaser_id}",
+        lambda c: c.table(TABLE_TEASERS).update(row).eq("id", teaser_id).execute(),
+    )
+    return get_teaser(teaser_id)
 
 
 if __name__ == "__main__":

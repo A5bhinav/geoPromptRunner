@@ -19,7 +19,7 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { buildDeps, usingMocks } from "./config.ts";
+import { buildDeps, usingMocks, usingMockPlatform } from "./config.ts";
 import { runTeaserPipeline, type PipelineOptions } from "./pipeline.ts";
 import { renderHtml } from "./render/pdf.ts";
 
@@ -62,10 +62,13 @@ function slugify(name: string): string {
 
 /** Pipeline options from CLI flags + a mock/real-aware polling cadence. */
 function buildOptions(args: Args): Partial<PipelineOptions> {
-  const mocks = usingMocks();
-  // The mock returns "done" on the first poll; a real audit takes minutes, so
-  // poll on a real interval with a long ceiling (600 × 3s ≈ 30 min).
-  const opts: Partial<PipelineOptions> = mocks ? {} : { pollIntervalMs: 3000, maxPolls: 600 };
+  // Cadence keys off the PLATFORM only: the mock platform returns "done" on the
+  // first poll; a real audit takes minutes, so poll on a real interval with a
+  // long ceiling (600 × 3s ≈ 30 min). A mock resolver/query-set generator does
+  // not change how long the platform audit takes, so it must not shorten this.
+  const opts: Partial<PipelineOptions> = usingMockPlatform()
+    ? {}
+    : { pollIntervalMs: 3000, maxPolls: 600 };
   if (args.engines && args.engines.length) opts.engines = args.engines;
   if (args.maxQueries) opts.maxQueries = args.maxQueries;
   if (args.runs) opts.runsPerQuery = args.runs;

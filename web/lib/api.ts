@@ -233,6 +233,67 @@ export interface ReportPayload {
   site_audit: SiteAuditPayload | null;
 }
 
+// --- Teaser types (teaser/ pipeline draft + the persisted review row) ---
+
+export interface TeaserHeadlineNumber {
+  companyAppears: number;
+  competitorAppears: number;
+  competitorName: string;
+  n: number;
+}
+
+export interface TeaserDraft {
+  prospectUrl: string;
+  companyName: string;
+  category: string;
+  runDate: string;
+  heroEngine: string;
+  headlineNumber: TeaserHeadlineNumber;
+  lead: { verbatimQuery: string };
+  table: unknown[];
+}
+
+// Reviewer overrides for the printable copy. All optional — only edited fields
+// are sent/stored. Mirrors the columns the review UI exposes.
+export interface TeaserEditedFields {
+  headline?: string;
+  leadSentence?: string;
+  cta?: string;
+  stakesLine?: string;
+}
+
+export type TeaserStatus = "draft" | "approved" | "rejected" | "exported";
+
+// A persisted teaser row (src/storage/db.py teasers table). Snake_case columns
+// straight from Supabase; nested draft/edited_fields stay as their JSON shapes.
+export interface TeaserRecord {
+  id: string;
+  prospect_url: string | null;
+  company_name: string | null;
+  category: string | null;
+  run_date: string | null;
+  hero_engine: string | null;
+  headline_number: TeaserHeadlineNumber | Record<string, never>;
+  lead: { verbatimQuery?: string } | Record<string, never>;
+  table_findings: unknown[];
+  draft: TeaserDraft;
+  html: string | null;
+  status: TeaserStatus;
+  edited_fields: TeaserEditedFields;
+  reject_reason: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Lightweight shape for the saved-teasers list (a subset of TeaserRecord).
+export interface TeaserSummary {
+  id: string;
+  company_name: string | null;
+  status: TeaserStatus;
+  created_at: string;
+}
+
 // --- Calls ---
 
 function filesToForm(files: File[]): FormData {
@@ -320,4 +381,71 @@ export async function downloadTemplate(): Promise<void> {
   });
   if (!res.ok) throw new Error(`template failed (${res.status})`);
   await saveBlob(res, "geo-audit-template.csv");
+}
+
+// --- Teaser persistence + review (src/api/app.py /teasers) ---
+
+const jsonHeaders = () => authHeaders({ "Content-Type": "application/json" });
+
+// Persist a freshly generated draft (from the /api/teaser child-process route).
+// Returns the new row id so the UI can drive approve / edit / reject on it.
+export async function saveTeaser(
+  draft: TeaserDraft,
+  html: string,
+): Promise<{ teaser_id: string }> {
+  const res = await fetch(`${API_BASE}/teasers`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ draft, html }),
+  });
+  if (!res.ok) throw new Error(`save teaser failed (${res.status})`);
+  return res.json();
+}
+
+export async function listTeasers(): Promise<TeaserSummary[]> {
+  const res = await fetch(`${API_BASE}/teasers`, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) throw new Error(`list teasers failed (${res.status})`);
+  return res.json();
+}
+
+export async function getTeaser(id: string): Promise<TeaserRecord> {
+  const res = await fetch(`${API_BASE}/teasers/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`get teaser failed (${res.status})`);
+  return res.json();
+}
+
+export async function approveTeaser(id: string): Promise<TeaserRecord> {
+  const res = await fetch(`${API_BASE}/teasers/${encodeURIComponent(id)}/approve`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`approve teaser failed (${res.status})`);
+  return res.json();
+}
+
+export async function editTeaser(
+  id: string,
+  edited_fields: TeaserEditedFields,
+  html?: string,
+): Promise<TeaserRecord> {
+  const res = await fetch(`${API_BASE}/teasers/${encodeURIComponent(id)}/edit`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ edited_fields, html: html ?? null }),
+  });
+  if (!res.ok) throw new Error(`edit teaser failed (${res.status})`);
+  return res.json();
+}
+
+export async function rejectTeaser(id: string, reason?: string): Promise<TeaserRecord> {
+  const res = await fetch(`${API_BASE}/teasers/${encodeURIComponent(id)}/reject`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+  if (!res.ok) throw new Error(`reject teaser failed (${res.status})`);
+  return res.json();
 }

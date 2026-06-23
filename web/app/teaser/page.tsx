@@ -1,9 +1,32 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Loader2, Download, AlertTriangle } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  Download,
+  AlertTriangle,
+  Check,
+  X,
+  Pencil,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  saveTeaser,
+  listTeasers,
+  getTeaser,
+  approveTeaser,
+  editTeaser,
+  rejectTeaser,
+  type TeaserDraft,
+  type TeaserEditedFields,
+  type TeaserRecord,
+  type TeaserSummary,
+  type TeaserStatus,
+} from "@/lib/api";
 
 // Engines the platform knows (src/prompts/csv_loader.py KNOWN_ENGINES). "mock" is
 // keyless — it runs the real pipeline with a fabricating engine, handy when no
@@ -17,22 +40,8 @@ const ENGINE_OPTIONS = [
 ];
 const DEFAULT_ENGINES = ["perplexity", "openai", "google_ai_overviews"];
 
-interface HeadlineNumber {
-  companyAppears: number;
-  competitorAppears: number;
-  competitorName: string;
-  n: number;
-}
-interface TeaserDraft {
-  prospectUrl: string;
-  companyName: string;
-  category: string;
-  runDate: string;
-  heroEngine: string;
-  headlineNumber: HeadlineNumber;
-  lead: { verbatimQuery: string };
-  table: unknown[];
-}
+// TeaserDraft / TeaserRecord etc. now live in lib/api.ts (shared with the API
+// client) rather than being redeclared here.
 type TeaserResult =
   | { ok: true; draft: TeaserDraft; html: string }
   | { ok: false; stage: string; reason: string };
@@ -51,6 +60,18 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "teaser";
 }
 
+// The status badge variants line up with the lifecycle in schema_teasers.sql.
+const STATUS_VARIANT: Record<TeaserStatus, "secondary" | "success" | "destructive" | "default"> = {
+  draft: "secondary",
+  approved: "success",
+  rejected: "destructive",
+  exported: "default",
+};
+
+function StatusBadge({ status }: { status: TeaserStatus }) {
+  return <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>;
+}
+
 export default function TeaserPage() {
   const [url, setUrl] = React.useState("");
   const [engines, setEngines] = React.useState<string[]>(DEFAULT_ENGINES);
@@ -60,6 +81,27 @@ export default function TeaserPage() {
   const [result, setResult] = React.useState<TeaserResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
+  // The persisted row backing the current preview (after a generate or a reopen).
+  const [record, setRecord] = React.useState<TeaserRecord | null>(null);
+  // Saved-teasers list (the "Saved teasers" panel).
+  const [saved, setSaved] = React.useState<TeaserSummary[]>([]);
+  const [savedError, setSavedError] = React.useState<string | null>(null);
+
+  const refreshSaved = React.useCallback(async () => {
+    try {
+      setSaved(await listTeasers());
+      setSavedError(null);
+    } catch {
+      // Persistence is best-effort here — the generate→preview→download flow
+      // still works without Supabase configured.
+      setSavedError("Saved teasers are unavailable (is the platform / Supabase configured?).");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void refreshSaved();
+  }, [refreshSaved]);
+
   const toggleEngine = (id: string) =>
     setEngines((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
 
@@ -67,6 +109,7 @@ export default function TeaserPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setRecord(null);
     try {
       const res = await fetch("/api/teaser", {
         method: "POST",
@@ -75,10 +118,33 @@ export default function TeaserPage() {
       });
       const data = (await res.json()) as TeaserResult;
       setResult(data);
+      // Persist the draft so it can be reviewed (approve / edit / reject). Best
+      // effort: a storage failure must not break the preview/download flow.
+      if (data.ok) {
+        try {
+          const { teaser_id } = await saveTeaser(data.draft, data.html);
+          setRecord(await getTeaser(teaser_id));
+          void refreshSaved();
+        } catch {
+          setSavedError("Generated, but could not save for review (Supabase not configured?).");
+        }
+      }
     } catch {
       setError("Could not reach the teaser service. Is the web server running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Reopen a saved teaser into the preview + review surface.
+  const reopen = async (id: string) => {
+    setError(null);
+    try {
+      const rec = await getTeaser(id);
+      setRecord(rec);
+      setResult({ ok: true, draft: rec.draft, html: rec.html ?? "" });
+    } catch {
+      setError("Could not load that saved teaser.");
     }
   };
 
@@ -210,31 +276,76 @@ export default function TeaserPage() {
       )}
 
       {result && result.ok && (
-        <TeaserResultView result={result} />
+        <TeaserResultView
+          result={result}
+          record={record}
+          savedError={savedError}
+          onRecordChange={(rec) => {
+            setRecord(rec);
+            void refreshSaved();
+          }}
+        />
       )}
+
+      <SavedTeasers saved={saved} error={savedError} onReopen={reopen} onRefresh={refreshSaved} />
     </div>
   );
 }
 
-function TeaserResultView({ result }: { result: { ok: true; draft: TeaserDraft; html: string } }) {
+function TeaserResultView({
+  result,
+  record,
+  savedError,
+  onRecordChange,
+}: {
+  result: { ok: true; draft: TeaserDraft; html: string };
+  record: TeaserRecord | null;
+  savedError: string | null;
+  onRecordChange: (rec: TeaserRecord) => void;
+}) {
   const { draft, html } = result;
   const h = draft.headlineNumber;
   const slug = slugify(draft.companyName);
+
+  const [editing, setEditing] = React.useState(false);
+  const [rejecting, setRejecting] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  const [busy, setBusy] = React.useState<null | "approve" | "reject" | "edit">(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
+
+  const status: TeaserStatus | null = record?.status ?? null;
+  const edited = record?.edited_fields ?? {};
+
+  const run = async (
+    kind: "approve" | "reject" | "edit",
+    fn: () => Promise<TeaserRecord>,
+  ) => {
+    setBusy(kind);
+    setActionError(null);
+    try {
+      onRecordChange(await fn());
+    } catch {
+      setActionError("Action failed — is the platform reachable?");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">{draft.companyName}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">{draft.companyName}</h2>
+            {status && <StatusBadge status={status} />}
+          </div>
           <p className="text-sm text-muted-foreground">
             {draft.companyName} {h.companyAppears}/{h.n} vs {h.competitorName} {h.competitorAppears}/
             {h.n} · hero: {draft.heroEngine} · lead: “{draft.lead.verbatimQuery}”
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => download(`${slug}.html`, html, "text/html")}
-          >
+          <Button variant="outline" onClick={() => download(`${slug}.html`, html, "text/html")}>
             <Download className="h-4 w-4" /> HTML
           </Button>
           <Button
@@ -245,11 +356,239 @@ function TeaserResultView({ result }: { result: { ok: true; draft: TeaserDraft; 
           </Button>
         </div>
       </div>
+
+      {/* Review action bar — only once the draft has been persisted. */}
+      {record ? (
+        <Card>
+          <CardContent className="space-y-3 pt-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={() => run("approve", () => approveTeaser(record.id))}
+                disabled={busy !== null || status === "approved"}
+              >
+                {busy === "approve" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditing((v) => !v);
+                  setRejecting(false);
+                }}
+                disabled={busy !== null}
+              >
+                <Pencil className="h-4 w-4" /> Edit copy
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setRejecting((v) => !v);
+                  setEditing(false);
+                }}
+                disabled={busy !== null}
+              >
+                <X className="h-4 w-4" /> Reject
+              </Button>
+            </div>
+
+            {rejecting && (
+              <div className="space-y-2">
+                <textarea
+                  className="min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Why is this teaser being rejected? (optional)"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() =>
+                    run("reject", () => rejectTeaser(record.id, reason)).then(() =>
+                      setRejecting(false),
+                    )
+                  }
+                  disabled={busy !== null}
+                >
+                  {busy === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Confirm reject
+                </Button>
+              </div>
+            )}
+
+            {editing && (
+              <EditCopy
+                initial={edited}
+                busy={busy === "edit"}
+                onSave={(fields) =>
+                  run("edit", () => editTeaser(record.id, fields)).then(() => setEditing(false))
+                }
+              />
+            )}
+
+            {record.reject_reason && status === "rejected" && (
+              <p className="text-sm text-muted-foreground">
+                Reject reason: {record.reject_reason}
+              </p>
+            )}
+            {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+          </CardContent>
+        </Card>
+      ) : (
+        savedError && <p className="text-sm text-muted-foreground">{savedError}</p>
+      )}
+
+      {/* Saved copy edits reflected above the preview (the print HTML re-render
+          is a pipeline concern; here we surface the reviewer's overrides). */}
+      {record && Object.values(edited).some((v) => v) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Reviewer edits</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm">
+            {edited.headline && (
+              <p>
+                <span className="font-medium">Headline:</span> {edited.headline}
+              </p>
+            )}
+            {edited.leadSentence && (
+              <p>
+                <span className="font-medium">Lead:</span> {edited.leadSentence}
+              </p>
+            )}
+            {edited.stakesLine && (
+              <p>
+                <span className="font-medium">Stakes:</span> {edited.stakesLine}
+              </p>
+            )}
+            {edited.cta && (
+              <p>
+                <span className="font-medium">CTA:</span> {edited.cta}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <iframe
         title="teaser preview"
         srcDoc={html}
         className="h-[1000px] w-full rounded-lg border bg-white"
       />
     </div>
+  );
+}
+
+function EditCopy({
+  initial,
+  busy,
+  onSave,
+}: {
+  initial: TeaserEditedFields;
+  busy: boolean;
+  onSave: (fields: TeaserEditedFields) => void;
+}) {
+  const [headline, setHeadline] = React.useState(initial.headline ?? "");
+  const [leadSentence, setLeadSentence] = React.useState(initial.leadSentence ?? "");
+  const [stakesLine, setStakesLine] = React.useState(initial.stakesLine ?? "");
+  const [cta, setCta] = React.useState(initial.cta ?? "");
+
+  const cls =
+    "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+  return (
+    <div className="space-y-3 rounded-md border border-input p-4">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Headline</label>
+        <input className={cls} value={headline} onChange={(e) => setHeadline(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Lead sentence</label>
+        <input
+          className={cls}
+          value={leadSentence}
+          onChange={(e) => setLeadSentence(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Stakes line</label>
+        <input className={cls} value={stakesLine} onChange={(e) => setStakesLine(e.target.value)} />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Call to action</label>
+        <input className={cls} value={cta} onChange={(e) => setCta(e.target.value)} />
+      </div>
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={() =>
+          onSave({
+            ...(headline ? { headline } : {}),
+            ...(leadSentence ? { leadSentence } : {}),
+            ...(stakesLine ? { stakesLine } : {}),
+            ...(cta ? { cta } : {}),
+          })
+        }
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+        Save edits
+      </Button>
+    </div>
+  );
+}
+
+function SavedTeasers({
+  saved,
+  error,
+  onReopen,
+  onRefresh,
+}: {
+  saved: TeaserSummary[];
+  error: string | null;
+  onReopen: (id: string) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">Saved teasers</CardTitle>
+        <Button variant="ghost" size="sm" onClick={onRefresh}>
+          <RotateCcw className="h-4 w-4" /> Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {error && saved.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{error}</p>
+        ) : saved.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No saved teasers yet — generate one above to review and approve it.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {saved.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
+                    {t.company_name || "(untitled)"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(t.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={t.status} />
+                  <Button variant="outline" size="sm" onClick={() => onReopen(t.id)}>
+                    Open
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }

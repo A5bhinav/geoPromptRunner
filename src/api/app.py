@@ -11,6 +11,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from pydantic import BaseModel
 
 from src.api import runner
 from src.config import settings
@@ -20,6 +21,7 @@ from src.prompts.csv_loader import (
     build_template_csv,
     parse_csv_files,
 )
+from src.storage import db
 
 __all__ = ["app"]
 
@@ -297,6 +299,105 @@ def cancel_audit(run_id: str) -> dict[str, str]:
     if not runner.request_cancel(run_id):
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
     return {"status": "cancelling"}
+
+
+# --- Teasers: persist a generated one-pager, then approve / edit / reject -----
+#
+# The teaser pipeline (teaser/) runs as a child process out of the Next route and
+# returns {draft, html}; the browser POSTs that here so it lands in Supabase
+# (via src/storage/db.py) and can be reviewed. CRUD/state-only — no LLM work — so
+# these call straight into db.py rather than through a runner module. A storage
+# failure surfaces as 503 (Supabase not configured/unreachable) rather than 500.
+
+
+class SaveTeaserBody(BaseModel):
+    draft: dict[str, object]
+    html: str | None = None
+
+
+class EditTeaserBody(BaseModel):
+    # Reviewer overrides for the printable copy (headline / leadSentence / cta /
+    # stakesLine, …). Stored in edited_fields; html (re-rendered with the edits)
+    # is optional so the preview can reflect them.
+    edited_fields: dict[str, object]
+    html: str | None = None
+
+
+class RejectTeaserBody(BaseModel):
+    reason: str | None = None
+
+
+def _teaser_or_404(teaser_id: str) -> dict[str, object]:
+    try:
+        row = db.get_teaser(teaser_id)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"teaser {teaser_id} not found")
+    return row
+
+
+@api.post("/teasers")
+def save_teaser(body: SaveTeaserBody) -> dict[str, object]:
+    """Persist a freshly generated teaser draft (status='draft') and return its id."""
+    try:
+        teaser_id = db.save_teaser(dict(body.draft), body.html)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"teaser_id": teaser_id}
+
+
+@api.get("/teasers")
+def list_teasers() -> list[dict[str, object]]:
+    """Recent teasers (id, company, status, created_at, …) for the saved list."""
+    try:
+        return db.list_teasers()
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@api.get("/teasers/{teaser_id}")
+def get_teaser(teaser_id: str) -> dict[str, object]:
+    """A single teaser: full draft + html + status + edited_fields."""
+    return _teaser_or_404(teaser_id)
+
+
+@api.post("/teasers/{teaser_id}/approve")
+def approve_teaser(teaser_id: str) -> dict[str, object]:
+    _teaser_or_404(teaser_id)
+    try:
+        row = db.update_teaser_status(teaser_id, status="approved")
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
+
+
+@api.post("/teasers/{teaser_id}/edit")
+def edit_teaser(teaser_id: str, body: EditTeaserBody) -> dict[str, object]:
+    """Save reviewer copy edits into edited_fields (and optionally re-rendered html).
+
+    Does not change status — an edited draft can still be approved or rejected.
+    """
+    _teaser_or_404(teaser_id)
+    try:
+        row = db.update_teaser_status(
+            teaser_id, edited_fields=dict(body.edited_fields), html=body.html
+        )
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
+
+
+@api.post("/teasers/{teaser_id}/reject")
+def reject_teaser(teaser_id: str, body: RejectTeaserBody) -> dict[str, object]:
+    _teaser_or_404(teaser_id)
+    try:
+        row = db.update_teaser_status(
+            teaser_id, status="rejected", reject_reason=body.reason or ""
+        )
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
 
 
 app.include_router(api)
