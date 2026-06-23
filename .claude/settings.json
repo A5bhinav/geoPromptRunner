@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull *)",
+      "Bash(mkdir -p /tmp/geo_api_backup)",
+      "Bash(cp -R src/api /tmp/geo_api_backup/)",
+      "Bash(rm -rf src/api)",
+      "Bash(git fetch *)"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "geo-teaser-auto",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turns a prospect URL into a reviewable GEO teaser PDF. Thin layer over the geoPromptRunner measurement platform. All external services are behind interfaces with Mock implementations, so the full flow runs with zero credentials.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "teaser": "node src/cli.ts",
+    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.8.2"
+  }
+}

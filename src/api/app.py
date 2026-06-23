@@ -279,6 +279,19 @@ def audit_answers_markdown(run_id: str) -> Response:
     )
 
 
+@api.get("/audits/{run_id}/answers")
+def audit_answers(run_id: str) -> list[dict[str, object]]:
+    """Verbatim per-(query, engine, run) answers as JSON — the structured sibling
+    of answers.md / results.csv. Each row matches the storage ``QueryResult``
+    shape, which the teaser consumes as ``AnswerRecord`` to re-render proof cards.
+    """
+    _guard_export_ready(run_id)
+    answers = runner.get_answers(run_id)
+    if answers is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    return [dict(a) for a in answers]
+
+
 @api.post("/audits/{run_id}/cancel")
 def cancel_audit(run_id: str) -> dict[str, str]:
     if not runner.request_cancel(run_id):

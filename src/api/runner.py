@@ -27,6 +27,7 @@ __all__ = [
     "start_run",
     "get_status",
     "get_report",
+    "get_answers",
     "list_runs",
     "request_cancel",
     "resume_interrupted_runs",
@@ -671,6 +672,21 @@ def get_answers_markdown(run_id: str) -> str | None:
         runs_per_query=data.runs_per_query,
         engine_order=data.engine_order,
     )
+
+
+def get_answers(run_id: str) -> list[QueryResult] | None:
+    """The run's verbatim per-(query, engine, run) answers as structured rows.
+
+    The JSON sibling of :func:`get_results_csv` / :func:`get_answers_markdown` —
+    same memory→storage fallback via ``_export_inputs``. Each row is a
+    ``QueryResult`` (query_id, intent, prompt, engine_name, run_index, response,
+    citations, timestamp), which the teaser consumes as ``AnswerRecord`` to
+    re-render proof cards. ``None`` if the run is unknown.
+    """
+    data = _export_inputs(run_id)
+    if data is None:
+        return None
+    return data.results
 
 
 def list_runs() -> list[RunSummary]:
