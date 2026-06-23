@@ -33,6 +33,12 @@ export interface PipelineOptions {
   engines: string[];
   runsPerQuery: number;
   judge: boolean;
+  /**
+   * Cap the generated query set to the highest-weight N queries — a teaser audit
+   * is deliberately smaller (and cheaper/faster) than a full platform audit.
+   * 0/undefined = use the whole generated set.
+   */
+  maxQueries?: number;
   /** Max status polls before giving up. */
   maxPolls: number;
   /** ms between polls (0 in tests/mock). */
@@ -89,8 +95,16 @@ export async function runTeaserPipeline(
   // 1. Resolve URL -> company profile.
   let profile = await deps.resolver.resolve(url);
 
-  // 2. Generate the teaser-grade query set.
+  // 2. Generate the teaser-grade query set, capped to the leanest N (by weight)
+  //    when maxQueries is set — a teaser needs only enough queries to surface a
+  //    losing one, not a full audit's breadth.
   let querySet = await deps.querySetGenerator.generate(profile);
+  if (opts.maxQueries && opts.maxQueries > 0 && querySet.queries.length > opts.maxQueries) {
+    const leanest = [...querySet.queries]
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, opts.maxQueries);
+    querySet = { ...querySet, queries: leanest };
+  }
 
   // 2b. Optional human confirm gate (competitors are the risky output).
   if (opts.confirm) {
