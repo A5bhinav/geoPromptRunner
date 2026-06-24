@@ -24,7 +24,13 @@ import "./env.ts";
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { buildDeps, usingMocks, usingMockPlatform } from "./config.ts";
+import {
+  adapterModes,
+  buildDeps,
+  mockedAdapters,
+  REAL_ADAPTER_HINTS,
+  usingMockPlatform,
+} from "./config.ts";
 import { runTeaserPipeline, type PipelineOptions } from "./pipeline.ts";
 import { renderHtml, renderPdf } from "./render/pdf.ts";
 
@@ -35,16 +41,29 @@ interface Args {
   engines: string[] | null;
   maxQueries: number | null;
   runs: number | null;
+  requireReal: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { url: null, out: "out", json: false, engines: null, maxQueries: null, runs: null };
+  const args: Args = {
+    url: null,
+    out: "out",
+    json: false,
+    engines: null,
+    maxQueries: null,
+    runs: null,
+    // Hard-fail rather than silently mock — for the actual client run. Also
+    // settable via TEASER_REQUIRE_REAL=1 so the web route can enforce it.
+    requireReal: process.env.TEASER_REQUIRE_REAL === "1",
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--out") {
       args.out = argv[++i] ?? args.out;
     } else if (a === "--json") {
       args.json = true;
+    } else if (a === "--require-real") {
+      args.requireReal = true;
     } else if (a === "--engines") {
       const v = argv[++i] ?? "";
       args.engines = v.split(",").map((s) => s.trim()).filter(Boolean);
@@ -87,9 +106,27 @@ async function main(): Promise<void> {
       process.stdout.write(JSON.stringify({ ok: false, stage: "input", reason: "missing url" }));
       process.exit(1);
     }
-    console.error("usage: npm run teaser -- <url> [--out <dir>] [--engines a,b] [--max-queries n] [--runs n] [--json]");
+    console.error("usage: npm run teaser -- <url> [--out <dir>] [--engines a,b] [--max-queries n] [--runs n] [--json] [--require-real]");
     process.exit(1);
     return;
+  }
+
+  // --require-real: refuse to run on any mock adapter, so the real client run
+  // can't silently produce a teaser built on a fabricated profile / synthetic
+  // findings. Lists exactly what is mocked and how to make it real.
+  if (args.requireReal) {
+    const mocked = mockedAdapters();
+    if (mocked.length) {
+      const detail = mocked.map((m) => `${m} (${REAL_ADAPTER_HINTS[m]})`).join("; ");
+      const reason = `--require-real: refusing to run on mock adapter(s): ${detail}`;
+      if (args.json) {
+        process.stdout.write(JSON.stringify({ ok: false, stage: "config", reason }));
+      } else {
+        console.error(`✗ ${reason}`);
+      }
+      process.exit(2);
+      return;
+    }
   }
 
   const result = await runTeaserPipeline(args.url, buildDeps(), buildOptions(args));
@@ -102,21 +139,33 @@ async function main(): Promise<void> {
       process.exit(2);
       return;
     }
-    process.stdout.write(JSON.stringify({ ok: true, draft: result.draft, html: renderHtml(result.draft) }));
+    // `adapters` lets the caller (web route / UI) tell a real audit from one
+    // built on a mock resolver/platform, instead of trusting the draft blindly.
+    process.stdout.write(
+      JSON.stringify({
+        ok: true,
+        draft: result.draft,
+        html: renderHtml(result.draft),
+        adapters: adapterModes(),
+      }),
+    );
     return;
   }
 
-  // Human mode: warn about adapter mode, then write the files. The platform-wait
-  // message keys off the PLATFORM adapter only (usingMockPlatform): whenever
-  // GEO_PLATFORM_URL is set the audit really can take minutes, regardless of
-  // whether the resolver/query-set generator are still mocks.
-  if (usingMockPlatform()) {
-    console.warn("⚠️  MOCK platform (no GEO_PLATFORM_URL) — findings are synthetic.\n");
-  } else {
-    console.log("→ Running against the real platform (GEO_PLATFORM_URL). This can take several minutes.\n");
-    if (usingMocks()) {
-      console.warn("⚠️  Some adapters (resolver/query-set) are still mocks — parts of the input are synthetic.\n");
-    }
+  // Human mode: name exactly which adapters are real vs mock — a teaser built on
+  // a mock resolver (fabricated profile) or mock platform (synthetic findings)
+  // must never look like a real audit. The platform-wait message keys off the
+  // PLATFORM adapter only: whenever GEO_PLATFORM_URL is set the audit really can
+  // take minutes, regardless of whether the resolver/query-set are still mocks.
+  const mocked = mockedAdapters();
+  if (mocked.length) {
+    console.warn(
+      `⚠️  MOCK adapter(s): ${mocked.join(", ")} — those parts are synthetic, NOT real data. ` +
+        `Re-run with --require-real to hard-fail instead of mocking.\n`,
+    );
+  }
+  if (!usingMockPlatform()) {
+    console.log("→ Running the audit against the real platform (GEO_PLATFORM_URL). This can take several minutes.\n");
   }
   if (!result.ok) {
     console.error(`✗ pipeline stopped at [${result.stage}]: ${result.reason}`);

@@ -42,8 +42,14 @@ const DEFAULT_ENGINES = ["perplexity", "openai", "google_ai_overviews"];
 
 // TeaserDraft / TeaserRecord etc. now live in lib/api.ts (shared with the API
 // client) rather than being redeclared here.
+// adapters: which pipeline adapters were real vs mock (teaser cli emits this).
+type AdapterModes = {
+  platform: "real" | "mock";
+  resolver: "real" | "mock";
+  querySet: "real" | "mock";
+};
 type TeaserResult =
-  | { ok: true; draft: TeaserDraft; html: string }
+  | { ok: true; draft: TeaserDraft; html: string; adapters?: AdapterModes }
   | { ok: false; stage: string; reason: string };
 
 function download(filename: string, content: string, type: string) {
@@ -301,12 +307,20 @@ function TeaserResultView({
   savedError,
   onRecordChange,
 }: {
-  result: { ok: true; draft: TeaserDraft; html: string };
+  result: { ok: true; draft: TeaserDraft; html: string; adapters?: AdapterModes };
   record: TeaserRecord | null;
   savedError: string | null;
   onRecordChange: (rec: TeaserRecord) => void;
 }) {
   const { draft, html } = result;
+  // Adapters that ran on a mock — the teaser is then built on synthetic data
+  // (a fabricated company profile and/or fabricated audit findings), not a real
+  // audit. Surface this loudly so a demo isn't mistaken for a client deliverable.
+  const mockedAdapters = result.adapters
+    ? (Object.keys(result.adapters) as (keyof AdapterModes)[]).filter(
+        (k) => result.adapters![k] === "mock",
+      )
+    : [];
   const h = draft.headlineNumber;
   const slug = slugify(draft.companyName);
 
@@ -356,6 +370,22 @@ function TeaserResultView({
 
   return (
     <div className="space-y-4">
+      {mockedAdapters.length > 0 && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium text-amber-700">
+              Demo data — built on mock {mockedAdapters.join(", ")}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              {mockedAdapters.includes("resolver") && "The company profile is fabricated. "}
+              {mockedAdapters.includes("platform") && "The audit findings are synthetic. "}
+              Not a real audit — configure the live services (crawl4ai, GEO_PLATFORM_URL) before
+              sending this to a prospect.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

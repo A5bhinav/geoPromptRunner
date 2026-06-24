@@ -93,3 +93,37 @@ export function usingMocks(): boolean {
 export function usingMockPlatform(): boolean {
   return !process.env.GEO_PLATFORM_URL;
 }
+
+/** Which adapter each dependency resolved to — "real" (live service) or "mock". */
+export interface AdapterModes {
+  platform: "real" | "mock";
+  resolver: "real" | "mock";
+  querySet: "real" | "mock";
+}
+
+/**
+ * Report the real/mock mode of each adapter, using the exact same gates
+ * buildDeps() uses. The teaser must surface this so a teaser built on a mock
+ * resolver (a fabricated company profile) or mock platform (synthetic findings)
+ * is never mistaken for a real audit.
+ */
+export function adapterModes(): AdapterModes {
+  return {
+    platform: process.env.GEO_PLATFORM_URL ? "real" : "mock",
+    resolver: crawl4aiConfigured() && hasClaudeKey() ? "real" : "mock",
+    querySet: hasClaudeKey() ? "real" : "mock",
+  };
+}
+
+/** Names of the adapters currently running on a mock (empty list = fully real). */
+export function mockedAdapters(): (keyof AdapterModes)[] {
+  const modes = adapterModes();
+  return (Object.keys(modes) as (keyof AdapterModes)[]).filter((k) => modes[k] === "mock");
+}
+
+/** How to make each adapter real — shown when --require-real aborts. */
+export const REAL_ADAPTER_HINTS: Record<keyof AdapterModes, string> = {
+  platform: "set GEO_PLATFORM_URL to a running platform API (e.g. http://localhost:8000)",
+  resolver: "set CRAWL4AI_BASE_URL + start crawl4ai, and ensure ANTHROPIC_API_KEY is set",
+  querySet: "set ANTHROPIC_API_KEY",
+};
