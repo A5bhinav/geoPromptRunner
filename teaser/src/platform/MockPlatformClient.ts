@@ -97,6 +97,11 @@ export class MockPlatformClient implements PlatformClient {
     return this.mustGet(runId).answers;
   }
 
+  /** No platform to persist to in mock mode — nothing is stored. */
+  async saveTeaser(): Promise<string | null> {
+    return null;
+  }
+
   private mustGet(runId: string): StoredRun {
     const run = this.runs.get(runId);
     if (!run) throw new Error(`mock run ${runId} not found`);

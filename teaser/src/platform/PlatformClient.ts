@@ -12,6 +12,7 @@
  *   GET  /audits/{run_id}/answers.md -> verbatim answers (parsed to AnswerRecord[])
  */
 
+import type { TeaserDraft } from "../types/domain.ts";
 import type { AnswerRecord, ReportPayload, RunStatus } from "../types/platform.ts";
 
 /** The audit input we submit: the CSV plus the metadata needed to mock a result. */
@@ -32,4 +33,11 @@ export interface PlatformClient {
   getStatus(runId: string): Promise<RunStatus>;
   getReport(runId: string): Promise<ReportPayload>;
   getAnswers(runId: string): Promise<AnswerRecord[]>;
+  /**
+   * Persist a generated draft (+ rendered html) to the platform's teasers store
+   * (POST /teasers). Returns the new teaser id, or null when persistence isn't
+   * available (the mock, or a best-effort failure) — saving must never fail the
+   * run. Every generated teaser is captured this way for review + training data.
+   */
+  saveTeaser(draft: TeaserDraft, html: string): Promise<string | null>;
 }
