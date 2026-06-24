@@ -17,6 +17,11 @@
  * mock adapters run the whole flow with no credentials.
  */
 
+// Side-effect import FIRST: load the repo-root .env so the teaser reuses the
+// platform's existing ANTHROPIC_API_KEY (and GEO_*/CRAWL4AI_* config) before any
+// adapter wiring reads process.env. Must precede the ./config import.
+import "./env.ts";
+
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { buildDeps, usingMocks, usingMockPlatform } from "./config.ts";

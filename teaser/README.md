@@ -113,7 +113,11 @@ Environment variables:
 - `ANTHROPIC_API_KEY` *(required for both real adapters)* — the **same** key the
   platform uses; no separate key var is introduced. The resolver uses Claude to
   extract a `CompanyProfile` from the crawled markdown; the query-set generator
-  uses Claude to draft the buyer queries.
+  uses Claude to draft the buyer queries. **The CLI auto-loads the repo-root
+  `.env`** (`src/env.ts`), so the existing `ANTHROPIC_API_KEY` is picked up
+  without exporting it or duplicating the secret — an already-exported value (or
+  one injected by the web route's parent process) still takes precedence. A
+  `teaser/.env`, if present, overrides the repo-root one.
 - `TEASER_CLAUDE_MODEL` *(optional)* — the Claude model id, **separately
   configurable** from the key (default `claude-haiku-4-5`). Lets you point the
   teaser at a different model without touching the platform's own model config.
