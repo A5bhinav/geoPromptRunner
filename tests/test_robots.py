@@ -23,10 +23,12 @@ def test_permissive_policy_allows_everything() -> None:
     assert policy.crawl_delay() is None
 
 
+# load_robots fetches through net_guard.safe_get (per-hop SSRF validation), so
+# the tests patch that seam rather than httpx.get.
 def test_load_robots_parses(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        robots_mod.httpx,
-        "get",
+        robots_mod,
+        "safe_get",
         lambda *a, **k: httpx.Response(200, text="User-agent: *\nDisallow: /admin/\n"),
     )
     policy = load_robots("x.com")
@@ -35,7 +37,7 @@ def test_load_robots_parses(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_load_robots_missing_is_permissive(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(robots_mod.httpx, "get", lambda *a, **k: httpx.Response(404, text=""))
+    monkeypatch.setattr(robots_mod, "safe_get", lambda *a, **k: httpx.Response(404, text=""))
     assert load_robots("x.com").allowed("https://x.com/anything") is True
 
 
@@ -43,5 +45,15 @@ def test_load_robots_transport_error_is_permissive(monkeypatch: pytest.MonkeyPat
     def boom(*a: object, **k: object) -> httpx.Response:
         raise httpx.ConnectError("no network")
 
-    monkeypatch.setattr(robots_mod.httpx, "get", boom)
+    monkeypatch.setattr(robots_mod, "safe_get", boom)
+    assert load_robots("x.com").allowed("https://x.com/anything") is True
+
+
+def test_load_robots_unsafe_redirect_is_permissive(monkeypatch: pytest.MonkeyPatch) -> None:
+    # An SSRF-blocked hop (safe_get raises UnsafeUrlError) must not crash the
+    # crawl — it degrades to a permissive policy like any other fetch failure.
+    def unsafe(*a: object, **k: object) -> httpx.Response:
+        raise robots_mod.UnsafeUrlError("redirect to private address")
+
+    monkeypatch.setattr(robots_mod, "safe_get", unsafe)
     assert load_robots("x.com").allowed("https://x.com/anything") is True

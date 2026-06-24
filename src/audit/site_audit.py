@@ -12,6 +12,7 @@ The audit layer owns the mapping from check results → report rows and → pers
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from src.api.reports import RoadmapRow, SiteAuditPayload, SiteCheckRow, SiteFindingRow
@@ -27,6 +28,14 @@ from src.audit.checks.ssr import SSRResult
 from src.audit.crawl import CrawlResult, PageRecord, run_site_audit_blocking
 from src.audit.offsite.models import Confidence, FindingType, OffsiteFinding
 from src.audit.synthesize import build_site_audit_roadmap
+from src.audit.technical_check import (
+    CheckResult,
+    check_crawler_access,
+    check_gated_content,
+    check_llms_txt,
+    check_robots_txt,
+    check_sitemap,
+)
 from src.storage import db
 
 __all__ = [
@@ -144,6 +153,10 @@ def run_site_audit(
 
     checks: list[SiteCheckRow] = []
     rows: list[dict[str, Any]] = []
+    # Cat-1 technical accessibility (domain-level). Runs even when the crawl
+    # found no pages — robots.txt / WAF / sitemap verdicts are exactly what you
+    # want when a site blocks the crawler outright.
+    checks.extend(_run_technical(run_id, domain, rows))
     for page in crawl.pages:
         checks.append(_run_ssr(run_id, page, rows))
         checks.append(_run_schema(run_id, page, rows))
@@ -168,7 +181,7 @@ def run_site_audit(
     roadmap = _roadmap_rows(brand or domain, checks, offsite_findings)
 
     return SiteAuditPayload(
-        present=bool(crawl.pages),
+        present=bool(crawl.pages or checks),
         domain=domain,
         pages_crawled=len(crawl.pages),
         checks=checks,
@@ -240,6 +253,42 @@ def _run_offsite(
         except db.StorageError as exc:
             logger.info("Failed to persist offsite findings (continuing): %s", exc)
     return [_finding_payload_row(f) for f in result.findings], result.findings
+
+
+# Domain-level Cat-1 technical-accessibility probes — robots.txt, edge/WAF UA
+# blocking, llms.txt, sitemap, and login/paywall gating. They hit the domain
+# directly (independent of the page crawl). Rendering (Cat 1.3) is already
+# covered per-page by the SSR check, so it is intentionally omitted here.
+_TECHNICAL_CHECKS: tuple[tuple[str, Callable[[str], CheckResult]], ...] = (
+    ("robots_txt", check_robots_txt),
+    ("crawler_access", check_crawler_access),
+    ("llms_txt", check_llms_txt),
+    ("sitemap", check_sitemap),
+    ("gated_content", check_gated_content),
+)
+
+
+def _run_technical(run_id: str, domain: str, rows: list[dict[str, Any]]) -> list[SiteCheckRow]:
+    """Run the domain-level Cat-1 technical-accessibility checks (best-effort).
+
+    Each probe is independent; one that raises is logged and skipped so a single
+    failed check never sinks the audit phase.
+    """
+    out: list[SiteCheckRow] = []
+    for check_key, fn in _TECHNICAL_CHECKS:
+        try:
+            result = fn(domain)
+        except Exception as exc:  # a single probe never sinks the audit
+            logger.info(
+                "technical check %s failed for %s: %s", check_key, domain, type(exc).__name__
+            )
+            continue
+        status, detail = result["status"], result["details"]
+        rows.append(_check_row(run_id, check_key, 1, "", status, {"reason": detail}, {}))
+        out.append(
+            SiteCheckRow(check_key=check_key, category=1, page_url="", status=status, detail=detail)
+        )
+    return out
 
 
 def _run_ssr(run_id: str, page: PageRecord, rows: list[dict[str, Any]]) -> SiteCheckRow:

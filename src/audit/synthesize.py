@@ -46,6 +46,34 @@ _CHECK_MAP: dict[str, tuple[RubricCategory, str, float]] = {
         "core content server-rendered (AI-crawler visible)",
         3.0,
     ),
+    # Domain-level Cat-1 technical-accessibility probes (technical_check.py). If
+    # AI crawlers can't reach the content at all, nothing downstream matters —
+    # so robots/WAF/gating carry the heaviest weight.
+    "robots_txt": (
+        RubricCategory.TECHNICAL_ACCESSIBILITY,
+        "robots.txt allows AI crawlers",
+        3.0,
+    ),
+    "crawler_access": (
+        RubricCategory.TECHNICAL_ACCESSIBILITY,
+        "AI crawler UAs not blocked at the CDN/WAF",
+        3.0,
+    ),
+    "gated_content": (
+        RubricCategory.TECHNICAL_ACCESSIBILITY,
+        "content reachable, not gated behind a login/paywall",
+        2.5,
+    ),
+    "llms_txt": (
+        RubricCategory.TECHNICAL_ACCESSIBILITY,
+        "llms.txt present and valid",
+        1.0,
+    ),
+    "sitemap": (
+        RubricCategory.TECHNICAL_ACCESSIBILITY,
+        "XML sitemap present and current",
+        1.0,
+    ),
     "internal_linking": (
         RubricCategory.CONTENT_COVERAGE,
         "internal linking establishes topical authority",

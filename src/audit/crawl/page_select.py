@@ -162,13 +162,13 @@ def discover_nav_links(homepage: str, max_links: int = 200) -> list[str]:
     from selectolax.parser import HTMLParser
 
     from src.audit.crawl.fetcher import GPTBOT_UA
-    from src.net_guard import UnsafeUrlError, assert_public_url
+    from src.net_guard import UnsafeUrlError, safe_get
 
     try:
-        assert_public_url(homepage)
-        response = httpx.get(
-            homepage, headers={"User-Agent": GPTBOT_UA}, timeout=15.0, follow_redirects=True
-        )
+        # safe_get re-validates every redirect hop, so the homepage can't bounce
+        # discovery to an internal address (auto follow-redirects would).
+        with httpx.Client(follow_redirects=False, timeout=15.0) as client:
+            response = safe_get(client, homepage, headers={"User-Agent": GPTBOT_UA})
     except (httpx.HTTPError, UnsafeUrlError) as exc:
         logger.info("nav-link discovery fetch failed for %s: %s", homepage, type(exc).__name__)
         return []

@@ -16,7 +16,7 @@ import httpx
 from protego import Protego
 
 from src.audit.crawl.fetcher import GPTBOT_UA
-from src.net_guard import UnsafeUrlError, assert_public_url
+from src.net_guard import UnsafeUrlError, safe_get
 
 __all__ = ["RobotsPolicy", "load_robots", "ROBOTS_UA_TOKEN"]
 
@@ -50,10 +50,10 @@ def load_robots(domain: str) -> RobotsPolicy:
     host = urlsplit(domain if "://" in domain else f"https://{domain}").hostname or domain
     url = f"https://{host}/robots.txt"
     try:
-        assert_public_url(url)
-        response = httpx.get(
-            url, timeout=_ROBOTS_TIMEOUT, headers={"User-Agent": GPTBOT_UA}, follow_redirects=True
-        )
+        # safe_get follows redirects manually, re-validating every hop, so a
+        # public robots.txt URL can't bounce us to an internal address.
+        with httpx.Client(timeout=_ROBOTS_TIMEOUT, follow_redirects=False) as client:
+            response = safe_get(client, url, headers={"User-Agent": GPTBOT_UA})
     except (httpx.HTTPError, UnsafeUrlError) as exc:
         logger.info("robots.txt fetch failed for %s: %s", host, type(exc).__name__)
         return RobotsPolicy(None)

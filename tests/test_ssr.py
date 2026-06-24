@@ -138,6 +138,7 @@ def test_select_pages_navlink_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     import httpx
 
     import src.audit.crawl.page_select as ps
+    import src.net_guard as net_guard
 
     html = (
         "<html><body><nav>"
@@ -145,10 +146,12 @@ def test_select_pages_navlink_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
         "<a href='https://other.com/y'>External</a><a href='#top'>Top</a>"
         "</nav></body></html>"
     )
+    # discover_nav_links fetches through net_guard.safe_get (per-hop SSRF check),
+    # so patch that seam rather than httpx.get.
     monkeypatch.setattr(
-        httpx,
-        "get",
-        lambda url, **kw: httpx.Response(200, text=html, request=httpx.Request("GET", url)),
+        net_guard,
+        "safe_get",
+        lambda client, url, **kw: httpx.Response(200, text=html, request=httpx.Request("GET", url)),
     )
     # Empty sitemap -> homepage nav-link discovery feeds the scorer (§7.5).
     selected = ps.select_pages("x.com", sitemap_urls=[])
