@@ -75,14 +75,18 @@ function answers(): AnswerRecord[] {
   ];
 }
 
-test("lead is the highest-intent losing cell on the most credible engine", () => {
+test("lead favors a demand-side loss (category) over a comparison; comparison goes to the table", () => {
   const r = selectFindings(profile(), baseReport(), answers());
   assert.equal(r.ok, true);
   if (!r.ok) return;
-  // q2 is comparison (intent 5) on perplexity (cred 5) -> beats q1 category on openai.
-  assert.equal(r.lead.queryId, "q2");
-  assert.equal(r.heroEngine, "perplexity");
-  assert.equal(r.lead.verbatimQuery, "alternatives to Salesforce?");
+  // q1 is category (demand-side) -> hero lead over q2 comparison, even though q2
+  // is on the more credible engine. The hero engine follows the lead, and the
+  // comparison still appears in the pattern table (corroboration, not the hook).
+  assert.equal(r.lead.queryId, "q1");
+  assert.equal(r.lead.intent, "category");
+  assert.equal(r.heroEngine, "openai");
+  assert.equal(r.lead.verbatimQuery, "best CRM?");
+  assert.ok(r.table.some((f) => f.queryId === "q2"));
 });
 
 test("table holds distinct queries, not the lead's", () => {
