@@ -96,6 +96,45 @@ export interface ScorecardPayload {
 }
 
 /** The full report — teaserAuto's primary input. */
+/** One on-site/off-site check verdict (src/api/reports.py SiteCheckRow). */
+export interface SiteCheckRow {
+  check_key: string;
+  category: number;
+  page_url: string;
+  status: string; // pass | partial | fail | ungradeable
+  detail: string;
+}
+
+/** One off-site finding (Wikidata/reviews/community/listicle/press). */
+export interface SiteFindingRow {
+  finding_type: string;
+  title: string;
+  url: string | null;
+  confidence: string; // high | medium | low
+}
+
+/** One prioritized roadmap gap — the "why + fix" behind the visibility loss. */
+export interface RoadmapRow {
+  category: string;
+  check_name: string;
+  status: string; // partial | fail
+  impact_label: string; // High | Medium | Low
+  effort: string; // low | medium | high
+  phase: number; // 1..4
+}
+
+/** Site-audit results (technique-checklist scrape) attached to the report. */
+export interface SiteAuditPayload {
+  present: boolean;
+  domain: string;
+  pages_crawled: number;
+  checks: SiteCheckRow[];
+  summary: Record<string, number>;
+  errors: number;
+  offsite: SiteFindingRow[];
+  roadmap: RoadmapRow[];
+}
+
 export interface ReportPayload {
   client_name: string;
   run_date: string;
@@ -111,6 +150,8 @@ export interface ReportPayload {
   accuracy_flags: FlagRow[];
   sources: SourceRow[];
   losing_queries: LosingRow[];
+  /** On-site + off-site technique-checklist audit; null when the crawl didn't run. */
+  site_audit?: SiteAuditPayload | null;
 }
 
 // --- Raw answers (for the proof card) ----------------------------------------

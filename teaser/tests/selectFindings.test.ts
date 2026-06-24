@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { selectFindings } from "../src/select/selectFindings.ts";
+import { selectFindings, selectWhyGaps } from "../src/select/selectFindings.ts";
 import type { CompanyProfile } from "../src/types/domain.ts";
-import type { AnswerRecord, ReportPayload } from "../src/types/platform.ts";
+import type { AnswerRecord, ReportPayload, SiteAuditPayload } from "../src/types/platform.ts";
 
 function profile(): CompanyProfile {
   return {
@@ -169,6 +169,41 @@ test("headline counts competitor mentioned only by an alias", () => {
   if (!r.ok) return;
   // Both queries name the competitor (q1 via alias, q2 by name).
   assert.equal(r.headline.competitorAppears, 2);
+});
+
+function siteAudit(roadmap: SiteAuditPayload["roadmap"], present = true): SiteAuditPayload {
+  return {
+    present,
+    domain: "acme.io",
+    pages_crawled: 3,
+    checks: [],
+    summary: {},
+    errors: 0,
+    offsite: [],
+    roadmap,
+  };
+}
+
+test("selectWhyGaps: [] without a site audit / no gaps", () => {
+  assert.deepEqual(selectWhyGaps(null), []);
+  assert.deepEqual(selectWhyGaps(undefined), []);
+  assert.deepEqual(selectWhyGaps(siteAudit([])), []);
+  assert.deepEqual(selectWhyGaps(siteAudit([], false)), []); // present:false
+});
+
+test("selectWhyGaps orders by phase, fail-before-partial, then impact", () => {
+  const gaps = selectWhyGaps(
+    siteAudit([
+      { category: "content", check_name: "fact density", status: "partial", impact_label: "Low", effort: "low", phase: 2 },
+      { category: "technical", check_name: "robots.txt allows AI crawlers", status: "fail", impact_label: "High", effort: "low", phase: 1 },
+      { category: "schema", check_name: "schema.org markup", status: "fail", impact_label: "Medium", effort: "medium", phase: 2 },
+    ]),
+    2,
+  );
+  assert.equal(gaps.length, 2);
+  assert.equal(gaps[0]!.label, "robots.txt allows AI crawlers"); // phase 1 wins
+  assert.equal(gaps[1]!.label, "schema.org markup"); // phase 2 fail/Medium beats phase 2 partial/Low
+  assert.equal(gaps[0]!.status, "fail");
 });
 
 // Regression for #4: a losing row with no named competitor is not printable.

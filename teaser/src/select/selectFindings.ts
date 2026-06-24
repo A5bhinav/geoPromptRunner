@@ -26,6 +26,7 @@ import type {
   IntentBucket,
   LosingRow,
   ReportPayload,
+  SiteAuditPayload,
 } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
 
@@ -216,4 +217,40 @@ export function selectFindings(
   const headline = computeHeadline(profile, answers, leadRow.competitor);
 
   return { ok: true, lead, table, headline, heroEngine };
+}
+
+/** One "why AI skips you" gap — a fixable on/off-site cause behind the loss. */
+export interface WhyGap {
+  /** The check name (a positive statement of what good looks like). */
+  label: string;
+  status: string; // fail | partial
+  impact: string; // High | Medium | Low
+}
+
+const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
+const STATUS_RANK: Record<string, number> = { fail: 2, partial: 1 };
+
+/**
+ * Pick the top fixable gaps behind the visibility loss — the "why AI skips you"
+ * block. The site-audit roadmap is already gaps-only (fail/partial); we order by
+ * fix phase (technical accessibility first), then fail-before-partial, then
+ * impact, and take the top `max`. Returns [] when no site audit ran.
+ */
+export function selectWhyGaps(
+  site: SiteAuditPayload | null | undefined,
+  max = 3,
+): WhyGap[] {
+  if (!site || !site.present || !Array.isArray(site.roadmap) || site.roadmap.length === 0) {
+    return [];
+  }
+  return [...site.roadmap]
+    .sort(
+      (a, b) =>
+        a.phase - b.phase ||
+        (STATUS_RANK[b.status] ?? 0) - (STATUS_RANK[a.status] ?? 0) ||
+        (IMPACT_RANK[(b.impact_label ?? "").toLowerCase()] ?? 0) -
+          (IMPACT_RANK[(a.impact_label ?? "").toLowerCase()] ?? 0),
+    )
+    .slice(0, max)
+    .map((r) => ({ label: r.check_name, status: r.status, impact: r.impact_label }));
 }

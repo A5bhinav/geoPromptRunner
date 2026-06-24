@@ -17,6 +17,7 @@ import {
   proofCaption,
 } from "./copy.ts";
 import { renderProofCard } from "./proofCard.ts";
+import { selectWhyGaps } from "../select/selectFindings.ts";
 
 function escapeHtml(s: string): string {
   return s
@@ -118,6 +119,13 @@ const STYLE = `
   .vrow.is-client .track > i { background:var(--rust); }
   .vrow.is-client .val { color:var(--rust); font-weight:700; }
 
+  /* ---- Why (fixable gaps) ---- */
+  .why { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:11px; }
+  .why-row { display:flex; align-items:center; gap:11px; font-size:14px; }
+  .why-marker { width:6px; height:6px; border-radius:50%; background:var(--rust); flex:none; }
+  .why-label { color:var(--ink2); }
+  .why-tag { margin-left:auto; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted2); white-space:nowrap; }
+
   /* ---- Stakes ---- */
   .stakes { margin:32px 52px 0; padding:0 0 0 20px; border-left:2px solid var(--rust); }
   .stakes p { margin:0; font-family:var(--serif); font-style:italic; font-size:18px; line-height:1.5; color:var(--ink2); }
@@ -199,6 +207,29 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
 
   const tableRows = [t.lead, ...t.table].map((f) => patternRow(f, t.companyName)).join("");
 
+  // "Why AI skips you" — the top fixable on/off-site gaps behind the loss, from
+  // the site-audit roadmap. Omitted when no site audit ran.
+  const whyGaps = selectWhyGaps(t.report.site_audit);
+  const whySection = whyGaps.length
+    ? `
+      <section class="section">
+        <div class="kicker">Why AI leaves ${escapeHtml(t.companyName)} out</div>
+        <ul class="why">
+          ${whyGaps
+            .map(
+              (g) => `
+          <li class="why-row">
+            <span class="why-marker"></span>
+            <span class="why-label">${escapeHtml(g.label)}</span>
+            <span class="why-tag">${g.status === "fail" ? "missing" : "partial"} · ${escapeHtml(g.impact)} impact</span>
+          </li>`,
+            )
+            .join("")}
+        </ul>
+        <p class="caption">The on-site &amp; off-site signals AI uses to decide who to recommend — the fixable gaps behind the pattern above.</p>
+      </section>`
+    : "";
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -246,6 +277,7 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
         ${visibilityChart(t.report.leaderboard, t.report.scorecard.top_competitor)}
         <p class="caption">${escapeHtml(headlineNumberSentence(t.companyName, h))}</p>
       </section>
+      ${whySection}
 
       <div class="stakes"><p>${escapeHtml(stakesLine)}</p></div>
 
