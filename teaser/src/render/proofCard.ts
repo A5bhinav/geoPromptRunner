@@ -23,6 +23,44 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Engine answers come back as Markdown (bold, headings, tables, [1] citation
+ * markers). The proof card is a quote, not a document, so we strip the Markdown
+ * to clean prose and trim to a focused excerpt — otherwise raw `**`, `###`, and
+ * `|` symbols bleed into the card and it reads as broken.
+ */
+export function cleanAnswerText(raw: string, maxChars = 420): string {
+  let t = raw
+    .replace(/```[\s\S]*?```/g, " ") // fenced code blocks
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+    .replace(/\[(\d+)\]/g, "") // [1] citation markers (sources shown separately)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // [text](url) -> text
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "") // ### headings -> drop the marker
+    .replace(/^\s*\|?[\s:|-]*-{2,}[\s:|-]*\|?\s*$/gm, "") // table separator rows |---|
+    .replace(/^\s*\|(.+)\|\s*$/gm, (_m, c: string) =>
+      c
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(" — "),
+    ) // table content rows -> " — " joined
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // **bold**
+    .replace(/__([^_]+)__/g, "$1") // __bold__
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1$2") // *italic*
+    .replace(/^\s*[-*+]\s+/gm, "") // bullet markers
+    .replace(/^\s*\d+\.\s+/gm, "") // numbered-list markers
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, " ") // collapse to a single clean paragraph
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (t.length > maxChars) {
+    const cut = t.slice(0, maxChars);
+    const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+    t = (stop > maxChars * 0.5 ? cut.slice(0, stop + 1) : cut.trimEnd()) + " …";
+  }
+  return t;
+}
+
 /** Underline each occurrence of `competitor` in rust (HTML-safe). */
 function highlightCompetitor(answerHtml: string, competitor: string): string {
   if (!competitor) return answerHtml;
@@ -31,7 +69,10 @@ function highlightCompetitor(answerHtml: string, competitor: string): string {
 }
 
 export function renderProofCard(companyName: string, finding: Finding, runDate: string): string {
-  const safeAnswer = highlightCompetitor(escapeHtml(finding.verbatimAnswer), finding.competitor);
+  const safeAnswer = highlightCompetitor(
+    escapeHtml(cleanAnswerText(finding.verbatimAnswer)),
+    finding.competitor,
+  );
   const citations = finding.citations
     .map((u) => {
       try {
