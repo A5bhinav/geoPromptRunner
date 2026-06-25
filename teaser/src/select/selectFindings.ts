@@ -128,7 +128,7 @@ function computeHeadline(
   // The client has no alias source in CompanyProfile today, so match on its name.
   const clientMatch = buildMatcher(profile.name);
   // Feed the competitor's known aliases so an answer that names it only by an
-  // alias (e.g. "SFDC" for Salesforce) still counts toward competitorAppears —
+  // alias (e.g. "YNAB" for "You Need A Budget") still counts toward competitorAppears —
   // otherwise the headline understates the gap the teaser exists to show.
   const competitorAliases =
     profile.competitors.find((c) => c.name === competitorName)?.aliases ?? [];

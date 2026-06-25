@@ -162,6 +162,6 @@ if __name__ == "__main__":
         print(f"Cannot run Gemini grounded engine test: {exc}")
         raise SystemExit(0) from None
 
-    answer, urls = engine.query_with_citations("What are the best CRM tools for startups in 2026?")
+    answer, urls = engine.query_with_citations("What are the best budgeting apps in 2026?")
     print(f"[{GeminiGroundedEngine.ENGINE_NAME}] response: {answer}")
     print(f"[{GeminiGroundedEngine.ENGINE_NAME}] citations ({len(urls)}): {urls}")

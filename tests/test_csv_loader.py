@@ -24,8 +24,8 @@ config,client_domains,ouraring.com,,
 fact,identity,"Smart ring for sleep/recovery; founded 2013 in Finland",,
 fact,pricing,"Ring 5 $399 base + $5.99/mo membership",,
 query,q1,best smart ring 2026,category,health-conscious consumer
-query,q2,Oura vs Whoop for sleep tracking,comparison,buyer
-query,q3,is the Oura Ring worth it,brand,buyer
+query,q2,Oura vs Whoop for sleep tracking,comparison,sleep-conscious consumer
+query,q3,is the Oura Ring worth it,brand,first-time shopper
 """
 
 
@@ -52,7 +52,7 @@ def test_intents_map_onto_buckets() -> None:
     intents = {q.intent.value for q in result.audit.query_set.queries}
     assert intents == {"category", "comparison", "brand"}
     personas = {q.persona for q in result.audit.query_set.queries}
-    assert "buyer" in personas
+    assert "sleep-conscious consumer" in personas
 
 
 def test_split_files_merge_into_one_audit() -> None:

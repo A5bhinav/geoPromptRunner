@@ -110,6 +110,6 @@ if __name__ == "__main__":
         print(f"Cannot run Anthropic search engine test: {exc}")
         raise SystemExit(0) from None
 
-    answer, urls = engine.query_with_citations("What are the best CRM tools for startups in 2026?")
+    answer, urls = engine.query_with_citations("What are the best budgeting apps in 2026?")
     print(f"[{AnthropicSearchEngine.ENGINE_NAME}] response: {answer}")
     print(f"[{AnthropicSearchEngine.ENGINE_NAME}] citations ({len(urls)}): {urls}")

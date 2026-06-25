@@ -43,7 +43,7 @@ _NEGATION_RE = re.compile(
 
 # Segment boundaries: sentence enders plus contrastive conjunctions. We classify
 # recommendation at the *segment containing the brand*, not the whole response,
-# so "The best CRM is Salesforce, but Acme also exists" does not mark Acme as
+# so "The best budgeting app is YNAB, but Acme also exists" does not mark Acme as
 # recommended just because "best" appears elsewhere in the answer.
 _SEGMENT_RE = re.compile(
     r"[.!?;]|\bbut\b|\bhowever\b|\bwhereas\b|\balthough\b|\bthough\b|\byet\b",
@@ -112,11 +112,11 @@ def extract_competitor_mentions(competitors: list[str], response: str) -> dict[s
 
 if __name__ == "__main__":
     samples: list[tuple[str, str, MentionType]] = [
-        ("Acme", "For startups, the best CRM is Acme by far.", MentionType.RECOMMENDED),
-        ("Acme", "Acme is one of several tools in this space.", MentionType.MENTIONED),
-        ("Acme", "We looked at Salesforce and HubSpot only.", MentionType.NOT_MENTIONED),
-        ("Acme", "I recommend Acme for small teams.", MentionType.RECOMMENDED),
-        ("acme", "ACME integrates with most stacks.", MentionType.MENTIONED),
+        ("Acme", "For budgeting, the best app is Acme by far.", MentionType.RECOMMENDED),
+        ("Acme", "Acme is one of several apps in this space.", MentionType.MENTIONED),
+        ("Acme", "We looked at YNAB and Monarch Money only.", MentionType.NOT_MENTIONED),
+        ("Acme", "I recommend Acme for first-time budgeters.", MentionType.RECOMMENDED),
+        ("acme", "ACME syncs with most banks.", MentionType.MENTIONED),
     ]
     print("=== detect_mention ===")
     all_ok = True
@@ -127,8 +127,8 @@ if __name__ == "__main__":
         print(f"[{'OK' if ok else 'FAIL'}] {brand!r}: {verdict.value} (expected {expected.value})")
 
     print("\n=== competitor extraction ===")
-    competitors = ["Salesforce", "HubSpot", "Pipedrive"]
-    text = "Top picks: Salesforce and HubSpot, though Pipedrive is also solid."
+    competitors = ["YNAB", "Monarch Money", "Rocket Money"]
+    text = "Top picks: YNAB and Monarch Money, though Rocket Money is also solid."
     print("extract_competitors:", extract_competitors(competitors, text))
     print(
         "extract_competitor_mentions:",

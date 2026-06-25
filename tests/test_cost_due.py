@@ -51,9 +51,9 @@ def _qr(qid: str, resp: str | None) -> QueryResult:
 
 def test_competitive_ranking_orders_by_mention_rate() -> None:
     results = [
-        _qr("q1", "HubSpot and Acme are options."),
-        _qr("q2", "HubSpot is the leader."),
+        _qr("q1", "Monarch Money and Acme are options."),
+        _qr("q2", "Monarch Money is the leader."),
     ]
-    ranking = competitive_ranking(results, ["Acme", "HubSpot"])
-    assert ranking[0][0] == "HubSpot"  # in 2/2 cells
+    ranking = competitive_ranking(results, ["Acme", "Monarch Money"])
+    assert ranking[0][0] == "Monarch Money"  # in 2/2 cells
     assert ranking[1][0] == "Acme"  # in 1/2

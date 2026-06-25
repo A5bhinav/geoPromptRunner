@@ -479,8 +479,14 @@ def build_template_csv() -> str:
             "",
         ],
         ["query", "q1", "best smart ring 2026", "category", "health-conscious consumer"],
-        ["query", "q2", "Oura vs Whoop for sleep tracking", "comparison", "buyer"],
-        ["query", "q3", "is the Oura Ring worth it", "brand", "buyer"],
+        [
+            "query",
+            "q2",
+            "Oura vs Whoop for sleep tracking",
+            "comparison",
+            "health-conscious consumer",
+        ],
+        ["query", "q3", "is the Oura Ring worth it", "brand", "health-conscious consumer"],
         [
             "query",
             "q4",
