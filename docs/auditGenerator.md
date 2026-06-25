@@ -1,6 +1,13 @@
 # AI Visibility Audit Generator — Design & Build Plan
 
-> Status: **design** (not yet built). Authored 2026-06-24.
+> Status: **BUILT (Phases 0–3)** — 2026-06-25. Authored 2026-06-24; §15 decisions
+> resolved 2026-06-24. Generator lives in `teaser/` (`npm run audit -- <run_id>`):
+> `select/buildAudit.ts` (synthesis, unit-tested) → `render/audit/template.ts`
+> (8-section Ledger render) → `render/audit/pdf.ts` (PDF). Persistence:
+> `data/schema_audits.sql` + `db.save/get/list/update_audit_*` + `/audit-deliverables`
+> API. UI: `web/app/audit/page.tsx` + `/api/audit` + `/api/audit/render`. Schema
+> applied to Supabase 2026-06-25 (`audit_deliverables`; db round-trip verified).
+> **Outstanding:** Phase 4 polish (§8 narrative tuning, trend/re-audit section).
 > Companion to `teaser/BUILD_PLAN.md`. The teaser is the free hook; the **audit
 > is the paid deliverable** it converts into. This doc specifies the generator
 > that turns a completed audit run into a polished, client-ready
@@ -108,12 +115,20 @@ Mirrors the 7-step methodology in `docs/CLAUDE.md` (ending on *deliver &
 convert*). Each section binds to data that **already exists** on `ReportPayload`.
 
 ### §1 — Verdict (cover)
-- **AI Visibility Grade (A–F)**, one-sentence verdict, headline stat
-  (*"Appears in X of N high-intent buyer queries"*), date, engines audited.
-- Data: `scorecard.visibility_grade` (`{letter, score, raw_score,
-  accuracy_penalty, n_flags, rationale}`), `scorecard.mention_rate_client`,
-  `engines`, `run_date`.
+- **Leads with the share-of-voice gap** (the hero, un-arguable, continuous with
+  the teaser): *"When buyers ask AI for the best [category], [client] shows up in
+  X of N answers; [top competitor] shows up in Y."*
+- **Grade as a trajectory scorecard** beneath the hero, not a naked verdict:
+  `current letter → achievable letter (90d)` — severity reframed as headroom,
+  paired with the §7 roadmap (the path out). Then a one-line **"what's inside"**
+  depth promise (why · evidence · competitive gap · roadmap).
+- Data: `scorecard.mention_rate_client`, `scorecard.share_of_model_client`,
+  `top_competitor`, `top_competitor_share`, `scorecard.visibility_grade`
+  (`{letter, score, raw_score, accuracy_penalty, n_flags, rationale}`), `engines`,
+  `run_date`. (The "achievable" grade is analyst-set narrative, not a measured
+  field — phrase as a target, never fabricate a score.)
 - This page **is the teaser's hero**, expanded. Reuse the Ledger hero + big-stat.
+  Decision detail: §15.7.
 
 ### §2 — Where you stand (baseline)
 - Mention rate + **share-of-voice** across all engines, client vs top
@@ -459,21 +474,38 @@ downloaded ready to send.**
 
 ---
 
-## 15. Open decisions
+## 15. Decisions (resolved 2026-06-24)
 
-1. **Package vs mode** — new `audit-gen/` package, or extend `teaser/` with an
-   `audit` CLI subcommand. *Rec: extend `teaser/`.*
-2. **Format** — web report + PDF (rec), or PDF-only, or hand-finished Doc.
-3. **Automation** — auto-generate skeleton + analyst narrative gate (rec), or
-   fully automated.
-4. **Evidence depth (§3)** — top-K per bucket (rec K=2–3), top-N overall, or
-   every losing query.
-5. **§4 prominence** — is "what AI gets wrong about you" a headline section
-   (requires fact sheet on every audit run) or optional?
-6. **Run source** — generate from an existing `run_id` (rec), and/or a "run full
-   audit + generate" one-shot wrapper.
-7. **Grade exposure** — show the A–F grade on the cover (strong, but commits to a
-   defensible rubric) vs lead with the share-of-voice gap.
+All seven open decisions are locked. Build to these.
+
+1. **Package vs mode → extend `teaser/`** with an `audit` CLI subcommand. Reuses
+   the Ledger design system, `PlatformClient`, env loading, PDF pipeline, and the
+   Supabase persistence seam rather than duplicating them. (~70% existing plumbing.)
+2. **Format → web report + PDF.** The interactive `report-view.tsx` already
+   renders most of §2/§5/§6/§7 for on-screen exploration; the PDF is the
+   leave-behind. Both come nearly for free.
+3. **Automation → auto-skeleton + analyst narrative gate** (not fully automated).
+   §1–§7 assemble from data; the strategic narrative and the §8 retainer ask are
+   human. Matches the teaser's "LLM proposes, human confirms" stance.
+4. **Evidence depth (§3) → top-K per bucket, K=2–3** (configurable). Grouping by
+   journey stage reads as a pattern, not cherry-picking.
+5. **§4 prominence → headline section, always on.** "What AI gets wrong about you"
+   is a marquee section of every audit. **Implication:** every *full* audit run
+   MUST attach a client fact sheet so the judge can emit `accuracy_flags` — see
+   §3 (input) and §4 (deliverable). When `accuracy_assessed` is somehow false the
+   section still degrades cleanly, but the standard path attaches the fact sheet.
+6. **Run source → from an existing `run_id`** (rec), with a thin "run full audit +
+   generate" one-shot wrapper added later. The generator stays a pure assembly
+   layer; it never re-measures (Phase-1 non-goal).
+7. **Grade exposure → gap-led cover; grade as a current→achievable trajectory.**
+   The cover leads with the un-arguable **share-of-voice gap** ("Acme shows up in
+   2 of 10 answers; Competitor X in 8") — continuous with the teaser hero and a
+   fact about the client's own market, not a judgment. The A–F grade appears
+   beneath it as a **trajectory scorecard** (`C → A- (90d)`), reframing severity
+   as headroom — a credit-score, not a verdict. The grade is paired with the §7
+   roadmap (the path out), which is why the audit — not the teaser — is where the
+   grade belongs. Cover closes with a "what's inside" depth promise. See the §1
+   spec below.
 
 ---
 

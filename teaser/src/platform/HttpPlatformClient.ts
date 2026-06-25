@@ -14,6 +14,7 @@
  * type definitions in ../types/platform.ts are the single source of truth.
  */
 
+import type { AuditDraft } from "../types/audit.ts";
 import type { TeaserDraft } from "../types/domain.ts";
 import type {
   AnswerRecord,
@@ -110,6 +111,21 @@ export class HttpPlatformClient implements PlatformClient {
         json: { draft, html },
       });
       return body.teaser_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveAuditDeliverable(draft: AuditDraft, html: string): Promise<string | null> {
+    // Best-effort, exactly like saveTeaser: a persistence failure must never fail
+    // an otherwise-good audit generation.
+    try {
+      const body = await this.request<{ deliverable_id?: string }>(
+        "POST",
+        "/audit-deliverables",
+        { json: { draft, html } },
+      );
+      return body.deliverable_id ?? null;
     } catch {
       return null;
     }

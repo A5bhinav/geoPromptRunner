@@ -43,6 +43,10 @@ __all__ = [
     "get_teaser",
     "list_teasers",
     "update_teaser_status",
+    "save_audit_deliverable",
+    "get_audit_deliverable",
+    "list_audit_deliverables",
+    "update_audit_status",
 ]
 
 logger = logging.getLogger(__name__)
@@ -66,6 +70,10 @@ BUCKET_SITE_AUDIT_HTML = "site-audit-html"
 
 # Teaser one-pagers + their review lifecycle (see data/schema_teasers.sql).
 TABLE_TEASERS = "teasers"
+
+# Audit deliverables (the paid AI Visibility Audit) + review lifecycle
+# (see data/schema_audits.sql).
+TABLE_AUDIT_DELIVERABLES = "audit_deliverables"
 
 
 class StorageError(Exception):
@@ -601,6 +609,110 @@ def update_teaser_status(
         lambda c: c.table(TABLE_TEASERS).update(row).eq("id", teaser_id).execute(),
     )
     return get_teaser(teaser_id)
+
+
+# --- Audit deliverable persistence + human review ---------------------------
+
+
+def save_audit_deliverable(
+    draft: dict[str, Any], html: str | None, deliverable_id: str | None = None
+) -> str:
+    """Insert an audit-deliverable row from a freshly generated draft, returning its id.
+
+    Stores the full ``AuditDraft`` as jsonb plus a few denormalized columns the
+    list/detail views read without unpacking ``draft``. The row starts in
+    ``status='draft'``; the review endpoints move it to approved/rejected and/or
+    save reviewer narrative edits into ``edited_fields``. Mirrors save_teaser.
+    """
+    deliverable_id = deliverable_id or str(uuid.uuid4())
+    grade = draft.get("grade")
+    grade_letter = grade.get("letter") if isinstance(grade, dict) else None
+    grade_score = grade.get("score") if isinstance(grade, dict) else None
+    report = draft.get("report")
+    scorecard = report.get("scorecard") if isinstance(report, dict) else None
+    domains = draft.get("clientDomains")
+    row: dict[str, Any] = {
+        "id": deliverable_id,
+        "run_id": draft.get("runId"),
+        "client_name": draft.get("clientName"),
+        "client_domains": domains if isinstance(domains, list) else [],
+        "category": draft.get("category"),
+        "run_date": draft.get("runDate"),
+        "grade_letter": grade_letter,
+        "grade_score": grade_score,
+        "headline": {"headline": draft.get("headline"), "verdict": draft.get("verdictSentence")},
+        "scorecard": scorecard if isinstance(scorecard, dict) else {},
+        "draft": draft,
+        "html": html,
+        "status": "draft",
+        "edited_fields": {},
+        "created_at": _now(),
+        "updated_at": _now(),
+    }
+    _execute(
+        f"save_audit_deliverable for {draft.get('clientName') or deliverable_id}",
+        lambda c: c.table(TABLE_AUDIT_DELIVERABLES).insert(row).execute(),
+    )
+    return deliverable_id
+
+
+def get_audit_deliverable(deliverable_id: str) -> dict[str, object] | None:
+    """Fetch a single audit-deliverable row by id, or None if absent."""
+    rows = _select_rows(TABLE_AUDIT_DELIVERABLES, deliverable_id, key="id")
+    return rows[0] if rows else None
+
+
+def list_audit_deliverables(limit: int = 100) -> list[dict[str, object]]:
+    """The most recent audit deliverables — the basis for the saved-audits list.
+
+    Projects only the columns the list view needs — NOT the large ``draft`` jsonb
+    or rendered ``html`` — so the panel stays light as deliverables accumulate
+    (the detail view fetches the full row via get_audit_deliverable).
+    """
+    response = _execute(
+        "list_audit_deliverables",
+        lambda c: (
+            c.table(TABLE_AUDIT_DELIVERABLES)
+            .select("id, client_name, category, grade_letter, status, created_at")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return list(data)
+
+
+def update_audit_status(
+    deliverable_id: str,
+    status: str | None = None,
+    edited_fields: dict[str, Any] | None = None,
+    reject_reason: str | None = None,
+    reviewed_by: str | None = None,
+    html: str | None = None,
+) -> dict[str, object] | None:
+    """Advance an audit deliverable's review state and/or save reviewer edits.
+
+    Any argument left as ``None`` is untouched (a partial update). Returns the
+    updated row so the API can echo the new state straight back to the UI.
+    Mirrors update_teaser_status.
+    """
+    row: dict[str, Any] = {"updated_at": _now()}
+    if status is not None:
+        row["status"] = status
+    if edited_fields is not None:
+        row["edited_fields"] = edited_fields
+    if reject_reason is not None:
+        row["reject_reason"] = reject_reason
+    if reviewed_by is not None:
+        row["reviewed_by"] = reviewed_by
+    if html is not None:
+        row["html"] = html
+    _execute(
+        f"update_audit_status for deliverable {deliverable_id}",
+        lambda c: c.table(TABLE_AUDIT_DELIVERABLES).update(row).eq("id", deliverable_id).execute(),
+    )
+    return get_audit_deliverable(deliverable_id)
 
 
 if __name__ == "__main__":

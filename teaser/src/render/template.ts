@@ -31,10 +31,10 @@ function pct(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n * 100)));
 }
 
-const FONTS =
+export const FONTS =
   'https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap';
 
-const STYLE = `
+export const STYLE = `
   :root {
     --paper:#FBFAF7; --bg:#e7e5df; --ink:#1b1a17; --ink2:#36322c;
     --muted:#54504a; --muted2:#7a756c; --faint:#8a857c; --faintest:#a99a93;
