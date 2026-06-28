@@ -12,6 +12,8 @@
  *   GET  /audits/{run_id}/answers.md -> verbatim answers (parsed to AnswerRecord[])
  */
 
+import type { AuditDraft } from "../types/audit.ts";
+import type { TeaserDraft } from "../types/domain.ts";
 import type { AnswerRecord, ReportPayload, RunStatus } from "../types/platform.ts";
 
 /** The audit input we submit: the CSV plus the metadata needed to mock a result. */
@@ -32,4 +34,19 @@ export interface PlatformClient {
   getStatus(runId: string): Promise<RunStatus>;
   getReport(runId: string): Promise<ReportPayload>;
   getAnswers(runId: string): Promise<AnswerRecord[]>;
+  /**
+   * Persist a generated draft (+ rendered html) to the platform's teasers store
+   * (POST /teasers). Returns the new teaser id, or null when persistence isn't
+   * available (the mock, or a best-effort failure) — saving must never fail the
+   * run. Every generated teaser is captured this way for review + training data.
+   */
+  saveTeaser(draft: TeaserDraft, html: string): Promise<string | null>;
+  /**
+   * Persist a generated AI Visibility Audit (+ rendered html) to the platform's
+   * audit_deliverables store (POST /audit-deliverables). Returns the new
+   * deliverable id, or null when persistence isn't available (the mock, or a
+   * best-effort failure) — saving must never fail the generation. Every audit is
+   * captured this way for review + a record of every deliverable (doc §11).
+   */
+  saveAuditDeliverable(draft: AuditDraft, html: string): Promise<string | null>;
 }

@@ -21,6 +21,13 @@ test("answerSnippet drops [n] citation markers", () => {
   assert.ok(!answerSnippet("Best option is Northstar [7] today.").includes("[7]"));
 });
 
+test("answerSnippet strips images and inline links, keeping link text", () => {
+  const s = answerSnippet("Try ![logo](logo.png) the [Acme docs](https://acme.com/d) now.");
+  assert.ok(!s.includes("]("), "no markdown link/image syntax survives");
+  assert.ok(s.includes("Acme docs"), "inline link text is kept");
+  assert.ok(!s.includes("logo.png"), "image is dropped");
+});
+
 test("answerSnippet truncates long prose on a boundary with an ellipsis", () => {
   const long = "Sentence one is here. " + "word ".repeat(200);
   const s = answerSnippet(long, 80);

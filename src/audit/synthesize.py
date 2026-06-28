@@ -87,7 +87,7 @@ _CHECK_MAP: dict[str, tuple[RubricCategory, str, float]] = {
     # Deterministic Cat 3/4 content primitives (§3.3).
     "headings_questions": (
         RubricCategory.CONTENT_STRUCTURE,
-        "headings written as buyer questions",
+        "headings written as consumer questions",
         1.0,
     ),
     "scannable_format": (

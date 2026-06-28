@@ -14,6 +14,8 @@
   "scripts": {
     "postinstall": "playwright install chromium",
     "teaser": "node src/cli.ts",
+    "audit": "node src/auditCli.ts",
+    "audit-render": "node src/render/audit/renderCli.ts",
     "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },

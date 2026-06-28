@@ -47,12 +47,12 @@ DEFAULT_CHECKLIST: dict[RubricCategory, tuple[str, ...]] = {
         "target content not gated",
     ),
     RubricCategory.CONTENT_COVERAGE: (
-        "topic clusters map buyer question space",
+        "topic clusters map consumer question space",
         "internal linking establishes topical authority",
     ),
     RubricCategory.CONTENT_STRUCTURE: (
         "answer-first direct answers",
-        "headings written as buyer questions",
+        "headings written as consumer questions",
         "scannable formatting (lists/tables)",
     ),
     RubricCategory.CONTENT_SUBSTANCE: (
@@ -76,7 +76,7 @@ DEFAULT_CHECKLIST: dict[RubricCategory, tuple[str, ...]] = {
         "named in 'best [category] app' listicles / roundups",
     ),
     RubricCategory.BASELINE_MEASUREMENT: (
-        "buyer-query set built for category",
+        "consumer-query set built for category",
         "mention/citation rate recorded across engines",
     ),
 }

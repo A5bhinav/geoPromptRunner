@@ -280,20 +280,27 @@ if __name__ == "__main__":
 
     # cat-01 on openai: Acme mentioned in 2 of 3 runs -> cell counts as a hit once.
     results = [
-        _qr("cat-01", "category", "openai", 0, "The best CRM is Acme.", ["https://acme.com/crm"]),
+        _qr(
+            "cat-01",
+            "category",
+            "openai",
+            0,
+            "The best budgeting app is Acme.",
+            ["https://acme.com/budgeting"],
+        ),
         _qr("cat-01", "category", "openai", 1, "Acme is a solid option.", []),
-        _qr("cat-01", "category", "openai", 2, "Salesforce and HubSpot lead here.", []),
+        _qr("cat-01", "category", "openai", 2, "YNAB and Monarch Money lead here.", []),
         _qr(
             "cmp-01",
             "comparison",
             "openai",
             0,
-            "HubSpot alternatives include Acme.",
-            ["https://www.g2.com/acme"],
+            "Monarch Money alternatives include Acme.",
+            ["https://www.trustpilot.com/review/acme.com"],
         ),
         _qr("brd-01", "brand", "anthropic", 0, None, []),  # engine failure -> excluded
     ]
-    competitors = ["Salesforce", "HubSpot"]
+    competitors = ["YNAB", "Monarch Money"]
     print(f"mention rate (Acme): {mention_rate(results, 'Acme'):.0%}")
     print("by bucket:", {k: f"{v:.0%}" for k, v in mention_rate_by_bucket(results, "Acme").items()})
     print(f"citation rate: {citation_rate(results, ['acme.com']):.0%}")

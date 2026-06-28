@@ -42,9 +42,12 @@ _ORG_QIDS = frozenset(
     {"Q4830453", "Q43229", "Q891723", "Q167270", "Q6881511", "Q783794", "Q1058914"}
 )
 
+# Consumer review / distribution platforms that drive B2C AI visibility. G2 and
+# other B2B software-review sites are deliberately excluded — consumer products
+# are never listed there; the signal lives on Trustpilot, the app stores, and
+# (via the search agent) Reddit / creator / listicle coverage.
 REVIEW_PLATFORMS = (
     "trustpilot.com",
-    "g2.com",
     "apps.apple.com",
     "play.google.com",
 )

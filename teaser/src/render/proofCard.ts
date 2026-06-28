@@ -36,13 +36,20 @@ function highlightCompetitor(answerHtml: string, competitor: string): string {
  * Pure (exported for tests).
  *
  * Engines like Perplexity return long, table-heavy Markdown; dumping it verbatim
- * showed literal `**` and a wall of text. We keep only the leading prose, drop
+ * showed literal `**` and a wall of text. We strip fenced code, images, and
+ * inline links, keep only the leading prose (cut at the first table), drop
  * citation markers, collapse whitespace, and truncate on a sentence/word
  * boundary. Markdown bold is preserved here (as `**`) and turned into real
  * <strong> later, AFTER HTML-escaping, so it can never inject markup.
  */
 export function answerSnippet(raw: string, maxChars = 320): string {
   let s = raw ?? "";
+  // Strip Markdown that has no place in a short quote — fenced code, images, and
+  // inline links (keep the link's visible text) — before trimming to the prose.
+  s = s
+    .replace(/```[\s\S]*?```/g, " ") // fenced code blocks
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1"); // [text](url) -> text
   // Keep only the leading prose: cut at the first Markdown table cell/separator.
   // Buyer-facing prose virtually never contains a bare `|`, so this is safe.
   const tableIdx = s.search(/\|/);

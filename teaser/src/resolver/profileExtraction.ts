@@ -79,7 +79,7 @@ You will receive labeled text for one or more pages of a single company's site (
 
 Return:
 - name: the company's brand name as customers say it (not the legal entity, not the domain).
-- category: a short, buyer-facing product category (e.g. "budgeting app", "smart ring", "CRM"). Use the language a consumer would use, not internal jargon.
+- category: a short, consumer-facing product category (e.g. "budgeting app", "smart ring", "meal-kit service"). Use the language a consumer would use, not internal jargon.
 - competitors: 2-5 REAL rival brands a buyer would compare this company against. Use real, well-known competitor names — NOT made-up names and NOT names that merely prefix this company. For each, list any aliases/name variants (e.g. "WHOOP", "Whoop band"); use [] if none.
 - clientDomains: domains owned by this company (include the site's own domain).
 - productClaims: 0-6 concrete, falsifiable claims the site makes (pricing, a required subscription, a flagship feature, the current model/version) that could seed a fact sheet. sourceUrl is the page the claim came from. Use [] if you can't ground any.

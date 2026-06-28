@@ -14,6 +14,8 @@
  * type definitions in ../types/platform.ts are the single source of truth.
  */
 
+import type { AuditDraft } from "../types/audit.ts";
+import type { TeaserDraft } from "../types/domain.ts";
 import type {
   AnswerRecord,
   ReportPayload,
@@ -101,11 +103,39 @@ export class HttpPlatformClient implements PlatformClient {
     );
   }
 
+  async saveTeaser(draft: TeaserDraft, html: string): Promise<string | null> {
+    // Best-effort: a persistence failure (platform down, no teasers table, 401)
+    // must never fail an otherwise-good generation — the files are still written.
+    try {
+      const body = await this.request<{ teaser_id?: string }>("POST", "/teasers", {
+        json: { draft, html },
+      });
+      return body.teaser_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveAuditDeliverable(draft: AuditDraft, html: string): Promise<string | null> {
+    // Best-effort, exactly like saveTeaser: a persistence failure must never fail
+    // an otherwise-good audit generation.
+    try {
+      const body = await this.request<{ deliverable_id?: string }>(
+        "POST",
+        "/audit-deliverables",
+        { json: { draft, html } },
+      );
+      return body.deliverable_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   /** One JSON request with status-aware errors and an optional timeout. */
   private async request<T>(
     method: string,
     path: string,
-    init: { body?: BodyInit } = {},
+    init: { body?: BodyInit; json?: unknown } = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const controller = this.timeoutMs > 0 ? new AbortController() : null;
@@ -113,15 +143,20 @@ export class HttpPlatformClient implements PlatformClient {
       controller && this.timeoutMs > 0
         ? setTimeout(() => controller.abort(), this.timeoutMs)
         : null;
-    // Only set X-API-Key; leave Content-Type unset so fetch derives the
-    // multipart boundary for FormData uploads.
+    // Set X-API-Key; leave Content-Type unset for FormData (fetch derives the
+    // multipart boundary), but set it for a JSON body.
     const headers: Record<string, string> = {};
     if (this.apiKey) headers["X-API-Key"] = this.apiKey;
+    let body = init.body;
+    if (init.json !== undefined) {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify(init.json);
+    }
     let res: Response;
     try {
       res = await fetch(url, {
         method,
-        body: init.body,
+        body,
         headers,
         signal: controller?.signal,
       });

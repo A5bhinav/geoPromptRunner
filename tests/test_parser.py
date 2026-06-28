@@ -13,19 +13,19 @@ N = MentionType.NOT_MENTIONED
 
 
 def test_original_cases() -> None:
-    assert detect_mention("Acme", "For startups, the best CRM is Acme by far.") is R
-    assert detect_mention("Acme", "Acme is one of several tools in this space.") is M
-    assert detect_mention("Acme", "We looked at Salesforce and HubSpot only.") is N
-    assert detect_mention("Acme", "I recommend Acme for small teams.") is R
-    assert detect_mention("acme", "ACME integrates with most stacks.") is M
+    assert detect_mention("Acme", "For budgeting, the best app is Acme by far.") is R
+    assert detect_mention("Acme", "Acme is one of several apps in this space.") is M
+    assert detect_mention("Acme", "We looked at YNAB and Monarch Money only.") is N
+    assert detect_mention("Acme", "I recommend Acme for first-time budgeters.") is R
+    assert detect_mention("acme", "ACME syncs with most banks.") is M
 
 
 def test_recommendation_is_scoped_to_the_brands_segment() -> None:
-    # "best" binds to Salesforce; Acme is in a contrastive clause -> not recommended.
-    assert detect_mention("Acme", "The best CRM is Salesforce, but Acme also exists.") is M
-    assert detect_mention("Acme", "The best CRM is Salesforce. Acme also exists.") is M
+    # "best" binds to YNAB; Acme is in a contrastive clause -> not recommended.
+    assert detect_mention("Acme", "The best budgeting app is YNAB, but Acme also exists.") is M
+    assert detect_mention("Acme", "The best budgeting app is YNAB. Acme also exists.") is M
     # Same segment carries both -> recommended.
-    assert detect_mention("Acme", "Acme is the best CRM for startups.") is R
+    assert detect_mention("Acme", "Acme is the best budgeting app for students.") is R
 
 
 def test_negative_framing_is_not_recommended() -> None:
@@ -44,10 +44,10 @@ def test_word_boundaries_and_case() -> None:
 
 
 def test_competitor_extraction() -> None:
-    text = "The best option is Salesforce, but HubSpot is also mentioned."
-    assert extract_competitors(["Salesforce", "HubSpot", "Pipedrive"], text) == [
-        "Salesforce",
-        "HubSpot",
+    text = "The best option is YNAB, but Monarch Money is also mentioned."
+    assert extract_competitors(["YNAB", "Monarch Money", "Rocket Money"], text) == [
+        "YNAB",
+        "Monarch Money",
     ]
-    verdicts = extract_competitor_mentions(["Salesforce", "HubSpot", "Pipedrive"], text)
-    assert verdicts == {"Salesforce": R, "HubSpot": M, "Pipedrive": N}
+    verdicts = extract_competitor_mentions(["YNAB", "Monarch Money", "Rocket Money"], text)
+    assert verdicts == {"YNAB": R, "Monarch Money": M, "Rocket Money": N}

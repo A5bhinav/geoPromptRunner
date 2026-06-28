@@ -522,3 +522,143 @@ export async function rejectTeaser(id: string, reason?: string): Promise<TeaserR
   if (!res.ok) throw new Error(`reject teaser failed (${res.status})`);
   return res.json();
 }
+
+// --- Audit deliverable types (the paid AI Visibility Audit) ---
+
+export type AuditStatus = "draft" | "approved" | "rejected" | "exported";
+
+// The full AuditDraft is large + nested (teaser/src/types/audit.ts); the review UI
+// only reads a handful of cover fields, so model those and keep the rest opaque.
+export interface AuditDraft {
+  runId: string;
+  clientName: string;
+  category: string;
+  runDate: string;
+  grade: { letter: string; score: number; rationale: string } | null;
+  achievableGrade: string | null;
+  headline: string;
+  verdictSentence: string;
+  headlineNumber: { clientAppears: number; competitorAppears: number; competitorName: string; n: number };
+  [key: string]: unknown;
+}
+
+// Reviewer overrides for the audit narrative. All optional. Mirrors AuditEdits.
+export interface AuditEditedFields {
+  headline?: string;
+  verdictSentence?: string;
+  achievableGrade?: string;
+  projectedImpact?: string;
+  nextSteps?: string;
+}
+
+// A persisted audit-deliverable row (src/storage/db.py audit_deliverables table).
+export interface AuditRecord {
+  id: string;
+  run_id: string | null;
+  client_name: string | null;
+  category: string | null;
+  run_date: string | null;
+  grade_letter: string | null;
+  grade_score: number | null;
+  headline: { headline?: string; verdict?: string } | Record<string, never>;
+  draft: AuditDraft;
+  html: string | null;
+  status: AuditStatus;
+  edited_fields: AuditEditedFields;
+  reject_reason: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditSummary {
+  id: string;
+  client_name: string | null;
+  category: string | null;
+  grade_letter: string | null;
+  status: AuditStatus;
+  created_at: string;
+}
+
+// The /api/audit (Next child-process route) response.
+export type GenerateAuditResult =
+  | { ok: true; draft: AuditDraft; html: string; deliverableId: string | null }
+  | { ok: false; stage: string; reason: string };
+
+// --- Audit generation + persistence + review ---
+
+// Generate an audit from a completed run_id (runs the generator via the Next
+// child-process route, which also best-effort persists it to Supabase).
+export async function generateAudit(
+  runId: string,
+  category?: string,
+  perBucket?: number,
+): Promise<GenerateAuditResult> {
+  const res = await fetch(`/api/audit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ runId, category, perBucket }),
+  });
+  return res.json();
+}
+
+// Re-render the audit HTML from a draft + reviewer edits (Next child-process route).
+export async function renderAudit(
+  draft: AuditDraft,
+  edited_fields: AuditEditedFields,
+): Promise<{ ok: boolean; html?: string; reason?: string }> {
+  const res = await fetch(`/api/audit/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ draft, edited_fields }),
+  });
+  return res.json();
+}
+
+export async function listAuditDeliverables(): Promise<AuditSummary[]> {
+  const res = await fetch(`${API_BASE}/audit-deliverables`, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) throw new Error(`list audits failed (${res.status})`);
+  return res.json();
+}
+
+export async function getAuditDeliverable(id: string): Promise<AuditRecord> {
+  const res = await fetch(`${API_BASE}/audit-deliverables/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`get audit failed (${res.status})`);
+  return res.json();
+}
+
+export async function approveAuditDeliverable(id: string): Promise<AuditRecord> {
+  const res = await fetch(`${API_BASE}/audit-deliverables/${encodeURIComponent(id)}/approve`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`approve audit failed (${res.status})`);
+  return res.json();
+}
+
+export async function editAuditDeliverable(
+  id: string,
+  edited_fields: AuditEditedFields,
+  html?: string,
+): Promise<AuditRecord> {
+  const res = await fetch(`${API_BASE}/audit-deliverables/${encodeURIComponent(id)}/edit`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ edited_fields, html: html ?? null }),
+  });
+  if (!res.ok) throw new Error(`edit audit failed (${res.status})`);
+  return res.json();
+}
+
+export async function rejectAuditDeliverable(id: string, reason?: string): Promise<AuditRecord> {
+  const res = await fetch(`${API_BASE}/audit-deliverables/${encodeURIComponent(id)}/reject`, {
+    method: "POST",
+    headers: jsonHeaders(),
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+  if (!res.ok) throw new Error(`reject audit failed (${res.status})`);
+  return res.json();
+}

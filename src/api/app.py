@@ -431,9 +431,104 @@ def reject_teaser(teaser_id: str, body: RejectTeaserBody) -> dict[str, object]:
     # is cleanly distinguishable from one whose reason failed to persist.
     reason = (body.reason or "").strip() or None
     try:
-        row = db.update_teaser_status(
-            teaser_id, status="rejected", reject_reason=reason
+        row = db.update_teaser_status(teaser_id, status="rejected", reject_reason=reason)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
+
+
+# --- Audit deliverables: persist a generated audit, then approve / edit / reject ---
+#
+# The audit generator (teaser/, `npm run audit`) runs as a child process out of the
+# Next route and returns {draft, html}; the browser POSTs that here so it lands in
+# Supabase and can be reviewed. CRUD/state-only — no LLM work — so these call
+# straight into db.py, mirroring the /teasers endpoints exactly.
+
+
+class SaveAuditBody(BaseModel):
+    draft: dict[str, object]
+    html: str | None = None
+
+
+class EditAuditBody(BaseModel):
+    # Reviewer overrides for the narrative (headline / verdictSentence /
+    # achievableGrade / projectedImpact / nextSteps). Stored in edited_fields;
+    # html (re-rendered with the edits) is optional so the preview can reflect them.
+    edited_fields: dict[str, object]
+    html: str | None = None
+
+
+class RejectAuditBody(BaseModel):
+    reason: str | None = None
+
+
+def _audit_or_404(deliverable_id: str) -> dict[str, object]:
+    try:
+        row = db.get_audit_deliverable(deliverable_id)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"audit deliverable {deliverable_id} not found")
+    return row
+
+
+@api.post("/audit-deliverables")
+def save_audit_deliverable(body: SaveAuditBody) -> dict[str, object]:
+    """Persist a freshly generated audit draft (status='draft') and return its id."""
+    try:
+        deliverable_id = db.save_audit_deliverable(dict(body.draft), body.html)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"deliverable_id": deliverable_id}
+
+
+@api.get("/audit-deliverables")
+def list_audit_deliverables() -> list[dict[str, object]]:
+    """Recent audit deliverables (id, client, grade, status, created_at) for the list."""
+    try:
+        return db.list_audit_deliverables()
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@api.get("/audit-deliverables/{deliverable_id}")
+def get_audit_deliverable(deliverable_id: str) -> dict[str, object]:
+    """A single audit deliverable: full draft + html + status + edited_fields."""
+    return _audit_or_404(deliverable_id)
+
+
+@api.post("/audit-deliverables/{deliverable_id}/approve")
+def approve_audit_deliverable(deliverable_id: str) -> dict[str, object]:
+    _audit_or_404(deliverable_id)
+    try:
+        row = db.update_audit_status(deliverable_id, status="approved")
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
+
+
+@api.post("/audit-deliverables/{deliverable_id}/edit")
+def edit_audit_deliverable(deliverable_id: str, body: EditAuditBody) -> dict[str, object]:
+    """Save reviewer narrative edits into edited_fields (and optionally re-rendered html).
+
+    Does not change status — an edited draft can still be approved or rejected.
+    """
+    _audit_or_404(deliverable_id)
+    try:
+        row = db.update_audit_status(
+            deliverable_id, edited_fields=dict(body.edited_fields), html=body.html
         )
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return row or {}
+
+
+@api.post("/audit-deliverables/{deliverable_id}/reject")
+def reject_audit_deliverable(deliverable_id: str, body: RejectAuditBody) -> dict[str, object]:
+    _audit_or_404(deliverable_id)
+    reason = (body.reason or "").strip() or None
+    try:
+        row = db.update_audit_status(deliverable_id, status="rejected", reject_reason=reason)
     except db.StorageError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return row or {}

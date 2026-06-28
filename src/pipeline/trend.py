@@ -186,7 +186,7 @@ if __name__ == "__main__":
             timestamp="t",
         )
 
-    before = [_qr("q1", "openai", "Salesforce wins."), _qr("q2", "openai", "Acme is good.")]
+    before = [_qr("q1", "openai", "YNAB wins."), _qr("q2", "openai", "Acme is good.")]
     after = [_qr("q1", "openai", "Acme is now recommended."), _qr("q2", "openai", "Acme is good.")]
-    cmp = compare_runs(before, after, "Acme", ["Salesforce"])
+    cmp = compare_runs(before, after, "Acme", ["YNAB"])
     print(render_comparison(cmp, "v1 (2026-05-01)", "v1 (2026-06-01)"))

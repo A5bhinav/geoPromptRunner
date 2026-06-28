@@ -49,7 +49,7 @@ type AdapterModes = {
   querySet: "real" | "mock";
 };
 type TeaserResult =
-  | { ok: true; draft: TeaserDraft; html: string; adapters?: AdapterModes }
+  | { ok: true; draft: TeaserDraft; html: string; adapters?: AdapterModes; teaserId?: string | null }
   | { ok: false; stage: string; reason: string };
 
 function download(filename: string, content: string, type: string) {
@@ -128,8 +128,10 @@ export default function TeaserPage() {
       // effort: a storage failure must not break the preview/download flow.
       if (data.ok) {
         try {
-          const { teaser_id } = await saveTeaser(data.draft, data.html);
-          setRecord(await getTeaser(teaser_id));
+          // The CLI now persists the teaser itself and returns its id — use that
+          // row instead of saving a duplicate; only save here if it didn't.
+          const teaserId = data.teaserId ?? (await saveTeaser(data.draft, data.html)).teaser_id;
+          setRecord(await getTeaser(teaserId));
           void refreshSaved();
         } catch {
           setSavedError(

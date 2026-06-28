@@ -76,21 +76,21 @@ if __name__ == "__main__":
 
         def query(self, prompt: str) -> str | None:
             # Pretend the model extracted these names from the response.
-            return "Salesforce\nClose\nFolk\nAttio"
+            return "YNAB\nMonarch Money\nRocket Money\nCopilot"
 
     results = [
         QueryResult(
             query_id="q1",
             intent="category",
-            prompt="best CRM?",
+            prompt="best budgeting app?",
             engine_name="openai",
             run_index=0,
-            response="Salesforce, Close, Folk, and Attio are popular.",
+            response="YNAB, Monarch Money, Rocket Money, and Copilot are popular.",
             citations=[],
             timestamp="t",
         )
     ]
     discovered = discover_competitors(
-        results, known=["Salesforce", "Acme"], extractor=_StubExtractor()
+        results, known=["YNAB", "Acme"], extractor=_StubExtractor()
     )
     print("discovered (excluding known):", discovered)

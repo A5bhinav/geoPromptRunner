@@ -63,7 +63,7 @@ function fakeAnswer(
   );
 }
 
-const SAMPLE_DOMAINS = ["g2.com", "reddit.com", "capterra.com", "producthunt.com"];
+const SAMPLE_DOMAINS = ["reddit.com", "trustpilot.com", "apps.apple.com", "youtube.com"];
 
 export class MockPlatformClient implements PlatformClient {
   private runs = new Map<string, StoredRun>();
@@ -95,6 +95,16 @@ export class MockPlatformClient implements PlatformClient {
 
   async getAnswers(runId: string): Promise<AnswerRecord[]> {
     return this.mustGet(runId).answers;
+  }
+
+  /** No platform to persist to in mock mode — nothing is stored. */
+  async saveTeaser(): Promise<string | null> {
+    return null;
+  }
+
+  /** No platform to persist to in mock mode — nothing is stored. */
+  async saveAuditDeliverable(): Promise<string | null> {
+    return null;
   }
 
   private mustGet(runId: string): StoredRun {

@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "You are a strict evaluator measuring how brands appear in an AI assistant's "
-    "answer to a buyer's question. You record your assessment by calling the "
+    "answer to a consumer's question. You record your assessment by calling the "
     "record_judgment tool. Do NOT use any outside knowledge about the brands — "
     "judge present/prominence/framing only from the answer text, and judge "
     "accuracy ONLY against the provided fact sheet. Every accuracy flag must cite "
@@ -150,7 +150,7 @@ Each client_accuracy_flags entry:
 - "claim": what the answer said (quote it)
 - "reality": the EXACT fact-sheet line it contradicts, copied VERBATIM. If this
   is not a word-for-word quote from the sheet above, the flag is invalid.
-- "severity": high (would change a buyer's decision — wrong price, wrong model),
+- "severity": high (would change a consumer's decision — wrong price, wrong model),
   med (misleading but not decisive), low (minor)
 
 EXAMPLES (the mistakes to avoid):

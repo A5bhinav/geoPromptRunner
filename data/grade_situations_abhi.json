@@ -1,0 +1,124 @@
+{
+  "_comment": "REAL grade-calibration situations from the Oura + Fort gold sets (10 slices). Each carries the two grade-formula inputs (raw_visibility, flag_severities) computed from verified human labels. Josh + Abhi: independently gut-grade each 'human_grade' A/B/C/D/F from the numbers BEFORE looking at the formula's output; reconcile; then run `python -m src.pipeline.grade_calibration` (point it at this file) to fit the penalty weights + bands to your grades.",
+  "_fields": "label · raw_visibility (0..1) · flag_severities (worst per type per answer) · human_grade",
+  "situations": [
+    {
+      "label": "Oura · all engines (pooled)",
+      "_context": "Oura: present in 22/40 answers · visibility 0.41 · flags {'high': 3, 'med': 8, 'low': 7}",
+      "raw_visibility": 0.412,
+      "flag_severities": [
+        "high",
+        "high",
+        "high",
+        "med",
+        "med",
+        "med",
+        "med",
+        "med",
+        "med",
+        "med",
+        "med",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Oura · anthropic",
+      "_context": "Oura: present in 7/10 answers · visibility 0.53 · flags {'high': 2, 'med': 2, 'low': 3}",
+      "raw_visibility": 0.53,
+      "flag_severities": [
+        "high",
+        "high",
+        "med",
+        "med",
+        "low",
+        "low",
+        "low"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Oura · gemini",
+      "_context": "Oura: present in 6/10 answers · visibility 0.47 · flags {'high': 1, 'med': 5}",
+      "raw_visibility": 0.47,
+      "flag_severities": [
+        "high",
+        "med",
+        "med",
+        "med",
+        "med",
+        "med"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Oura · openai",
+      "_context": "Oura: present in 4/10 answers · visibility 0.26 · flags none",
+      "raw_visibility": 0.26,
+      "flag_severities": [],
+      "human_grade": ""
+    },
+    {
+      "label": "Oura · perplexity",
+      "_context": "Oura: present in 5/10 answers · visibility 0.39 · flags {'med': 1, 'low': 4}",
+      "raw_visibility": 0.39,
+      "flag_severities": [
+        "med",
+        "low",
+        "low",
+        "low",
+        "low"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Fort · all engines (pooled)",
+      "_context": "Fort: present in 5/40 answers · visibility 0.12 · flags {'high': 2, 'med': 1}",
+      "raw_visibility": 0.115,
+      "flag_severities": [
+        "high",
+        "high",
+        "med"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Fort · anthropic",
+      "_context": "Fort: present in 2/10 answers · visibility 0.16 · flags none",
+      "raw_visibility": 0.16,
+      "flag_severities": [],
+      "human_grade": ""
+    },
+    {
+      "label": "Fort · gemini",
+      "_context": "Fort: present in 1/10 answers · visibility 0.10 · flags {'high': 2, 'med': 1}",
+      "raw_visibility": 0.1,
+      "flag_severities": [
+        "high",
+        "high",
+        "med"
+      ],
+      "human_grade": ""
+    },
+    {
+      "label": "Fort · openai",
+      "_context": "Fort: present in 0/10 answers · visibility 0.00 · flags none",
+      "raw_visibility": 0.0,
+      "flag_severities": [],
+      "human_grade": ""
+    },
+    {
+      "label": "Fort · perplexity",
+      "_context": "Fort: present in 2/10 answers · visibility 0.20 · flags none",
+      "raw_visibility": 0.2,
+      "flag_severities": [],
+      "human_grade": ""
+    }
+  ]
+}

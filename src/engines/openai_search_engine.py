@@ -15,7 +15,7 @@ __all__ = ["OpenAISearchEngine"]
 logger = logging.getLogger(__name__)
 
 # Search-enabled chat model: live web retrieval + URL citations, i.e. the
-# ChatGPT-with-search surface a buyer actually sees, not GPT's training memory.
+# ChatGPT-with-search surface a consumer actually sees, not GPT's training memory.
 # Dated snapshot, not the floating alias (isolation plan, L3) — retrieval still
 # varies run to run (L5), but the model under it stays fixed across cycles.
 MODEL = "gpt-4o-search-preview-2025-03-11"
@@ -89,6 +89,6 @@ if __name__ == "__main__":
         print(f"Cannot run OpenAI search engine test: {exc}")
         raise SystemExit(0) from None
 
-    answer, urls = engine.query_with_citations("What are the best CRM tools for startups in 2026?")
+    answer, urls = engine.query_with_citations("What are the best budgeting apps in 2026?")
     print(f"[{OpenAISearchEngine.ENGINE_NAME}] response: {answer}")
     print(f"[{OpenAISearchEngine.ENGINE_NAME}] citations ({len(urls)}): {urls}")

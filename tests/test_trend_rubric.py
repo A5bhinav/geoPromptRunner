@@ -19,9 +19,9 @@ def _qr(qid: str, eng: str, resp: str | None) -> QueryResult:
 
 
 def test_compare_runs_detects_won_and_lost() -> None:
-    before = [_qr("q1", "openai", "Salesforce wins."), _qr("q2", "openai", "Acme is good.")]
-    after = [_qr("q1", "openai", "Acme is great."), _qr("q2", "openai", "Salesforce now.")]
-    cmp = compare_runs(before, after, "Acme", ["Salesforce"])
+    before = [_qr("q1", "openai", "YNAB wins."), _qr("q2", "openai", "Acme is good.")]
+    after = [_qr("q1", "openai", "Acme is great."), _qr("q2", "openai", "YNAB now.")]
+    cmp = compare_runs(before, after, "Acme", ["YNAB"])
     assert cmp.queries_won == [("q1", "openai")]
     assert cmp.queries_lost == [("q2", "openai")]
     # mention rate unchanged (1 of 2 before and after), delta 0.
@@ -44,7 +44,12 @@ def _score(
 
 def test_build_roadmap_drops_passes_and_sequences_by_phase() -> None:
     scores = [
-        _score(RubricCategory.OFFSITE_AUTHORITY.value, "G2 reviews", CheckStatus.FAIL.value, 1.0),
+        _score(
+            RubricCategory.OFFSITE_AUTHORITY.value,
+            "Trustpilot reviews",
+            CheckStatus.FAIL.value,
+            1.0,
+        ),
         _score(RubricCategory.TECHNICAL_ACCESSIBILITY.value, "WAF", CheckStatus.FAIL.value, 1.5),
         _score(RubricCategory.STRUCTURED_DATA.value, "schema", CheckStatus.PASS.value, 1.0),
     ]

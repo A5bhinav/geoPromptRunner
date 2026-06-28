@@ -129,7 +129,8 @@ async function main(): Promise<void> {
     }
   }
 
-  const result = await runTeaserPipeline(args.url, buildDeps(), buildOptions(args));
+  const deps = buildDeps();
+  const result = await runTeaserPipeline(args.url, deps, buildOptions(args));
 
   // --json mode: emit a single machine-readable object on stdout and nothing else,
   // so a calling process (the web route) can parse it directly.
@@ -139,14 +140,19 @@ async function main(): Promise<void> {
       process.exit(2);
       return;
     }
-    // `adapters` lets the caller (web route / UI) tell a real audit from one
-    // built on a mock resolver/platform, instead of trusting the draft blindly.
+    const html = renderHtml(result.draft);
+    // Persist every generated teaser to the platform's teasers store (best-effort).
+    // `teaserId` lets the web UI drive review on the row the CLI just created
+    // instead of saving it a second time. `adapters` lets the caller tell a real
+    // audit from one built on a mock resolver/platform.
+    const teaserId = await deps.platform.saveTeaser(result.draft, html);
     process.stdout.write(
       JSON.stringify({
         ok: true,
         draft: result.draft,
-        html: renderHtml(result.draft),
+        html,
         adapters: adapterModes(),
+        teaserId,
       }),
     );
     return;
@@ -181,8 +187,13 @@ async function main(): Promise<void> {
   const jsonPath = join(outDir, `${slug}.json`);
   const pdfPath = join(outDir, `${slug}.pdf`);
 
-  await writeFile(htmlPath, renderHtml(draft), "utf8");
+  const htmlContent = renderHtml(draft);
+  await writeFile(htmlPath, htmlContent, "utf8");
   await writeFile(jsonPath, JSON.stringify(draft, null, 2), "utf8");
+
+  // Persist every teaser to the platform's teasers store (best-effort) so all
+  // runs are captured for review + training data, not just web-UI ones.
+  const teaserId = await deps.platform.saveTeaser(draft, htmlContent);
 
   // The PDF is the deliverable. Best-effort: if Playwright/Chromium isn't
   // installed, keep the run successful (the .html is print-ready) and tell the
@@ -204,6 +215,11 @@ async function main(): Promise<void> {
   console.log(`\n  → ${htmlPath}`);
   console.log(`  → ${jsonPath}`);
   if (pdfWritten) console.log(`  → ${pdfPath}`);
+  if (teaserId) {
+    console.log(`  → saved to Supabase (teaser id ${teaserId})`);
+  } else if (!usingMockPlatform()) {
+    console.warn(`  ⚠️  could not save the teaser to Supabase (continuing).`);
+  }
   console.log(
     pdfWritten
       ? `\n  Open the .pdf (the deliverable) or the .html to review.`

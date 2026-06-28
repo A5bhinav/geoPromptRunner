@@ -198,7 +198,7 @@ if __name__ == "__main__":
         ENGINE_NAME = "echo"
 
         def query(self, prompt: str) -> str | None:
-            return f"The best option is Salesforce. {qs.client} also exists."
+            return f"The best option is YNAB. {qs.client} also exists."
 
     outcome = run_teaser(qs, [_EchoEngine()], client_domains=["acme.com"])
     print(f"teaser collected {len(outcome.results)} results (persist off)")

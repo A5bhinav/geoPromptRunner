@@ -12,13 +12,13 @@ __all__ = ["Query", "QuerySet", "load_query_set", "bucket_counts"]
 
 @dataclass(frozen=True)
 class Query:
-    """One buyer query, tagged with its funnel-stage intent.
+    """One consumer query, tagged with its funnel-stage intent.
 
     ``weight`` is the query's commercial value (a high-intent decision query is
     worth more than an awareness one) — an input to the Step-6 impact formula.
     Defaults to 1.0 so existing query sets load unchanged.
 
-    ``persona`` is the optional buyer modifier the query is phrased for (e.g.
+    ``persona`` is the optional consumer modifier the query is phrased for (e.g.
     "college student", "couple") — the deliverable §6.1 Persona/modifier column.
     Defaults to None so existing query sets load unchanged.
     """
