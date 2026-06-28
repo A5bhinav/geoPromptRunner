@@ -157,6 +157,14 @@ export default function TeaserPage() {
     }
   };
 
+  // Deep-link support: /teaser?teaser=<id> (e.g. from a project page) opens that
+  // saved teaser straight into the review surface.
+  React.useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("teaser");
+    if (id) void reopen(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const inputCls =
     "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 

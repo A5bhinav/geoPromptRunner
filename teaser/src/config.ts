@@ -15,6 +15,7 @@ import { MockPlatformClient } from "./platform/MockPlatformClient.ts";
 import { ClaudeQuerySetGenerator } from "./queryset/ClaudeQuerySetGenerator.ts";
 import { MockQuerySetGenerator } from "./queryset/MockQuerySetGenerator.ts";
 import { Crawl4aiClaudeResolver } from "./resolver/Crawl4aiClaudeResolver.ts";
+import { FetchClaudeResolver } from "./resolver/FetchClaudeResolver.ts";
 import { MockResolver } from "./resolver/MockResolver.ts";
 import { hasClaudeKey } from "./llm/claude.ts";
 import type { QuerySetGenerator } from "./queryset/QuerySetGenerator.ts";
@@ -43,13 +44,19 @@ function crawl4aiConfigured(): boolean {
 }
 
 /**
- * Resolver: the real Crawl4aiClaudeResolver when crawl4ai is configured AND a
- * Claude key is present (both are needed — crawl for markdown, Claude to extract);
- * otherwise the offline MockResolver.
+ * Resolver selection (in priority order):
+ *   1. crawl4ai configured + Claude key -> Crawl4aiClaudeResolver (best: JS render)
+ *   2. Claude key only                  -> FetchClaudeResolver (direct fetch, no Docker)
+ *   3. neither                          -> MockResolver (offline, fabricated profile)
+ *
+ * The direct-fetch resolver makes real profiles work with just ANTHROPIC_API_KEY,
+ * so an audit no longer silently falls back to a fabricated profile whenever the
+ * crawl4ai container isn't running.
  */
 function buildResolver(): Resolver {
-  if (crawl4aiConfigured() && hasClaudeKey()) return new Crawl4aiClaudeResolver();
-  return new MockResolver();
+  if (!hasClaudeKey()) return new MockResolver();
+  if (crawl4aiConfigured()) return new Crawl4aiClaudeResolver();
+  return new FetchClaudeResolver();
 }
 
 /**
@@ -76,7 +83,7 @@ export function buildDeps(): PipelineDeps {
  */
 export function usingMocks(): boolean {
   const realPlatform = Boolean(process.env.GEO_PLATFORM_URL);
-  const realResolver = crawl4aiConfigured() && hasClaudeKey();
+  const realResolver = hasClaudeKey(); // fetch resolver needs only the Claude key
   const realQuerySet = hasClaudeKey();
   return !(realPlatform && realResolver && realQuerySet);
 }
@@ -110,7 +117,7 @@ export interface AdapterModes {
 export function adapterModes(): AdapterModes {
   return {
     platform: process.env.GEO_PLATFORM_URL ? "real" : "mock",
-    resolver: crawl4aiConfigured() && hasClaudeKey() ? "real" : "mock",
+    resolver: hasClaudeKey() ? "real" : "mock",
     querySet: hasClaudeKey() ? "real" : "mock",
   };
 }
@@ -124,6 +131,6 @@ export function mockedAdapters(): (keyof AdapterModes)[] {
 /** How to make each adapter real — shown when --require-real aborts. */
 export const REAL_ADAPTER_HINTS: Record<keyof AdapterModes, string> = {
   platform: "set GEO_PLATFORM_URL to a running platform API (e.g. http://localhost:8000)",
-  resolver: "set CRAWL4AI_BASE_URL + start crawl4ai, and ensure ANTHROPIC_API_KEY is set",
+  resolver: "set ANTHROPIC_API_KEY (direct-fetch resolver); for JS-heavy sites also set CRAWL4AI_BASE_URL + start crawl4ai",
   querySet: "set ANTHROPIC_API_KEY",
 };

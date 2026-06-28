@@ -30,8 +30,49 @@ function highlightCompetitor(answerHtml: string, competitor: string): string {
   return answerHtml.replace(re, '<mark class="competitor">$1</mark>');
 }
 
+/**
+ * Reduce a raw engine answer (which is Markdown — `**bold**`, `| tables |`,
+ * `[7]` citation markers) to a short, clean prose snippet for the proof card.
+ * Pure (exported for tests).
+ *
+ * Engines like Perplexity return long, table-heavy Markdown; dumping it verbatim
+ * showed literal `**` and a wall of text. We keep only the leading prose, drop
+ * citation markers, collapse whitespace, and truncate on a sentence/word
+ * boundary. Markdown bold is preserved here (as `**`) and turned into real
+ * <strong> later, AFTER HTML-escaping, so it can never inject markup.
+ */
+export function answerSnippet(raw: string, maxChars = 320): string {
+  let s = raw ?? "";
+  // Keep only the leading prose: cut at the first Markdown table cell/separator.
+  // Buyer-facing prose virtually never contains a bare `|`, so this is safe.
+  const tableIdx = s.search(/\|/);
+  if (tableIdx >= 0) s = s.slice(0, tableIdx);
+  // Drop bracketed citation markers ([1], [7], [12]) and Markdown headers/bullets.
+  s = s.replace(/\[\d+\]/g, "").replace(/^[#>\-*]+\s*/gm, "");
+  // Collapse all whitespace to single spaces.
+  s = s.replace(/\s+/g, " ").trim();
+  if (s.length <= maxChars) return s;
+  // Truncate: prefer a sentence boundary in the back half, else a word boundary.
+  const cut = s.slice(0, maxChars);
+  const lastStop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  if (lastStop > maxChars * 0.5) return cut.slice(0, lastStop + 1);
+  return cut.replace(/\s+\S*$/, "") + "…";
+}
+
+/**
+ * Convert Markdown bold (`**text**`) to <strong> on ALREADY-ESCAPED text. The
+ * `**` markers survive HTML-escaping (they aren't special), and the captured
+ * inner text is already escaped, so this introduces no injection surface.
+ */
+function boldToHtml(escaped: string): string {
+  return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
 export function renderProofCard(companyName: string, finding: Finding, runDate: string): string {
-  const safeAnswer = highlightCompetitor(escapeHtml(finding.verbatimAnswer), finding.competitor);
+  const safeAnswer = highlightCompetitor(
+    boldToHtml(escapeHtml(answerSnippet(finding.verbatimAnswer))),
+    finding.competitor,
+  );
   const citations = finding.citations
     .map((u) => {
       try {

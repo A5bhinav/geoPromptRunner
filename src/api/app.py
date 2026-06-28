@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from src.api import runner
+from src.api import projects, runner
 from src.config import settings
 from src.pipeline.cost import CostBudgetExceeded
 from src.prompts.csv_loader import (
@@ -53,7 +53,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.GEO_CORS_ORIGINS.split(",") if o.strip()],
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type", "X-API-Key"],
 )
 
@@ -221,6 +221,42 @@ async def create_audit(files: Annotated[list[UploadFile], File()]) -> dict[str, 
 @api.get("/audits")
 def list_audits() -> list[dict[str, object]]:
     return [dataclasses.asdict(s) for s in runner.list_runs()]
+
+
+# --- Projects: a domain-keyed roll-up of audits + teasers --------------------
+#
+# Derived, not stored: src/api/projects.py groups existing audit_runs and teasers
+# by prospect domain so the UI can show "everything we've done for fort.cx" in one
+# place. Read-only; degrades to whatever data is reachable (no 503 if Supabase is
+# down — you just see the in-memory runs).
+
+
+@api.get("/projects")
+def list_projects() -> list[dict[str, object]]:
+    return [dataclasses.asdict(p) for p in projects.list_projects()]
+
+
+@api.get("/projects/{key}")
+def get_project(key: str) -> dict[str, object]:
+    detail = projects.get_project(key)
+    if detail is None:
+        raise HTTPException(status_code=404, detail=f"project {key} not found")
+    return dataclasses.asdict(detail)
+
+
+@api.delete("/projects/{key}")
+def delete_project(key: str) -> dict[str, object]:
+    """Permanently delete a project's audits (children cascade) and teasers.
+
+    503 if storage is unreachable; 404 if the key matches no audits or teasers.
+    """
+    try:
+        result = projects.delete_project(key)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"project {key} not found")
+    return result
 
 
 @api.get("/audits/{run_id}/status")
