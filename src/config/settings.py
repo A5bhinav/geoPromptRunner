@@ -89,6 +89,35 @@ MAX_TOTAL_SPEND_USD: float = float(os.getenv("MAX_TOTAL_SPEND_USD", "200"))
 # Note: Claude is itself a measured surface — for neutrality use a non-measured model.
 JUDGE_MODEL: str = os.getenv("JUDGE_MODEL", "claude-sonnet-4-5-20250929")
 
+# --- Two-tier cascade judge (opt-in; dev/iteration cost-saver) ---
+# Action A (docs/judge-accuracy-plan.md §3.1) measured Haiku ≈ Sonnet on the
+# structural reads (present/prominence/framing, within ~2pp) but with disqualifying
+# flag recall (43% vs Sonnet's 95%). The cascade splits the work accordingly:
+# Haiku does the cheap structural reads, Sonnet does the accuracy block (only when a
+# fact sheet exists). OFF by default — the held-constant single-Sonnet judge stays
+# the path for calibration/gold and paid deliverables (plan §5 guardrail). Enable
+# per-run with `--cascade` or globally with JUDGE_CASCADE=1.
+JUDGE_CASCADE: bool = os.getenv("JUDGE_CASCADE", "0").strip().lower() in ("1", "true", "yes")
+# Cheap model for the structural pass (present/prominence/framing).
+JUDGE_STRUCTURAL_MODEL: str = os.getenv("JUDGE_STRUCTURAL_MODEL", "claude-haiku-4-5")
+# Accurate model for the accuracy-flag pass (verbatim fact-sheet contradictions).
+JUDGE_ACCURACY_MODEL: str = os.getenv("JUDGE_ACCURACY_MODEL", JUDGE_MODEL)
+
+# --- Adversarial flag verifier (opt-in; precision fix for queue #9) ---
+# The judge over-flags (low precision): it raises omission/confirmation/sheet-silent
+# "flags" its own prompt forbids. A prose gate only partly fixes this. The verifier
+# reviews EACH proposed flag in isolation ("real contradiction? keep/drop") — a
+# focused yes/no the model honours far better than a global instruction. It only
+# removes flags (recall-safe: on any uncertainty or call failure it KEEPS), so it
+# raises precision without lowering recall. Verification is a narrow judgment, so
+# Haiku handles it well (unlike open-ended flag detection). Enable with `--verify`
+# or JUDGE_VERIFY=1.
+JUDGE_VERIFY: bool = os.getenv("JUDGE_VERIFY", "0").strip().lower() in ("1", "true", "yes")
+# Verifier defaults to the accurate model: a Haiku verifier over-drops real flags
+# (76% recall on gold — same gun-shy bias Action A found), so it would trade the
+# protected recall for precision. Sonnet keeps the real contradictions.
+JUDGE_VERIFIER_MODEL: str = os.getenv("JUDGE_VERIFIER_MODEL", JUDGE_MODEL)
+
 # Persistent judge cache. A verdict is fully determined by (judge model, client,
 # competitors, fact sheet, prompt, answer), so once an answer is judged it never
 # needs re-judging — across resumes, re-runs, or cadence re-checks. This content-

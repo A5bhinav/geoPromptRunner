@@ -410,7 +410,7 @@ def _run_judge(state: _RunState) -> None:
 
     cfg = state.audit.config
     try:
-        judge = Judge()
+        judge = Judge(cascade=settings.JUDGE_CASCADE, verify=settings.JUDGE_VERIFY)
     except ValueError as exc:
         logger.info("Judge skipped: %s", exc)
         return

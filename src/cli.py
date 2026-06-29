@@ -119,7 +119,10 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     if args.judge:
         fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
         try:
-            judge = Judge()
+            judge = Judge(
+                cascade=args.cascade or settings.JUDGE_CASCADE,
+                verify=args.verify or settings.JUDGE_VERIFY,
+            )
             judgments = judge.judge_results(
                 outcome.results,
                 outcome.client_name,
@@ -203,7 +206,10 @@ def _cmd_judge(args: argparse.Namespace) -> int:
 
     fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
     try:
-        judge = Judge()
+        judge = Judge(
+            cascade=args.cascade or settings.JUDGE_CASCADE,
+            verify=args.verify or settings.JUDGE_VERIFY,
+        )
     except ValueError as exc:
         print(exc)
         return 1
@@ -227,7 +233,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
 def _cmd_calibrate(args: argparse.Namespace) -> int:
     gold = load_gold_set(args.gold)
     try:
-        judge = Judge()
+        judge = Judge(cascade=settings.JUDGE_CASCADE, verify=settings.JUDGE_VERIFY)
     except ValueError as exc:
         print(exc)
         return 1
@@ -375,6 +381,16 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("--judge", action="store_true", help="LLM-judge the answers inline")
     p_audit.add_argument("--fact-sheet", help="client fact sheet for --judge accuracy")
     p_audit.add_argument(
+        "--cascade",
+        action="store_true",
+        help="two-tier judge: cheap model reads brands, accurate model checks accuracy flags",
+    )
+    p_audit.add_argument(
+        "--verify",
+        action="store_true",
+        help="adversarially verify each accuracy flag (drops over-flagged false positives)",
+    )
+    p_audit.add_argument(
         "--compare", default=None, help="prior run id to show the §3 trend column against"
     )
     p_audit.add_argument("--no-persist", action="store_true")
@@ -401,6 +417,16 @@ def main(argv: list[str] | None = None) -> int:
     p_judge = sub.add_parser("judge", help="LLM-judge a stored run (prominence/framing/accuracy)")
     p_judge.add_argument("run_id")
     p_judge.add_argument("--fact-sheet", help="path to the client fact sheet (enables accuracy)")
+    p_judge.add_argument(
+        "--cascade",
+        action="store_true",
+        help="two-tier judge: cheap model reads brands, accurate model checks accuracy flags",
+    )
+    p_judge.add_argument(
+        "--verify",
+        action="store_true",
+        help="adversarially verify each accuracy flag (drops over-flagged false positives)",
+    )
     p_judge.add_argument("--no-persist", action="store_true", help="don't save judgments")
     p_judge.add_argument(
         "--stored", action="store_true", help="render saved judgments (no re-judging)"

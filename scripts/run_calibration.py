@@ -34,10 +34,17 @@ def main(argv: list[str]) -> int:
     print(f"total items to judge: {len(gold)}\n")
 
     try:
-        judge = Judge()
+        judge = Judge(cascade=settings.JUDGE_CASCADE, verify=settings.JUDGE_VERIFY)
     except ValueError as exc:
         print(f"cannot calibrate: {exc}")
         return 1
+    if settings.JUDGE_CASCADE:
+        print(
+            f"cascade: structural={settings.JUDGE_STRUCTURAL_MODEL} · "
+            f"accuracy={settings.JUDGE_ACCURACY_MODEL}"
+        )
+    if settings.JUDGE_VERIFY:
+        print(f"verify: per-flag verifier={settings.JUDGE_VERIFIER_MODEL}")
 
     cache = JudgeCache(settings.JUDGE_CACHE_PATH)
     report = calibrate(judge, gold, progress=True, cache=cache)

@@ -165,13 +165,32 @@ EXAMPLES (the mistakes to avoid):
   the sheet says "Oura Ring 5 (current model)" — that contradicts the line, so
   flag stale with reality = the "Oura Ring 5 (current model)" line.
 
-FINAL CHECK before you finish — for every flag confirm ALL THREE: (a) "reality"
-is a word-for-word line from the fact sheet, (b) "claim" is something the answer
-actually STATES (not an omission — never "the answer doesn't mention X"), AND
-(c) the claim CONTRADICTS that line, not merely matches, restates, or is
-confirmed by it. If the claim agrees with the cited line (e.g. the answer's price
-equals the sheet's price), or is an omission, it is NOT a flag — delete it. If
-the answer makes no claim that contradicts a sheet line, return [].
+STOP — RUN THIS DELETE GATE ON EVERY FLAG BEFORE YOU OUTPUT. Test each flag
+against its OWN cited "reality" line. Delete the flag if ANY rule fires (when in
+doubt, DELETE — a dropped false alarm costs nothing, a false alarm costs trust):
+
+1. ABSENCE / OMISSION → DELETE. The "claim" faults the answer for what it does
+   NOT say — it contains "omits", "does not mention", "doesn't state/mention",
+   "fails to", "no mention of", "the answer doesn't", or otherwise points at a
+   missing fact. An omission is NEVER a flag, however important the missing fact.
+2. AGREEMENT / CONFIRMATION → DELETE. The value the answer states is the SAME as
+   the cited line — agreement is not a contradiction. Concrete deletes:
+   - answer "$5.99/month" vs sheet "Membership: $5.99/month or $69.99/year" — same value.
+   - answer "subscription required for full features" vs sheet "required membership
+     for full features" — same fact, just reworded.
+   But a price RANGE or figure that DIFFERS from the sheet is NOT agreement — it
+   misrepresents the price, so KEEP it (e.g. answer "$299–$549" when the sheet says
+   $399 base / $499 premium — the range's ends are wrong; that is a real flag).
+3. SHEET-SILENT → DELETE. The cited line does not itself state a value the claim
+   contradicts — e.g. it is a feature/spec LIST that merely lacks the claimed item,
+   or it is about a different topic. Citing a list because it omits the claim is
+   not a contradiction; the topic is UNVERIFIABLE.
+
+A flag SURVIVES only if the answer makes a POSITIVE statement whose value DIRECTLY
+CONFLICTS with its cited verbatim line — a price the sheet has replaced, an older
+model/version named as the current or best one, or a feature the sheet explicitly
+lists-as-present that the answer denies (or one the sheet rules out that the answer
+asserts). If nothing survives the gate, return [].
 """
 
 _NO_ACCURACY_BLOCK = (
@@ -234,6 +253,240 @@ def _extract_tool_input(response: Message) -> dict[str, object]:
     raise ValueError("judge response contained no record_judgment tool call")
 
 
+def _brand_lines(client: str, competitors: list[str]) -> str:
+    """The brand list shared by the single and cascade structural prompts."""
+    return "\n".join([f"- {client} [CLIENT]"] + [f"- {c}" for c in competitors])
+
+
+def _single_fingerprint(tool: ToolParam) -> str:
+    """Hash of the single-judge prompt + tool schema (folded into the cache key so
+    editing the prompt auto-invalidates the cache). Kept byte-identical to the
+    historical inline computation so existing cached verdicts stay valid."""
+    return hashlib.sha256(
+        (
+            _SYSTEM
+            + _BASE_INSTRUCTIONS
+            + _ACCURACY_BLOCK
+            + _NO_ACCURACY_BLOCK
+            + json.dumps(tool, sort_keys=True, default=str)
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+# --- Two-tier cascade (opt-in): a cheap model does the structural reads
+# (present/prominence/framing), an accurate model does the accuracy block — and
+# only when a fact sheet exists. Action A (docs/judge-accuracy-plan.md §3.1)
+# measured Haiku ≈ Sonnet on structural reads but with disqualifying flag recall,
+# so each pass is a self-contained prompt + forced tool: neither model wastes
+# tokens (or accuracy) on the other's job. ---
+
+_STRUCTURAL_SYSTEM = (
+    "You are a strict evaluator measuring how brands appear in an AI assistant's "
+    "answer to a consumer's question. You record your assessment by calling the "
+    "record_brands tool. Do NOT use any outside knowledge about the brands — judge "
+    "present/prominence/framing only from the answer text."
+)
+
+_STRUCTURAL_INSTRUCTIONS = """Question asked: {query}
+
+AI answer:
+\"\"\"
+{answer}
+\"\"\"
+
+Brands to score (CLIENT is marked):
+{brand_lines}
+
+For EACH brand above, decide:
+- present: true/false — is the brand mentioned at all?
+  DISAVOWAL RULE: if the answer says it does not recognize the brand or has no
+  information about it ("there isn't a widely known X", "I don't have specific
+  information about X", "a product that launched after my training data"), mark
+  present=FALSE. The brand name appearing only because the question named it is
+  NOT a mention — the answer never surfaced it as a known product. But if the
+  answer INVENTS details about the brand (a made-up product name, features, or
+  price), that IS present.
+- prominence: recommended_first | mid_pack | buried | also_ran | absent
+  (absent iff not present; this is RELATIVE across the brands — who is named/
+  recommended first vs. buried at the bottom).
+- framing: positive | neutral | negative (e.g. "avoid X" is negative).
+
+Record your assessment by calling the record_brands tool: one entry per brand
+listed above."""
+
+_ACCURACY_SYSTEM = (
+    "You are a strict fact-checker measuring whether an AI assistant's answer about "
+    "a brand contradicts a provided fact sheet. You record your assessment by "
+    "calling the record_flags tool. Judge accuracy ONLY against the provided fact "
+    "sheet — never use outside knowledge. Every accuracy flag must cite the exact "
+    "fact-sheet line it contradicts (copied verbatim); with no such line, do not "
+    "flag. But when a line IS contradicted — a wrong price, an outdated model, an "
+    "invented product or feature — you MUST flag it."
+)
+
+_ACCURACY_ONLY_INSTRUCTIONS = """Question asked: {query}
+
+AI answer:
+\"\"\"
+{answer}
+\"\"\"
+
+The CLIENT brand to fact-check: {client}
+{accuracy_block}
+Record your assessment by calling the record_flags tool: client_accuracy_flags
+(empty list if none apply)."""
+
+
+def _structural_tool() -> ToolParam:
+    """Forced tool for the cascade's structural pass — brands only, no flags."""
+    return {
+        "name": "record_brands",
+        "description": "Record how each brand appears in the answer (present/prominence/framing).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "brands": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "brand": {"type": "string"},
+                            "present": {"type": "boolean"},
+                            "prominence": {"type": "string", "enum": [p.value for p in Prominence]},
+                            "framing": {"type": "string", "enum": [f.value for f in Framing]},
+                        },
+                        "required": ["brand", "present", "prominence", "framing"],
+                    },
+                },
+            },
+            "required": ["brands"],
+        },
+    }
+
+
+def _accuracy_tool() -> ToolParam:
+    """Forced tool for the cascade's accuracy pass — client flags only."""
+    return {
+        "name": "record_flags",
+        "description": "Record client accuracy flags checked against the fact sheet.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "client_accuracy_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string", "enum": [t.value for t in AccuracyFlagType]},
+                            "claim": {"type": "string"},
+                            "reality": {"type": "string"},
+                            "severity": {"type": "string", "enum": [s.value for s in Severity]},
+                        },
+                        "required": ["type", "claim", "reality", "severity"],
+                    },
+                },
+            },
+            "required": ["client_accuracy_flags"],
+        },
+    }
+
+
+def _cascade_identity(structural_model: str, accuracy_model: str) -> tuple[str, str]:
+    """(cache model-id, prompt fingerprint) for a cascade judge. The model-id is
+    composite (``cascade:<structural>+<accuracy>``) so cascade verdicts occupy a
+    distinct cache keyspace from any single-model judge — they can legitimately
+    differ, and must never be served for one another."""
+    fingerprint = hashlib.sha256(
+        (
+            _STRUCTURAL_SYSTEM
+            + _STRUCTURAL_INSTRUCTIONS
+            + _ACCURACY_SYSTEM
+            + _ACCURACY_ONLY_INSTRUCTIONS
+            + _ACCURACY_BLOCK
+            + json.dumps(_structural_tool(), sort_keys=True, default=str)
+            + json.dumps(_accuracy_tool(), sort_keys=True, default=str)
+            + structural_model
+            + accuracy_model
+        ).encode("utf-8")
+    ).hexdigest()
+    return f"cascade:{structural_model}+{accuracy_model}", fingerprint
+
+
+# --- Adversarial flag verifier (opt-in): reviews ONE proposed flag at a time and
+# keeps it only if it is a real contradiction. A focused per-flag judgment that
+# the model honours far better than the global delete-gate, so it removes the
+# omission/confirmation/sheet-silent false positives that survive the prompt. It
+# only ever drops flags and defaults to KEEP on any uncertainty/failure, so it is
+# recall-safe. Cheap enough to run on Haiku (narrow yes/no, not open detection). ---
+
+_VERIFIER_SYSTEM = (
+    "You are an adversarial fact-check auditor. You are given ONE accuracy flag "
+    "another model raised about a client, the fact-sheet line it cited, and the "
+    "answer under review. Decide only whether this is a REAL contradiction worth "
+    "keeping or a false alarm to drop. Keep genuine contradictions; drop omissions, "
+    "confirmations, and sheet-silent claims. When genuinely unsure, KEEP."
+)
+
+_VERIFIER_INSTRUCTIONS = """CLIENT: {client}
+
+The AI answer under review:
+\"\"\"
+{answer}
+\"\"\"
+
+FACT SHEET (ground truth):
+\"\"\"
+{fact_sheet}
+\"\"\"
+
+A flag was raised on the CLIENT:
+- type: {type}
+- claim (what the answer supposedly states): {claim}
+- cited reality (the fact-sheet line it allegedly contradicts): {reality}
+
+DROP (keep=false) if ANY of these is true:
+1. OMISSION — the claim faults the answer for what it does NOT say ("omits", "does
+   not mention", "without mentioning", "fails to"). Omissions are never flags.
+2. CONFIRMATION — the answer's stated value is the SAME as the cited line (answer
+   "$399" vs sheet "$399"; answer "subscription required" vs sheet "required
+   membership"). A price range or figure that DIFFERS from the sheet (e.g.
+   "$299–$549" vs $399/$499) misrepresents it and is NOT confirmation — KEEP it.
+3. SHEET-SILENT / WRONG LINE — the cited line does not itself state a value the
+   claim contradicts (it's a list that merely lacks the item, or another topic).
+4. NOT STATED — the answer does not actually make the claimed statement.
+
+KEEP (keep=true) ONLY if the answer makes a positive statement whose value
+DIRECTLY conflicts with the cited line — a price the sheet has replaced, an older
+model/version named as the current or best one, or a feature the sheet lists-as-
+present that the answer denies (or one the sheet rules out that the answer asserts).
+
+Record your decision with the record_verdict tool."""
+
+
+def _verifier_tool() -> ToolParam:
+    """Forced tool for the per-flag verifier — a keep/drop verdict."""
+    return {
+        "name": "record_verdict",
+        "description": "Keep or drop one proposed client accuracy flag.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "keep": {"type": "boolean"},
+                "reason": {"type": "string"},
+            },
+            "required": ["keep", "reason"],
+        },
+    }
+
+
+def _verdict_keep(raw: dict[str, object] | None) -> bool:
+    """Whether to keep a flag given the verifier's tool output. Recall-safe: a
+    failed/absent verdict keeps the flag (never silently drops a real error)."""
+    if raw is None:
+        return True
+    return bool(raw.get("keep", True))
+
+
 class Judge:
     """One held-constant LLM that scores every answer — the detection 'brain'.
 
@@ -243,29 +496,67 @@ class Judge:
     ``assessed=False`` ("not assessed"), never raises.
     """
 
-    def __init__(self, model: str | None = None) -> None:
+    def __init__(
+        self,
+        model: str | None = None,
+        *,
+        cascade: bool = False,
+        structural_model: str | None = None,
+        accuracy_model: str | None = None,
+        verify: bool = False,
+        verifier_model: str | None = None,
+    ) -> None:
         if not settings.ANTHROPIC_API_KEY:
             raise ValueError("ANTHROPIC_API_KEY is not set; the judge needs it (see .env.example).")
-        self._model = model or settings.JUDGE_MODEL
         self._client = Anthropic(
             api_key=settings.ANTHROPIC_API_KEY,
             timeout=settings.ENGINE_TIMEOUT_SECONDS,
             max_retries=settings.ENGINE_MAX_RETRIES,
         )
-        self._tool = _judgment_tool()
-        # Fingerprint of the judge's prompt + tool schema. Folded into the cache
-        # key so editing the system prompt or the tool (a determinant of the
-        # verdict that the per-answer inputs don't capture) auto-invalidates the
-        # cache, instead of relying on a manually-bumped schema version.
-        self._prompt_fingerprint = hashlib.sha256(
-            (
-                _SYSTEM
-                + _BASE_INSTRUCTIONS
-                + _ACCURACY_BLOCK
-                + _NO_ACCURACY_BLOCK
-                + json.dumps(self._tool, sort_keys=True, default=str)
-            ).encode("utf-8")
-        ).hexdigest()
+        # Two identities, kept SEPARATE: ``self._model`` is the real model the
+        # single-judge call passes to the API; ``self._cache_model_id`` +
+        # ``self._prompt_fingerprint`` form the cache identity (read by
+        # judge_results/judge_answer_cached). They diverge for cascade/verify,
+        # where the verdict depends on more than one model — folding that into the
+        # cache id (not the API model) is what the earlier bug got wrong.
+        self._cascade = cascade
+        if cascade:
+            # Two-tier: cheap structural model + accurate flag model. The composite
+            # cache id keeps cascade verdicts apart from any single judge's; the
+            # per-pass calls use _structural_model / _accuracy_model, not _model.
+            self._structural_model = structural_model or settings.JUDGE_STRUCTURAL_MODEL
+            self._accuracy_model = accuracy_model or settings.JUDGE_ACCURACY_MODEL
+            self._structural_tool = _structural_tool()
+            self._accuracy_tool = _accuracy_tool()
+            self._model = self._accuracy_model  # unused for calls in cascade
+            cache_model_id, base_fingerprint = _cascade_identity(
+                self._structural_model, self._accuracy_model
+            )
+        else:
+            self._model = model or settings.JUDGE_MODEL
+            self._tool = _judgment_tool()
+            cache_model_id = self._model
+            base_fingerprint = _single_fingerprint(self._tool)
+
+        # The verifier filters flags, so it changes the verdict — fold it into the
+        # cache id + fingerprint (NOT the API model) so verified verdicts never
+        # collide with unverified ones.
+        self._verify = verify
+        if verify:
+            self._verifier_model = verifier_model or settings.JUDGE_VERIFIER_MODEL
+            self._verifier_tool = _verifier_tool()
+            cache_model_id = f"{cache_model_id}+verify:{self._verifier_model}"
+            base_fingerprint = hashlib.sha256(
+                (
+                    base_fingerprint
+                    + _VERIFIER_SYSTEM
+                    + _VERIFIER_INSTRUCTIONS
+                    + json.dumps(self._verifier_tool, sort_keys=True, default=str)
+                    + self._verifier_model
+                ).encode("utf-8")
+            ).hexdigest()
+        self._cache_model_id = cache_model_id
+        self._prompt_fingerprint = base_fingerprint
 
     def _build_prompt(
         self,
@@ -275,7 +566,7 @@ class Judge:
         competitors: list[str],
         fact_sheet: str | None,
     ) -> str:
-        brand_lines = "\n".join([f"- {client} [CLIENT]"] + [f"- {c}" for c in competitors])
+        brand_lines = _brand_lines(client, competitors)
         accuracy_instructions = (
             _ACCURACY_BLOCK.format(fact_sheet=fact_sheet) if fact_sheet else _NO_ACCURACY_BLOCK
         )
@@ -286,6 +577,47 @@ class Judge:
             accuracy_instructions=accuracy_instructions,
         )
 
+    def _call_tool(
+        self,
+        model: str,
+        system: str,
+        prompt: str,
+        tool: ToolParam,
+        tool_name: str,
+    ) -> dict[str, object] | None:
+        """One forced-tool call → the tool's parsed input dict, or None on any
+        failure (logged, never raised).
+
+        Forced tool call = guaranteed structured JSON; no thinking (incompatible
+        with a forced tool, unneeded for this classification pass). temperature=0
+        makes the verdict reproducible — at the API default of 1.0 the flag list
+        swung run-to-run. Opus-4.8-class models reject an explicit temperature, so
+        omit it for them; the Haiku/Sonnet judge models accept 0.
+        """
+        try:
+            tool_choice: ToolChoiceToolParam = {"type": "tool", "name": tool_name}
+            temperature = anthropic.omit if "opus-4-8" in model else 0.0
+            response = self._client.messages.create(
+                model=model,
+                max_tokens=_JUDGE_MAX_TOKENS,
+                temperature=temperature,
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+                tools=[tool],
+                tool_choice=tool_choice,
+            )
+            return _extract_tool_input(response)
+        except (anthropic.APIError, KeyError, IndexError, ValueError) as exc:
+            logger.warning(
+                "Judge call failed (%s, not assessed): %s", tool_name, type(exc).__name__
+            )
+            return None
+        except Exception as exc:  # never crash a run on the judge
+            logger.warning(
+                "Judge unexpected error (%s, not assessed): %s", tool_name, type(exc).__name__
+            )
+            return None
+
     def judge_answer(
         self,
         query_text: str,
@@ -295,36 +627,100 @@ class Judge:
         fact_sheet: str | None = None,
     ) -> tuple[list[BrandJudgment], list[AccuracyFlag], bool]:
         """Judge one answer. Returns (brand judgments, client accuracy flags, assessed)."""
-        prompt = self._build_prompt(query_text, answer, client, competitors, fact_sheet)
-        try:
-            # Forced tool call = guaranteed structured JSON; no thinking
-            # (incompatible with a forced tool, unneeded for this classification
-            # pass). temperature=0 makes the verdict reproducible — at the API
-            # default of 1.0 the flag list swung run-to-run. Opus-4.8-class models
-            # reject an explicit temperature, so omit it for them; the Haiku/Sonnet
-            # judge models accept 0.
-            tool_choice: ToolChoiceToolParam = {"type": "tool", "name": "record_judgment"}
-            temperature = anthropic.omit if "opus-4-8" in self._model else 0.0
-            response = self._client.messages.create(
-                model=self._model,
-                max_tokens=_JUDGE_MAX_TOKENS,
-                temperature=temperature,
-                system=_SYSTEM,
-                messages=[{"role": "user", "content": prompt}],
-                tools=[self._tool],
-                tool_choice=tool_choice,
-            )
-            raw = _extract_tool_input(response)
-        except (anthropic.APIError, KeyError, IndexError, ValueError) as exc:
-            logger.warning("Judge failed (not assessed): %s", type(exc).__name__)
-            return [], [], False
-        except Exception as exc:  # never crash a run on the judge
-            logger.warning("Judge unexpected error (not assessed): %s", type(exc).__name__)
-            return [], [], False
+        if self._cascade:
+            return self._judge_cascade(query_text, answer, client, competitors, fact_sheet)
+        return self._judge_single(query_text, answer, client, competitors, fact_sheet)
 
+    def _judge_single(
+        self,
+        query_text: str,
+        answer: str,
+        client: str,
+        competitors: list[str],
+        fact_sheet: str | None,
+    ) -> tuple[list[BrandJudgment], list[AccuracyFlag], bool]:
+        """One held-constant model scores brands + accuracy flags in a single call."""
+        prompt = self._build_prompt(query_text, answer, client, competitors, fact_sheet)
+        raw = self._call_tool(self._model, _SYSTEM, prompt, self._tool, "record_judgment")
+        if raw is None:
+            return [], [], False
         brands = _parse_brands(raw, client, competitors)
         flags = _parse_flags(raw) if fact_sheet else []
+        if self._verify and fact_sheet and flags:
+            flags = self._verify_flags(answer, client, fact_sheet, flags)
         return brands, flags, True
+
+    def _judge_cascade(
+        self,
+        query_text: str,
+        answer: str,
+        client: str,
+        competitors: list[str],
+        fact_sheet: str | None,
+    ) -> tuple[list[BrandJudgment], list[AccuracyFlag], bool]:
+        """Cheap model reads brands; accurate model checks flags (only with a fact
+        sheet). If the structural pass fails, nothing is assessed; if only the
+        accuracy pass fails, the answer is left not-assessed (so it's re-judged
+        next time, never cached without its flags)."""
+        s_prompt = _STRUCTURAL_INSTRUCTIONS.format(
+            query=query_text, answer=answer, brand_lines=_brand_lines(client, competitors)
+        )
+        raw_s = self._call_tool(
+            self._structural_model,
+            _STRUCTURAL_SYSTEM,
+            s_prompt,
+            self._structural_tool,
+            "record_brands",
+        )
+        if raw_s is None:
+            return [], [], False
+        brands = _parse_brands(raw_s, client, competitors)
+        if not fact_sheet:
+            return brands, [], True
+        a_prompt = _ACCURACY_ONLY_INSTRUCTIONS.format(
+            query=query_text,
+            answer=answer,
+            client=client,
+            accuracy_block=_ACCURACY_BLOCK.format(fact_sheet=fact_sheet),
+        )
+        raw_a = self._call_tool(
+            self._accuracy_model, _ACCURACY_SYSTEM, a_prompt, self._accuracy_tool, "record_flags"
+        )
+        if raw_a is None:
+            return brands, [], False
+        flags = _parse_flags(raw_a)
+        if self._verify and flags:
+            flags = self._verify_flags(answer, client, fact_sheet, flags)
+        return brands, flags, True
+
+    def _verify_flags(
+        self, answer: str, client: str, fact_sheet: str, flags: list[AccuracyFlag]
+    ) -> list[AccuracyFlag]:
+        """Adversarially review each flag and keep only the real contradictions.
+
+        One focused keep/drop call per flag (recall-safe: a failed verdict keeps
+        the flag). Drops the omission/confirmation/sheet-silent false positives the
+        main prompt's gate misses."""
+        kept: list[AccuracyFlag] = []
+        for f in flags:
+            prompt = _VERIFIER_INSTRUCTIONS.format(
+                client=client,
+                answer=answer,
+                fact_sheet=fact_sheet,
+                type=f.type,
+                claim=f.claim,
+                reality=f.reality,
+            )
+            raw = self._call_tool(
+                self._verifier_model,
+                _VERIFIER_SYSTEM,
+                prompt,
+                self._verifier_tool,
+                "record_verdict",
+            )
+            if _verdict_keep(raw):
+                kept.append(f)
+        return kept
 
     def judge_answer_cached(
         self,
@@ -345,7 +741,7 @@ class Judge:
         if cache is None:
             return self.judge_answer(query_text, answer, client, competitors, fact_sheet)
         ck = cache.key(
-            model=self._model,
+            model=self._cache_model_id,
             prompt_fingerprint=self._prompt_fingerprint,
             client=client,
             competitors=competitors,
@@ -409,7 +805,7 @@ class Judge:
                 if cache is None:
                     return None
                 return cache.key(
-                    model=self._model,
+                    model=self._cache_model_id,
                     prompt_fingerprint=self._prompt_fingerprint,
                     client=client,
                     competitors=competitors,
