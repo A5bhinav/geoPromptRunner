@@ -21,7 +21,7 @@ import {
   stakesLine,
 } from "./render/copy.ts";
 import type { CompanyProfile, GeneratedQuerySet, TeaserDraft } from "./types/domain.ts";
-import type { RunStatus } from "./types/platform.ts";
+import type { AnswerRecord, ReportPayload, RunStatus } from "./types/platform.ts";
 
 export interface PipelineDeps {
   resolver: Resolver;
@@ -142,15 +142,27 @@ export async function runTeaserPipeline(
     deps.platform.getAnswers(runId),
   ]);
 
-  // 6. Select findings.
+  // 6-7. Select findings + assemble the draft (shared with regeneration).
+  return assembleDraft(profile, report, answers, url);
+}
+
+/**
+ * Steps 6-7 — select findings and assemble the draft from a report + verbatim
+ * answers. Pure (no I/O). Shared by the live pipeline and `regenerateFromDraft`,
+ * so a regenerated teaser gets the exact same selection + copy as a fresh run.
+ */
+export function assembleDraft(
+  profile: CompanyProfile,
+  report: ReportPayload,
+  answers: AnswerRecord[],
+  prospectUrl: string,
+): PipelineResult {
   const selection = selectFindings(profile, report, answers);
   if (!selection.ok) {
     return { ok: false, stage: "select", reason: selection.reason };
   }
-
-  // 7. Assemble the draft.
   const draft: TeaserDraft = {
-    prospectUrl: url,
+    prospectUrl,
     companyName: profile.name,
     category: profile.category,
     runDate: report.run_date,
@@ -166,6 +178,49 @@ export async function runTeaserPipeline(
     answers,
     status: "draft",
   };
-
   return { ok: true, draft };
+}
+
+/**
+ * Reconstruct the minimal CompanyProfile that selection/assembly needs, from a
+ * stored run's report (+ the draft's category/url). No crawl — competitor
+ * aliases aren't stored, so they fall back to []; selection still matches on the
+ * competitor names the report already carries (only alias-only mentions are
+ * missed, a small precision cost vs. re-running the whole audit).
+ */
+export function profileFromStored(
+  report: ReportPayload,
+  opts: { url: string; category: string },
+): CompanyProfile {
+  return {
+    url: opts.url,
+    name: report.client_name,
+    category: opts.category,
+    competitors: report.competitors.map((name) => ({ name, aliases: [], confirmed: true })),
+    clientDomains: report.client_domains,
+    productClaims: [],
+    resolvedAt: "",
+    resolverModel: "regenerated-from-storage",
+  };
+}
+
+/**
+ * Regenerate a fresh draft from a previously-saved teaser, reusing its stored
+ * report + verbatim answers — applies the CURRENT selection logic and copy with
+ * ZERO engine calls (no resolve, no submit, no runner). This is how teaser
+ * improvements reach already-run prospects without paying to re-run the audit.
+ */
+export function regenerateFromDraft(saved: TeaserDraft): PipelineResult {
+  if (!saved.report || !Array.isArray(saved.answers)) {
+    return {
+      ok: false,
+      stage: "select",
+      reason: "saved teaser has no stored report/answers to regenerate from",
+    };
+  }
+  const profile = profileFromStored(saved.report, {
+    url: saved.prospectUrl,
+    category: saved.category,
+  });
+  return assembleDraft(profile, saved.report, saved.answers, saved.prospectUrl);
 }

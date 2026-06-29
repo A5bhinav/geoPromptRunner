@@ -303,6 +303,19 @@ export default function TeaserPage() {
             setRecord(rec);
             void refreshSaved();
           }}
+          onRegenerated={async (newDraft, newHtml) => {
+            // Show the freshly-rebuilt teaser, then persist it as a new saved row
+            // (mirrors the generate flow). The preview works even if the save fails.
+            setResult({ ok: true, draft: newDraft, html: newHtml });
+            setRecord(null);
+            try {
+              const { teaser_id } = await saveTeaser(newDraft, newHtml);
+              setRecord(await getTeaser(teaser_id));
+              void refreshSaved();
+            } catch {
+              /* preview still usable unsaved */
+            }
+          }}
         />
       )}
 
@@ -316,11 +329,13 @@ function TeaserResultView({
   record,
   savedError,
   onRecordChange,
+  onRegenerated,
 }: {
   result: { ok: true; draft: TeaserDraft; html: string; adapters?: AdapterModes };
   record: TeaserRecord | null;
   savedError: string | null;
   onRecordChange: (rec: TeaserRecord) => void;
+  onRegenerated: (draft: TeaserDraft, html: string) => void;
 }) {
   const { draft, html } = result;
   // Adapters that ran on a mock — the teaser is then built on synthetic data
@@ -339,6 +354,36 @@ function TeaserResultView({
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState<null | "approve" | "reject" | "edit">(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
+  const [regenerating, setRegenerating] = React.useState(false);
+
+  // Rebuild this teaser from its STORED report + answers with the current
+  // selection/copy/template — no engine calls, no re-running the audit.
+  const regenerate = async () => {
+    setRegenerating(true);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/teaser/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        draft?: TeaserDraft;
+        html?: string;
+        reason?: string;
+      };
+      if (!res.ok || !data.ok || !data.draft || typeof data.html !== "string") {
+        setActionError(data.reason ?? "Regenerate failed.");
+        return;
+      }
+      onRegenerated(data.draft, data.html);
+    } catch {
+      setActionError("Regenerate failed — is the web server running?");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const status: TeaserStatus | null = record?.status ?? null;
   const edited = record?.edited_fields ?? {};
@@ -408,6 +453,21 @@ function TeaserResultView({
           </p>
         </div>
         <div className="flex gap-2">
+          {record && (
+            <Button
+              variant="outline"
+              onClick={regenerate}
+              disabled={regenerating}
+              title="Rebuild from the stored audit results with the latest layout & copy — no re-running the audit"
+            >
+              {regenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+              Regenerate
+            </Button>
+          )}
           <Button variant="outline" onClick={() => download(`${slug}.html`, currentHtml, "text/html")}>
             <Download className="h-4 w-4" /> HTML
           </Button>
