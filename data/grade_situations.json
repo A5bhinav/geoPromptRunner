@@ -26,7 +26,7 @@
         "low",
         "low"
       ],
-      "human_grade": ""
+      "human_grade": "D"
     },
     {
       "label": "Oura · anthropic",
@@ -41,7 +41,7 @@
         "low",
         "low"
       ],
-      "human_grade": ""
+      "human_grade": "C"
     },
     {
       "label": "Oura · gemini",
@@ -55,14 +55,14 @@
         "med",
         "med"
       ],
-      "human_grade": ""
+      "human_grade": "C"
     },
     {
       "label": "Oura · openai",
       "_context": "Oura: present in 4/10 answers · visibility 0.26 · flags none",
       "raw_visibility": 0.26,
       "flag_severities": [],
-      "human_grade": ""
+      "human_grade": "D"
     },
     {
       "label": "Oura · perplexity",
@@ -75,7 +75,7 @@
         "low",
         "low"
       ],
-      "human_grade": ""
+      "human_grade": "C"
     },
     {
       "label": "Fort · all engines (pooled)",
@@ -86,14 +86,14 @@
         "high",
         "med"
       ],
-      "human_grade": ""
+      "human_grade": "F"
     },
     {
       "label": "Fort · anthropic",
       "_context": "Fort: present in 2/10 answers · visibility 0.16 · flags none",
       "raw_visibility": 0.16,
       "flag_severities": [],
-      "human_grade": ""
+      "human_grade": "F"
     },
     {
       "label": "Fort · gemini",
@@ -104,21 +104,21 @@
         "high",
         "med"
       ],
-      "human_grade": ""
+      "human_grade": "F"
     },
     {
       "label": "Fort · openai",
       "_context": "Fort: present in 0/10 answers · visibility 0.00 · flags none",
       "raw_visibility": 0.0,
       "flag_severities": [],
-      "human_grade": ""
+      "human_grade": "F"
     },
     {
       "label": "Fort · perplexity",
       "_context": "Fort: present in 2/10 answers · visibility 0.20 · flags none",
       "raw_visibility": 0.2,
       "flag_severities": [],
-      "human_grade": ""
+      "human_grade": "D"
     }
   ]
 }
