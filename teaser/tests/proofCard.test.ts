@@ -28,6 +28,17 @@ test("answerSnippet strips images and inline links, keeping link text", () => {
   assert.ok(!s.includes("logo.png"), "image is dropped");
 });
 
+test("answerSnippet truncates a numbered list cleanly (no dangling '2.')", () => {
+  const raw =
+    "There are several tools. Some of the best options include: " +
+    "1. Planner 5D is a user-friendly app with a vast library of design elements. " +
+    "2. RoomSketcher is another strong option with many floor-plan templates. " +
+    "3. SmartDraw offers templates and AI assist.";
+  const s = answerSnippet(raw, 180);
+  assert.ok(s.endsWith("…"), "marked as truncated with an ellipsis");
+  assert.ok(!/\d+\.\s*…$/.test(s), "no dangling list number before the ellipsis");
+});
+
 test("answerSnippet truncates long prose on a boundary with an ellipsis", () => {
   const long = "Sentence one is here. " + "word ".repeat(200);
   const s = answerSnippet(long, 80);

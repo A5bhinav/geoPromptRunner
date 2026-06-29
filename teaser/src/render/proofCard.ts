@@ -42,7 +42,7 @@ function highlightCompetitor(answerHtml: string, competitor: string): string {
  * boundary. Markdown bold is preserved here (as `**`) and turned into real
  * <strong> later, AFTER HTML-escaping, so it can never inject markup.
  */
-export function answerSnippet(raw: string, maxChars = 320): string {
+export function answerSnippet(raw: string, maxChars = 400): string {
   let s = raw ?? "";
   // Strip Markdown that has no place in a short quote — fenced code, images, and
   // inline links (keep the link's visible text) — before trimming to the prose.
@@ -59,11 +59,20 @@ export function answerSnippet(raw: string, maxChars = 320): string {
   // Collapse all whitespace to single spaces.
   s = s.replace(/\s+/g, " ").trim();
   if (s.length <= maxChars) return s;
-  // Truncate: prefer a sentence boundary in the back half, else a word boundary.
+  // Truncate on a real sentence boundary in the back half, else a word boundary.
+  // Skip "1." / "2." list markers — they look like sentence ends and otherwise
+  // leave a dangling number (e.g. "…design elements. 2."). Always finish with an
+  // ellipsis so the card reads as an excerpt, not a broken cutoff.
   const cut = s.slice(0, maxChars);
-  const lastStop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
-  if (lastStop > maxChars * 0.5) return cut.slice(0, lastStop + 1);
-  return cut.replace(/\s+\S*$/, "") + "…";
+  let end = -1;
+  for (const m of cut.matchAll(/[.!?]\s/g)) {
+    const i = m.index ?? -1;
+    if (i > 0 && /\d/.test(cut[i - 1] ?? "")) continue; // a list marker, not a sentence
+    end = i;
+  }
+  let out = end > maxChars * 0.5 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, "");
+  out = out.replace(/\s+\d+\.?\s*$/, "").trimEnd(); // drop any dangling list marker
+  return `${out} …`;
 }
 
 /**

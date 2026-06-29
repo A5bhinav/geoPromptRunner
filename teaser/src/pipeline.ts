@@ -155,7 +155,7 @@ export async function runTeaserPipeline(
     category: profile.category,
     runDate: report.run_date,
     heroEngine: selection.heroEngine,
-    headline: headline(profile.name),
+    headline: headline(profile.name, report.scorecard.top_competitor ?? selection.lead.competitor),
     leadSentence: leadSentence(profile.name, selection.lead),
     headlineNumber: selection.headline,
     stakesLine: stakesLine(profile.name, selection.headline),

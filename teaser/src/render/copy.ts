@@ -38,8 +38,12 @@ export function engineColor(engine: string): string {
   return map[engine] ?? "#1b1a17";
 }
 
-export function headline(companyName: string): string {
-  return `What AI tells your buyers about ${companyName} — and what it quietly leaves out.`;
+export function headline(companyName: string, competitor: string | null): string {
+  // A direct, present-tense threat — built to stop a busy reader, not read like an
+  // article. Names the rival AI is steering buyers toward, and who it leaves out.
+  return competitor
+    ? `AI is sending your buyers to ${competitor} — not ${companyName}.`
+    : `When your buyers ask AI, ${companyName} isn't in the answer.`;
 }
 
 export function leadSentence(companyName: string, lead: Finding): string {
