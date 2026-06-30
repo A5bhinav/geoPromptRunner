@@ -4,7 +4,7 @@
  * (warm cream paper, Newsreader serif, Public Sans body, rust accent). The PDF
  * (render/audit/pdf.ts) prints each § on its own page.
  *
- * Reuses the teaser's STYLE/FONTS + renderProofCard + cleanAnswerText so the
+ * Reuses the teaser's STYLE/FONTS + renderProofCard + answerSnippet so the
  * audit is visually continuous with the free teaser (doc §9/§13). Each section is
  * a small pure function so they stay independently testable.
  */

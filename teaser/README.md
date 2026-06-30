@@ -8,10 +8,11 @@ queries, judges the answers, and computes the losing-queries / accuracy findings
 [BUILD_PLAN.md](./BUILD_PLAN.md) for the full architecture and roadmap.
 
 > **Status.** Every external service is behind an interface with a **Mock**, so
-> the whole flow runs **with zero credentials** (synthetic findings). All three
+> the whole flow runs **with zero credentials** (synthetic findings). All
 > real adapters are now **wired** behind env gates: the **platform adapter**
-> (`GEO_PLATFORM_URL`), the **resolver** (crawl4ai + Claude — `CRAWL4AI_BASE_URL`
-> + `ANTHROPIC_API_KEY`), and the **query-set generator** (Claude —
+> (`GEO_PLATFORM_URL`), the **resolver** (direct HTTP fetch + Claude with just
+> `ANTHROPIC_API_KEY` — no Docker; or crawl4ai for JS-heavy sites when
+> `CRAWL4AI_BASE_URL` is set), and the **query-set generator** (Claude —
 > `ANTHROPIC_API_KEY`). Unset env falls back to the mock for each (see *Swapping
 > in real adapters*).
 
@@ -90,7 +91,8 @@ env vars — nothing else changes:
 | Mock | Real | Trigger |
 |---|---|---|
 | `MockPlatformClient` | `HttpPlatformClient` ✅ wired (calls the FastAPI `/audits` endpoints) | `GEO_PLATFORM_URL` (+ `GEO_PLATFORM_API_KEY` if the platform sets `GEO_API_KEY`) |
-| `MockResolver` | `Crawl4aiClaudeResolver` ✅ wired (crawl4ai markdown → Claude extraction) | `CRAWL4AI_BASE_URL` (or `CRAWL4AI_API_TOKEN`) **and** `ANTHROPIC_API_KEY` |
+| `MockResolver` | `FetchClaudeResolver` ✅ wired (direct HTTP fetch → Claude extraction, no Docker) | `ANTHROPIC_API_KEY` |
+| `MockResolver` | `Crawl4aiClaudeResolver` ✅ wired (crawl4ai markdown → Claude extraction; better for JS-heavy sites) | `CRAWL4AI_BASE_URL` (or `CRAWL4AI_API_TOKEN`) **and** `ANTHROPIC_API_KEY` |
 | `MockQuerySetGenerator` | `ClaudeQuerySetGenerator` ✅ wired (Claude, with the methodology hard rules + deterministic repair) | `ANTHROPIC_API_KEY` |
 | `renderPdf` stub | Playwright/Puppeteer print-to-PDF | install `playwright` |
 

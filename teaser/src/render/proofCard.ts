@@ -23,44 +23,6 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Engine answers come back as Markdown (bold, headings, tables, [1] citation
- * markers). The proof card is a quote, not a document, so we strip the Markdown
- * to clean prose and trim to a focused excerpt — otherwise raw `**`, `###`, and
- * `|` symbols bleed into the card and it reads as broken.
- */
-export function cleanAnswerText(raw: string, maxChars = 420): string {
-  let t = raw
-    .replace(/```[\s\S]*?```/g, " ") // fenced code blocks
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
-    .replace(/\[(\d+)\]/g, "") // [1] citation markers (sources shown separately)
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // [text](url) -> text
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "") // ### headings -> drop the marker
-    .replace(/^\s*\|?[\s:|-]*-{2,}[\s:|-]*\|?\s*$/gm, "") // table separator rows |---|
-    .replace(/^\s*\|(.+)\|\s*$/gm, (_m, c: string) =>
-      c
-        .split("|")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .join(" — "),
-    ) // table content rows -> " — " joined
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // **bold**
-    .replace(/__([^_]+)__/g, "$1") // __bold__
-    .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1$2") // *italic*
-    .replace(/^\s*[-*+]\s+/gm, "") // bullet markers
-    .replace(/^\s*\d+\.\s+/gm, "") // numbered-list markers
-    .replace(/[ \t]+/g, " ")
-    .replace(/\s*\n\s*/g, " ") // collapse to a single clean paragraph
-    .replace(/\s{2,}/g, " ")
-    .trim();
-  if (t.length > maxChars) {
-    const cut = t.slice(0, maxChars);
-    const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
-    t = (stop > maxChars * 0.5 ? cut.slice(0, stop + 1) : cut.trimEnd()) + " …";
-  }
-  return t;
-}
-
 /** Underline each occurrence of `competitor` in rust (HTML-safe). */
 function highlightCompetitor(answerHtml: string, competitor: string): string {
   if (!competitor) return answerHtml;
@@ -68,9 +30,63 @@ function highlightCompetitor(answerHtml: string, competitor: string): string {
   return answerHtml.replace(re, '<mark class="competitor">$1</mark>');
 }
 
+/**
+ * Reduce a raw engine answer (which is Markdown — `**bold**`, `| tables |`,
+ * `[7]` citation markers) to a short, clean prose snippet for the proof card.
+ * Pure (exported for tests).
+ *
+ * Engines like Perplexity return long, table-heavy Markdown; dumping it verbatim
+ * showed literal `**` and a wall of text. We strip fenced code, images, and
+ * inline links, keep only the leading prose (cut at the first table), drop
+ * citation markers, collapse whitespace, and truncate on a sentence/word
+ * boundary. Markdown bold is preserved here (as `**`) and turned into real
+ * <strong> later, AFTER HTML-escaping, so it can never inject markup.
+ */
+export function answerSnippet(raw: string, maxChars = 400): string {
+  let s = raw ?? "";
+  // Strip Markdown that has no place in a short quote — fenced code, images, and
+  // inline links (keep the link's visible text) — before trimming to the prose.
+  s = s
+    .replace(/```[\s\S]*?```/g, " ") // fenced code blocks
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1"); // [text](url) -> text
+  // Keep only the leading prose: cut at the first Markdown table cell/separator.
+  // Buyer-facing prose virtually never contains a bare `|`, so this is safe.
+  const tableIdx = s.search(/\|/);
+  if (tableIdx >= 0) s = s.slice(0, tableIdx);
+  // Drop bracketed citation markers ([1], [7], [12]) and Markdown headers/bullets.
+  s = s.replace(/\[\d+\]/g, "").replace(/^[#>\-*]+\s*/gm, "");
+  // Collapse all whitespace to single spaces.
+  s = s.replace(/\s+/g, " ").trim();
+  if (s.length <= maxChars) return s;
+  // Truncate on a real sentence boundary in the back half, else a word boundary.
+  // Skip "1." / "2." list markers — they look like sentence ends and otherwise
+  // leave a dangling number (e.g. "…design elements. 2."). Always finish with an
+  // ellipsis so the card reads as an excerpt, not a broken cutoff.
+  const cut = s.slice(0, maxChars);
+  let end = -1;
+  for (const m of cut.matchAll(/[.!?]\s/g)) {
+    const i = m.index ?? -1;
+    if (i > 0 && /\d/.test(cut[i - 1] ?? "")) continue; // a list marker, not a sentence
+    end = i;
+  }
+  let out = end > maxChars * 0.5 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, "");
+  out = out.replace(/\s+\d+\.?\s*$/, "").trimEnd(); // drop any dangling list marker
+  return `${out} …`;
+}
+
+/**
+ * Convert Markdown bold (`**text**`) to <strong> on ALREADY-ESCAPED text. The
+ * `**` markers survive HTML-escaping (they aren't special), and the captured
+ * inner text is already escaped, so this introduces no injection surface.
+ */
+function boldToHtml(escaped: string): string {
+  return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
 export function renderProofCard(companyName: string, finding: Finding, runDate: string): string {
   const safeAnswer = highlightCompetitor(
-    escapeHtml(cleanAnswerText(finding.verbatimAnswer)),
+    boldToHtml(escapeHtml(answerSnippet(finding.verbatimAnswer))),
     finding.competitor,
   );
   const citations = finding.citations
