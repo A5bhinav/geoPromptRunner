@@ -31,39 +31,50 @@ config. The `dump` step refuses to run if `JUDGE_CASCADE`/`JUDGE_VERIFY` are set
 because those use a different cache keyspace the Workflow's verdicts would never be
 read from. Do not work around that error.
 
+## How it scales
+
+The answer text (a real run is multiple MB) NEVER passes through the Workflow's args
+or return — it stays in the on-disk `in.json` the dump writes. The Workflow's args
+carry only `{repo, in_path, start, limit}`; each subagent fetches just its own item
+off disk via the `item` subcommand, and returns only its small verdict. This is why
+it works on 500+ answer runs.
+
 ## Steps
 
-Run these in order. Use the session scratchpad for the intermediate JSON files.
+Run these in order. Use the session scratchpad for the intermediate JSON files, and
+always use ABSOLUTE paths (subagents run from the repo root via the venv python).
 
-1. **Dump** the Workflow input (DB pull + cache-key computation; skips answers already
-   cached):
+1. **Dump** the input file (DB pull + cache-key computation; skips already-cached
+   answers):
    ```
-   python -m scripts.judge_via_workflow dump <run_id> --out <SCRATCH>/prejudge_<run_id>.in.json
+   python -m scripts.judge_via_workflow dump <run_id> --out <SCRATCH>/<run>.in.json
    ```
    (The fact sheet is taken from the run row automatically; add `--fact-sheet <path>`
-   only to override it. The command prints which fact sheet it used.)
-   If it prints "Nothing to judge", the cache is already warm — stop here and tell the
-   user the run is ready to judge for free.
+   only to override it. The command prints which fact sheet it used and the item count.)
+   If it prints "Nothing to judge", the cache is already warm — stop and tell the user.
 
-2. **Read** `<SCRATCH>/prejudge_<run_id>.in.json` and invoke the Workflow, passing the
-   parsed JSON object as `args` (not a string):
+2. **Judge** via the Workflow — fan out one subscription subagent per answer:
    ```
-   Workflow({ scriptPath: "scripts/prejudge_workflow.js", args: <the parsed JSON object> })
+   Workflow({ scriptPath: "scripts/prejudge_workflow.js",
+              args: { repo: "<abs repo root>", in_path: "<abs SCRATCH>/<run>.in.json",
+                      start: 0, limit: <item count from dump> } })
    ```
-   The Workflow fans out one subscription subagent per answer and returns
-   `{ run_id, client, competitors, has_fact_sheet, items: [{ key, raw }] }`.
+   It returns `{ start, raws: [ {brands, client_accuracy_flags} | null, ... ] }` — one
+   verdict per item in order (null = that subagent failed; harmless, re-judged later).
+   For very large runs you may split into batches by `start`/`limit`; inject each with
+   the matching `--offset`.
 
-3. **Write** the Workflow's returned object verbatim to
-   `<SCRATCH>/prejudge_<run_id>.out.json`.
+3. **Write** the Workflow's returned object verbatim to `<SCRATCH>/<run>.raws.json`.
 
-4. **Inject** the verdicts into the cache:
+4. **Inject** the verdicts into the cache (keys are taken from the in file by index, so
+   they always match what the real judge looks up):
    ```
-   python -m scripts.judge_via_workflow inject <SCRATCH>/prejudge_<run_id>.out.json
+   python -m scripts.judge_via_workflow inject <SCRATCH>/<run>.in.json <SCRATCH>/<run>.raws.json --offset <start>
    ```
 
-5. **Report**: tell the user how many verdicts were injected and that they can now run
-   `python -m src.cli judge <run_id>` (or the UI judge step) — it will be free cache
-   hits. The "API judge passover" runs but never calls the API.
+5. **Report**: how many verdicts were injected, and that the user can now run
+   `python -m src.cli judge <run_id>` or click **Judge** in the UI — free cache hits.
+   The "API judge passover" runs but never calls the API.
 
 ## Notes
 

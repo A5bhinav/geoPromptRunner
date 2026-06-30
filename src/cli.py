@@ -204,7 +204,15 @@ def _cmd_judge(args: argparse.Namespace) -> int:
         print(render_audit_report(outcome, judgments=stored))
         return 0
 
-    fact_sheet = Path(args.fact_sheet).read_text() if args.fact_sheet else None
+    # Default to the fact sheet stored on the run row (what the UI judge and the
+    # prejudge cache both key off), so `judge <run_id>` hits a pre-filled cache and
+    # assesses accuracy without re-passing the sheet. --fact-sheet overrides it.
+    if args.fact_sheet:
+        fact_sheet: str | None = Path(args.fact_sheet).read_text()
+    else:
+        run_row = db.get_audit_run(args.run_id)
+        stored_sheet = run_row.get("fact_sheet") if run_row else None
+        fact_sheet = str(stored_sheet) if stored_sheet else None
     try:
         judge = Judge(
             cascade=args.cascade or settings.JUDGE_CASCADE,

@@ -1,19 +1,24 @@
 // Pre-judge an audit run on the Claude subscription.
 //
-// Input (args, produced by `scripts/judge_via_workflow.py dump`):
-//   { run_id, client, competitors, has_fact_sheet, schema, items: [{ key, prompt }] }
-// `items[].prompt` is the exact single-judge prompt (system + user) for one answer;
-// `schema` is the record_judgment input schema, used to force structured output so
-// each subagent returns the same JSON shape the API judge's forced tool would.
+// Scales to runs with hundreds of long answers: the answer text never flows
+// through args or the return value — it lives in an on-disk file that the Python
+// helper wrote (`judge_via_workflow.py dump`). Each subagent fetches ONLY its own
+// item from that file by index, so args stays tiny.
 //
-// Output (return value, fed to `judge_via_workflow.py inject`):
-//   { run_id, client, competitors, has_fact_sheet, items: [{ key, raw }] }
-// where `raw` is the judged { brands, client_accuracy_flags } object.
+// Input (args):
+//   { repo, in_path, start, limit }
+//     repo    — absolute repo root (so subagents run the script from the right cwd)
+//     in_path — the dump's in.json on disk (absolute)
+//     start   — first item index this run judges
+//     limit   — how many items to judge (start .. start+limit-1)
+//
+// Output (return value, fed to `judge_via_workflow.py inject --offset <start>`):
+//   { start, raws: [ {brands, client_accuracy_flags} | null, ... ] }
+//   One entry per item in index order (null = that subagent failed). `inject`
+//   re-attaches the cache key from in.json by index, so subagents never touch keys.
 //
 // The subagents run on the session's auth (the Max subscription), so this whole
-// pass costs subscription quota, not API credit. A subagent that fails drops to
-// null and is omitted — its answer simply stays un-cached and is re-judged later,
-// never written as a bad verdict. See docs/subscription-judge-plan.md.
+// pass costs subscription quota, not API credit. See docs/subscription-judge-plan.md.
 
 export const meta = {
   name: 'prejudge',
@@ -21,30 +26,88 @@ export const meta = {
   phases: [{ title: 'Judge', detail: 'one subagent per unique answer' }],
 }
 
-const items = Array.isArray(args?.items) ? args.items : []
-const schema = args?.schema
+// The forced output shape for each judging subagent — the record_judgment tool's
+// input schema from src/pipeline/judge.py (_judgment_tool). Hardcoded so the
+// Workflow args stay tiny; keep the enums in sync with the Python Prominence /
+// Framing / AccuracyFlagType / Severity types if those ever change.
+const SCHEMA = {
+  type: 'object',
+  properties: {
+    brands: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          brand: { type: 'string' },
+          present: { type: 'boolean' },
+          prominence: {
+            type: 'string',
+            enum: ['recommended_first', 'mid_pack', 'buried', 'also_ran', 'absent'],
+          },
+          framing: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
+        },
+        required: ['brand', 'present', 'prominence', 'framing'],
+      },
+    },
+    client_accuracy_flags: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['wrong_pricing', 'missing_or_invented_feature', 'competitor_confusion', 'identity', 'stale'],
+          },
+          claim: { type: 'string' },
+          reality: { type: 'string' },
+          severity: { type: 'string', enum: ['high', 'med', 'low'] },
+        },
+        required: ['type', 'claim', 'reality', 'severity'],
+      },
+    },
+  },
+  required: ['brands', 'client_accuracy_flags'],
+}
+
+// args may arrive already-parsed (an object) or as a JSON string depending on how
+// the Workflow was invoked — accept both.
+const A = typeof args === 'string' ? JSON.parse(args) : args || {}
+const repo = A.repo
+const inPath = A.in_path
+const start = Number(A.start ?? 0)
+const limit = Number(A.limit ?? 0)
+const schema = SCHEMA
+
+const idxs = []
+for (let i = start; i < start + limit; i++) idxs.push(i)
 
 phase('Judge')
-if (!items.length) {
-  log('No answers to judge — cache already warm.')
-} else {
-  log(`Judging ${items.length} answer(s) on the subscription`)
-}
+log(`Judging items ${start}..${start + limit - 1} of ${inPath} on the subscription`)
 
-const judged = await parallel(
-  items.map((it) => () =>
-    agent(it.prompt, { label: `judge:${String(it.key).slice(0, 8)}`, phase: 'Judge', schema })
-      .then((raw) => (raw ? { key: it.key, raw } : null))
-  )
+const raws = await parallel(
+  idxs.map((i) => () =>
+    agent(
+      `You are a strict evaluator scoring ONE AI answer for a GEO audit, running on ` +
+        `the Claude subscription.\n\n` +
+        `STEP 1 — fetch your task by running this command EXACTLY (it must run from ` +
+        `the repo root and use the project venv python):\n` +
+        `  cd ${repo} && .venv/bin/python -m scripts.judge_via_workflow item ${inPath} ${i}\n` +
+        `It prints a JSON object {"prompt": "..."}.\n\n` +
+        `STEP 2 — the "prompt" field is a complete, self-contained judging ` +
+        `instruction (a system preamble, the question, the AI answer, the brands to ` +
+        `score, and — if present — a client fact sheet with strict accuracy rules). ` +
+        `Read it and follow it EXACTLY. Use NO outside knowledge about the brands.\n\n` +
+        `STEP 3 — return your judgment as the structured output: a "brands" entry for ` +
+        `every brand the prompt lists (present / prominence / framing) and ` +
+        `"client_accuracy_flags" (an empty list if none apply, or if the prompt ` +
+        `included no fact sheet).`,
+      { label: `judge:${i}`, phase: 'Judge', schema },
+    ),
+  ),
 )
 
-const ok = judged.filter(Boolean)
-log(`Judged ${ok.length}/${items.length} (the rest failed and stay un-cached)`)
+// parallel() preserves input order and yields null for any failed subagent, so
+// raws[j] lines up with idxs[j] = start + j — exactly what inject expects.
+log(`Judged ${raws.filter(Boolean).length}/${idxs.length} (nulls stay un-cached, re-judged later)`)
 
-return {
-  run_id: args?.run_id,
-  client: args?.client,
-  competitors: args?.competitors,
-  has_fact_sheet: args?.has_fact_sheet,
-  items: ok,
-}
+return { start, raws }
