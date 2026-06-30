@@ -359,6 +359,18 @@ export async function cancelAudit(runId: string): Promise<void> {
   });
 }
 
+// Re-judge a completed run's stored answers and return the refreshed report.
+// Free when the judge cache is warm (pre-filled via the /prejudge workflow in
+// Claude Code); otherwise it runs the judge on the API.
+export async function judgeAudit(runId: string): Promise<ReportPayload> {
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/judge`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`judge failed (${res.status})`);
+  return res.json();
+}
+
 // Downloads go through fetch (not an <a href>) so the X-API-Key header is sent;
 // the response is saved as a blob.
 export async function downloadAudit(

@@ -301,6 +301,23 @@ def cancel_audit(run_id: str) -> dict[str, str]:
     return {"status": "cancelling"}
 
 
+@api.post("/audits/{run_id}/judge")
+def judge_audit(run_id: str) -> dict[str, object]:
+    """Re-judge a completed run's stored answers and return the refreshed report.
+
+    Pairs with the subscription pre-judge workflow: once the judge cache is warm
+    (via ``/prejudge`` in Claude Code), this pass is all cache hits → free, and the
+    UI gets judged metrics without a re-run. Returns the updated report so the
+    client can render it without a second round-trip.
+    """
+    report = runner.rejudge_run(run_id)
+    if report is None:
+        raise HTTPException(
+            status_code=404, detail=f"run {run_id} not found or has no answers to judge"
+        )
+    return dict(report)
+
+
 # --- Teasers: persist a generated one-pager, then approve / edit / reject -----
 #
 # The teaser pipeline (teaser/) runs as a child process out of the Next route and

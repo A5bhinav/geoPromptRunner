@@ -1,7 +1,29 @@
 # Running the Judge on the Claude Subscription (instead of the API)
 
-**Status:** Decided — not yet built. No code changes made yet.
-**Date:** 2026-06-28
+**Status:** BUILT (2026-06-29). Single-judge path shipped end-to-end.
+**Date:** 2026-06-28 (decided) / 2026-06-29 (built)
+
+## What shipped (2026-06-29)
+
+- `scripts/judge_via_workflow.py` — `dump` (DB pull + exact cache-key computation,
+  fact sheet taken from `audit_runs.fact_sheet` by default, skips already-cached
+  answers) and `inject` (writes the workflow's verdicts into `judge_cache.sqlite`).
+  Refuses cascade/verify (different keyspace) loudly.
+- `scripts/prejudge_workflow.js` — the Workflow: one subscription subagent per
+  unique answer, forced to the `record_judgment` schema; returns verdicts.
+- `.claude/skills/prejudge/SKILL.md` — `/prejudge <run_id>` chains dump → Workflow
+  → inject.
+- `src/cli.py` — `runs` now lists ALL recent runs (no client arg) so you can find a
+  run_id; shows id/date/client/query-set/[fact-sheet].
+- `src/api/runner.py` + `app.py` — `rejudge_run()` and `POST /audits/{id}/judge`:
+  re-judge a stored run through the (now-warm) cache for $0, invalidating the
+  report cache. Works in-memory or from storage.
+- `web/` — a "Judge" / "Re-judge" button on the report with a "pre-judge on the
+  subscription first" hint.
+
+Key invariant verified: the keys `dump` emits are byte-identical to what a live
+`Judge()` computes (single-judge, with the stored fact sheet), so the UI/CLI judge
+hits them. Scope is the single judge only (the default config).
 
 ## The problem
 

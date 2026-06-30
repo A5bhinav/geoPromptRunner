@@ -291,13 +291,28 @@ def _cmd_compare(args: argparse.Namespace) -> int:
 
 
 def _cmd_runs(args: argparse.Namespace) -> int:
-    runs = db.list_audit_runs(args.client)
-    if not runs:
-        print(f"No runs for {args.client!r}.")
-        return 0
-    print(f"Runs for {args.client!r}:")
-    for run in runs:
-        print(f"  {run.get('id')}  {run.get('created_at')}  {run.get('query_set_version')}")
+    # No client → the recent runs across all clients (newest first), so you can
+    # find a run_id when you don't already know which client it belongs to.
+    if args.client:
+        runs = db.list_audit_runs(args.client)  # oldest first (trend/cadence order)
+        if not runs:
+            print(f"No runs for {args.client!r}.")
+            return 0
+        print(f"Runs for {args.client!r}:")
+        rows = runs
+    else:
+        rows = db.list_all_audit_runs(limit=args.limit)
+        if not rows:
+            print("No runs found.")
+            return 0
+        print(f"Recent runs (newest first, up to {args.limit}):")
+    for run in rows:
+        created = str(run.get("created_at", ""))[:10]
+        fact = "fact-sheet" if run.get("fact_sheet_present") else "no-sheet"
+        print(
+            f"  {run.get('id')}  {created}  {str(run.get('client_name', '')):<14}  "
+            f"{run.get('query_set_version')}  [{fact}]"
+        )
     return 0
 
 
@@ -449,8 +464,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_compare.set_defaults(func=_cmd_compare)
 
-    p_runs = sub.add_parser("runs", help="list stored runs for a client")
-    p_runs.add_argument("client")
+    p_runs = sub.add_parser("runs", help="list stored runs (all clients, or one client)")
+    p_runs.add_argument("client", nargs="?", help="filter to one client; omit for all recent runs")
+    p_runs.add_argument(
+        "--limit", type=int, default=20, help="max runs to show when listing all (default 20)"
+    )
     p_runs.set_defaults(func=_cmd_runs)
 
     p_tech = sub.add_parser("technical", help="run technical checks across domains")

@@ -100,7 +100,7 @@ export default function AuditPage({ params }: { params: { id: string } }) {
       )}
 
       {status && status.state === "done" && report && (
-        <ReportView report={report} runId={runId} />
+        <ReportView report={report} runId={runId} onJudged={setReport} />
       )}
 
       {status && status.state === "done" && !report && (

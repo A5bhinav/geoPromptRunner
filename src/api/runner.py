@@ -70,13 +70,22 @@ class _RunState:
 _RUNS: dict[str, _RunState] = {}
 _LOCK = threading.Lock()
 
-# Once a run is "done" its report is immutable, but the UI may re-fetch it and a
-# restarted process rebuilds it from 3 Supabase round-trips + full aggregation
-# every time. Cache the built ReportPayload for done runs (done is terminal-final
-# — interrupted/queued runs are what get resumed, never done ones — so no
-# invalidation is needed).
+# Once a run is "done" its report is rebuilt from 3 Supabase round-trips + full
+# aggregation on every re-fetch (and after a restart). Cache the built
+# ReportPayload for done runs. A done run's report is stable EXCEPT when it is
+# re-judged on demand (``rejudge_run``), which mutates the verdicts — so that path
+# must invalidate this cache (``_invalidate_report_cache``). Resumes only touch
+# interrupted/queued runs, never done ones, so they need no invalidation.
 _REPORT_CACHE: dict[str, ReportPayload] = {}
 _REPORT_CACHE_LOCK = threading.Lock()
+
+
+def _invalidate_report_cache(run_id: str) -> None:
+    """Drop a run's cached report so the next fetch rebuilds it (used after a
+    re-judge changes a done run's verdicts)."""
+    with _REPORT_CACHE_LOCK:
+        _REPORT_CACHE.pop(run_id, None)
+
 
 # Running total of estimated USD spend for audits accepted this process. The hard
 # guard against burning credits: a single audit over MAX_AUDIT_COST_USD, or one
@@ -399,40 +408,101 @@ def _run_site_audit_phase(state: _RunState) -> None:
         logger.warning("Site audit failed for run %s: %s", state.run_id, type(exc).__name__)
 
 
-def _run_judge(state: _RunState) -> None:
-    """Best-effort LLM judging after the answers are collected.
+def _judge_answers(
+    results: list[QueryResult],
+    client: str,
+    competitors: list[str],
+    fact_sheet: str | None,
+) -> list[AnswerJudgment] | None:
+    """Judge a set of answers through the persistent verdict cache.
 
-    Skipped (not fatal) if the judge can't be built (no OPENAI_API_KEY).
+    Returns the judgments, or ``None`` if the judge can't be built (no API key).
+    Shared by the inline post-run judge and the on-demand re-judge. The cache
+    means an answer already judged under these exact inputs (model, client,
+    competitors, fact sheet, prompt) is reused, not re-judged — so a re-judge over
+    a run whose verdicts were pre-filled on the subscription costs $0 (see
+    docs/subscription-judge-plan.md). Judge/JudgeCache are imported lazily so the
+    anthropic SDK isn't pulled into the API import path.
     """
-    from src.config import settings
     from src.pipeline.judge import Judge
     from src.pipeline.judge_cache import JudgeCache
 
-    cfg = state.audit.config
     try:
         judge = Judge(cascade=settings.JUDGE_CASCADE, verify=settings.JUDGE_VERIFY)
     except ValueError as exc:
         logger.info("Judge skipped: %s", exc)
-        return
-    # Persistent verdict cache: an answer already judged under these exact inputs
-    # (model, client, competitors, fact sheet, prompt) is reused, not re-judged —
-    # so resumes and re-runs don't re-pay for the same answers.
+        return None
     cache = JudgeCache(settings.JUDGE_CACHE_PATH)
     try:
-        state.judgments = judge.judge_results(
-            state.results,
-            cfg.client_name,
-            cfg.competitors,
-            state.audit.fact_sheet,
-            cache=cache,
-        )
+        return judge.judge_results(results, client, competitors, fact_sheet, cache=cache)
     finally:
         cache.close()
+
+
+def _run_judge(state: _RunState) -> None:
+    """Best-effort LLM judging after the answers are collected.
+
+    Skipped (not fatal) if the judge can't be built (no API key).
+    """
+    cfg = state.audit.config
+    judgments = _judge_answers(
+        state.results, cfg.client_name, cfg.competitors, state.audit.fact_sheet
+    )
+    if judgments is None:
+        return
+    state.judgments = judgments
     if state.db_run_id is not None:
         try:
             db.save_judgments(state.db_run_id, state.judgments)
         except db.StorageError as exc:
             logger.info("Failed to persist judgments (continuing): %s", exc)
+
+
+def rejudge_run(run_id: str) -> ReportPayload | None:
+    """Re-judge a completed run's stored answers and return its refreshed report.
+
+    The on-demand counterpart to the inline post-run judge: pair it with the
+    subscription pre-judge workflow (``/prejudge`` in Claude Code) so that, once
+    ``data/judge_cache.sqlite`` is warm, this pass is all cache hits and the UI
+    gets judged metrics for $0. Works whether the run is still in this process's
+    memory or only in storage (e.g. after a restart). Returns ``None`` if the run
+    is unknown or has no answers to judge.
+    """
+    state = _get(run_id)
+    if state is not None:
+        if not state.results:
+            return None
+        _run_judge(state)  # updates state.judgments + persists
+        _invalidate_report_cache(run_id)
+        return get_report(run_id)
+    return _rejudge_from_db(run_id)
+
+
+def _rejudge_from_db(run_id: str) -> ReportPayload | None:
+    """Re-judge a run that isn't in this process's memory, straight from storage."""
+    try:
+        row = db.get_audit_run(run_id)
+        if row is None:
+            return None
+        results = db.get_query_results(run_id)
+    except db.StorageError:
+        return None
+    if not results:
+        return None
+    # The fact sheet stored on the run row is what the original run judged against
+    # — use it so re-judge verdicts match (and hit) the pre-filled cache keys.
+    stored_sheet = row.get("fact_sheet")
+    fact_sheet = str(stored_sheet) if stored_sheet else None
+    judgments = _judge_answers(
+        results, str(row.get("client_name", "")), _str_list(row.get("competitors")), fact_sheet
+    )
+    if judgments is not None:
+        try:
+            db.save_judgments(run_id, judgments)
+        except db.StorageError as exc:
+            logger.info("Failed to persist judgments (continuing): %s", exc)
+    _invalidate_report_cache(run_id)
+    return _report_from_db(run_id)
 
 
 def _get(run_id: str) -> _RunState | None:

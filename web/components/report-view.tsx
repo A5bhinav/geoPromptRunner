@@ -1,11 +1,14 @@
 "use client";
 
+import * as React from "react";
 import dynamic from "next/dynamic";
 import {
   Printer,
   Download,
   FileText,
   FileSpreadsheet,
+  Gavel,
+  Loader2,
   Trophy,
   Target,
   Quote,
@@ -48,7 +51,7 @@ const SourcesChart = dynamic(() => import("@/components/charts").then((m) => m.S
   loading: () => chartFallback,
 });
 import { pct } from "@/lib/utils";
-import { downloadAudit, type ReportPayload } from "@/lib/api";
+import { downloadAudit, judgeAudit, type ReportPayload } from "@/lib/api";
 
 function MetricCard({
   icon,
@@ -100,9 +103,38 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
-export function ReportView({ report, runId }: { report: ReportPayload; runId?: string }) {
+export function ReportView({
+  report,
+  runId,
+  onJudged,
+}: {
+  report: ReportPayload;
+  runId?: string;
+  // Lets the parent swap in the refreshed report after an on-demand judge pass.
+  onJudged?: (report: ReportPayload) => void;
+}) {
   const s = report.scorecard;
   const topComp = s.top_competitor;
+
+  const [judging, setJudging] = React.useState(false);
+  const [judgeError, setJudgeError] = React.useState<string | null>(null);
+
+  // Run the LLM judge over the stored answers. Free when the judge cache was
+  // pre-filled on the subscription (the /prejudge workflow); otherwise it judges
+  // on the API. On success the parent re-renders with the judged report.
+  const runJudge = async () => {
+    if (!runId || judging) return;
+    setJudging(true);
+    setJudgeError(null);
+    try {
+      const updated = await judgeAudit(runId);
+      onJudged?.(updated);
+    } catch {
+      setJudgeError("Judging failed — is the API reachable and a judge key set?");
+    } finally {
+      setJudging(false);
+    }
+  };
 
   const downloadJson = () => {
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
@@ -144,7 +176,32 @@ export function ReportView({ report, runId }: { report: ReportPayload; runId?: s
             ))}
           </div>
         </div>
-        <div className="no-print flex gap-2">
+        <div className="no-print flex flex-col items-end gap-1.5">
+          <div className="flex gap-2">
+          {runId && (
+            <Button
+              variant={report.detection === "judge" ? "outline" : "default"}
+              size="sm"
+              onClick={runJudge}
+              disabled={judging}
+              title={
+                report.detection === "judge"
+                  ? "Re-run the LLM judge over the stored answers (free if the judge cache is warm)"
+                  : "Run the LLM judge over the stored answers — free if you pre-judged this run on the subscription"
+              }
+            >
+              {judging ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Gavel className="h-4 w-4" />
+              )}
+              {judging
+                ? "Judging…"
+                : report.detection === "judge"
+                  ? "Re-judge"
+                  : "Judge"}
+            </Button>
+          )}
           {runId && (
             <>
               <Button
@@ -171,8 +228,21 @@ export function ReportView({ report, runId }: { report: ReportPayload; runId?: s
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Export
           </Button>
+          </div>
+          {runId && report.detection !== "judge" && (
+            <p className="max-w-xs text-right text-xs text-muted-foreground">
+              Tip: pre-judge this run on the subscription first (<code>/prejudge {runId.slice(0, 8)}</code> in
+              Claude Code) so Judge is $0.
+            </p>
+          )}
         </div>
       </div>
+
+      {judgeError && (
+        <div className="no-print rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {judgeError}
+        </div>
+      )}
 
       {/* §1 Scorecard */}
       <section className="space-y-3">
