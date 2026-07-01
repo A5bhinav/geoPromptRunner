@@ -118,12 +118,15 @@ JUDGE_VERIFY: bool = os.getenv("JUDGE_VERIFY", "0").strip().lower() in ("1", "tr
 # protected recall for precision. Sonnet keeps the real contradictions.
 JUDGE_VERIFIER_MODEL: str = os.getenv("JUDGE_VERIFIER_MODEL", JUDGE_MODEL)
 
-# Persistent judge cache. A verdict is fully determined by (judge model, client,
-# competitors, fact sheet, prompt, answer), so once an answer is judged it never
-# needs re-judging — across resumes, re-runs, or cadence re-checks. This content-
-# addressed SQLite cache stores each verdict so repeated answers cost no API call.
-# Set JUDGE_CACHE_PATH="" to disable (e.g. to force a fresh judge pass).
-JUDGE_CACHE_PATH: str = os.getenv("JUDGE_CACHE_PATH", "data/judge_cache.sqlite")
+# Persistent judge cache ("the notebook"). A verdict is fully determined by (judge
+# model, client, competitors, fact sheet, prompt, answer), so once an answer is
+# judged it never needs re-judging — across resumes, re-runs, or cadence re-checks.
+# Backend (see src/pipeline/judge_cache.py):
+#   "supabase" (default) — shared table, so the subscription pre-judge (one machine)
+#                          and the UI/report step (the server) share one notebook.
+#   "memory"             — in-process dict, for tests (no network).
+#   "none" / ""          — disabled: force a fresh judge pass.
+JUDGE_CACHE_BACKEND: str = os.getenv("JUDGE_CACHE_BACKEND", "supabase")
 
 # --- Cat 6 offsite research agent (all optional) ---
 # Each offsite tool degrades gracefully to "unavailable" when its key is unset, so

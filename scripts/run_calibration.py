@@ -19,7 +19,7 @@ import sys
 from src.config import settings
 from src.pipeline.calibration import calibrate, load_gold_set, render_calibration
 from src.pipeline.judge import Judge
-from src.pipeline.judge_cache import JudgeCache
+from src.pipeline.judge_cache import make_judge_cache
 
 
 def main(argv: list[str]) -> int:
@@ -29,8 +29,8 @@ def main(argv: list[str]) -> int:
         items = load_gold_set(p)
         print(f"loaded {len(items)} items from {p}")
         gold += items
-    cache_path = settings.JUDGE_CACHE_PATH or "(disabled)"
-    print(f"judge model: {settings.JUDGE_MODEL} · cache: {cache_path}")
+    backend = settings.JUDGE_CACHE_BACKEND or "(disabled)"
+    print(f"judge model: {settings.JUDGE_MODEL} · cache: {backend}")
     print(f"total items to judge: {len(gold)}\n")
 
     try:
@@ -46,7 +46,7 @@ def main(argv: list[str]) -> int:
     if settings.JUDGE_VERIFY:
         print(f"verify: per-flag verifier={settings.JUDGE_VERIFIER_MODEL}")
 
-    cache = JudgeCache(settings.JUDGE_CACHE_PATH)
+    cache = make_judge_cache()
     report = calibrate(judge, gold, progress=True, cache=cache)
     print()
     print(render_calibration(report))

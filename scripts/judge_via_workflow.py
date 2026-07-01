@@ -1,7 +1,7 @@
 """Pre-fill the judge cache with verdicts produced on the Claude subscription.
 
 The judge already does an offline pass over stored answers with a content-
-addressed SQLite cache (``data/judge_cache.sqlite``): on a cache hit it never
+addressed cache (the shared Supabase "notebook"): on a cache hit it never
 calls the API (``judge.py`` ``judge_results``). So if we pre-fill that cache with
 verdicts produced by *subscription* subagents (a Workflow), a normal
 ``python -m src.cli judge <run_id>`` — or the UI's judge step, which reads the
@@ -145,7 +145,6 @@ def _unique_pairs(run_id: str) -> list[tuple[str, str]]:
 
 
 def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int:
-    from src.config import settings
     from src.pipeline.judge import (
         _ACCURACY_BLOCK,
         _ANSWER_HEAD,
@@ -154,7 +153,7 @@ def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int
         _SYSTEM,
         _brand_lines,
     )
-    from src.pipeline.judge_cache import JudgeCache
+    from src.pipeline.judge_cache import make_judge_cache
     from src.storage import db
 
     run = db.get_audit_run(run_id)
@@ -198,7 +197,7 @@ def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int
     )
 
     judge = _build_judge()
-    cache = JudgeCache(settings.JUDGE_CACHE_PATH)
+    cache = make_judge_cache()
     try:
         pairs = _unique_pairs(run_id)
         items: list[dict[str, str]] = []
@@ -363,9 +362,8 @@ def _inject(in_path: str, verdicts_path: str, offset: int) -> int:
     verdict's key comes from the in file at that index, so it always matches what
     the real judge will look up. Only well-formed verdicts are stored; a null/bad
     one is skipped, leaving that answer to be judged normally later."""
-    from src.config import settings
     from src.pipeline.judge import _parse_brands, _parse_flags
-    from src.pipeline.judge_cache import JudgeCache, Verdict
+    from src.pipeline.judge_cache import Verdict, make_judge_cache
 
     d = _load_in(in_path)
     client = str(d.get("client", ""))
@@ -376,7 +374,7 @@ def _inject(in_path: str, verdicts_path: str, offset: int) -> int:
 
     raws = json.loads(Path(verdicts_path).read_text()).get("raws") or []
 
-    cache = JudgeCache(settings.JUDGE_CACHE_PATH)
+    cache = make_judge_cache()
     stored: list[tuple[str, Verdict]] = []
     skipped = 0
     try:

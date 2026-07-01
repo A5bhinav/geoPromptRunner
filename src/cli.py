@@ -21,7 +21,7 @@ from src.pipeline.calibration import calibrate, load_gold_set, render_calibratio
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
 from src.pipeline.judge import Judge
-from src.pipeline.judge_cache import JudgeCache
+from src.pipeline.judge_cache import make_judge_cache
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.query_set import load_query_set
@@ -129,7 +129,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
                 outcome.competitors,
                 fact_sheet,
                 progress=True,
-                cache=JudgeCache(settings.JUDGE_CACHE_PATH),
+                cache=make_judge_cache(),
             )
             if outcome.run_id and not args.no_persist:
                 try:
@@ -227,7 +227,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
         outcome.competitors,
         fact_sheet,
         progress=True,
-        cache=JudgeCache(settings.JUDGE_CACHE_PATH),
+        cache=make_judge_cache(),
     )
     if not args.no_persist:
         try:

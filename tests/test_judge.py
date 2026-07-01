@@ -170,45 +170,43 @@ def test_answer_head_rubric_split_reassembles_base_instructions() -> None:
     assert "{brand_lines}" not in _ANSWER_HEAD and "{query}" not in _RUBRIC_TAIL
 
 
-def test_dump_cache_key_matches_live_judge_lookup(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_dump_cache_key_matches_live_judge_lookup(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """The key scripts/judge_via_workflow.py `dump` computes (from judge._cache_model_id
     + judge._prompt_fingerprint) must be the exact key a live Judge() looks up — so a
     prejudged verdict is a cache HIT and the judge never calls the API. Seed a sentinel
     under the dump-computed key and assert judge_answer_cached returns it WITHOUT ever
-    calling judge_answer (a miss would mean the keys drifted)."""
+    calling judge_answer (a miss would mean the keys drifted). Backend-independent —
+    the in-memory notebook exercises the same key()."""
     from src.config import settings
-    from src.pipeline.judge_cache import JudgeCache
+    from src.pipeline.judge_cache import InMemoryJudgeCache
 
     monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", "test-key-never-called")
     judge = Judge()
-    cache = JudgeCache(str(tmp_path / "parity.sqlite"))
-    try:
-        client, competitors, fact_sheet = "Fort", ["Acme", "Globex"], "Membership: $5.99/month"
-        query, answer = "best budgeting app?", "I recommend Fort."
+    cache = InMemoryJudgeCache()
+    client, competitors, fact_sheet = "Fort", ["Acme", "Globex"], "Membership: $5.99/month"
+    query, answer = "best budgeting app?", "I recommend Fort."
 
-        # The key EXACTLY as scripts/judge_via_workflow.py _dump computes it.
-        dump_key = cache.key(
-            model=judge._cache_model_id,
-            prompt_fingerprint=judge._prompt_fingerprint,
-            client=client,
-            competitors=competitors,
-            fact_sheet=fact_sheet,
-            prompt=query,
-            answer=answer,
-        )
-        sentinel: tuple[list, list, bool] = ([], [], True)
-        cache.put_many([(dump_key, sentinel)])
+    # The key EXACTLY as scripts/judge_via_workflow.py _dump computes it.
+    dump_key = cache.key(
+        model=judge._cache_model_id,
+        prompt_fingerprint=judge._prompt_fingerprint,
+        client=client,
+        competitors=competitors,
+        fact_sheet=fact_sheet,
+        prompt=query,
+        answer=answer,
+    )
+    sentinel: tuple[list, list, bool] = ([], [], True)
+    cache.put_many([(dump_key, sentinel)])
 
-        # If the live lookup key ever diverges from dump_key, this would be a miss and
-        # fall through to judge_answer — which must NOT happen.
-        def _boom(*_a: object, **_k: object) -> object:
-            raise AssertionError("cache MISS: dump key != live judge lookup key (parity broken)")
+    # If the live lookup key ever diverges from dump_key, this would be a miss and
+    # fall through to judge_answer — which must NOT happen.
+    def _boom(*_a: object, **_k: object) -> object:
+        raise AssertionError("cache MISS: dump key != live judge lookup key (parity broken)")
 
-        monkeypatch.setattr(judge, "judge_answer", _boom)
-        got = judge.judge_answer_cached(query, answer, client, competitors, fact_sheet, cache)
-        assert got == sentinel
-    finally:
-        cache.close()
+    monkeypatch.setattr(judge, "judge_answer", _boom)
+    got = judge.judge_answer_cached(query, answer, client, competitors, fact_sheet, cache)
+    assert got == sentinel
 
 
 def test_single_judge_caches_shared_rubric_prefix(monkeypatch) -> None:  # type: ignore[no-untyped-def]

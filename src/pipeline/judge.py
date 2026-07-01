@@ -855,15 +855,21 @@ class Judge:
                     answer=answer,
                 )
 
+            # Compute every content key once, then PREFETCH them all in one batched
+            # lookup — so a network-backed notebook (Supabase) does a handful of
+            # round-trips, not one per answer.
+            keyed = [(pair, cache_key(pair[0], pair[1])) for pair in unique_keys]
+            prefetched: dict[str, Verdict] = {}
+            if cache is not None:
+                prefetched = cache.get_many([ck for _, ck in keyed if ck is not None])
+
             # Split into answers already judged (free reuse) and the rest. The
-            # content key (computed once here) is carried alongside each
-            # to-judge entry so it isn't hashed a second time when storing.
+            # content key is carried alongside each to-judge entry so it isn't
+            # hashed a second time when storing.
             to_judge: list[tuple[tuple[str, str], str | None]] = []
             reused = 0
-            for key in unique_keys:
-                prompt, answer = key
-                ck = cache_key(prompt, answer)
-                hit = cache.get(ck) if (cache is not None and ck is not None) else None
+            for key, ck in keyed:
+                hit = prefetched.get(ck) if ck is not None else None
                 if hit is not None:
                     verdicts[key] = hit
                     reused += 1

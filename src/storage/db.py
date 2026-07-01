@@ -63,6 +63,10 @@ TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_JUDGMENTS = "judgments"
 
+# Content-addressed judge cache ("the notebook") — shared so the subscription
+# pre-judge and the UI/report step read the same verdicts. See data/schema_judge_cache.sql.
+TABLE_JUDGE_CACHE = "judge_cache"
+
 # Site-audit pipeline tables (see data/schema_site_audit.sql).
 TABLE_SITE_AUDIT_PHASE = "site_audit_phase"
 TABLE_SITE_AUDIT_PAGE = "site_audit_page"
@@ -319,6 +323,47 @@ def get_audit_run(run_id: str) -> dict[str, object] | None:
     """Fetch a single audit-run row by id, or None if absent."""
     rows = _select_rows(TABLE_AUDIT_RUNS, run_id, key="id")
     return rows[0] if rows else None
+
+
+# --- Judge cache (the shared "notebook") -------------------------------------
+# Content-addressed key→verdict store. Reads/writes are chunked so a run with
+# hundreds of answers is a handful of round-trips, not one per answer. Raises
+# StorageError on failure like every other db op; SupabaseJudgeCache catches it
+# and degrades to a miss/no-op so a Supabase blip never breaks a run.
+
+_JUDGE_CACHE_CHUNK = 200
+
+
+def _judge_cache_read_chunk(keys: list[str]) -> list[dict[str, object]]:
+    # keys is a parameter (not a loop var), so the lambda closes over it cleanly.
+    response = _execute(
+        f"judge_cache read ({len(keys)} keys)",
+        lambda c: c.table(TABLE_JUDGE_CACHE).select("key,value").in_("key", keys).execute(),
+    )
+    return list(getattr(response, "data", None) or [])
+
+
+def _judge_cache_write_chunk(rows: list[dict[str, Any]]) -> None:
+    _execute(
+        f"judge_cache write ({len(rows)} rows)",
+        lambda c: c.table(TABLE_JUDGE_CACHE).upsert(rows, on_conflict="key").execute(),
+    )
+
+
+def judge_cache_get_many(keys: list[str]) -> list[dict[str, object]]:
+    """Rows ``{key, value}`` for the given cache keys, fetched in chunked ``IN``
+    queries. Keys with no stored verdict are simply absent from the result."""
+    out: list[dict[str, object]] = []
+    for i in range(0, len(keys), _JUDGE_CACHE_CHUNK):
+        out.extend(_judge_cache_read_chunk(keys[i : i + _JUDGE_CACHE_CHUNK]))
+    return out
+
+
+def judge_cache_put_many(rows: list[dict[str, Any]]) -> None:
+    """Upsert ``{key, value}`` verdict rows, idempotent on ``key`` (a repeat write
+    of the same answer just overwrites), in chunks."""
+    for i in range(0, len(rows), _JUDGE_CACHE_CHUNK):
+        _judge_cache_write_chunk(rows[i : i + _JUDGE_CACHE_CHUNK])
 
 
 # --- Site-audit page cache ---------------------------------------------------

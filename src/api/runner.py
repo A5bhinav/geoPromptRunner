@@ -425,14 +425,14 @@ def _judge_answers(
     anthropic SDK isn't pulled into the API import path.
     """
     from src.pipeline.judge import Judge
-    from src.pipeline.judge_cache import JudgeCache
+    from src.pipeline.judge_cache import make_judge_cache
 
     try:
         judge = Judge(cascade=settings.JUDGE_CASCADE, verify=settings.JUDGE_VERIFY)
     except ValueError as exc:
         logger.info("Judge skipped: %s", exc)
         return None
-    cache = JudgeCache(settings.JUDGE_CACHE_PATH)
+    cache = make_judge_cache()
     try:
         return judge.judge_results(results, client, competitors, fact_sheet, cache=cache)
     finally:
