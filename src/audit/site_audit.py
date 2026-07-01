@@ -224,6 +224,19 @@ def run_site_audit(
             c_rows, c_verdicts = _run_content_judge(run_id, page, judge, rows)
             checks.extend(c_rows)
             content_verdicts.extend(c_verdicts)
+    if crawl.pages and judge is None:
+        # The subjective checks didn't run (RUN_CONTENT_JUDGE off / no key), but the
+        # pages ARE crawled + stored — so they can be warmed on the subscription for
+        # free. Nudge the operator (true auto-prewarm isn't possible: the subscription
+        # needs a logged-in session). The UI surfaces the same via judge-status.
+        logger.info(
+            "Content checks skipped for %s — %d page(s) crawled and stored. Run "
+            "`/prejudge %s` on the subscription, then set RUN_CONTENT_JUDGE=1 to score "
+            "them for $0.",
+            domain,
+            len(crawl.pages),
+            run_id,
+        )
     if crawl.pages:
         checks.append(_run_links(run_id, crawl, rows))
         coverage = _run_comparison_coverage(run_id, crawl.pages, competitors or [], rows)

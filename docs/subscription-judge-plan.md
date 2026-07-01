@@ -126,6 +126,35 @@ calibration/gold, and for any answer not prejudged):
   API), so a future judge edit that breaks parity fails CI instead of silently turning
   prejudge into a $0-savings no-op.
 
+## Shared Supabase notebook + the on-site content layer (2026-07-01)
+
+Two extensions took this from "the query judge, locally" to "the whole audit, shared":
+
+- **Notebook → Supabase.** The cache moved from a local SQLite file to a shared Supabase
+  table (`judge_cache`) so the subscription pre-judge (one machine) and the UI/report
+  step (the server) read the SAME notebook. `JudgeCache` is now a backend ABC
+  (`supabase` default / `memory` for tests / `none`) with a batched `get_many`; keys are
+  unchanged so parity holds. A second table `content_judge_cache` holds the on-site
+  verdicts (separate keyspace / value shape).
+- **The on-site content layer is now real.** `ContentJudge` (the 6 subjective Cat 3/4
+  checks) was calibrated but never wired into an audit; it now runs in `run_site_audit`,
+  shares its own content-addressed notebook (`content_cache_key`), and has a sibling
+  prejudge (`scripts/content_judge_via_workflow.py` + `content_prejudge_workflow.js`,
+  one subagent per crawled page). Verified live: Fort run 618a3e05, 18 checks → warm.
+  Offsite stays on the API by design (a live, non-deterministic agent — doesn't
+  content-address). Synthesis is free Python.
+
+Operational shape:
+- **`/prejudge <run_id>` is one pass** — Part A warms the query answers, Part B warms
+  the crawled-page content checks (skipped cleanly if the run wasn't crawled).
+- **`RUN_CONTENT_JUDGE` defaults OFF** — an audit never surprise-spends ~6×pages of API.
+  Flow to get content scores for $0: run the audit (pages are crawled + stored anyway) →
+  `/prejudge` → re-run the site audit with `RUN_CONTENT_JUDGE=1` (all cache hits). Mirrors
+  the query judge's off-by-default → prejudge → judge flow.
+- **No true auto-prewarm** — the subscription needs a logged-in session, so a crawl can't
+  self-warm. Instead: `run_site_audit` logs a nudge when it skips content, and the UI's
+  `GET /audits/{id}/judge-status` shows per-notebook warm counts + a "Judge · free" badge.
+
 ## The problem
 
 Iterating on the pipeline burns real API credit fast (~$40 spent on testing alone).

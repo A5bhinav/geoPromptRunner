@@ -5,10 +5,17 @@ description: Pre-fill the judge cache for a stored audit run using the Claude su
 
 # Prejudge a run on the subscription
 
-Judge a stored run's answers using **subscription** subagents (a Workflow), writing
-the verdicts into the same `data/judge_cache.sqlite` the CLI and UI judge read. The
-later judge step then finds every verdict already cached → **$0 API**. Background:
+Warm a stored run's notebooks using **subscription** subagents (Workflows), so a
+later judge / report pass is 100% cache hits → **$0 API**. Background:
 `docs/subscription-judge-plan.md`.
+
+**One `/prejudge <run_id>` warms BOTH notebooks in one pass:**
+- **Part A — query answers** → `judge_cache` (always; every run has answers).
+- **Part B — on-site content checks** → `content_judge_cache` (only if the run was
+  crawled; skip cleanly if it wasn't).
+
+Do both in the single invocation, then give one combined report. (They're independent
+— if Part A has nothing to judge, still do Part B, and vice-versa.)
 
 This only works in a session running on the **Max subscription**. If this session is
 billed via `ANTHROPIC_API_KEY`, the subagents spend credit and there is no saving —
@@ -48,7 +55,7 @@ Two things keep the token cost down on big runs:
 Each subagent returns only its small verdicts (tagged with each answer's item index),
 so the return value stays tiny. This is why it works on 500+ answer runs.
 
-## Steps
+## Part A — query answers
 
 Run these in order. Use the session scratchpad for the intermediate JSON files, and
 always use ABSOLUTE paths (subagents run from the repo root via the venv python).
@@ -98,11 +105,12 @@ always use ABSOLUTE paths (subagents run from the repo root via the venv python)
    `python -m src.cli judge <run_id>` or click **Judge** in the UI — free cache hits.
    The "API judge passover" runs but never calls the API.
 
-## Part 2 — also warm the on-site content checks (if the run was crawled)
+## Part B — on-site content checks (if the run was crawled)
 
-The site audit's subjective Cat 3/4 checks (`ContentJudge`) have their own notebook
-(`content_judge_cache`). If this run has crawled pages, warm them too so a later
-`run_site_audit` / report is also free. Same shape, a sibling script + workflow:
+Always continue to this after Part A. The site audit's subjective Cat 3/4 checks
+(`ContentJudge`) have their own notebook (`content_judge_cache`). If this run has
+crawled pages, warm them too so a later `run_site_audit` / report is also free (with
+`RUN_CONTENT_JUDGE=1`). Same shape, a sibling script + workflow:
 
 1. **Dump** the crawled pages (reads `site_audit_page` from Supabase, skips cached):
    ```
@@ -126,6 +134,15 @@ The site audit's subjective Cat 3/4 checks (`ContentJudge`) have their own noteb
    ```
    Now the site audit's content checks are warm — `run_site_audit` reuses them for $0.
    (Offsite research stays on the API by design — it's a live, non-deterministic agent.)
+
+## Combined report
+
+After both parts, give ONE summary: how many query verdicts + content verdicts were
+injected, and that the run is now warm on both notebooks. The user can:
+- run `python -m src.cli judge <run_id>` / click **Judge** in the UI (the button reads
+  "· free" and the notebook line shows the warm counts) — free query judging; and
+- re-run the site audit with `RUN_CONTENT_JUDGE=1` to get the on-site content scores
+  for $0 (all cache hits).
 
 ## Notes
 

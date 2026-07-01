@@ -119,9 +119,13 @@ JUDGE_VERIFY: bool = os.getenv("JUDGE_VERIFY", "0").strip().lower() in ("1", "tr
 JUDGE_VERIFIER_MODEL: str = os.getenv("JUDGE_VERIFIER_MODEL", JUDGE_MODEL)
 
 # Run the Cat 3/4 subjective on-site checks (the LLM ContentJudge) during a site
-# audit. On by default; set RUN_CONTENT_JUDGE=0 to skip — e.g. to avoid the API
-# cost, or when you'll pre-judge the crawled pages on the subscription first.
-_run_content = os.getenv("RUN_CONTENT_JUDGE", "1").strip().lower()
+# audit. OFF by default so an audit never surprise-spends ~6×pages of API — mirrors
+# the query judge (collect answers first, then judge). The flow to get content
+# scores for $0: run the audit (pages are crawled + stored regardless), warm the
+# content notebook on the subscription with `/prejudge <run_id>`, then set
+# RUN_CONTENT_JUDGE=1 — the judging is then all cache hits. Set =1 without a prewarm
+# to just pay the API inline.
+_run_content = os.getenv("RUN_CONTENT_JUDGE", "0").strip().lower()
 RUN_CONTENT_JUDGE: bool = _run_content in ("1", "true", "yes")
 
 # Persistent judge cache ("the notebook"). A verdict is fully determined by (judge
