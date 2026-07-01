@@ -27,13 +27,14 @@ to a client. See ``content_calibration.py`` for the harness this plugs into.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import anthropic
 from anthropic import Anthropic
@@ -41,6 +42,9 @@ from anthropic.types import Message, ToolChoiceToolParam, ToolParam
 from rapidfuzz import fuzz
 
 from src.audit.crawl.models import PageRecord
+
+if TYPE_CHECKING:
+    from src.audit.checks.content_judge_cache import ContentJudgeCache
 
 __all__ = [
     "ContentClass",
@@ -360,15 +364,52 @@ def _check_tool(check: ContentCheck) -> ToolParam:
     }
 
 
+# --- content-address key ("the notebook" key; mirrors judge.py's cache identity) ---
+
+# A hash of the content judge's own prompt + rubric version, so editing either
+# changes every key and forces a re-judge (like judge.py's prompt fingerprint).
+_CONTENT_PROMPT_FINGERPRINT = hashlib.sha256(
+    (_SYSTEM + _PROMPT + CONTENT_RUBRIC_VERSION).encode("utf-8")
+).hexdigest()
+
+# Reasons judge_check emits on an API/parse FAILURE — a verdict carrying one is a
+# non-assessment and must NOT be cached (else a transient failure poisons the notebook).
+_UNCACHEABLE_REASONS = frozenset({"judge call failed", "no sub-answers returned"})
+
+
+def _check_identity(check: ContentCheck) -> str:
+    """The check's semantic definition, so editing its sub-questions changes the key."""
+    return check.check_id + "\x1f" + "\x1f".join(f"{q.key}:{q.text}" for q in check.sub_questions)
+
+
+def content_cache_key(model: str, check: ContentCheck, text: str) -> str:
+    """Content-address for one (page-text, check) verdict — the notebook key. Keyed on
+    the TRUNCATED text the judge actually sees, so identical inputs hit."""
+    parts = [
+        "content-v1",
+        model,
+        _CONTENT_PROMPT_FINGERPRINT,
+        _check_identity(check),
+        text[:_MAX_TEXT_CHARS],
+    ]
+    return hashlib.sha256("\x1e".join(parts).encode("utf-8")).hexdigest()
+
+
 class ContentJudge:
     """LLM judge for the Cat 3/4 subjective checks (one forced tool call per check).
 
     Mirrors ``judge.py``: Anthropic client, temperature 0 (omitted for opus-4-8),
     and best-effort degrade — a check the model can't answer becomes ``unknown``
-    rather than raising.
+    rather than raising. Verdicts are cached in the content notebook (content-
+    addressed by page text + check), so a repeated page/check is a free lookup.
     """
 
-    def __init__(self, model: str | None = None, max_workers: int = 4) -> None:
+    def __init__(
+        self,
+        model: str | None = None,
+        max_workers: int = 4,
+        cache: ContentJudgeCache | None = None,
+    ) -> None:
         from src.config import settings
 
         if not settings.ANTHROPIC_API_KEY:
@@ -380,6 +421,12 @@ class ContentJudge:
             max_retries=settings.ENGINE_MAX_RETRIES,
         )
         self._max_workers = max_workers
+        if cache is not None:
+            self._cache: ContentJudgeCache = cache
+        else:
+            from src.audit.checks.content_judge_cache import make_content_judge_cache
+
+            self._cache = make_content_judge_cache()
 
     def judge_check(self, check: ContentCheck, url: str, text: str) -> CheckVerdict:
         """Run one rubric check over the page text. Never raises (degrades to unknown)."""
@@ -413,15 +460,36 @@ class ContentJudge:
         return finalize_check(check, raw_answers, text)
 
     def judge_page_text(self, url: str, text: str) -> ContentJudgeResult:
-        """Run every rubric check over a page's main text (checks run concurrently)."""
+        """Run every rubric check over a page's main text. Checks already in the
+        notebook are reused for free; only the misses hit the API (concurrently),
+        and their (assessed) verdicts are written back in one batch."""
         if not text.strip():
             return ContentJudgeResult(
                 page_url=url,
                 verdicts=[_unknown_verdict(c, "no page text to judge") for c in CONTENT_CHECKS],
                 assessed=False,
             )
-        with ThreadPoolExecutor(max_workers=self._max_workers) as pool:
-            verdicts = list(pool.map(lambda c: self.judge_check(c, url, text), CONTENT_CHECKS))
+        keys = {c.check_id: content_cache_key(self._model, c, text) for c in CONTENT_CHECKS}
+        cached = self._cache.get_many(list(keys.values()))
+        by_id: dict[str, CheckVerdict] = {}
+        to_judge: list[ContentCheck] = []
+        for check in CONTENT_CHECKS:
+            hit = cached.get(keys[check.check_id])
+            if hit is not None:
+                by_id[check.check_id] = hit
+            else:
+                to_judge.append(check)
+        if to_judge:
+            with ThreadPoolExecutor(max_workers=self._max_workers) as pool:
+                fresh = list(pool.map(lambda c: (c, self.judge_check(c, url, text)), to_judge))
+            store: list[tuple[str, CheckVerdict]] = []
+            for check, verdict in fresh:
+                by_id[check.check_id] = verdict
+                if verdict.reason not in _UNCACHEABLE_REASONS:  # never cache a failure
+                    store.append((keys[check.check_id], verdict))
+            if store:
+                self._cache.put_many(store)
+        verdicts = [by_id[c.check_id] for c in CONTENT_CHECKS]
         return ContentJudgeResult(page_url=url, verdicts=verdicts, assessed=True)
 
     def judge_page(self, page: PageRecord) -> ContentJudgeResult:
