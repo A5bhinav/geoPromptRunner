@@ -8,7 +8,7 @@ from enum import StrEnum
 
 import anthropic
 from anthropic import Anthropic
-from anthropic.types import Message, ToolChoiceToolParam, ToolParam
+from anthropic.types import Message, TextBlockParam, ToolChoiceToolParam, ToolParam
 
 from src.config import settings
 from src.pipeline.judge_cache import JudgeCache, Verdict
@@ -210,6 +210,14 @@ _RUBRIC_MARKER = "\nBrands to score (CLIENT is marked):"
 _ANSWER_HEAD = _BASE_INSTRUCTIONS[: _BASE_INSTRUCTIONS.index(_RUBRIC_MARKER)]
 _RUBRIC_TAIL = _BASE_INSTRUCTIONS[_BASE_INSTRUCTIONS.index(_RUBRIC_MARKER) :]
 
+# Marks the single-judge prompt DELIVERY (not just wording), folded into the cache
+# fingerprint. 2026-06-30: the shared rubric moved into a cached system block placed
+# BEFORE the per-answer head (was: rubric AFTER the head, in the user message) so the
+# Anthropic prompt cache can reuse it across every answer in a run. That reorders what
+# the model sees, so bump this to force a clean re-judge instead of mixing verdicts
+# from the two layouts. Change this string whenever the delivery changes again.
+_PROMPT_LAYOUT = "single:rubric-in-cached-system:v1"
+
 
 def _judgment_tool() -> ToolParam:
     """The forced tool the judge calls — its input schema IS the judgment JSON.
@@ -272,15 +280,17 @@ def _brand_lines(client: str, competitors: list[str]) -> str:
 
 
 def _single_fingerprint(tool: ToolParam) -> str:
-    """Hash of the single-judge prompt + tool schema (folded into the cache key so
-    editing the prompt auto-invalidates the cache). Kept byte-identical to the
-    historical inline computation so existing cached verdicts stay valid."""
+    """Hash of the single-judge prompt (text + delivery layout) + tool schema, folded
+    into the cache key so editing the prompt — or how it's delivered — auto-invalidates
+    the cache and forces a clean re-judge. ``_PROMPT_LAYOUT`` is part of the hash so the
+    2026-06-30 rubric-into-cached-system change bumped the fingerprint deliberately."""
     return hashlib.sha256(
         (
             _SYSTEM
             + _BASE_INSTRUCTIONS
             + _ACCURACY_BLOCK
             + _NO_ACCURACY_BLOCK
+            + _PROMPT_LAYOUT
             + json.dumps(tool, sort_keys=True, default=str)
         ).encode("utf-8")
     ).hexdigest()
@@ -571,29 +581,42 @@ class Judge:
         self._cache_model_id = cache_model_id
         self._prompt_fingerprint = base_fingerprint
 
-    def _build_prompt(
+    def _single_judge_messages(
         self,
         query_text: str,
         answer: str,
         client: str,
         competitors: list[str],
         fact_sheet: str | None,
-    ) -> str:
-        brand_lines = _brand_lines(client, competitors)
+    ) -> tuple[list[TextBlockParam], str]:
+        """Split the single-judge call into (system blocks, user prompt).
+
+        The shared RUBRIC (brand list + rules + accuracy block + fact sheet — identical
+        for every answer in a run) goes in ONE system block marked ``cache_control:
+        ephemeral``, placed BEFORE the per-answer head. That makes it a stable prefix the
+        Anthropic prompt cache reuses across the run, so only the small per-answer head
+        (question + answer, in the user message) is fresh input each call."""
         accuracy_instructions = (
             _ACCURACY_BLOCK.format(fact_sheet=fact_sheet) if fact_sheet else _NO_ACCURACY_BLOCK
         )
-        return _BASE_INSTRUCTIONS.format(
-            query=query_text,
-            answer=answer,
-            brand_lines=brand_lines,
+        rubric = _RUBRIC_TAIL.format(
+            brand_lines=_brand_lines(client, competitors),
             accuracy_instructions=accuracy_instructions,
         )
+        system: list[TextBlockParam] = [
+            {
+                "type": "text",
+                "text": _SYSTEM + "\n" + rubric,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+        user = _ANSWER_HEAD.format(query=query_text, answer=answer)
+        return system, user
 
     def _call_tool(
         self,
         model: str,
-        system: str,
+        system: str | list[TextBlockParam],
         prompt: str,
         tool: ToolParam,
         tool_name: str,
@@ -652,9 +675,14 @@ class Judge:
         competitors: list[str],
         fact_sheet: str | None,
     ) -> tuple[list[BrandJudgment], list[AccuracyFlag], bool]:
-        """One held-constant model scores brands + accuracy flags in a single call."""
-        prompt = self._build_prompt(query_text, answer, client, competitors, fact_sheet)
-        raw = self._call_tool(self._model, _SYSTEM, prompt, self._tool, "record_judgment")
+        """One held-constant model scores brands + accuracy flags in a single call.
+
+        The shared rubric rides in a cached system block (see ``_single_judge_messages``)
+        so the API prompt-caches it across every answer in the run."""
+        system, user = self._single_judge_messages(
+            query_text, answer, client, competitors, fact_sheet
+        )
+        raw = self._call_tool(self._model, system, user, self._tool, "record_judgment")
         if raw is None:
             return [], [], False
         brands = _parse_brands(raw, client, competitors)

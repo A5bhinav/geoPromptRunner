@@ -3,10 +3,15 @@ from __future__ import annotations
 from src.pipeline.judge import (
     _ACCURACY_BLOCK,
     _ACCURACY_ONLY_INSTRUCTIONS,
+    _ANSWER_HEAD,
+    _BASE_INSTRUCTIONS,
+    _RUBRIC_TAIL,
     _STRUCTURAL_INSTRUCTIONS,
+    _SYSTEM,
     _VERIFIER_INSTRUCTIONS,
     AccuracyFlagType,
     Framing,
+    Judge,
     Prominence,
     Severity,
     _accuracy_tool,
@@ -143,6 +148,90 @@ def test_cascade_cache_identity_is_distinct_and_stable() -> None:
     # Swapping a model changes both id and fingerprint (forces a re-judge).
     other_id, other_fp = _cascade_identity("claude-haiku-4-5", "claude-opus-4-8")
     assert other_id != model_id and other_fp != fp
+
+
+# --- prejudge parity: the invariants the subscription pre-judge path rests on ---
+# The prejudge Workflow (scripts/judge_via_workflow.py + prejudge_workflow.js) judges
+# stored answers on the subscription and writes them into the SAME judge cache the live
+# API judge reads. That only works if (a) the per-answer HEAD / shared RUBRIC split it
+# uses reassembles the real judge prompt exactly, and (b) the cache key it computes is
+# byte-identical to the one a live Judge() looks up. These tests pin both so a future
+# edit to judge.py can't silently turn prejudge into a $0-savings no-op.
+
+
+def test_answer_head_rubric_split_reassembles_base_instructions() -> None:
+    """dump renders the prompt as HEAD (question+answer) + shared RUBRIC. Both halves
+    must reassemble _BASE_INSTRUCTIONS exactly, and each must own only its own
+    placeholders — else the batch prompt drifts from the single-judge prompt."""
+    assert _ANSWER_HEAD + _RUBRIC_TAIL == _BASE_INSTRUCTIONS
+    assert "{query}" in _ANSWER_HEAD and "{answer}" in _ANSWER_HEAD
+    assert "{brand_lines}" in _RUBRIC_TAIL and "{accuracy_instructions}" in _RUBRIC_TAIL
+    # No cross-contamination of placeholders between the two halves.
+    assert "{brand_lines}" not in _ANSWER_HEAD and "{query}" not in _RUBRIC_TAIL
+
+
+def test_dump_cache_key_matches_live_judge_lookup(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """The key scripts/judge_via_workflow.py `dump` computes (from judge._cache_model_id
+    + judge._prompt_fingerprint) must be the exact key a live Judge() looks up — so a
+    prejudged verdict is a cache HIT and the judge never calls the API. Seed a sentinel
+    under the dump-computed key and assert judge_answer_cached returns it WITHOUT ever
+    calling judge_answer (a miss would mean the keys drifted)."""
+    from src.config import settings
+    from src.pipeline.judge_cache import JudgeCache
+
+    monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", "test-key-never-called")
+    judge = Judge()
+    cache = JudgeCache(str(tmp_path / "parity.sqlite"))
+    try:
+        client, competitors, fact_sheet = "Fort", ["Acme", "Globex"], "Membership: $5.99/month"
+        query, answer = "best budgeting app?", "I recommend Fort."
+
+        # The key EXACTLY as scripts/judge_via_workflow.py _dump computes it.
+        dump_key = cache.key(
+            model=judge._cache_model_id,
+            prompt_fingerprint=judge._prompt_fingerprint,
+            client=client,
+            competitors=competitors,
+            fact_sheet=fact_sheet,
+            prompt=query,
+            answer=answer,
+        )
+        sentinel: tuple[list, list, bool] = ([], [], True)
+        cache.put_many([(dump_key, sentinel)])
+
+        # If the live lookup key ever diverges from dump_key, this would be a miss and
+        # fall through to judge_answer — which must NOT happen.
+        def _boom(*_a: object, **_k: object) -> object:
+            raise AssertionError("cache MISS: dump key != live judge lookup key (parity broken)")
+
+        monkeypatch.setattr(judge, "judge_answer", _boom)
+        got = judge.judge_answer_cached(query, answer, client, competitors, fact_sheet, cache)
+        assert got == sentinel
+    finally:
+        cache.close()
+
+
+def test_single_judge_caches_shared_rubric_prefix(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """The single judge sends the shared rubric as ONE cached system block placed before
+    the per-answer head, so the API prompt-caches it across a run. Guards that wiring:
+    the rubric + fact sheet are in the cached prefix, and the variable answer is only in
+    the (uncached) user message."""
+    from src.config import settings
+
+    monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", "test-key-never-called")
+    judge = Judge()
+    system, user = judge._single_judge_messages(
+        "which app?", "An answer naming Fortbudget.", "Fort", ["Acme"], "Membership: $5.99/month"
+    )
+    assert len(system) == 1
+    block = system[0]
+    assert block["cache_control"] == {"type": "ephemeral"}  # the shared prefix is cached
+    assert block["text"].startswith(_SYSTEM)  # system preamble leads the cached block
+    assert "Brands to score" in block["text"] and "$5.99" in block["text"]  # rubric + sheet cached
+    # The per-answer head (the variable part) is the uncached user message, not the prefix.
+    assert "An answer naming Fortbudget." in user
+    assert "An answer naming Fortbudget." not in block["text"]
+    assert "which app?" in user
 
 
 # --- adversarial flag verifier (queue #9 precision fix) ---

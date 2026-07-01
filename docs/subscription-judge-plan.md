@@ -66,9 +66,10 @@ Fix — **batch judging**: one subagent now judges up to `batch` answers (defaul
 a single call, and the shared rubric is sent ONCE per batch. This attacks both costs
 (≈`batch`× fewer subagents; one rubric copy per batch instead of per answer). The
 prompt splits into a per-answer HEAD (question + answer) and the shared RUBRIC tail:
-`judge.py` derives that split by slicing the untouched `_BASE_INSTRUCTIONS` literal,
-so `_single_fingerprint` and the live API judge stay **byte-for-byte identical** —
-verified (fingerprint `1e0056…` unchanged). `dump` stores the rubric once as
+`judge.py` derives that split by slicing the untouched `_BASE_INSTRUCTIONS` literal, so
+at the time this shipped `_single_fingerprint` and the live API judge stayed **byte-for-
+byte identical** (fingerprint `1e0056…`). (The later API-caching change below deliberately
+bumped that fingerprint — see "Prompt-caching …".) `dump` stores the rubric once as
 `preamble` + per-item `{key, body}`; the new `batch` subcommand stitches
 `preamble` + N heads into one prompt; subagents return a `verdicts` array tagged with
 each answer's item index, which the Workflow scatters back into the positional `raws`
@@ -99,6 +100,31 @@ be huge while 8 short ones waste the amortization). So batching is now **token-b
   if throttling persists. Verified: plan packs to budget/max-items (and forces 1-per-batch
   under a tiny budget), and the wave runner scatters correctly across out-of-order,
   dropped, and fully-failed batches.
+
+### Prompt-caching the rubric on the API judge + a parity guard (2026-06-30)
+
+Two changes that harden and cheapen the OTHER side — the live API judge (used for
+calibration/gold, and for any answer not prejudged):
+
+- **Prompt caching.** The single judge now sends the shared rubric (`_SYSTEM` + brand
+  rules + accuracy block + fact sheet — identical for every answer in a run) as ONE
+  `cache_control: ephemeral` system block placed BEFORE the per-answer head, so the
+  Anthropic prompt cache reuses that ~8 KB (~2K-token) prefix across the whole run;
+  only the tiny head (question + answer, ~70 chars) is fresh input per call. This
+  REORDERS delivery (rubric was previously after the head, in the user message), a real
+  change to what the model sees, so it is folded into the fingerprint via
+  `_PROMPT_LAYOUT` — bumping `1e0056… → 5e8cae…`. **Consequence:** every existing
+  single-judge cache entry (including already-prejudged runs like Fort/Oura) is now a
+  miss and must be re-judged; prejudge makes that free, so re-run `/prejudge` for any run
+  you want warm again. The subscription `dump` reads `judge._prompt_fingerprint`, so its
+  keys track the new fingerprint automatically — prejudge↔judge parity is preserved.
+- **Parity guard (`tests/test_judge.py`).** The whole prejudge scheme rests on two
+  invariants that nothing tested before: (1) the HEAD/RUBRIC split reassembles
+  `_BASE_INSTRUCTIONS` exactly, and (2) the key `dump` computes is byte-identical to what
+  a live `Judge()` looks up. Two new tests pin both (the second seeds a sentinel under
+  the dump-computed key and asserts `judge_answer_cached` hits it WITHOUT calling the
+  API), so a future judge edit that breaks parity fails CI instead of silently turning
+  prejudge into a $0-savings no-op.
 
 ## The problem
 
