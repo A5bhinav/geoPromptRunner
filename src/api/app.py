@@ -337,6 +337,16 @@ def cancel_audit(run_id: str) -> dict[str, str]:
     return {"status": "cancelling"}
 
 
+@api.get("/audits/{run_id}/judge-status")
+def get_judge_status(run_id: str) -> dict[str, object]:
+    """Warm status of the query + content notebooks for a run (pure cache reads).
+
+    The UI polls this to show whether Judge / the report will be free (everything
+    pre-judged on the subscription) or will still hit the API.
+    """
+    return runner.judge_status(run_id)
+
+
 @api.post("/audits/{run_id}/judge")
 def judge_audit(run_id: str) -> dict[str, object]:
     """Re-judge a completed run's stored answers and return the refreshed report.

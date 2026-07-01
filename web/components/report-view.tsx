@@ -51,7 +51,13 @@ const SourcesChart = dynamic(() => import("@/components/charts").then((m) => m.S
   loading: () => chartFallback,
 });
 import { pct } from "@/lib/utils";
-import { downloadAudit, judgeAudit, type ReportPayload } from "@/lib/api";
+import {
+  downloadAudit,
+  fetchJudgeStatus,
+  judgeAudit,
+  type JudgeStatus,
+  type ReportPayload,
+} from "@/lib/api";
 
 function MetricCard({
   icon,
@@ -118,6 +124,24 @@ export function ReportView({
 
   const [judging, setJudging] = React.useState(false);
   const [judgeError, setJudgeError] = React.useState<string | null>(null);
+  const [status, setStatus] = React.useState<JudgeStatus | null>(null);
+
+  // Warm status of the notebooks (query answers + on-site content checks): tells
+  // the user whether Judge will be free (all pre-judged on the subscription) or
+  // still hit the API. Refreshed on mount and after a judge run.
+  const refreshStatus = React.useCallback(() => {
+    if (!runId) return;
+    fetchJudgeStatus(runId)
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, [runId]);
+  React.useEffect(refreshStatus, [refreshStatus]);
+
+  // Everything with an LLM cost is already cached → Judge / the report is $0.
+  const allWarm =
+    !!status &&
+    (status.query.total === 0 || status.query.warm) &&
+    (status.content.total === 0 || status.content.warm);
 
   // Run the LLM judge over the stored answers. Free when the judge cache was
   // pre-filled on the subscription (the /prejudge workflow); otherwise it judges
@@ -129,6 +153,7 @@ export function ReportView({
     try {
       const updated = await judgeAudit(runId);
       onJudged?.(updated);
+      refreshStatus();
     } catch {
       setJudgeError("Judging failed — is the API reachable and a judge key set?");
     } finally {
@@ -200,6 +225,7 @@ export function ReportView({
                 : report.detection === "judge"
                   ? "Re-judge"
                   : "Judge"}
+              {!judging && allWarm ? " · free" : ""}
             </Button>
           )}
           {runId && (
@@ -229,10 +255,21 @@ export function ReportView({
             <Printer className="h-4 w-4" /> Export
           </Button>
           </div>
-          {runId && report.detection !== "judge" && (
+          {runId && status && (
             <p className="max-w-xs text-right text-xs text-muted-foreground">
-              Tip: pre-judge this run on the subscription first (<code>/prejudge {runId.slice(0, 8)}</code> in
-              Claude Code) so Judge is $0.
+              Notebook: query {status.query.cached}/{status.query.total}
+              {status.content.total > 0 ? (
+                <> · content {status.content.cached}/{status.content.total}</>
+              ) : null}
+              {" — "}
+              {allWarm ? (
+                <span className="text-[hsl(var(--success))]">warm, Judge is $0</span>
+              ) : (
+                <>
+                  not fully warm; <code>/prejudge {runId.slice(0, 8)}</code> in Claude Code to make
+                  it free.
+                </>
+              )}
             </p>
           )}
         </div>

@@ -458,6 +458,73 @@ def _run_judge(state: _RunState) -> None:
             logger.info("Failed to persist judgments (continuing): %s", exc)
 
 
+def judge_status(run_id: str) -> dict[str, object]:
+    """Warm-status of the notebooks for a run: how many query answers and on-site
+    content checks are already cached, so the UI can tell whether Judge / the report
+    is free (all warm) or will still hit the API. Pure cache reads — never judges."""
+    from src.audit.checks.content_judge import (
+        _MAX_TEXT_CHARS,
+        CONTENT_CHECKS,
+        content_cache_key,
+    )
+    from src.audit.checks.content_judge_cache import make_content_judge_cache
+    from src.pipeline.judge import Judge
+    from src.pipeline.judge_cache import make_judge_cache
+
+    run = db.get_audit_run(run_id) or {}
+    client = str(run.get("client_name", ""))
+    raw_comps = run.get("competitors") or []
+    competitors = [str(c) for c in raw_comps] if isinstance(raw_comps, list) else []
+    fact_sheet = str(run["fact_sheet"]) if run.get("fact_sheet") else None
+
+    # Query notebook: unique (prompt, answer) pairs → keys → cache membership.
+    q_total = q_cached = 0
+    try:
+        judge: Judge | None = Judge()
+    except ValueError:
+        judge = None
+    if judge is not None:
+        cache = make_judge_cache()
+        try:
+            seen: set[tuple[str, str]] = set()
+            keys: list[str] = []
+            for r in db.get_query_results(run_id):
+                ans = r["response"]
+                if ans is None or (r["prompt"], ans) in seen:
+                    continue
+                seen.add((r["prompt"], ans))
+                keys.append(
+                    cache.key(
+                        model=judge._cache_model_id,
+                        prompt_fingerprint=judge._prompt_fingerprint,
+                        client=client,
+                        competitors=competitors,
+                        fact_sheet=fact_sheet,
+                        prompt=r["prompt"],
+                        answer=ans,
+                    )
+                )
+            q_total = len(keys)
+            q_cached = len(cache.get_many(keys)) if keys else 0
+        finally:
+            cache.close()
+
+    # Content notebook: (crawled page × check) keys.
+    ckeys: list[str] = []
+    for row in db.get_site_audit_pages(run_id):
+        text = row.get("extracted_text")
+        if not text:
+            continue
+        capped = str(text)[:_MAX_TEXT_CHARS]
+        ckeys += [content_cache_key(settings.JUDGE_MODEL, chk, capped) for chk in CONTENT_CHECKS]
+    c_cached = len(make_content_judge_cache().get_many(ckeys)) if ckeys else 0
+
+    def _block(total: int, cached: int) -> dict[str, object]:
+        return {"total": total, "cached": cached, "warm": total > 0 and cached >= total}
+
+    return {"query": _block(q_total, q_cached), "content": _block(len(ckeys), c_cached)}
+
+
 def rejudge_run(run_id: str) -> ReportPayload | None:
     """Re-judge a completed run's stored answers and return its refreshed report.
 

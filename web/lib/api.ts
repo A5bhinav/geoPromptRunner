@@ -432,6 +432,19 @@ export async function cancelAudit(runId: string): Promise<void> {
   });
 }
 
+// Warm status of a run's notebooks — how many query answers and on-site content
+// checks are already cached, so the UI can tell if Judge / the report is free.
+export type NotebookStatus = { total: number; cached: number; warm: boolean };
+export type JudgeStatus = { query: NotebookStatus; content: NotebookStatus };
+
+export async function fetchJudgeStatus(runId: string): Promise<JudgeStatus> {
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/judge-status`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`judge-status failed (${res.status})`);
+  return res.json();
+}
+
 // Re-judge a completed run's stored answers and return the refreshed report.
 // Free when the judge cache is warm (pre-filled via the /prejudge workflow in
 // Claude Code); otherwise it runs the judge on the API.
