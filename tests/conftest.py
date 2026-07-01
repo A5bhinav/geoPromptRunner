@@ -12,3 +12,6 @@ from __future__ import annotations
 from src.config import settings
 
 settings.JUDGE_CACHE_BACKEND = "memory"
+# The subjective on-site judge makes live API calls; keep it off by default so
+# run_site_audit tests stay offline. Tests that exercise it inject a fake judge.
+settings.RUN_CONTENT_JUDGE = False

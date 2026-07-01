@@ -22,6 +22,7 @@ from src.audit.checks import (
     check_schema,
     classify_ssr,
 )
+from src.audit.checks.content_judge import CheckVerdict, ContentJudge
 from src.audit.checks.links import LinkGraphResult
 from src.audit.checks.schema import SchemaResult
 from src.audit.checks.ssr import SSRResult
@@ -36,6 +37,7 @@ from src.audit.technical_check import (
     check_robots_txt,
     check_sitemap,
 )
+from src.config import settings
 from src.storage import db
 
 __all__ = [
@@ -111,6 +113,7 @@ def _check_row(
     status: str,
     details: dict[str, Any],
     evidence: dict[str, Any],
+    method: str = "deterministic",
 ) -> dict[str, Any]:
     # `id` omitted so the DB default fills it; upsert keeps the PK stable.
     return {
@@ -119,10 +122,63 @@ def _check_row(
         "category": category,
         "page_url": page_url,
         "status": status,
-        "method": "deterministic",
+        "method": method,
         "details": details,
         "evidence": evidence,
     }
+
+
+def _make_content_judge() -> ContentJudge | None:
+    """The Cat 3/4 subjective judge, or None when it's disabled/unavailable so the
+    audit degrades to the deterministic checks (never fails on a missing key)."""
+    if not settings.RUN_CONTENT_JUDGE or not settings.ANTHROPIC_API_KEY:
+        return None
+    try:
+        return ContentJudge()
+    except Exception as exc:  # additive phase — a bad key never sinks the audit
+        logger.warning("content judge unavailable, skipping: %s", type(exc).__name__)
+        return None
+
+
+def _run_content_judge(
+    run_id: str, page: PageRecord, judge: ContentJudge, rows: list[dict[str, Any]]
+) -> tuple[list[SiteCheckRow], list[CheckVerdict]]:
+    """Run the subjective Cat 3/4 checks over one page (best-effort — each check
+    degrades to ``unknown`` rather than raising). Persists an ``llm``-method row per
+    check and returns the report rows plus the raw verdicts (the latter feed the
+    roadmap synthesizer)."""
+    result = judge.judge_page(page)
+    out: list[SiteCheckRow] = []
+    for v in result.verdicts:
+        rows.append(
+            _check_row(
+                run_id,
+                v.check_id,
+                v.category,
+                page.url,
+                v.classification.value,
+                {
+                    "reason": v.reason,
+                    "needs_review": v.needs_review,
+                    "sub_answers": [
+                        {"key": s.key, "answer": s.answer, "evidence_quote": s.evidence_quote}
+                        for s in v.sub_answers
+                    ],
+                },
+                {},
+                method="llm",
+            )
+        )
+        out.append(
+            SiteCheckRow(
+                check_key=v.check_id,
+                category=v.category,
+                page_url=page.url,
+                status=v.classification.value,
+                detail=v.reason,
+            )
+        )
+    return out, result.verdicts
 
 
 def _summary(checks: list[SiteCheckRow]) -> dict[str, int]:
@@ -153,6 +209,9 @@ def run_site_audit(
 
     checks: list[SiteCheckRow] = []
     rows: list[dict[str, Any]] = []
+    content_verdicts: list[CheckVerdict] = []
+    # The subjective Cat 3/4 judge (None when disabled / no key → deterministic only).
+    judge = _make_content_judge()
     # Cat-1 technical accessibility (domain-level). Runs even when the crawl
     # found no pages — robots.txt / WAF / sitemap verdicts are exactly what you
     # want when a site blocks the crawler outright.
@@ -161,6 +220,10 @@ def run_site_audit(
         checks.append(_run_ssr(run_id, page, rows))
         checks.append(_run_schema(run_id, page, rows))
         checks.extend(_run_primitives(run_id, page, rows))
+        if judge is not None:
+            c_rows, c_verdicts = _run_content_judge(run_id, page, judge, rows)
+            checks.extend(c_rows)
+            content_verdicts.extend(c_verdicts)
     if crawl.pages:
         checks.append(_run_links(run_id, crawl, rows))
         coverage = _run_comparison_coverage(run_id, crawl.pages, competitors or [], rows)
@@ -178,7 +241,7 @@ def run_site_audit(
     if brand:
         offsite_rows, offsite_findings = _run_offsite(run_id, brand, domain, persist)
 
-    roadmap = _roadmap_rows(brand or domain, checks, offsite_findings)
+    roadmap = _roadmap_rows(brand or domain, checks, offsite_findings, content_verdicts)
 
     return SiteAuditPayload(
         present=bool(crawl.pages or checks),
@@ -193,10 +256,13 @@ def run_site_audit(
 
 
 def _roadmap_rows(
-    subject: str, checks: list[SiteCheckRow], offsite: list[OffsiteFinding]
+    subject: str,
+    checks: list[SiteCheckRow],
+    offsite: list[OffsiteFinding],
+    content_verdicts: list[CheckVerdict] | None = None,
 ) -> list[RoadmapRow]:
     """Synthesize the §5 prioritized roadmap from the audit results (plan §5.5)."""
-    items = build_site_audit_roadmap(subject, checks, offsite)
+    items = build_site_audit_roadmap(subject, checks, offsite, content_verdicts)
     return [
         RoadmapRow(
             category=item.category,

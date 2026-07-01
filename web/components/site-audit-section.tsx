@@ -39,6 +39,13 @@ const CHECK_LABELS: Record<string, string> = {
   fact_density: "Fact density",
   freshness_date: "Last-updated date",
   comparison_coverage: "Competitor comparison content",
+  // Subjective Cat 3/4 checks (the LLM ContentJudge)
+  answer_first_lead: "Answer-first lead",
+  self_contained_chunks: "Self-contained chunks",
+  definition_first: "Definition-first sentences",
+  expert_commentary: "Expert quotes / commentary",
+  original_data: "Original data / evidence",
+  external_citations: "Authoritative citations",
 };
 
 // Roll the per-page check verdicts into one status per check: fail > partial >
