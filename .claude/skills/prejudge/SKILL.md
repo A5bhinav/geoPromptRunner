@@ -31,13 +31,22 @@ config. The `dump` step refuses to run if `JUDGE_CASCADE`/`JUDGE_VERIFY` are set
 because those use a different cache keyspace the Workflow's verdicts would never be
 read from. Do not work around that error.
 
-## How it scales
+## How it scales (and stays cheap on tokens)
 
-The answer text (a real run is multiple MB) NEVER passes through the Workflow's args
-or return — it stays in the on-disk `in.json` the dump writes. The Workflow's args
-carry only `{repo, in_path, start, limit}`; each subagent fetches just its own item
-off disk via the `item` subcommand, and returns only its small verdict. This is why
-it works on 500+ answer runs.
+Two things keep the token cost down on big runs:
+
+1. The answer text (a real run is multiple MB) NEVER passes through the Workflow's
+   args or return — it stays in the on-disk `in.json` the dump writes. The args carry
+   only `{repo, in_path, start, limit, batch}`.
+2. Answers are judged in **batches**: one subagent judges up to `batch` answers (default
+   8) in a single call, fetching them off disk via the `batch` subcommand. The large
+   judging rubric (brand rules + accuracy block + fact sheet — identical for every
+   answer in a run) is sent **once per batch** instead of once per answer, and there
+   are ~`batch`× fewer subagents to spin up. Fanning out one subagent per answer used
+   to pay both of those costs N times; batching is the fix.
+
+Each subagent returns only its small verdicts (tagged with each answer's item index),
+so the return value stays tiny. This is why it works on 500+ answer runs.
 
 ## Steps
 
@@ -53,16 +62,19 @@ always use ABSOLUTE paths (subagents run from the repo root via the venv python)
    only to override it. The command prints which fact sheet it used and the item count.)
    If it prints "Nothing to judge", the cache is already warm — stop and tell the user.
 
-2. **Judge** via the Workflow — fan out one subscription subagent per answer:
+2. **Judge** via the Workflow — fan out one subscription subagent per *batch* of answers:
    ```
    Workflow({ scriptPath: "scripts/prejudge_workflow.js",
               args: { repo: "<abs repo root>", in_path: "<abs SCRATCH>/<run>.in.json",
-                      start: 0, limit: <item count from dump> } })
+                      start: 0, limit: <item count from dump>, batch: 8 } })
    ```
-   It returns `{ start, raws: [ {brands, client_accuracy_flags} | null, ... ] }` — one
-   verdict per item in order (null = that subagent failed; harmless, re-judged later).
-   For very large runs you may split into batches by `start`/`limit`; inject each with
-   the matching `--offset`.
+   `batch` (default 8) is how many answers each subagent judges in one call — bigger
+   means fewer tokens but a longer per-subagent context; keep it moderate (6–10) so
+   answers don't bleed together. It returns
+   `{ start, raws: [ {brands, client_accuracy_flags} | null, ... ] }` — one verdict per
+   item in index order (null = not judged; harmless, re-judged later). For very large
+   runs you may still split into passes by `start`/`limit`; inject each with the
+   matching `--offset`.
 
 3. **Write** the Workflow's returned object verbatim to `<SCRATCH>/<run>.raws.json`.
 

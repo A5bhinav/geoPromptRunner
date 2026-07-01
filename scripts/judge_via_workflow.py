@@ -15,15 +15,18 @@ and is built so the answer text NEVER flows through the Workflow's args or retur
 — only through this on-disk file — so it scales to runs with hundreds of long
 answers (a real run's dump is multiple MB):
 
-    dump   — pull a run's unique (prompt, answer) pairs from the DB, render the
-             exact single-judge prompt for each, and compute the cache key for
-             each (from the real ``Judge`` identity). Writes one JSON file (the
-             "in" file). Pairs already cached are skipped.
+    dump   — pull a run's unique (prompt, answer) pairs from the DB and compute the
+             cache key for each (from the real ``Judge`` identity). Splits the judge
+             prompt into the shared RUBRIC (stored ONCE as ``preamble``) and a tiny
+             per-answer HEAD (stored per item), so a batch never re-sends the rubric.
+             Writes one JSON file (the "in" file). Pairs already cached are skipped.
     header — print that file's metadata (client, competitors, has_fact_sheet,
              agent output schema, item count) WITHOUT the bulky items — the small
              payload the Workflow needs in its args.
-    item   — print ONE item's judging prompt by index. Each Workflow subagent runs
-             this to fetch only its own task, so no answer text touches args.
+    batch  — print ONE batch's judging prompt: the shared rubric preamble + the HEADs
+             for items [start, start+count), each under an ``===== ITEM i =====``
+             header. Each Workflow subagent runs this to fetch its whole batch (many
+             answers, one rubric copy), so no answer text touches args.
     inject — given the in file + the Workflow's per-item verdicts (aligned to item
              order), write the verdicts into the judge cache under the in file's
              keys. The key comes from the in file by index, so a subagent never
@@ -39,7 +42,7 @@ loudly rather than silently producing a cache nobody reads.
 Usage:
     python -m scripts.judge_via_workflow dump <run_id> [--fact-sheet PATH] [--out PATH]
     python -m scripts.judge_via_workflow header <in.json>
-    python -m scripts.judge_via_workflow item <in.json> <index>
+    python -m scripts.judge_via_workflow batch <in.json> <start> <count>
     python -m scripts.judge_via_workflow inject <in.json> <verdicts.json> [--offset N]
 
 These are normally chained by the ``/prejudge`` skill; run by hand for debugging.
@@ -52,16 +55,51 @@ import json
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from src.pipeline.judge import Judge
 
 # NOTE: the heavy imports (settings, judge, judge_cache, db — they pull in the
 # anthropic / supabase SDKs) live INSIDE _dump / _inject / _build_judge, not at
-# module top level. That keeps the ``item`` and ``header`` subcommands stdlib-only
+# module top level. That keeps the ``batch`` and ``header`` subcommands stdlib-only
 # so a Workflow subagent can run them with any python (it need not be the venv) —
 # those two only read the on-disk JSON the dump already wrote.
+
+# Prepended to the shared rubric so a batch subagent judges each answer on its own.
+# The rubric that follows it is written for a single answer ("the answer"); this
+# frames the multi-answer batch and pins the output to one verdict per ITEM.
+_BATCH_FRAMING = (
+    "You are judging SEVERAL independent AI answers in one pass (to save tokens). "
+    "Each answer is tagged with an ITEM index and delimited by a '===== ITEM N ====='"
+    " header below. Apply the SHARED RUBRIC to EVERY item, but judge each item "
+    "INDEPENDENTLY and using ONLY that item's own answer text — never let one "
+    "answer influence another, and use NO outside knowledge about the brands. "
+    "Return exactly ONE verdict per ITEM via the structured output, each carrying "
+    "the ITEM's index; do not merge, reorder-drop, or skip any item."
+)
+
+
+def _batch_schema() -> dict[str, object]:
+    """The forced output shape for a batch subagent: a ``verdicts`` array, one entry
+    per ITEM, each the single judge's ``record_judgment`` shape plus the ITEM
+    ``index`` (so verdicts realign to items even if the model reorders them)."""
+    from src.pipeline.judge import _judgment_tool
+
+    single = cast("dict[str, object]", _judgment_tool()["input_schema"])
+    props = cast("dict[str, object]", single.get("properties", {}))
+    required = cast("list[object]", single.get("required", []))
+    verdict_props: dict[str, object] = {"index": {"type": "integer"}, **props}
+    verdict_item: dict[str, object] = {
+        "type": "object",
+        "properties": verdict_props,
+        "required": ["index", *required],
+    }
+    return {
+        "type": "object",
+        "properties": {"verdicts": {"type": "array", "items": verdict_item}},
+        "required": ["verdicts"],
+    }
 
 
 def _build_judge() -> Judge:
@@ -103,7 +141,14 @@ def _unique_pairs(run_id: str) -> list[tuple[str, str]]:
 
 def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int:
     from src.config import settings
-    from src.pipeline.judge import _SYSTEM, _judgment_tool
+    from src.pipeline.judge import (
+        _ACCURACY_BLOCK,
+        _ANSWER_HEAD,
+        _NO_ACCURACY_BLOCK,
+        _RUBRIC_TAIL,
+        _SYSTEM,
+        _brand_lines,
+    )
     from src.pipeline.judge_cache import JudgeCache
     from src.storage import db
 
@@ -128,6 +173,25 @@ def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int
         fact_sheet = str(stored) if stored else None
         sheet_source = "run row" if fact_sheet else "none (structural-only)"
 
+    # Split the judge prompt into the shared RUBRIC tail (brand list + decision
+    # rules + accuracy block + fact sheet — identical for every answer in this run)
+    # and the tiny per-answer HEAD (question + answer). The rubric is by far the
+    # bulk of the tokens, so we store it ONCE in ``preamble`` and each ``batch``
+    # subagent reads it a single time for its whole batch — instead of once per
+    # answer, which is what fanning out one-subagent-per-answer used to cost.
+    accuracy_instructions = (
+        _ACCURACY_BLOCK.format(fact_sheet=fact_sheet) if fact_sheet else _NO_ACCURACY_BLOCK
+    )
+    rubric = _RUBRIC_TAIL.format(
+        brand_lines=_brand_lines(client, competitors),
+        accuracy_instructions=accuracy_instructions,
+    )
+    preamble = (
+        f"{_SYSTEM}\n\n{_BATCH_FRAMING}\n\n"
+        f"===== SHARED RUBRIC (applies to every ITEM below) =====\n{rubric}\n\n"
+        f"===== ANSWERS TO JUDGE ====="
+    )
+
     judge = _build_judge()
     cache = JudgeCache(settings.JUDGE_CACHE_PATH)
     try:
@@ -147,8 +211,10 @@ def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int
             if cache.get(key) is not None:
                 cached += 1
                 continue  # already judged under these exact inputs — leave it
-            user = judge._build_prompt(query_text, answer, client, competitors, fact_sheet)
-            items.append({"key": key, "prompt": f"{_SYSTEM}\n\n{user}"})
+            # Only the per-answer HEAD is stored per item; the rubric lives in
+            # ``preamble``. ``batch`` stitches ``preamble`` + N heads back together.
+            body = _ANSWER_HEAD.format(query=query_text, answer=answer)
+            items.append({"key": key, "body": body})
     finally:
         cache.close()
 
@@ -157,9 +223,11 @@ def _dump(run_id: str, fact_sheet_path: str | None, out_path: str | None) -> int
         "client": client,
         "competitors": competitors,
         "has_fact_sheet": fact_sheet is not None,
-        # The output shape forced on each Workflow subagent (brands + client flags),
-        # straight from the judge's own tool so it can't drift.
-        "schema": _judgment_tool()["input_schema"],
+        # The output shape forced on each Workflow subagent: a ``verdicts`` array
+        # (one entry per ITEM in the batch), each entry the judge's own tool shape
+        # plus the ITEM ``index`` — derived from the tool so it can't drift.
+        "schema": _batch_schema(),
+        "preamble": preamble,
         "items": items,
     }
     out = Path(out_path) if out_path else Path(tempfile.gettempdir()) / f"prejudge_{run_id}.in.json"
@@ -204,16 +272,31 @@ def _header(in_path: str) -> int:
     return 0
 
 
-def _item(in_path: str, index: int) -> int:
-    """Print ONE item's judging prompt by index (what a single subagent judges).
+def _batch(in_path: str, start: int, count: int) -> int:
+    """Print ONE batch's judging prompt: the shared rubric preamble followed by the
+    per-answer HEADs for items ``[start, start+count)``, each under a
+    ``===== ITEM i =====`` header. This is what a single subagent judges — several
+    answers in one call, sharing one copy of the (large) rubric.
 
-    Only the prompt is emitted — not the cache key — because ``inject`` re-attaches
-    the key from the in file by the same index, so a subagent can't garble it."""
+    Emits ``{"prompt": ..., "indices": [...]}``. Only the prompt is emitted — not
+    the cache keys — because ``inject`` re-attaches the key from the in file by the
+    same global index, so a subagent can't garble it. ``indices`` is the list of
+    global item indices in this batch (the numbers in the ITEM headers), so the
+    caller knows which items it covers."""
     items = _items_of(_load_in(in_path))
-    if index < 0 or index >= len(items):
-        print(f"index {index} out of range (0..{len(items) - 1})", file=sys.stderr)
+    preamble = str(_load_in(in_path).get("preamble", ""))
+    lo = max(0, start)
+    hi = min(len(items), start + max(0, count))
+    blocks: list[str] = []
+    indices: list[int] = []
+    for i in range(lo, hi):
+        blocks.append(f"===== ITEM {i} =====\n{items[i].get('body', '')}")
+        indices.append(i)
+    if not indices:
+        print(f"no items in range [{start}, {start + count}) of {len(items)}", file=sys.stderr)
+        print(json.dumps({"prompt": "", "indices": []}))
         return 1
-    print(json.dumps({"prompt": items[index]["prompt"]}))
+    print(json.dumps({"prompt": preamble + "\n\n" + "\n\n".join(blocks), "indices": indices}))
     return 0
 
 
@@ -277,9 +360,10 @@ def main(argv: list[str] | None = None) -> int:
     p_header = sub.add_parser("header", help="print the in file's metadata (no items)")
     p_header.add_argument("in_path")
 
-    p_item = sub.add_parser("item", help="print one item's judging prompt by index")
-    p_item.add_argument("in_path")
-    p_item.add_argument("index", type=int)
+    p_batch = sub.add_parser("batch", help="print one batch's judging prompt (rubric + N answers)")
+    p_batch.add_argument("in_path")
+    p_batch.add_argument("start", type=int, help="global index of the first item in the batch")
+    p_batch.add_argument("count", type=int, help="how many items this batch covers")
 
     p_inject = sub.add_parser("inject", help="write the Workflow's verdicts into the judge cache")
     p_inject.add_argument("in_path", help="the dump's in.json")
@@ -293,8 +377,8 @@ def main(argv: list[str] | None = None) -> int:
         return _dump(args.run_id, args.fact_sheet, args.out)
     if args.cmd == "header":
         return _header(args.in_path)
-    if args.cmd == "item":
-        return _item(args.in_path, args.index)
+    if args.cmd == "batch":
+        return _batch(args.in_path, args.start, args.count)
     return _inject(args.in_path, args.verdicts, args.offset)
 
 

@@ -197,6 +197,19 @@ _NO_ACCURACY_BLOCK = (
     "\nNo fact sheet provided: return client_accuracy_flags as [] (accuracy not assessed).\n"
 )
 
+# The single-judge prompt splits cleanly in two: a per-answer HEAD that varies
+# every call (the question + answer), and a RUBRIC tail that is identical for every
+# answer in a run (the brand list + decision rules + accuracy block + fact sheet —
+# by far the bulk of the tokens). The subscription pre-judge batcher exploits this:
+# it renders the rubric ONCE per batch instead of once per answer, which is the
+# main token saving (see scripts/judge_via_workflow.py, docs/subscription-judge-plan.md).
+# Both halves are DERIVED by slicing the untouched _BASE_INSTRUCTIONS literal at the
+# rubric marker, so _BASE_INSTRUCTIONS — and therefore _single_fingerprint and the
+# live API judge — stay byte-for-byte identical.
+_RUBRIC_MARKER = "\nBrands to score (CLIENT is marked):"
+_ANSWER_HEAD = _BASE_INSTRUCTIONS[: _BASE_INSTRUCTIONS.index(_RUBRIC_MARKER)]
+_RUBRIC_TAIL = _BASE_INSTRUCTIONS[_BASE_INSTRUCTIONS.index(_RUBRIC_MARKER) :]
+
 
 def _judgment_tool() -> ToolParam:
     """The forced tool the judge calls — its input schema IS the judgment JSON.
