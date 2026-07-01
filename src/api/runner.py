@@ -801,6 +801,22 @@ def request_cancel(run_id: str) -> bool:
     return True
 
 
+def forget_run(run_id: str) -> None:
+    """Drop a run from in-memory state (used when its stored rows are deleted).
+
+    Without this, ``list_runs`` would overlay the still-cached in-memory run back
+    on top of storage and the just-deleted project would reappear. If the run is
+    still live we flag it cancelled first so its worker stops writing rows that no
+    longer have a parent. Its cached report (if any) is evicted too.
+    """
+    with _LOCK:
+        state = _RUNS.pop(run_id, None)
+    if state is not None and state.state in ("running", "queued"):
+        state.cancel_requested = True
+    with _REPORT_CACHE_LOCK:
+        _REPORT_CACHE.pop(run_id, None)
+
+
 def _rebuild_audit_from_row(row: dict[str, object]) -> ParsedAudit | None:
     """Reconstruct the run input (config + query set + fact sheet) from a stored
     row so an interrupted run can be resumed. Returns None if the query set

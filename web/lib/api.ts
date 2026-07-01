@@ -294,6 +294,43 @@ export interface TeaserSummary {
   created_at: string;
 }
 
+// --- Projects (src/api/projects.py): a domain-keyed roll-up of audits + teasers ---
+
+export interface ProjectAudit {
+  run_id: string;
+  client_name: string;
+  state: string;
+  created_at: string;
+  n_queries: number;
+  engines: string[];
+}
+
+export interface ProjectTeaser {
+  id: string;
+  company_name: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ProjectSummary {
+  key: string;
+  label: string;
+  domain: string | null;
+  audit_count: number;
+  teaser_count: number;
+  last_activity: string;
+  last_state: string | null;
+  engines: string[];
+}
+
+export interface ProjectDetail {
+  key: string;
+  label: string;
+  domain: string | null;
+  audits: ProjectAudit[];
+  teasers: ProjectTeaser[];
+}
+
 // --- Calls ---
 
 function filesToForm(files: File[]): FormData {
@@ -331,6 +368,42 @@ export async function createAudit(
 export async function listAudits(): Promise<RunSummary[]> {
   const res = await fetch(`${API_BASE}/audits`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`list failed (${res.status})`);
+  return res.json();
+}
+
+export async function listProjects(): Promise<ProjectSummary[]> {
+  const res = await fetch(`${API_BASE}/projects`, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) throw new Error(`list projects failed (${res.status})`);
+  return res.json();
+}
+
+export async function getProject(key: string): Promise<ProjectDetail> {
+  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(key)}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`get project failed (${res.status})`);
+  return res.json();
+}
+
+export interface DeleteProjectResult {
+  key: string;
+  label: string;
+  audits_deleted: number;
+  teasers_deleted: number;
+}
+
+// Permanently deletes the project's audits (children cascade) and teasers.
+export async function deleteProject(key: string): Promise<DeleteProjectResult> {
+  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(key)}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    // Surface the API's own message (FastAPI `detail`) rather than a bare status.
+    const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+    throw new Error(body?.detail || `delete project failed (${res.status})`);
+  }
   return res.json();
 }
 

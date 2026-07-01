@@ -28,6 +28,9 @@ __all__ = [
     "list_audit_runs",
     "list_all_audit_runs",
     "list_resumable_runs",
+    "delete_audit_runs",
+    "delete_teasers",
+    "delete_site_audit_html_for_runs",
     "get_audit_run",
     "save_judgments",
     "get_judgments",
@@ -42,6 +45,7 @@ __all__ = [
     "save_teaser",
     "get_teaser",
     "list_teasers",
+    "list_teasers_with_url",
     "update_teaser_status",
     "save_audit_deliverable",
     "get_audit_deliverable",
@@ -438,6 +442,74 @@ def list_all_audit_runs(limit: int = 100) -> list[dict[str, object]]:
     return list(data)
 
 
+def _deleted_count(response: object) -> int:
+    """Number of rows a Supabase delete actually removed (PostgREST returns the
+    deleted rows in ``data``), so callers report what was removed, not requested."""
+    data = getattr(response, "data", None) or []
+    return len(data)
+
+
+def delete_audit_runs(run_ids: list[str]) -> int:
+    """Hard-delete audit-run rows by id, returning how many rows were removed.
+
+    The ``query_results`` / ``query_citations`` / ``judgments`` / ``site_audit_*``
+    children all reference ``audit_runs(id) ON DELETE CASCADE``, so this one
+    delete also removes every child row. Gzipped HTML blobs in the
+    ``site-audit-html`` Storage bucket are *not* cascaded — delete those first via
+    ``delete_site_audit_html_for_runs`` (the cascade drops the rows that point to
+    them, so they can't be found afterwards).
+    """
+    if not run_ids:
+        return 0
+    response = _execute(
+        f"delete_audit_runs ({len(run_ids)} run(s))",
+        lambda c: c.table(TABLE_AUDIT_RUNS).delete().in_("id", run_ids).execute(),
+    )
+    return _deleted_count(response)
+
+
+def delete_teasers(teaser_ids: list[str]) -> int:
+    """Hard-delete teaser rows by id, returning how many rows were removed."""
+    if not teaser_ids:
+        return 0
+    response = _execute(
+        f"delete_teasers ({len(teaser_ids)} teaser(s))",
+        lambda c: c.table(TABLE_TEASERS).delete().in_("id", teaser_ids).execute(),
+    )
+    return _deleted_count(response)
+
+
+def delete_site_audit_html_for_runs(run_ids: list[str]) -> int:
+    """Remove the gzipped HTML blobs these runs left in the site-audit bucket.
+
+    ``ON DELETE CASCADE`` removes the ``site_audit_page`` *rows* but not the
+    Storage *objects* they point to, so collect ``storage_path``s first (while the
+    rows still exist) and remove the objects. Fully best-effort: any failure (or a
+    run with no crawled pages) returns 0 and never blocks the row deletes.
+    """
+    if not run_ids:
+        return 0
+    paths: list[str] = []
+    for rid in run_ids:
+        try:
+            for row in get_site_audit_pages(rid):
+                p = row.get("storage_path")
+                if p:
+                    paths.append(str(p))
+        except StorageError:
+            continue
+    if not paths:
+        return 0
+    try:
+        _execute(
+            f"delete_site_audit_html ({len(paths)} blob(s))",
+            lambda c: c.storage.from_(BUCKET_SITE_AUDIT_HTML).remove(paths),
+        )
+    except StorageError:
+        return 0
+    return len(paths)
+
+
 def list_resumable_runs() -> list[dict[str, object]]:
     """Runs left in a non-terminal state — candidates to resume after a restart."""
     response = _execute(
@@ -571,6 +643,27 @@ def list_teasers(limit: int = 100) -> list[dict[str, object]]:
         lambda c: (
             c.table(TABLE_TEASERS)
             .select("id, company_name, status, created_at")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return list(data)
+
+
+def list_teasers_with_url(limit: int = 200) -> list[dict[str, object]]:
+    """Recent teasers including ``prospect_url`` — the basis for grouping teasers
+    into projects by domain.
+
+    Like ``list_teasers`` but adds the prospect URL (so a teaser can be bucketed
+    under its domain) while still skipping the heavy ``draft``/``html`` blobs.
+    """
+    response = _execute(
+        "list_teasers_with_url",
+        lambda c: (
+            c.table(TABLE_TEASERS)
+            .select("id, company_name, status, created_at, prospect_url")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()

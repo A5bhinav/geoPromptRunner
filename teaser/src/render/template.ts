@@ -10,12 +10,7 @@
 
 import type { Finding, TeaserDraft } from "../types/domain.ts";
 import type { LeaderRow } from "../types/platform.ts";
-import {
-  ctaLine,
-  engineLabel,
-  headlineNumberSentence,
-  proofCaption,
-} from "./copy.ts";
+import { ctaLine, engineLabel, proofCaption } from "./copy.ts";
 import { renderProofCard } from "./proofCard.ts";
 import { selectWhyGaps } from "../select/selectFindings.ts";
 
@@ -29,6 +24,43 @@ function escapeHtml(s: string): string {
 
 function pct(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n * 100)));
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Brand strings to look for in an answer — the full name and its TLD-stripped core. */
+function mentionNeedles(companyName: string): string[] {
+  const base = companyName.trim().toLowerCase();
+  const core = base.replace(/\.(ai|io|com|co|app|net|org|dev|xyz)$/, "").trim();
+  return [...new Set([base, core])].filter((s) => s.length >= 3);
+}
+
+/**
+ * Turn the client's bare "appears in X%" into a concrete sentence: which query AI
+ * actually named them in (the answer to "what *is* that 10%?"), or that AI named
+ * them nowhere. Falls back to the plain count if no verbatim mention is found
+ * (e.g. the judge matched an alias the raw answers don't spell out).
+ */
+function clientAppearanceLine(t: TeaserDraft): string {
+  const { companyName: company } = t;
+  const { companyAppears, n } = t.headlineNumber;
+  if (companyAppears <= 0) {
+    return `AI named ${company} in 0 of ${n} queries — every recommendation went to a competitor.`;
+  }
+  const needles = mentionNeedles(company).map((nd) => new RegExp(`\\b${escapeRegExp(nd)}\\b`));
+  const hit = t.answers.find((a) => {
+    const r = (a.response ?? "").toLowerCase();
+    return needles.some((re) => re.test(r));
+  });
+  if (!hit) {
+    return `AI named ${company} in just ${companyAppears} of ${n} buyer queries.`;
+  }
+  const where = `a buyer asked “${hit.prompt}” on ${engineLabel(hit.engine_name)}`;
+  return companyAppears === 1
+    ? `The one place AI named ${company}: when ${where}.`
+    : `AI named ${company} in ${companyAppears} of ${n} queries — e.g. when ${where}.`;
 }
 
 export const FONTS =
@@ -90,6 +122,7 @@ export const STYLE = `
   .proof-callout .rec { margin-left:auto; color:var(--muted2); font-size:12.5px; }
   .proof-sources { margin-top:13px; font-size:12px; color:var(--faintest); }
   .caption { font-size:12.5px; color:var(--muted2); margin:11px 2px 0; }
+  .caption.legend { margin:0 2px 14px; }
 
   /* ---- Pattern table ---- */
   table { width:100%; border-collapse:collapse; font-size:14px; }
@@ -245,7 +278,7 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
   <div class="wrap">
     <main class="page">
       <header class="hero">
-        <div class="eyebrow"><span>AI Answer Audit</span><span class="date">${escapeHtml(t.runDate)}</span></div>
+        <div class="eyebrow"><span>AI Visibility Check · Prepared for ${escapeHtml(t.companyName)}</span><span class="date">${escapeHtml(t.runDate)}</span></div>
         <h1>${escapeHtml(headline)}</h1>
         <p class="lead">${heroLead}</p>
       </header>
@@ -274,8 +307,9 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
 
       <section class="section">
         <div class="kicker">Who AI recommends in your category</div>
+        <p class="caption legend">Each bar is the share of the ${h.n} buyer queries where AI named that brand in its answer.</p>
         ${visibilityChart(t.report.leaderboard, t.report.scorecard.top_competitor)}
-        <p class="caption">${escapeHtml(headlineNumberSentence(t.companyName, h))}</p>
+        <p class="caption">${escapeHtml(clientAppearanceLine(t))}</p>
       </section>
       ${whySection}
 
