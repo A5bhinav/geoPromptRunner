@@ -84,9 +84,15 @@ for (let i = start; i < start + limit; i++) idxs.push(i)
 phase('Judge')
 log(`Judging items ${start}..${start + limit - 1} of ${inPath} on the subscription`)
 
-const raws = await parallel(
-  idxs.map((i) => () =>
-    agent(
+// One judging subagent for item `i`. Retries on a null result (a subagent that
+// died on a transient subscription throttle) up to MAX_TRIES; by the time a retry
+// runs the concurrency pool has cycled, so the server-side rate limit has usually
+// passed. A persistent null (all tries failed) stays null and is re-judged on a
+// later pass.
+const MAX_TRIES = 3
+const judgeItem = async (i) => {
+  for (let t = 0; t < MAX_TRIES; t++) {
+    const r = await agent(
       `You are a strict evaluator scoring ONE AI answer for a GEO audit, running on ` +
         `the Claude subscription.\n\n` +
         `STEP 1 — fetch your task by running this command EXACTLY (it must run from ` +
@@ -101,10 +107,14 @@ const raws = await parallel(
         `every brand the prompt lists (present / prominence / framing) and ` +
         `"client_accuracy_flags" (an empty list if none apply, or if the prompt ` +
         `included no fact sheet).`,
-      { label: `judge:${i}`, phase: 'Judge', schema },
-    ),
-  ),
-)
+      { label: t === 0 ? `judge:${i}` : `judge:${i}#retry${t}`, phase: 'Judge', schema },
+    )
+    if (r) return r
+  }
+  return null
+}
+
+const raws = await parallel(idxs.map((i) => () => judgeItem(i)))
 
 // parallel() preserves input order and yields null for any failed subagent, so
 // raws[j] lines up with idxs[j] = start + j — exactly what inject expects.
