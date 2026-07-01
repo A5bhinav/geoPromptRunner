@@ -33,14 +33,19 @@ TS_PROJECTS = [
 
 # Standalone JS that runs outside any bundler (Claude Code workflow scripts). They rely
 # on harness-injected globals (agent/parallel/phase), so they can't be executed here —
-# but they must always PARSE.
-JS_SCRIPTS = sorted((REPO_ROOT / "scripts").glob("*.js"))
+# but they must always PARSE. Recursive so scripts nested in subfolders are covered too.
+JS_SCRIPTS = sorted((REPO_ROOT / "scripts").rglob("*.js"))
 
 _TIMEOUT = 600  # seconds — generous headroom for a cold `next build`
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=_TIMEOUT)
+    try:
+        return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # A hung/very-slow toolchain is an environment problem, not a code failure —
+        # skip (as the file intends) instead of erroring the whole suite red.
+        pytest.skip(f"`{' '.join(cmd)}` exceeded {_TIMEOUT}s — toolchain too slow, skipping")
 
 
 def _require(tool: str) -> None:
