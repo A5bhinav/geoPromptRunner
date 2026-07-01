@@ -78,6 +78,28 @@ batch size and rubric/fact-sheet size. Verified end-to-end: batch prompt renders
 rubric once, inject lands all keys, scatter is robust to out-of-order/dropped/failed
 verdicts (they stay un-cached and are re-judged later).
 
+### Adaptive batch size + rate-limit pacing (2026-06-30)
+
+Fixed batch size is a poor fit when answer lengths vary (a batch of 8 long answers can
+be huge while 8 short ones waste the amortization). So batching is now **token-balanced**:
+
+- `judge_via_workflow.py plan` greedily packs items `[start, limit)` into batches until
+  a batch's per-answer token estimate would exceed `--budget` (default 10000; the shared
+  rubric is fixed overhead so the budget bounds only the answer text) or it hits
+  `--max-items` (default 16, so a run of tiny answers can't build one batch whose verdict
+  *output* explodes). Every batch takes ≥1 item, so a single over-budget answer gets its
+  own batch. It's stdlib-only (a ~4-chars/token estimate — approximate is fine for
+  balancing). The skill runs `dump → plan → Workflow(batches)`; the plan (a small
+  `[{start,count}]` array) rides in args, the answer text still never does.
+- The Workflow runs the batches in **waves of `concurrency` (default 4)** so at most that
+  many subscription subagents are ever in flight — this paces requests below both the
+  harness cap and the subscription's rate limit. Combined with token-sized batches, it
+  bounds tokens/min (batch budget) and requests/min (wave width) together. The existing
+  MAX_TRIES=3 retry still catches any straggler that gets throttled; lower `concurrency`
+  if throttling persists. Verified: plan packs to budget/max-items (and forces 1-per-batch
+  under a tiny budget), and the wave runner scatters correctly across out-of-order,
+  dropped, and fully-failed batches.
+
 ## The problem
 
 Iterating on the pipeline burns real API credit fast (~$40 spent on testing alone).

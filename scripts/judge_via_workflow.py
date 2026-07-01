@@ -23,6 +23,10 @@ answers (a real run's dump is multiple MB):
     header — print that file's metadata (client, competitors, has_fact_sheet,
              agent output schema, item count) WITHOUT the bulky items — the small
              payload the Workflow needs in its args.
+    plan   — group the items into token-balanced batches (greedy pack to a token
+             budget, capped by a max-items count) and print the batch boundaries.
+             The skill passes these to the Workflow, which fans out one subagent per
+             batch — so long answers get small batches and short ones get packed.
     batch  — print ONE batch's judging prompt: the shared rubric preamble + the HEADs
              for items [start, start+count), each under an ``===== ITEM i =====``
              header. Each Workflow subagent runs this to fetch its whole batch (many
@@ -42,6 +46,7 @@ loudly rather than silently producing a cache nobody reads.
 Usage:
     python -m scripts.judge_via_workflow dump <run_id> [--fact-sheet PATH] [--out PATH]
     python -m scripts.judge_via_workflow header <in.json>
+    python -m scripts.judge_via_workflow plan <in.json> [--budget N] [--max-items K]
     python -m scripts.judge_via_workflow batch <in.json> <start> <count>
     python -m scripts.judge_via_workflow inject <in.json> <verdicts.json> [--offset N]
 
@@ -255,9 +260,58 @@ def _items_of(d: dict[str, object]) -> list[dict[str, str]]:
     return [i for i in raw if isinstance(i, dict)] if isinstance(raw, list) else []
 
 
+def _estimate_tokens(text: str) -> int:
+    """Rough token count (~4 chars/token). Only used to BALANCE batch sizes, so an
+    approximate, dependency-free estimate is fine — no tokenizer needed."""
+    return max(1, (len(text) + 3) // 4)
+
+
+def _plan(in_path: str, budget: int, max_items: int, start: int, limit: int) -> int:
+    """Group items ``[start, start+limit)`` into token-balanced batches and print
+    ``{"batches": [{"start", "count", "tokens"}, ...], ...}``.
+
+    Greedy: fill a batch until adding the next answer would push its total body-token
+    estimate over ``budget`` (the shared rubric is fixed overhead, counted once per
+    batch, so the budget bounds only the per-answer text), or it hits ``max_items``
+    (which caps a run of tiny answers so one batch's verdict output can't explode).
+    Every batch takes at least one item, so a single answer larger than the budget
+    just gets its own batch. The Workflow fans out one subagent per batch."""
+    items = _items_of(_load_in(in_path))
+    n = len(items)
+    lo = max(0, start)
+    hi = n if limit < 0 else min(n, lo + limit)
+    budget = max(1, budget)
+    max_items = max(1, max_items)
+
+    batches: list[dict[str, int]] = []
+    i = lo
+    while i < hi:
+        b_start, b_tokens, b_count = i, 0, 0
+        while i < hi and b_count < max_items:
+            t = _estimate_tokens(str(items[i].get("body", "")))
+            if b_count > 0 and b_tokens + t > budget:
+                break  # keep at least one item per batch; else close it here
+            b_tokens += t
+            b_count += 1
+            i += 1
+        batches.append({"start": b_start, "count": b_count, "tokens": b_tokens})
+
+    print(
+        json.dumps(
+            {
+                "batches": batches,
+                "budget": budget,
+                "max_items": max_items,
+                "n_items": hi - lo,
+            }
+        )
+    )
+    return 0
+
+
 def _header(in_path: str) -> int:
     """The in file's metadata minus the bulky items — the small payload the
-    Workflow takes in args (it reads the items themselves off disk via ``item``)."""
+    Workflow takes in args (it reads the items themselves off disk via ``batch``)."""
     d = _load_in(in_path)
     items = _items_of(d)
     header = {
@@ -360,6 +414,15 @@ def main(argv: list[str] | None = None) -> int:
     p_header = sub.add_parser("header", help="print the in file's metadata (no items)")
     p_header.add_argument("in_path")
 
+    p_plan = sub.add_parser("plan", help="group items into token-balanced batches for the Workflow")
+    p_plan.add_argument("in_path")
+    p_plan.add_argument(
+        "--budget", type=int, default=10000, help="max per-answer token estimate per batch"
+    )
+    p_plan.add_argument("--max-items", type=int, default=16, help="hard cap on answers per batch")
+    p_plan.add_argument("--start", type=int, default=0, help="first item index to plan from")
+    p_plan.add_argument("--limit", type=int, default=-1, help="items to plan (-1 = to end)")
+
     p_batch = sub.add_parser("batch", help="print one batch's judging prompt (rubric + N answers)")
     p_batch.add_argument("in_path")
     p_batch.add_argument("start", type=int, help="global index of the first item in the batch")
@@ -377,6 +440,8 @@ def main(argv: list[str] | None = None) -> int:
         return _dump(args.run_id, args.fact_sheet, args.out)
     if args.cmd == "header":
         return _header(args.in_path)
+    if args.cmd == "plan":
+        return _plan(args.in_path, args.budget, args.max_items, args.start, args.limit)
     if args.cmd == "batch":
         return _batch(args.in_path, args.start, args.count)
     return _inject(args.in_path, args.verdicts, args.offset)

@@ -11,13 +11,16 @@
 //      is what made one-subagent-per-answer so expensive.
 //
 // Input (args):
-//   { repo, in_path, start, limit, batch }
-//     repo    — absolute repo root (so subagents run the script from the right cwd)
-//     in_path — the dump's in.json on disk (absolute)
-//     start   — first item index this run judges
-//     limit   — how many items to judge (start .. start+limit-1)
-//     batch   — answers per subagent (default 8). Bigger = fewer tokens but longer
-//               per-subagent context; keep moderate so items don't bleed together.
+//   { repo, in_path, batches, concurrency, start, limit, batch }
+//     repo        — absolute repo root (so subagents run the script from the right cwd)
+//     in_path     — the dump's in.json on disk (absolute)
+//     batches     — token-balanced batch plan from `judge_via_workflow.py plan`:
+//                   [{start, count}, ...]. PREFERRED — one subagent per entry, so long
+//                   answers get small batches and short ones get packed together.
+//     concurrency — max subagents in flight at once (default 4). Batches run in waves
+//                   of this size so a big run doesn't slam the subscription rate limit.
+//     start/limit/batch — fallback fixed chunking when `batches` is omitted: judge
+//                   items start..start+limit-1 in fixed groups of `batch` (default 8).
 //
 // Output (return value, fed to `judge_via_workflow.py inject --offset <start>`):
 //   { start, raws: [ {brands, client_accuracy_flags} | null, ... ] }
@@ -92,28 +95,42 @@ const SCHEMA = {
 const A = typeof args === 'string' ? JSON.parse(args) : args || {}
 const repo = A.repo
 const inPath = A.in_path
-const start = Number(A.start ?? 0)
-const limit = Number(A.limit ?? 0)
-const batchSize = Math.max(1, Number(A.batch ?? 8))
+const concurrency = Math.max(1, Number(A.concurrency ?? 4))
 const schema = SCHEMA
 
-// Split [start, start+limit) into contiguous batches of `batchSize`.
-const chunks = []
-for (let s = start; s < start + limit; s += batchSize) {
-  chunks.push({ s, n: Math.min(batchSize, start + limit - s) })
+// The batches to judge and the item range they cover. Prefer the token-balanced
+// plan from `plan`; otherwise fall back to fixed-size chunking of [start, start+limit).
+let chunks
+let rangeStart
+let rangeLen
+if (Array.isArray(A.batches) && A.batches.length) {
+  chunks = A.batches.map((b) => ({ s: Number(b.start), n: Number(b.count) })).filter((c) => c.n > 0)
+  rangeStart = chunks.reduce((mn, c) => Math.min(mn, c.s), chunks[0].s)
+  rangeLen = chunks.reduce((mx, c) => Math.max(mx, c.s + c.n), rangeStart) - rangeStart
+} else {
+  const start = Number(A.start ?? 0)
+  const limit = Number(A.limit ?? 0)
+  const batchSize = Math.max(1, Number(A.batch ?? 8))
+  chunks = []
+  for (let s = start; s < start + limit; s += batchSize) {
+    chunks.push({ s, n: Math.min(batchSize, start + limit - s) })
+  }
+  rangeStart = start
+  rangeLen = limit
 }
 
 phase('Judge')
 log(
-  `Judging items ${start}..${start + limit - 1} of ${inPath} in ${chunks.length} batch(es) ` +
-    `of up to ${batchSize} on the subscription`,
+  `Judging ${rangeLen} answer(s) of ${inPath} in ${chunks.length} batch(es), ` +
+    `${concurrency} at a time on the subscription`,
 )
 
 // One judging subagent for a batch of `n` answers starting at global index `s`.
-// Retries on a null/empty result (a subagent that died on a transient subscription
-// throttle) up to MAX_TRIES; by the time a retry runs the concurrency pool has
-// cycled, so the server-side rate limit has usually passed. Returns the verdicts
-// array, or null if every try failed (those items stay un-cached, re-judged later).
+// Retries on a null/empty result up to MAX_TRIES — the safety net for a subagent
+// that died on a transient subscription throttle (the wave concurrency cap below is
+// what mostly PREVENTS throttling; this catches the occasional straggler that slips
+// through). Returns the verdicts array, or null if every try failed (those items
+// stay un-cached and are re-judged on a later pass).
 const MAX_TRIES = 3
 const judgeBatch = async ({ s, n }) => {
   for (let t = 0; t < MAX_TRIES; t++) {
@@ -142,24 +159,34 @@ const judgeBatch = async ({ s, n }) => {
   return null
 }
 
-const batchResults = await parallel(chunks.map((c) => () => judgeBatch(c)))
-
-// Scatter verdicts into a dense array aligned to items[start .. start+limit): raws[j]
-// is the verdict for global item index start+j (null = not judged). Each verdict is
-// placed by its own reported ITEM `index`, so a batch that returns items out of order
-// still lands correctly; the `index` tag is dropped (inject wants only the raw shape).
-const raws = new Array(limit).fill(null)
-for (const verdicts of batchResults) {
-  if (!verdicts) continue
+// Scatter verdicts into a dense array aligned to items[rangeStart .. rangeStart+rangeLen):
+// raws[j] is the verdict for global item index rangeStart+j (null = not judged). Each
+// verdict is placed by its own reported ITEM `index`, so a batch that returns items out
+// of order still lands correctly; the `index` tag is dropped (inject wants only the raw
+// shape). Any position left null (failed/dropped) stays un-cached and is re-judged later.
+const raws = new Array(rangeLen).fill(null)
+const scatter = (verdicts) => {
+  if (!verdicts) return
   for (const v of verdicts) {
     if (!v || typeof v !== 'object') continue
     const gi = Number(v.index)
-    const pos = gi - start
-    if (!Number.isInteger(gi) || pos < 0 || pos >= limit) continue
+    const pos = gi - rangeStart
+    if (!Number.isInteger(gi) || pos < 0 || pos >= rangeLen) continue
     raws[pos] = { brands: v.brands, client_accuracy_flags: v.client_accuracy_flags }
   }
 }
 
-log(`Judged ${raws.filter(Boolean).length}/${limit} (nulls stay un-cached, re-judged later)`)
+// Run the batches in WAVES of `concurrency` so at most that many subagents are ever in
+// flight — this paces requests so a large run doesn't trip the subscription rate limit.
+// (parallel() itself is also capped by the harness, but we throttle below that on purpose.)
+for (let w = 0; w < chunks.length; w += concurrency) {
+  const wave = chunks.slice(w, w + concurrency)
+  const waveResults = await parallel(wave.map((c) => () => judgeBatch(c)))
+  waveResults.forEach(scatter)
+  log(
+    `Wave ${w / concurrency + 1}/${Math.ceil(chunks.length / concurrency)} done — ` +
+      `${raws.filter(Boolean).length}/${rangeLen} judged so far`,
+  )
+}
 
-return { start, raws }
+return { start: rangeStart, raws }

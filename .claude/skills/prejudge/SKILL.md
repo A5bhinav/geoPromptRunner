@@ -62,29 +62,39 @@ always use ABSOLUTE paths (subagents run from the repo root via the venv python)
    only to override it. The command prints which fact sheet it used and the item count.)
    If it prints "Nothing to judge", the cache is already warm — stop and tell the user.
 
-2. **Judge** via the Workflow — fan out one subscription subagent per *batch* of answers:
+2. **Plan** the batches — group answers into token-balanced batches (long answers get
+   small batches, short ones get packed), so no subagent gets an oversized context:
+   ```
+   python -m scripts.judge_via_workflow plan <SCRATCH>/<run>.in.json --budget 10000 --max-items 16
+   ```
+   It prints `{"batches": [{"start","count","tokens"}, ...], ...}`. `--budget` is the
+   max per-answer token estimate per batch; `--max-items` caps answers per batch (so a
+   run of tiny answers can't make one giant batch). Capture the `batches` array.
+
+3. **Judge** via the Workflow — one subscription subagent per batch, run in waves so the
+   subscription isn't rate-limited:
    ```
    Workflow({ scriptPath: "scripts/prejudge_workflow.js",
               args: { repo: "<abs repo root>", in_path: "<abs SCRATCH>/<run>.in.json",
-                      start: 0, limit: <item count from dump>, batch: 8 } })
+                      batches: <batches array from plan>, concurrency: 4 } })
    ```
-   `batch` (default 8) is how many answers each subagent judges in one call — bigger
-   means fewer tokens but a longer per-subagent context; keep it moderate (6–10) so
-   answers don't bleed together. It returns
-   `{ start, raws: [ {brands, client_accuracy_flags} | null, ... ] }` — one verdict per
-   item in index order (null = not judged; harmless, re-judged later). For very large
-   runs you may still split into passes by `start`/`limit`; inject each with the
-   matching `--offset`.
+   `concurrency` (default 4) is the max subagents in flight at once — lower it if you
+   still see throttling. It returns `{ start, raws: [ {brands, client_accuracy_flags} |
+   null, ... ] }` — one verdict per item in index order over the planned range (null =
+   not judged; harmless, re-judged later). `start` is the first item index covered; use
+   it as `--offset` when injecting.
+   (Fallback: omit `batches` and pass `start`, `limit`, `batch` for fixed-size chunking.)
 
-3. **Write** the Workflow's returned object verbatim to `<SCRATCH>/<run>.raws.json`.
+4. **Write** the Workflow's returned object verbatim to `<SCRATCH>/<run>.raws.json`.
 
-4. **Inject** the verdicts into the cache (keys are taken from the in file by index, so
-   they always match what the real judge looks up):
+5. **Inject** the verdicts into the cache (keys are taken from the in file by index, so
+   they always match what the real judge looks up). Use the `start` the Workflow
+   returned as `--offset`:
    ```
    python -m scripts.judge_via_workflow inject <SCRATCH>/<run>.in.json <SCRATCH>/<run>.raws.json --offset <start>
    ```
 
-5. **Report**: how many verdicts were injected, and that the user can now run
+6. **Report**: how many verdicts were injected, and that the user can now run
    `python -m src.cli judge <run_id>` or click **Judge** in the UI — free cache hits.
    The "API judge passover" runs but never calls the API.
 
