@@ -121,7 +121,8 @@ JUDGE_VERIFIER_MODEL: str = os.getenv("JUDGE_VERIFIER_MODEL", JUDGE_MODEL)
 # Run the Cat 3/4 subjective on-site checks (the LLM ContentJudge) during a site
 # audit. On by default; set RUN_CONTENT_JUDGE=0 to skip — e.g. to avoid the API
 # cost, or when you'll pre-judge the crawled pages on the subscription first.
-RUN_CONTENT_JUDGE: bool = os.getenv("RUN_CONTENT_JUDGE", "1").strip().lower() in ("1", "true", "yes")
+_run_content = os.getenv("RUN_CONTENT_JUDGE", "1").strip().lower()
+RUN_CONTENT_JUDGE: bool = _run_content in ("1", "true", "yes")
 
 # Persistent judge cache ("the notebook"). A verdict is fully determined by (judge
 # model, client, competitors, fact sheet, prompt, answer), so once an answer is

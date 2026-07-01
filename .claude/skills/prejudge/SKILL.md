@@ -98,6 +98,35 @@ always use ABSOLUTE paths (subagents run from the repo root via the venv python)
    `python -m src.cli judge <run_id>` or click **Judge** in the UI — free cache hits.
    The "API judge passover" runs but never calls the API.
 
+## Part 2 — also warm the on-site content checks (if the run was crawled)
+
+The site audit's subjective Cat 3/4 checks (`ContentJudge`) have their own notebook
+(`content_judge_cache`). If this run has crawled pages, warm them too so a later
+`run_site_audit` / report is also free. Same shape, a sibling script + workflow:
+
+1. **Dump** the crawled pages (reads `site_audit_page` from Supabase, skips cached):
+   ```
+   python -m scripts.content_judge_via_workflow dump <run_id> --out <SCRATCH>/<run>.content.in.json
+   ```
+   If it prints "Nothing to judge", the content cache is warm (or nothing was crawled) — skip.
+2. **Count** the pages (for the Workflow arg):
+   ```
+   python -m scripts.content_judge_via_workflow header <SCRATCH>/<run>.content.in.json
+   ```
+3. **Judge** via the content Workflow — one subscription subagent per page, in waves:
+   ```
+   Workflow({ scriptPath: "scripts/content_prejudge_workflow.js",
+              args: { repo: "<abs repo root>", in_path: "<abs SCRATCH>/<run>.content.in.json",
+                      page_count: <page_count from header>, concurrency: 4 } })
+   ```
+   It returns `{ pages: [ {page_index, verdicts:[...]} | null, ... ] }`.
+4. **Write** that object to `<SCRATCH>/<run>.content.raws.json`, then **inject**:
+   ```
+   python -m scripts.content_judge_via_workflow inject <SCRATCH>/<run>.content.in.json <SCRATCH>/<run>.content.raws.json
+   ```
+   Now the site audit's content checks are warm — `run_site_audit` reuses them for $0.
+   (Offsite research stays on the API by design — it's a live, non-deterministic agent.)
+
 ## Notes
 
 - These verdicts are for **dev/testing iteration only**. They come from a different
