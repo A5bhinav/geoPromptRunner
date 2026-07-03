@@ -69,6 +69,47 @@ const ENGINE_CREDIBILITY: Record<string, number> = {
   anthropic_search: 3,
 };
 
+/** How the loss held up across the runs captured for one (query, engine) cell. */
+export interface Reproduction {
+  /** Runs that returned an answer for this cell. */
+  observed: number;
+  /** Of those, how many showed the loss: client absent AND competitor present. */
+  confirming: number;
+}
+
+/**
+ * Count how many of a cell's runs reproduce the loss, by re-checking the
+ * verbatim answers (the same word-boundary matching computeHeadline uses). This
+ * is text-based presence, not a re-judge — it verifies the printed claim's
+ * backbone (client absent, competitor present) holds run-to-run rather than
+ * resting on run 0 alone.
+ */
+export function countReproduction(
+  answers: AnswerRecord[],
+  queryId: string,
+  engineName: string,
+  clientMatch: (text: string) => boolean,
+  competitorMatch: (text: string) => boolean,
+): Reproduction {
+  let observed = 0;
+  let confirming = 0;
+  for (const a of answers) {
+    if (a.query_id !== queryId || a.engine_name !== engineName || !a.response) continue;
+    observed++;
+    if (!clientMatch(a.response) && competitorMatch(a.response)) confirming++;
+  }
+  return { observed, confirming };
+}
+
+/**
+ * True when the loss is safe to call REPEATABLE in copy: it held on every run
+ * that returned an answer, and there was more than one such run. A single-run
+ * audit (observed ≤ 1) is never "repeatable" — there's nothing to repeat.
+ */
+export function reproduces(r: Reproduction): boolean {
+  return r.observed >= 2 && r.confirming === r.observed;
+}
+
 function engineScore(engine: string): number {
   return ENGINE_CREDIBILITY[engine] ?? 1;
 }
@@ -80,9 +121,23 @@ function scoreRow(row: LosingRow): number {
   return (INTENT_PRIORITY[row.intent] ?? 0) * 10 + engineScore(row.engine_name);
 }
 
+/**
+ * Whether the copy may print "recommends" for this row. The platform's judge
+ * path only emits recommended_first losing cells today, and rows stored before
+ * prominence was sent (undefined) all came through that filter — so only an
+ * explicit non-first prominence demotes the claim.
+ */
+export function isRecommendedFirst(prominence: LosingRow["prominence"]): boolean {
+  return prominence == null || prominence === "recommended_first";
+}
+
 /** Lead ranking — demand-side intent dominates (×10), engine credibility breaks ties. */
 function leadScore(row: LosingRow): number {
-  return (LEAD_INTENT_PRIORITY[row.intent] ?? 0) * 10 + engineScore(row.engine_name);
+  // A recommended-first loss outranks any merely-present loss regardless of
+  // intent: the hero slot's copy says "recommends", so the lead must be a row
+  // that supports that verb whenever one exists.
+  const firstBoost = isRecommendedFirst(row.prominence) ? 100 : 0;
+  return firstBoost + (LEAD_INTENT_PRIORITY[row.intent] ?? 0) * 10 + engineScore(row.engine_name);
 }
 
 export type SelectionResult =
@@ -103,6 +158,7 @@ function toFinding(
   row: LosingRow,
   role: "lead" | "table",
   answers: AnswerRecord[],
+  repro: Reproduction,
 ): Finding | null {
   const answer = findAnswer(answers, row.query_id, row.engine_name);
   if (!answer || !answer.response) return null;
@@ -113,10 +169,13 @@ function toFinding(
     intent: row.intent,
     engineName: row.engine_name,
     competitor: row.competitor,
+    prominence: row.prominence ?? null,
     verbatimQuery: answer.prompt,
     verbatimAnswer: answer.response,
     citations: answer.citations,
     rankScore: scoreRow(row),
+    runsObserved: repro.observed,
+    runsConfirming: repro.confirming,
   };
 }
 
@@ -179,16 +238,37 @@ export function selectFindings(
     return { ok: false, reason: "no losing query names a competitor — nothing to print against" };
   }
 
-  // Lead = the highest-leadScore cell that joins to a verbatim answer. Ranking by
-  // leadScore puts a demand-side loss (category/problem_aware) in the hero slot;
-  // the hero engine follows the lead (NOT the globally-most-credible engine), so
-  // the proof card and headline stay on one engine. We skip any top row whose
-  // answer can't be joined rather than failing outright.
-  const leadRanked = [...named].sort((a, b) => leadScore(b) - leadScore(a));
+  // Reproducibility of each candidate loss across its runs, from the verbatim
+  // answers. Client is matched on name (no alias source on CompanyProfile);
+  // competitors feed their known aliases so an alias-only mention still counts.
+  const clientMatch = buildMatcher(profile.name);
+  const competitorMatcher = (name: string) =>
+    buildMatcher(name, profile.competitors.find((c) => c.name === name)?.aliases ?? []);
+  const reproOf = new Map<LosingRow, Reproduction>();
+  for (const row of named) {
+    reproOf.set(
+      row,
+      countReproduction(answers, row.query_id, row.engine_name, clientMatch, competitorMatcher(row.competitor)),
+    );
+  }
+  const repro = (row: LosingRow): Reproduction => reproOf.get(row) ?? { observed: 0, confirming: 0 };
+
+  // Lead = the best cell that joins to a verbatim answer. A loss that REPRODUCES
+  // across all its runs outranks any that doesn't (a claim a prospect can re-run
+  // and see must not rest on a single flaky sample); within that, leadScore puts
+  // a recommended-first, demand-side loss in the hero slot. The hero engine
+  // follows the lead (NOT the globally-most-credible engine), so the proof card
+  // and headline stay on one engine. Skip any top row we can't join to an answer.
+  const leadRanked = [...named].sort((a, b) => {
+    const ra = reproduces(repro(a)) ? 1 : 0;
+    const rb = reproduces(repro(b)) ? 1 : 0;
+    if (ra !== rb) return rb - ra;
+    return leadScore(b) - leadScore(a);
+  });
   let leadRow: LosingRow | null = null;
   let lead: Finding | null = null;
   for (const row of leadRanked) {
-    const f = toFinding(row, "lead", answers);
+    const f = toFinding(row, "lead", answers, repro(row));
     if (f) {
       leadRow = row;
       lead = f;
@@ -208,7 +288,7 @@ export function selectFindings(
   for (const row of tableRanked) {
     if (table.length >= 2) break;
     if (seen.has(row.query_id)) continue;
-    const f = toFinding(row, "table", answers);
+    const f = toFinding(row, "table", answers, repro(row));
     if (!f) continue;
     seen.add(row.query_id);
     table.push(f);

@@ -4,6 +4,7 @@
  * and consistent. Voice matches the "Ledger" editorial design.
  */
 
+import { isRecommendedFirst } from "../select/selectFindings.ts";
 import type { Finding, HeadlineNumber } from "../types/domain.ts";
 
 /** Pretty engine label for captions/headlines. */
@@ -38,17 +39,37 @@ export function engineColor(engine: string): string {
   return map[engine] ?? "#1b1a17";
 }
 
-export function headline(companyName: string, competitor: string | null): string {
+/**
+ * The verb the copy may print for a competitor in a losing cell, graded by the
+ * judge's prominence so the teaser never claims more than what was measured:
+ * "recommends" is reserved for recommended_first (or legacy rows, which all
+ * came through the platform's recommended-first filter); anything the judge
+ * saw as merely present grades down to "features"/"mentions".
+ */
+export function competitorVerb(lead: Finding): { active: string; passive: string } {
+  if (isRecommendedFirst(lead.prominence)) {
+    return { active: "recommends", passive: "is recommended" };
+  }
+  if (lead.prominence === "mid_pack") {
+    return { active: "features", passive: "is featured" };
+  }
+  return { active: "mentions", passive: "is mentioned" };
+}
+
+export function headline(companyName: string, lead: Finding): string {
   // A direct, present-tense threat — built to stop a busy reader, not read like an
   // article. Names the rival AI is steering buyers toward, and who it leaves out.
-  return competitor
-    ? `AI is sending your buyers to ${competitor} — not ${companyName}.`
-    : `When your buyers ask AI, ${companyName} isn't in the answer.`;
+  // "sending your buyers to" is only printable when the judge saw the rival
+  // recommended first; a weaker prominence grades down to a presence claim.
+  if (isRecommendedFirst(lead.prominence)) {
+    return `AI is sending your buyers to ${lead.competitor} — not ${companyName}.`;
+  }
+  return `When your buyers ask AI, ${lead.competitor} is in the answer — ${companyName} isn't.`;
 }
 
 export function leadSentence(companyName: string, lead: Finding): string {
   return (
-    `Ask ${engineLabel(lead.engineName)} “${lead.verbatimQuery}” and it recommends ` +
+    `Ask ${engineLabel(lead.engineName)} “${lead.verbatimQuery}” and it ${competitorVerb(lead).active} ` +
     `${lead.competitor} — ${companyName} is nowhere in the answer.`
   );
 }
@@ -61,10 +82,14 @@ export function headlineNumberSentence(companyName: string, h: HeadlineNumber): 
 }
 
 export function stakesLine(companyName: string, h: HeadlineNumber): string {
+  // Only claims what computeHeadline measured: gap = queries where the client
+  // never appeared. (The old copy said every gap query pointed buyers to a
+  // competitor — untrue for queries where nobody we track appeared.)
   const gap = h.n - h.companyAppears;
+  const queries = gap === 1 ? "query" : "queries";
   return (
-    `Every one of those ${gap} queries is a buyer being pointed to a competitor at the ` +
-    `exact moment they're choosing — before ${companyName} ever enters the conversation.`
+    `That leaves ${gap} of ${h.n} buyer ${queries} answered without ${companyName} — ` +
+    `buyers choosing at the exact moment ${companyName} isn't in the conversation.`
   );
 }
 
@@ -75,10 +100,22 @@ export function ctaLine(companyName: string): string {
   );
 }
 
+/**
+ * An honest "we ran it more than once" line — printed only when the loss held on
+ * every run the audit captured (≥2). Empty string otherwise, so a single-sample
+ * audit makes no repeatability claim it can't back up.
+ */
+export function reproNote(lead: Finding): string {
+  if (lead.runsObserved >= 2 && lead.runsConfirming === lead.runsObserved) {
+    return `Asked ${lead.runsObserved} separate times — ${lead.competitor} came up every time. This isn't a one-off.`;
+  }
+  return "";
+}
+
 /** One-line read of what the proof shows. */
 export function proofCaption(companyName: string, lead: Finding): string {
   return (
     `${engineLabel(lead.engineName)}, asked “${lead.verbatimQuery}”: ` +
-    `${lead.competitor} is recommended; ${companyName} is absent.`
+    `${lead.competitor} ${competitorVerb(lead).passive}; ${companyName} is absent.`
   );
 }

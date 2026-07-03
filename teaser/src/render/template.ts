@@ -10,9 +10,10 @@
 
 import type { Finding, TeaserDraft } from "../types/domain.ts";
 import type { LeaderRow } from "../types/platform.ts";
-import { ctaLine, engineLabel, proofCaption } from "./copy.ts";
+import { competitorVerb, ctaLine, engineLabel, proofCaption, reproNote } from "./copy.ts";
 import { renderProofCard } from "./proofCard.ts";
 import { selectWhyGaps } from "../select/selectFindings.ts";
+import { SHELF_LIFE_DAYS, validThrough } from "../freshness.ts";
 
 function escapeHtml(s: string): string {
   return s
@@ -47,7 +48,10 @@ function clientAppearanceLine(t: TeaserDraft): string {
   const { companyName: company } = t;
   const { companyAppears, n } = t.headlineNumber;
   if (companyAppears <= 0) {
-    return `AI named ${company} in 0 of ${n} queries — every recommendation went to a competitor.`;
+    // "every recommendation went to a competitor" would overclaim — some
+    // queries may name brands we don't track. Only the client's absence is
+    // measured for all n queries.
+    return `AI named ${company} in 0 of ${n} queries — every one of those answers went out without ${company} in it.`;
   }
   const needles = mentionNeedles(company).map((nd) => new RegExp(`\\b${escapeRegExp(nd)}\\b`));
   const hit = t.answers.find((a) => {
@@ -123,6 +127,14 @@ export const STYLE = `
   .proof-sources { margin-top:13px; font-size:12px; color:var(--faintest); }
   .caption { font-size:12.5px; color:var(--muted2); margin:11px 2px 0; }
   .caption.legend { margin:0 2px 14px; }
+  .caption.repro { color:var(--rust); font-weight:600; }
+
+  /* ---- Review banner: the send gate. Shows on an unapproved or stale draft
+     and PRINTS into the PDF, so an un-reviewed teaser is visibly not final.
+     A fresh, approved draft renders no banner → a clean, sendable deliverable. */
+  .review-banner { margin:0 0 18px; padding:10px 14px; border:1.5px solid var(--rust); border-radius:6px;
+    background:rgba(184,92,60,.06); color:var(--rust); font-size:12.5px; font-weight:600; letter-spacing:.01em; }
+  .review-banner .b-title { text-transform:uppercase; letter-spacing:.08em; font-weight:800; font-size:11px; }
 
   /* ---- Pattern table ---- */
   table { width:100%; border-collapse:collapse; font-size:14px; }
@@ -217,12 +229,49 @@ export interface TeaserEdits {
   cta?: string;
 }
 
+/** Render-time flags the CLIs (which have a clock) compute and pass in. */
+export interface TeaserRenderOpts {
+  /**
+   * Whether the audit is past its shelf life. Computed by the caller (needs
+   * "now"); when true a STALE banner prints into the PDF so an out-of-date
+   * teaser isn't sent as current. Omit/false for a freshly generated teaser.
+   */
+  stale?: boolean;
+}
+
 function nonEmpty(s: string | undefined): string | null {
   return s && s.trim() ? s : null;
 }
 
-export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): string {
+/**
+ * The send-gate banner: an unapproved OR stale draft renders a rust warning strip
+ * that PRINTS into the PDF, so the deliverable is visibly not-final until it's
+ * both approved and current. An approved, fresh draft renders nothing.
+ */
+function reviewBanner(t: TeaserDraft, stale: boolean): string {
+  const notes: string[] = [];
+  if (t.status !== "approved") {
+    notes.push("Not yet approved — review the competitor and claims, then approve before sending.");
+  }
+  if (stale) {
+    notes.push(
+      `Audit dated ${escapeHtml(t.runDate)} is past its ${SHELF_LIFE_DAYS}-day shelf life — re-run before sending; AI answers drift.`,
+    );
+  }
+  if (notes.length === 0) return "";
+  // notes are static copy except the already-escaped runDate, so join as-is.
+  const label = t.status !== "approved" ? "Draft — not for sending" : "Stale — re-run before sending";
+  return `<div class="review-banner"><span class="b-title">${label}</span> — ${notes.join(" ")}</div>`;
+}
+
+export function renderTeaserHtml(
+  t: TeaserDraft,
+  edits: TeaserEdits = {},
+  renderOpts: TeaserRenderOpts = {},
+): string {
   const h = t.headlineNumber;
+  const banner = reviewBanner(t, Boolean(renderOpts.stale));
+  const validTo = validThrough(t.runDate);
 
   const headline = nonEmpty(edits.headline) ?? t.headline;
   const stakesLine = nonEmpty(edits.stakesLine) ?? t.stakesLine;
@@ -234,11 +283,17 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
   const heroLead = editedLead
     ? escapeHtml(editedLead)
     : `Ask ${escapeHtml(engineLabel(t.lead.engineName))} ` +
-      `<span class="q">“${escapeHtml(t.lead.verbatimQuery)}”</span> and it recommends ` +
+      `<span class="q">“${escapeHtml(t.lead.verbatimQuery)}”</span> and it ${escapeHtml(competitorVerb(t.lead).active)} ` +
       `<span class="rival">${escapeHtml(t.lead.competitor)}</span> — ` +
       `${escapeHtml(t.companyName)} is nowhere in the answer.`;
 
-  const tableRows = [t.lead, ...t.table].map((f) => patternRow(f, t.companyName)).join("");
+  const allRows = [t.lead, ...t.table];
+  const tableRows = allRows.map((f) => patternRow(f, t.companyName)).join("");
+  // Header verb must hold for every row it labels — one merely-mentioned
+  // competitor in the table downgrades the whole column's claim.
+  const tableVerb = allRows.every((f) => competitorVerb(f).active === "recommends")
+    ? "AI recommends"
+    : "AI names";
 
   // "Why AI skips you" — the top fixable on/off-site gaps behind the loss, from
   // the site-audit roadmap. Omitted when no site audit ran.
@@ -277,8 +332,9 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
 <body>
   <div class="wrap">
     <main class="page">
+      ${banner}
       <header class="hero">
-        <div class="eyebrow"><span>AI Visibility Check · Prepared for ${escapeHtml(t.companyName)}</span><span class="date">${escapeHtml(t.runDate)}</span></div>
+        <div class="eyebrow"><span>AI Visibility Check · Prepared for ${escapeHtml(t.companyName)}</span><span class="date">${escapeHtml(t.runDate)}${validTo ? ` · valid through ${escapeHtml(validTo)}` : ""}</span></div>
         <h1>${escapeHtml(headline)}</h1>
         <p class="lead">${heroLead}</p>
       </header>
@@ -293,13 +349,14 @@ export function renderTeaserHtml(t: TeaserDraft, edits: TeaserEdits = {}): strin
         <div class="kicker">See it for yourself</div>
         ${renderProofCard(t.companyName, t.lead, t.runDate)}
         <p class="caption">${escapeHtml(proofCaption(t.companyName, t.lead))}</p>
+        ${reproNote(t.lead) ? `<p class="caption repro">${escapeHtml(reproNote(t.lead))}</p>` : ""}
       </section>
 
       <section class="section">
         <div class="kicker">Not a one-off — the same pattern repeats</div>
         <table>
           <thead>
-            <tr><th>Engine</th><th>Buyer query</th><th>AI recommends</th><th>${escapeHtml(t.companyName)}</th></tr>
+            <tr><th>Engine</th><th>Buyer query</th><th>${tableVerb}</th><th>${escapeHtml(t.companyName)}</th></tr>
           </thead>
           <tbody>${tableRows}</tbody>
         </table>

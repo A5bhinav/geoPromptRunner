@@ -56,7 +56,12 @@ export interface PipelineOptions {
 export const DEFAULT_OPTIONS: PipelineOptions = {
   // Engine names must match the platform's KNOWN_ENGINES (src/prompts/csv_loader.py).
   engines: ["perplexity", "google_ai_overviews", "openai"],
-  runsPerQuery: 1,
+  // Repeat every query so a printed claim can be shown to REPRODUCE, not rest on
+  // a single nondeterministic sample. Engine answers vary run-to-run; a prospect
+  // who re-asks the query must see the same loss. Selection then prefers findings
+  // that hold across all runs (see selectFindings reproducibility). 3 is the
+  // smallest set that shows a stable majority; --runs overrides it.
+  runsPerQuery: 3,
   judge: true,
   maxPolls: 60,
   pollIntervalMs: 0,
@@ -127,6 +132,7 @@ export async function runTeaserPipeline(
     competitors: profile.competitors.map((c) => c.name),
     category: profile.category,
     engines: opts.engines,
+    runsPerQuery: opts.runsPerQuery,
     queries: querySet.queries.map((q) => ({ query_id: q.query_id, text: q.text, intent: q.intent })),
   });
 
@@ -156,6 +162,7 @@ export function assembleDraft(
   report: ReportPayload,
   answers: AnswerRecord[],
   prospectUrl: string,
+  opts: { status?: TeaserDraft["status"] } = {},
 ): PipelineResult {
   const selection = selectFindings(profile, report, answers);
   if (!selection.ok) {
@@ -167,7 +174,11 @@ export function assembleDraft(
     category: profile.category,
     runDate: report.run_date,
     heroEngine: selection.heroEngine,
-    headline: headline(profile.name, report.scorecard.top_competitor ?? selection.lead.competitor),
+    // The headline names the LEAD's competitor (not the scorecard's top
+    // competitor) so the headline, headline number, and proof card all tell
+    // one story about one rival — and so its "sending your buyers to" claim
+    // is graded by the same judge prominence that backs the lead.
+    headline: headline(profile.name, selection.lead),
     leadSentence: leadSentence(profile.name, selection.lead),
     headlineNumber: selection.headline,
     stakesLine: stakesLine(profile.name, selection.headline),
@@ -176,7 +187,9 @@ export function assembleDraft(
     table: selection.table,
     report,
     answers,
-    status: "draft",
+    // Fresh runs are drafts; regeneration preserves the saved status so a
+    // re-render of an already-approved teaser stays clean (no draft banner).
+    status: opts.status ?? "draft",
   };
   return { ok: true, draft };
 }
@@ -222,5 +235,7 @@ export function regenerateFromDraft(saved: TeaserDraft): PipelineResult {
     url: saved.prospectUrl,
     category: saved.category,
   });
-  return assembleDraft(profile, saved.report, saved.answers, saved.prospectUrl);
+  return assembleDraft(profile, saved.report, saved.answers, saved.prospectUrl, {
+    status: saved.status,
+  });
 }

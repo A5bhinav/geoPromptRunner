@@ -26,6 +26,9 @@ export interface AuditInput {
   competitors: string[];
   category: string;
   engines: string[];
+  /** Runs per query (also encoded in the CSV; the real client uses the CSV, the
+   *  mock reads this to synthesize that many run_index samples). */
+  runsPerQuery: number;
   queries: { query_id: string; text: string; intent: string }[];
 }
 
@@ -41,6 +44,13 @@ export interface PlatformClient {
    * run. Every generated teaser is captured this way for review + training data.
    */
   saveTeaser(draft: TeaserDraft, html: string): Promise<string | null>;
+  /**
+   * Flip a persisted teaser to status="approved" (POST /teasers/{id}/approve) —
+   * the human sign-off gate. Returns true on success, false when approval isn't
+   * available (the mock, or a failed call). Approval is the transition that
+   * clears the draft banner, so an approved teaser is the only sendable one.
+   */
+  approveTeaser(teaserId: string): Promise<boolean>;
   /**
    * Persist a generated AI Visibility Audit (+ rendered html) to the platform's
    * audit_deliverables store (POST /audit-deliverables). Returns the new

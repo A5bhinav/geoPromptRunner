@@ -61,10 +61,13 @@ const staleLead: Finding = {
   intent: "comparison",
   engineName: "perplexity",
   competitor: "Stale",
+  prominence: null,
   verbatimQuery: "old query",
   verbatimAnswer: "old answer",
   citations: [],
   rankScore: 0,
+  runsObserved: 1,
+  runsConfirming: 1,
 };
 
 function savedDraft(): TeaserDraft {

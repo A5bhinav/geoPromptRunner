@@ -26,6 +26,7 @@ import type {
   SiteCheckRow,
 } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
+import { countReproduction } from "./selectFindings.ts";
 
 // --- ranking constants (mirror selectFindings: engine credibility × intent) ---
 
@@ -135,9 +136,18 @@ function findAnswer(
   return cell.find((a) => a.run_index === 0 && a.response) ?? cell.find((a) => a.response);
 }
 
-function toFinding(row: LosingRow, answers: AnswerRecord[]): Finding | null {
+function toFinding(row: LosingRow, answers: AnswerRecord[], clientName: string): Finding | null {
   const answer = findAnswer(answers, row.query_id, row.engine_name);
   if (!answer || !answer.response) return null;
+  // Reproducibility across the cell's runs (name-only matching — the audit has
+  // no alias source here, matching profileFromStored's reconstruction).
+  const repro = countReproduction(
+    answers,
+    row.query_id,
+    row.engine_name,
+    buildMatcher(clientName),
+    buildMatcher(row.competitor),
+  );
   return {
     role: "lead",
     source: "losing_query",
@@ -145,10 +155,13 @@ function toFinding(row: LosingRow, answers: AnswerRecord[]): Finding | null {
     intent: row.intent,
     engineName: row.engine_name,
     competitor: row.competitor,
+    prominence: row.prominence ?? null,
     verbatimQuery: answer.prompt,
     verbatimAnswer: answer.response,
     citations: answer.citations,
     rankScore: scoreRow(row),
+    runsObserved: repro.observed,
+    runsConfirming: repro.confirming,
   };
 }
 
@@ -168,7 +181,7 @@ function buildEvidence(
     for (const row of rows) {
       if (findings.length >= perBucket) break;
       if (seenQueries.has(row.query_id)) continue; // one card per query within a bucket
-      const f = toFinding(row, answers);
+      const f = toFinding(row, answers, report.client_name);
       if (!f) continue;
       seenQueries.add(row.query_id);
       findings.push(f);

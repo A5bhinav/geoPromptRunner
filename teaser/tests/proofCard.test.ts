@@ -60,10 +60,13 @@ function finding(over: Partial<Finding> = {}): Finding {
     intent: "comparison",
     engineName: "perplexity",
     competitor: "Northstar",
+    prominence: "recommended_first",
     verbatimQuery: "Northstar vs Vantage?",
     verbatimAnswer: PERPLEXITY_RAW,
     citations: ["https://nops.io/x"],
     rankScore: 50,
+    runsObserved: 1,
+    runsConfirming: 1,
     ...over,
   };
 }

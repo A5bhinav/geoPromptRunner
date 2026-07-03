@@ -102,6 +102,11 @@ export class MockPlatformClient implements PlatformClient {
     return null;
   }
 
+  /** No teasers store in mock mode — nothing to approve. */
+  async approveTeaser(): Promise<boolean> {
+    return false;
+  }
+
   /** No platform to persist to in mock mode — nothing is stored. */
   async saveAuditDeliverable(): Promise<string | null> {
     return null;
@@ -119,29 +124,38 @@ export class MockPlatformClient implements PlatformClient {
     const others = input.competitors.slice(1);
     const engines = input.engines.length > 0 ? input.engines : ["perplexity"];
     const runDate = "2026-06-20";
+    // Honor the submitted runs-per-query so the mock exercises the reproducibility
+    // path (multiple run_index samples per cell). The synthetic answer is stable
+    // across runs, so a losing finding reproduces on every run — the strong case.
+    const runs = Math.max(1, input.runsPerQuery || 1);
 
-    // --- synthesize one answer per (query, engine) ---
+    // --- synthesize `runs` answers per (query, engine) ---
     const answers: AnswerRecord[] = [];
     const losing: LosingRow[] = [];
     for (const q of input.queries) {
       for (const engine of engines) {
         const response = fakeAnswer(client, topCompetitor, others, q.text, q.intent);
-        answers.push({
-          query_id: q.query_id,
-          intent: q.intent as IntentBucket,
-          prompt: q.text,
-          engine_name: engine,
-          run_index: 0,
-          response,
-          citations: SAMPLE_DOMAINS.slice(0, 2).map((d) => `https://${d}/${q.query_id}`),
-          timestamp: `${runDate}T12:00:00Z`,
-        });
+        for (let runIndex = 0; runIndex < runs; runIndex++) {
+          answers.push({
+            query_id: q.query_id,
+            intent: q.intent as IntentBucket,
+            prompt: q.text,
+            engine_name: engine,
+            run_index: runIndex,
+            response,
+            citations: SAMPLE_DOMAINS.slice(0, 2).map((d) => `https://${d}/${q.query_id}`),
+            timestamp: `${runDate}T12:00:00Z`,
+          });
+        }
         if (!clientPresent(q.intent)) {
+          // One losing ROW per (query, engine) — the platform's losing_queries is
+          // already aggregated across runs, not one row per run.
           losing.push({
             query_id: q.query_id,
             intent: q.intent as IntentBucket,
             engine_name: engine,
             competitor: topCompetitor,
+            prominence: "recommended_first",
           });
         }
       }
@@ -173,7 +187,7 @@ export class MockPlatformClient implements PlatformClient {
       client_name: client,
       run_date: runDate,
       query_set_version: "teaser-mock",
-      runs_per_query: 1,
+      runs_per_query: runs,
       engines,
       competitors: input.competitors,
       client_domains: input.clientDomains,
