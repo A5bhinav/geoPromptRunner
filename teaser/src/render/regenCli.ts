@@ -11,6 +11,7 @@
  */
 
 import { regenerateFromDraft } from "../pipeline.ts";
+import { isStale } from "../freshness.ts";
 import { renderTeaserHtml } from "./template.ts";
 import type { TeaserDraft } from "../types/domain.ts";
 
@@ -43,8 +44,12 @@ async function main(): Promise<void> {
     process.stdout.write(JSON.stringify({ ok: false, reason: result.reason }));
     return;
   }
-  const html = renderTeaserHtml(result.draft);
-  process.stdout.write(JSON.stringify({ ok: true, draft: result.draft, html }));
+  // A regenerated draft carries its ORIGINAL audit run_date, so a re-render of an
+  // old prospect can be stale — surface that (banner in the html + flag in the
+  // JSON) so the web UI can prompt a re-run instead of sending old claims.
+  const stale = isStale(result.draft.runDate, new Date());
+  const html = renderTeaserHtml(result.draft, {}, { stale });
+  process.stdout.write(JSON.stringify({ ok: true, draft: result.draft, html, stale }));
 }
 
 main().catch((err) => {

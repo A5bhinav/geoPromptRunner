@@ -11,10 +11,14 @@
 
 import type { TeaserDraft } from "../types/domain.ts";
 import { renderTeaserHtml } from "./template.ts";
-import type { TeaserEdits } from "./template.ts";
+import type { TeaserEdits, TeaserRenderOpts } from "./template.ts";
 
-export function renderHtml(draft: TeaserDraft, edits?: TeaserEdits): string {
-  return renderTeaserHtml(draft, edits);
+export function renderHtml(
+  draft: TeaserDraft,
+  edits?: TeaserEdits,
+  renderOpts?: TeaserRenderOpts,
+): string {
+  return renderTeaserHtml(draft, edits, renderOpts);
 }
 
 const INSTALL_HINT =
@@ -22,7 +26,11 @@ const INSTALL_HINT =
   "`npx playwright install chromium`. The generated .html is print-ready in the meantime.";
 
 /** Print the teaser one-pager to an A4 PDF via headless Chromium. */
-export async function renderPdf(draft: TeaserDraft, edits?: TeaserEdits): Promise<Uint8Array> {
+export async function renderPdf(
+  draft: TeaserDraft,
+  edits?: TeaserEdits,
+  renderOpts?: TeaserRenderOpts,
+): Promise<Uint8Array> {
   // Variable specifier so tsc treats this as a dynamic `any` import — the build
   // and typecheck stay green whether or not `playwright` is installed.
   const spec = "playwright";
@@ -48,7 +56,7 @@ export async function renderPdf(draft: TeaserDraft, edits?: TeaserEdits): Promis
   }
   try {
     const page = await browser.newPage();
-    await page.setContent(renderHtml(draft, edits), { waitUntil: "networkidle" });
+    await page.setContent(renderHtml(draft, edits, renderOpts), { waitUntil: "networkidle" });
     return await page.pdf({ format: "A4", printBackground: true });
   } finally {
     await browser.close();

@@ -116,6 +116,20 @@ export class HttpPlatformClient implements PlatformClient {
     }
   }
 
+  async approveTeaser(teaserId: string): Promise<boolean> {
+    // Unlike saveTeaser, surface failure (return false) so an operator approving
+    // for send learns it didn't take, rather than assuming a silent success.
+    try {
+      await this.request<Record<string, unknown>>(
+        "POST",
+        `/teasers/${encodeURIComponent(teaserId)}/approve`,
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async saveAuditDeliverable(draft: AuditDraft, html: string): Promise<string | null> {
     // Best-effort, exactly like saveTeaser: a persistence failure must never fail
     // an otherwise-good audit generation.

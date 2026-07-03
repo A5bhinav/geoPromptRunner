@@ -10,6 +10,7 @@
  */
 
 import { renderTeaserHtml, type TeaserEdits } from "./template.ts";
+import { isStale } from "../freshness.ts";
 import type { TeaserDraft } from "../types/domain.ts";
 
 interface RenderPayload {
@@ -38,7 +39,8 @@ async function main(): Promise<void> {
     process.exit(1);
     return;
   }
-  process.stdout.write(renderTeaserHtml(payload.draft, payload.edits ?? {}));
+  const stale = isStale(payload.draft.runDate, new Date());
+  process.stdout.write(renderTeaserHtml(payload.draft, payload.edits ?? {}, { stale }));
 }
 
 main().catch((err) => {
