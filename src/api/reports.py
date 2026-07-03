@@ -64,6 +64,11 @@ class LosingRow(TypedDict):
     intent: str
     engine_name: str
     competitor: str
+    # Judge prominence of the competitor in this cell ("recommended_first", ...).
+    # None on the regex path, which only detects presence. Downstream copy
+    # (e.g. the teaser's "it recommends X") must grade its verb off this instead
+    # of assuming every losing cell is a first recommendation.
+    prominence: str | None
 
 
 class SiteCheckRow(TypedDict):
@@ -261,6 +266,7 @@ def build_report(
                     intent=cell.intent,
                     engine_name=cell.engine_name,
                     competitor=cell.brand,
+                    prominence=cell.prominence,
                 )
             )
     else:
@@ -271,6 +277,7 @@ def build_report(
                     intent=loss.intent,
                     engine_name=loss.engine_name,
                     competitor=", ".join(loss.competitors_present),
+                    prominence=None,
                 )
             )
 

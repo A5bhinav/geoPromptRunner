@@ -81,6 +81,14 @@ export interface LosingRow {
   intent: IntentBucket;
   engine_name: string;
   competitor: string;
+  /**
+   * Judge prominence of the competitor in this cell. The platform's judge path
+   * only emits recommended_first cells today, but the copy layer must not
+   * assume that — it grades its verb ("recommends" vs "mentions") off this.
+   * Optional: rows persisted before this field existed (and regex-path rows,
+   * which the teaser refuses anyway) don't carry it.
+   */
+  prominence?: Prominence | null;
 }
 
 export interface ScorecardPayload {

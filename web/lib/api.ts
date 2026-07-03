@@ -166,6 +166,8 @@ export interface LosingRow {
   intent: string;
   engine_name: string;
   competitor: string;
+  /** Judge prominence of the competitor in this cell; null on the regex path. */
+  prominence?: string | null;
 }
 
 export interface ScorecardPayload {

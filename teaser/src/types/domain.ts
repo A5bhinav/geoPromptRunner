@@ -1,6 +1,6 @@
 /** teaserAuto's own domain types (the data it owns; see BUILD_PLAN.md §3). */
 
-import type { AnswerRecord, IntentBucket, ReportPayload } from "./platform.ts";
+import type { AnswerRecord, IntentBucket, Prominence, ReportPayload } from "./platform.ts";
 
 export interface Competitor {
   name: string;
@@ -45,10 +45,26 @@ export interface Finding {
   intent: IntentBucket;
   engineName: string;
   competitor: string;
+  /**
+   * How prominently the judge saw the competitor in this cell — drives the
+   * copy verb ("recommends" needs recommended_first). null = unknown (drafts
+   * stored before the platform sent prominence; those all came through
+   * losing_cells, which only emitted recommended_first cells).
+   */
+  prominence: Prominence | null;
   verbatimQuery: string;
   verbatimAnswer: string;
   citations: string[];
   rankScore: number;
+  /**
+   * Reproducibility of the loss across the runs the platform captured for this
+   * (query, engine): how many runs returned an answer (`runsObserved`) and how
+   * many of those showed the loss — client absent, competitor present
+   * (`runsConfirming`). A single-run audit yields 1/1. Copy only claims a loss
+   * is repeatable when it held on every observed run and there were ≥2 of them.
+   */
+  runsObserved: number;
+  runsConfirming: number;
 }
 
 /** The "appears in X of N / competitor in Y of N" headline metric. */
