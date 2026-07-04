@@ -62,6 +62,26 @@ def test_losing_cells_flags_client_absent_competitor_first() -> None:
     assert [(c.query_id, c.brand) for c in losses] == [("q1", "YNAB")]
 
 
+def test_losing_cells_collapses_multiple_rivals_in_one_cell() -> None:
+    # Both rivals read recommended_first for the SAME cell (a cross-run best-seen
+    # artifact); the losing cell must be counted once, not once per rival.
+    js = [
+        _aj(
+            "q1",
+            "openai",
+            [
+                _bj("YNAB", True, "recommended_first"),
+                _bj("Monarch", True, "recommended_first"),
+                _bj("Centsible", False, "absent"),
+            ],
+        )
+    ]
+    losses = losing_cells(js, client="Centsible", competitors=["YNAB", "Monarch"])
+    assert len(losses) == 1
+    assert (losses[0].query_id, losses[0].engine_name) == ("q1", "openai")
+    assert losses[0].brand == "Monarch"  # deterministic representative (brand-sorted)
+
+
 def test_visibility_grade_rewards_prominence() -> None:
     # YNAB is recommended_first / mid_pack -> high visibility -> top grade.
     strong = visibility_grade(_judgments(), "YNAB")

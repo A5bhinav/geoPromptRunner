@@ -190,11 +190,14 @@ export const STYLE = `
   }
 `;
 
-function visibilityChart(leaderboard: LeaderRow[], topCompetitor: string | null): string {
+// `leadRival` is the rival the whole teaser is about (headlineNumber.competitorName),
+// NOT the scorecard's highest-share competitor — those can differ, and highlighting
+// the top-share brand bolded a rival named nowhere else on the page.
+function visibilityChart(leaderboard: LeaderRow[], leadRival: string | null): string {
   const rows = [...leaderboard].sort((a, b) => b.mention_rate - a.mention_rate).slice(0, 6);
   return `<div class="chart">${rows
     .map((r) => {
-      const cls = r.is_client ? "is-client" : r.brand === topCompetitor ? "lead-rival" : "";
+      const cls = r.is_client ? "is-client" : r.brand === leadRival ? "lead-rival" : "";
       const width = pct(r.mention_rate);
       return `
       <div class="vrow ${cls}">
@@ -365,7 +368,7 @@ export function renderTeaserHtml(
       <section class="section">
         <div class="kicker">Who AI recommends in your category</div>
         <p class="caption legend">Each bar is how often AI named that brand across every buyer query and engine we ran — not just the ${h.n} shown above.</p>
-        ${visibilityChart(t.report.leaderboard, t.report.scorecard.top_competitor)}
+        ${visibilityChart(t.report.leaderboard, h.competitorName)}
         <p class="caption">${escapeHtml(clientAppearanceLine(t))}</p>
       </section>
       ${whySection}

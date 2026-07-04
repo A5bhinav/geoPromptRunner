@@ -352,10 +352,17 @@ def losing_cells(
 ) -> list[BrandCell]:
     """(query, engine) cells where the client is absent but a competitor is
     recommended-first — the judge-powered "symptom -> cause" view.
+
+    One row per losing *cell*, not per (competitor, cell): because each brand's
+    cell prominence is aggregated as the best seen across runs, two rivals can both
+    read recommended-first for the same cell, which would otherwise emit that cell
+    twice and inflate the "Losing Queries (N)" count. When several rivals lead a
+    cell we keep one deterministic representative (matches metrics.losing_queries,
+    which collapses to one row per cell).
     """
     cm = cells_map if cells_map is not None else brand_cells_map(judgments, [client, *competitors])
     client_present = {(c.query_id, c.engine_name) for c in cm.get(client, []) if c.present}
-    losses: list[BrandCell] = []
+    best_by_cell: dict[tuple[str, str], BrandCell] = {}
     for comp in competitors:
         for c in cm.get(comp) or _brand_cells(judgments, comp):
             if (
@@ -363,8 +370,11 @@ def losing_cells(
                 and c.prominence == Prominence.RECOMMENDED_FIRST.value
                 and (c.query_id, c.engine_name) not in client_present
             ):
-                losses.append(c)
-    return sorted(losses, key=lambda c: (c.query_id, c.engine_name, c.brand))
+                cell = (c.query_id, c.engine_name)
+                current = best_by_cell.get(cell)
+                if current is None or c.brand < current.brand:
+                    best_by_cell[cell] = c
+    return sorted(best_by_cell.values(), key=lambda c: (c.query_id, c.engine_name, c.brand))
 
 
 def _pct(value: float) -> str:
