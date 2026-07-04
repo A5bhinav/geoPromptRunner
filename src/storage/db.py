@@ -244,18 +244,19 @@ def update_audit_run_progress(
     )
 
 
-def save_query_results(run_id: str, results: list[QueryResult]) -> None:
-    """Persist a batch of QueryResults (and their citations) for an audit run.
+def _dedupe_by_id(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse rows that share a deterministic ``id`` (e.g. one citation url that
+    recurs across a cell's runs) to a single row. A single upsert must never target
+    the same conflict key twice — Postgres rejects that with "ON CONFLICT DO UPDATE
+    command cannot affect row a second time". Last write wins (rows are identical)."""
+    return list({row["id"]: row for row in rows}.values())
 
-    Safe to call incrementally (e.g. once per query) so a long run is resumable
-    and partial progress survives a mid-run failure.
-    """
-    # Deterministic ids (not random uuid4) keyed on the row's natural identity, so
-    # a retried flush upserts the SAME rows instead of inserting duplicates with
-    # fresh ids. The caller retries the whole pending batch on any StorageError, and
-    # the two inserts below are not one transaction — without this, a citation-insert
-    # failure after the result-insert commits would re-insert every answer.
-    result_rows = [
+
+def _query_result_rows(run_id: str, results: list[QueryResult]) -> list[dict[str, Any]]:
+    """Build query_results rows with deterministic ids (not random uuid4) keyed on
+    (run, query, engine, run_index), so a retried flush upserts the SAME rows rather
+    than inserting duplicates with fresh ids."""
+    rows = [
         {
             "id": str(
                 uuid.uuid5(
@@ -274,7 +275,14 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
         }
         for r in results
     ]
-    citation_rows = [
+    return _dedupe_by_id(rows)
+
+
+def _query_citation_rows(run_id: str, results: list[QueryResult]) -> list[dict[str, Any]]:
+    """Build query_citations rows with deterministic ids keyed on (run, query, engine,
+    url). Citations are per-cell, so the SAME url across a cell's runs collapses to one
+    row — both making a retry idempotent and keeping one upsert's conflict keys unique."""
+    rows = [
         {
             "id": str(
                 uuid.uuid5(_QUERY_CITATION_NS, f"{run_id}:{r['query_id']}:{r['engine_name']}:{url}")
@@ -288,6 +296,20 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
         for r in results
         for url in r["citations"]
     ]
+    return _dedupe_by_id(rows)
+
+
+def save_query_results(run_id: str, results: list[QueryResult]) -> None:
+    """Persist a batch of QueryResults (and their citations) for an audit run.
+
+    Safe to call incrementally (e.g. once per query) so a long run is resumable
+    and partial progress survives a mid-run failure. Result/citation rows carry
+    deterministic ids and are upserted, so retrying a batch (the caller retries the
+    whole pending set on a StorageError) can't create duplicate rows even though the
+    two upserts below aren't one transaction.
+    """
+    result_rows = _query_result_rows(run_id, results)
+    citation_rows = _query_citation_rows(run_id, results)
     if result_rows:
         _execute(
             f"save_query_results for run {run_id}",
