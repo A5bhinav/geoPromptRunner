@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import hmac
 import logging
 import threading
 from collections.abc import AsyncIterator
@@ -28,22 +29,55 @@ __all__ = ["app"]
 logger = logging.getLogger(__name__)
 
 
+def _warn_if_open() -> None:
+    """Log a loud warning when the API is unauthenticated (no GEO_API_KEY).
+
+    A blank key means anyone who can reach the API can trigger paid LLM work, read
+    every run, and permanently delete projects — fine on localhost, dangerous once
+    exposed. Surfaced at startup so an accidentally-open deploy is visible in logs.
+    """
+    if not settings.GEO_API_KEY:
+        logger.warning(
+            "GEO_API_KEY is not set — the API is OPEN. Anyone who can reach it can "
+            "trigger paid LLM work, read every run, and delete projects. Set GEO_API_KEY "
+            "before exposing this beyond localhost."
+        )
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """On startup, resume any runs a previous process left interrupted.
+    """On startup, warn if the API is open, then resume any interrupted runs.
 
-    Done on a background thread so a slow/unreachable storage backend can't
-    delay the server coming up.
+    The resume scan runs on a background thread so a slow/unreachable storage
+    backend can't delay the server coming up.
     """
+    _warn_if_open()
     threading.Thread(target=runner.resume_interrupted_runs, name="resume-scan", daemon=True).start()
     yield
 
 
+def _docs_urls(api_key: str | None) -> dict[str, str | None]:
+    """Interactive docs + the OpenAPI schema are exposed ONLY in open/dev mode (no
+    key). With a key configured (prod), disable them so an unauthenticated caller
+    can't map the whole surface — every endpoint, param, and shape — via
+    ``/openapi.json``. Pure, so the gate is unit-testable."""
+    open_mode = not api_key
+    return {
+        "docs_url": "/docs" if open_mode else None,
+        "redoc_url": "/redoc" if open_mode else None,
+        "openapi_url": "/openapi.json" if open_mode else None,
+    }
+
+
+_docs = _docs_urls(settings.GEO_API_KEY)
 app = FastAPI(
     title="GEO Audit API",
     version="1.0",
     description="Thin wrapper over the GEO audit pipeline: upload CSVs, run, report.",
     lifespan=lifespan,
+    docs_url=_docs["docs_url"],
+    redoc_url=_docs["redoc_url"],
+    openapi_url=_docs["openapi_url"],
 )
 
 # CORS: only the configured frontend origin(s) may script the API from a browser
@@ -68,7 +102,8 @@ def require_api_key(x_api_key: Annotated[str | None, Header(alias="X-API-Key")] 
     expected = settings.GEO_API_KEY
     if not expected:
         return
-    if not x_api_key or x_api_key != expected:
+    # Constant-time compare so response timing can't leak the key byte-by-byte.
+    if not x_api_key or not hmac.compare_digest(x_api_key, expected):
         raise HTTPException(status_code=401, detail="missing or invalid X-API-Key")
 
 
