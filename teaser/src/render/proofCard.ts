@@ -54,8 +54,12 @@ export function answerSnippet(raw: string, maxChars = 400): string {
   // Buyer-facing prose virtually never contains a bare `|`, so this is safe.
   const tableIdx = s.search(/\|/);
   if (tableIdx >= 0) s = s.slice(0, tableIdx);
-  // Drop bracketed citation markers ([1], [7], [12]) and Markdown headers/bullets.
-  s = s.replace(/\[\d+\]/g, "").replace(/^[#>\-*]+\s*/gm, "");
+  // Drop bracketed citation markers ([1], [7], [12]) and leading Markdown
+  // headers/blockquotes/bullets. A marker must be FOLLOWED BY WHITESPACE to count
+  // (`# `, `> `, `- `, `* `) — otherwise a line that opens with `**bold**` (common
+  // in Perplexity answers, e.g. "**Strong** and…") would have its leading `**`
+  // eaten as a bullet, unbalancing the bold markers and corrupting boldToHtml.
+  s = s.replace(/\[\d+\]/g, "").replace(/^\s*(?:[#>]+\s+|[-*]\s+)/gm, "");
   // Collapse all whitespace to single spaces.
   s = s.replace(/\s+/g, " ").trim();
   if (s.length <= maxChars) return s;
@@ -85,9 +89,15 @@ function boldToHtml(escaped: string): string {
 }
 
 export function renderProofCard(companyName: string, finding: Finding, runDate: string): string {
-  const safeAnswer = highlightCompetitor(
-    boldToHtml(escapeHtml(answerSnippet(finding.verbatimAnswer))),
-    finding.competitor,
+  // Order matters: escape → highlight competitor → bold-to-HTML. Highlighting
+  // must run on the PLAIN escaped text (only `**` markers, no tags yet). If it
+  // ran after boldToHtml, a competitor whose name collides with a tag name —
+  // e.g. "Strong" vs the `<strong>` bold tag — would have its regex match the
+  // letters inside those tags and shred them (observed: literal "strong>"
+  // leaking into a Fitbod card). boldToHtml then wraps the already-marked text;
+  // the inserted <mark> contains no `**`, so `**…**` pairing is unaffected.
+  const safeAnswer = boldToHtml(
+    highlightCompetitor(escapeHtml(answerSnippet(finding.verbatimAnswer)), finding.competitor),
   );
   const citations = finding.citations
     .map((u) => {

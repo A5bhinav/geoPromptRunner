@@ -364,7 +364,7 @@ export function renderTeaserHtml(
 
       <section class="section">
         <div class="kicker">Who AI recommends in your category</div>
-        <p class="caption legend">Each bar is the share of the ${h.n} buyer queries where AI named that brand in its answer.</p>
+        <p class="caption legend">Each bar is how often AI named that brand across every buyer query and engine we ran — not just the ${h.n} shown above.</p>
         ${visibilityChart(t.report.leaderboard, t.report.scorecard.top_competitor)}
         <p class="caption">${escapeHtml(clientAppearanceLine(t))}</p>
       </section>

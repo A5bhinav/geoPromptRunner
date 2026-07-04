@@ -52,6 +52,17 @@ test("answerSnippet leaves short, clean answers untouched (mock answers)", () =>
   assert.equal(answerSnippet(mock), mock);
 });
 
+test("answerSnippet preserves a leading **bold** marker (doesn't strip it as a bullet)", () => {
+  const s = answerSnippet("**Strong** and **JEFIT** differ in database size.");
+  assert.ok(s.startsWith("**Strong**"), "leading bold marker is kept, not eaten");
+  assert.equal((s.match(/\*\*/g) ?? []).length % 2, 0, "bold markers stay balanced");
+});
+
+test("answerSnippet still strips real leading bullets and headers (marker + space)", () => {
+  assert.equal(answerSnippet("- First point about tracking."), "First point about tracking.");
+  assert.equal(answerSnippet("# Heading then prose."), "Heading then prose.");
+});
+
 function finding(over: Partial<Finding> = {}): Finding {
   return {
     role: "lead",
@@ -81,4 +92,23 @@ test("renderProofCard renders bold as <strong>, never literal **", () => {
 test("renderProofCard still highlights the competitor", () => {
   const html = renderProofCard("Anoria", finding(), "2026-06-24");
   assert.ok(html.includes('<mark class="competitor">'), "competitor is highlighted");
+});
+
+// Regression: a competitor name that collides with an HTML tag name ("Strong"
+// vs <strong>). Highlighting after boldToHtml used to match the letters inside
+// the <strong> tags and shred them into literal "strong>" text.
+test("renderProofCard does not corrupt <strong> tags when competitor is 'Strong'", () => {
+  const html = renderProofCard(
+    "Fitbod",
+    finding({
+      competitor: "Strong",
+      verbatimQuery: "how do Strong and JEFIT compare?",
+      verbatimAnswer: "**Strong** and **JEFIT** differ. **Strong** offers a minimalist logger.",
+    }),
+    "2026-07-04",
+  );
+  assert.ok(html.includes('<mark class="competitor">Strong</mark>'), "brand word is highlighted");
+  assert.ok(html.includes("<strong>"), "bold survives as a real tag");
+  assert.ok(!html.includes('<mark class="competitor">strong</mark>'), "the <strong> tag name is NOT wrapped");
+  assert.ok(!html.includes("<<mark") && !html.includes("</<mark"), "no shredded/nested tags");
 });

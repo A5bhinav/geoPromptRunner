@@ -29,6 +29,7 @@ import type {
   SiteAuditPayload,
 } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
+import { answerSnippet } from "../render/proofCard.ts";
 
 /**
  * Commercial-intent priority — used to rank the PATTERN TABLE rows (comparison
@@ -253,13 +254,66 @@ export function selectFindings(
   }
   const repro = (row: LosingRow): Reproduction => reproOf.get(row) ?? { observed: 0, confirming: 0 };
 
+  // Honest-hero gate (#2). The headline prints "AI sends your buyers to
+  // <competitor>" with an aggregate count beneath it — that story is only true
+  // when the competitor is MORE visible than the client across the measured
+  // queries. A row whose competitor appears no more often than the client
+  // (e.g. client 4/5 vs competitor 3/5 — observed live with Copilot/Mint) would
+  // print a headline its own number contradicts, so it cannot be the hero. Note
+  // companyAppears is competitor-independent, so this only ever filters OUT rows
+  // whose specific competitor the client already matches or beats. Cached per
+  // competitor since computeHeadline rescans every answer.
+  const headlineCache = new Map<string, HeadlineNumber>();
+  const headlineFor = (competitor: string): HeadlineNumber => {
+    const hit = headlineCache.get(competitor);
+    if (hit) return hit;
+    const h = computeHeadline(profile, answers, competitor);
+    headlineCache.set(competitor, h);
+    return h;
+  };
+  const heroPool = named.filter((row) => {
+    const h = headlineFor(row.competitor);
+    return h.competitorAppears > h.companyAppears;
+  });
+  if (heroPool.length === 0) {
+    return {
+      ok: false,
+      reason:
+        "no honest hero: the client appears at least as often as every competitor it loses to — a headline here would contradict its own numbers",
+    };
+  }
+
+  // Proof-foregrounding gate. The hero's proof card shows only the LEADING PROSE
+  // of the answer (answerSnippet) and labels it "<competitor> recommended
+  // instead" — so the lead competitor must actually appear in that shown snippet,
+  // or the card contradicts itself. This bites when the engine's real top pick is
+  // a brand we don't track: prominence is judged only against tracked competitors,
+  // so after the relationship guard drops the true leader (e.g. an acquirer/parent
+  // like MyFitnessPal for Cal AI), the judge labels the next brand
+  // "recommended_first" even though the visible answer recommends the dropped one.
+  // Requiring the competitor in the rendered snippet moves the hero to a query
+  // where it is genuinely foregrounded. Match exactly what renderProofCard shows.
+  const shownInProof = (row: LosingRow): boolean => {
+    const a = findAnswer(answers, row.query_id, row.engine_name);
+    if (!a || !a.response) return false;
+    return competitorMatcher(row.competitor)(answerSnippet(a.response));
+  };
+  const provablePool = heroPool.filter(shownInProof);
+  if (provablePool.length === 0) {
+    return {
+      ok: false,
+      reason:
+        "no provable hero: in every losing query the shown answer's top recommendation is a brand not in the tracked competitor set (often a dropped acquirer/parent) — the proof card would recommend one brand while the headline names another",
+    };
+  }
+
   // Lead = the best cell that joins to a verbatim answer. A loss that REPRODUCES
   // across all its runs outranks any that doesn't (a claim a prospect can re-run
   // and see must not rest on a single flaky sample); within that, leadScore puts
   // a recommended-first, demand-side loss in the hero slot. The hero engine
   // follows the lead (NOT the globally-most-credible engine), so the proof card
   // and headline stay on one engine. Skip any top row we can't join to an answer.
-  const leadRanked = [...named].sort((a, b) => {
+  const leadRanked = [...provablePool].sort((a, b) => {
     const ra = reproduces(repro(a)) ? 1 : 0;
     const rb = reproduces(repro(b)) ? 1 : 0;
     if (ra !== rb) return rb - ra;
@@ -294,7 +348,7 @@ export function selectFindings(
     table.push(f);
   }
 
-  const headline = computeHeadline(profile, answers, leadRow.competitor);
+  const headline = headlineFor(leadRow.competitor);
 
   return { ok: true, lead, table, headline, heroEngine };
 }

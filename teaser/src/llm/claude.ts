@@ -119,3 +119,100 @@ export async function extractJson<T>(
     );
   }
 }
+
+/**
+ * Pull the first complete JSON value (object or array) out of free-form model
+ * text, tolerating ```json fences and trailing prose. Pure — no network.
+ *
+ * We can't use `output_config.format` (json_schema) together with the web-search
+ * server tool: structured outputs are documented as incompatible with citations,
+ * which web-search results carry. So `researchJson` asks the model to END with a
+ * JSON block and parses it out here instead. Scans brackets with string-awareness
+ * so a `}` inside a quoted evidence string doesn't end the value early.
+ */
+export function extractJsonBlock(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced?.[1] ?? text;
+  const start = body.search(/[[{]/);
+  if (start === -1) throw new Error("no JSON value found in model text");
+  const open = body[start];
+  const close = open === "{" ? "}" : "]";
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < body.length; i++) {
+    const c = body[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+    } else if (c === '"') {
+      inStr = true;
+    } else if (c === open) {
+      depth++;
+    } else if (c === close) {
+      depth--;
+      if (depth === 0) return JSON.parse(body.slice(start, i + 1));
+    }
+  }
+  throw new Error("unterminated JSON value in model text");
+}
+
+export interface ResearchOptions {
+  model?: string;
+  maxTokens?: number;
+  /** Cap on server-side web searches (max_uses on the tool). */
+  maxSearches?: number;
+}
+
+/**
+ * One web-search-grounded call that returns a parsed JSON value. Enables the
+ * `web_search_20250305` server tool (the basic variant — the only one available
+ * on Haiku 4.5, this project's default model), lets Claude search, then parses
+ * the JSON it ends with. Resumes across `pause_turn` (the server-tool loop cap).
+ *
+ * Used for questions that need CURRENT web knowledge the model can't have from
+ * training (e.g. "was this company acquired?"). Throws if no JSON is produced —
+ * callers decide the fallback (relationship guard keeps all competitors).
+ */
+export async function researchJson<T>(
+  system: string,
+  user: string,
+  opts: ResearchOptions = {},
+): Promise<T> {
+  const model = opts.model ?? claudeModel();
+  const maxTokens = opts.maxTokens ?? 3072;
+  const maxUses = opts.maxSearches ?? 4;
+  const tools = [
+    { type: "web_search_20250305", name: "web_search", max_uses: maxUses },
+  ] as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming["tools"];
+
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
+  let response: Anthropic.Message | null = null;
+  // Resume on pause_turn (server-tool loop hit its iteration cap); bounded so a
+  // misbehaving loop can't spin forever.
+  for (let hop = 0; hop < 6; hop++) {
+    response = await client().messages.create({
+      model,
+      max_tokens: maxTokens,
+      system,
+      messages,
+      tools,
+    });
+    if (response.stop_reason !== "pause_turn") break;
+    messages.push({ role: "assistant", content: response.content });
+  }
+  if (!response) throw new Error("no response from Claude web-search call");
+
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n")
+    .trim();
+  if (!text) {
+    throw new Error(
+      `Claude web-search call returned no text (stop_reason=${String(response.stop_reason)}).`,
+    );
+  }
+  return extractJsonBlock(text) as T;
+}

@@ -178,6 +178,97 @@ test("headline counts competitor mentioned only by an alias", () => {
   assert.equal(r.headline.competitorAppears, 2);
 });
 
+// Honest-hero gate (#2): a hero whose headline its own aggregate contradicts is
+// refused. Here the client (Acme) appears in BOTH queries while YNAB appears in
+// only one — companyAppears 2 > competitorAppears 1 — so "AI sends buyers to
+// YNAB" is false and there's no other competitor to fall back to.
+test("refuses a self-contradicting hero: client out-appears the only competitor", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "openai", competitor: "YNAB" },
+      { query_id: "q2", intent: "comparison", engine_name: "perplexity", competitor: "YNAB" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "openai", run_index: 0, response: "Acme and YNAB are both solid.", citations: [], timestamp: "t" },
+    { query_id: "q2", intent: "comparison", prompt: "alternatives to Monarch?", engine_name: "perplexity", run_index: 0, response: "Acme is a great pick.", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(profile(), report, ans);
+  assert.equal(r.ok, false);
+});
+
+// The gate filters PER competitor: a competitor the client out-appears (Monarch,
+// tied 1–1) is skipped, but the hero still forms on one the client truly loses to
+// (YNAB, 2 vs 1). companyAppears is competitor-independent, so only the
+// competitor's own visibility decides.
+test("hero forms on a competitor the client truly loses to, skipping a tied one", () => {
+  const p = profile();
+  p.competitors = [
+    { name: "YNAB", aliases: [], confirmed: true },
+    { name: "Monarch Money", aliases: ["Monarch"], confirmed: true },
+  ];
+  const report = baseReport({
+    competitors: ["YNAB", "Monarch Money"],
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "Monarch Money" },
+      { query_id: "q2", intent: "category", engine_name: "openai", competitor: "YNAB" },
+      { query_id: "q3", intent: "category", engine_name: "openai", competitor: "YNAB" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    // Acme's ONLY appearance is q1, alongside Monarch -> company 1, Monarch 1 (tied → skipped)
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "perplexity", run_index: 0, response: "Acme edges out Monarch.", citations: [], timestamp: "t" },
+    // YNAB present, Acme absent in q2 & q3 -> YNAB 2 > company 1 (honest)
+    { query_id: "q2", intent: "category", prompt: "top budgeting app?", engine_name: "openai", run_index: 0, response: "YNAB is the top pick.", citations: [], timestamp: "t" },
+    { query_id: "q3", intent: "category", prompt: "best app to budget?", engine_name: "openai", run_index: 0, response: "Most people pick YNAB.", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(p, report, ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.lead.competitor, "YNAB");
+  assert.notEqual(r.lead.queryId, "q1");
+});
+
+// Proof-foregrounding gate: the hero's proof card shows only the leading prose,
+// so the lead competitor must appear THERE. q1 outscores q2 (category+perplexity
+// vs comparison+openai) but its shown answer foregrounds an untracked brand
+// (Monarch) with YNAB only in a trailing table — so the hero must fall to q2,
+// whose answer actually leads with YNAB.
+test("hero skips a higher-scoring cell whose shown answer foregrounds an untracked brand", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "YNAB" },
+      { query_id: "q2", intent: "comparison", engine_name: "openai", competitor: "YNAB" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    // YNAB present only AFTER the table pipe -> counts for honesty, NOT shown in the proof snippet.
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "perplexity", run_index: 0, response: "Monarch is the best budgeting app for most people. | App | Pick |\n| YNAB | yes |", citations: [], timestamp: "t" },
+    // YNAB leads the prose -> shown.
+    { query_id: "q2", intent: "comparison", prompt: "alternatives to Monarch?", engine_name: "openai", run_index: 0, response: "YNAB is the top pick here.", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(profile(), report, ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.lead.queryId, "q2");
+});
+
+test("refuses when NO losing query foregrounds the competitor in the shown answer", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "YNAB" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    // YNAB is honest (appears, client doesn't) but only inside the trailing table — never in the snippet.
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "perplexity", run_index: 0, response: "Monarch leads for most budgeters. | App | Rank |\n| YNAB | 2 |", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(profile(), report, ans);
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.match(r.reason, /provable hero/);
+});
+
 function siteAudit(roadmap: SiteAuditPayload["roadmap"], present = true): SiteAuditPayload {
   return {
     present,

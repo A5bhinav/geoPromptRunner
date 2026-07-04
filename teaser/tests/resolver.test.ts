@@ -9,6 +9,7 @@ import { test } from "node:test";
 import {
   buildProfile,
   buildExtractionInput,
+  isDefunctBrand,
 } from "../src/resolver/Crawl4aiClaudeResolver.ts";
 import { pickInternalTargets } from "../src/resolver/Crawl4aiClient.ts";
 
@@ -78,6 +79,51 @@ test("competitors are de-duped case-insensitively and blanks dropped", () => {
   assert.deepEqual(
     p.competitors.map((c) => c.name),
     ["Salesforce", "HubSpot"],
+  );
+});
+
+test("isDefunctBrand flags known-dead brands by name or alias, case-insensitively", () => {
+  assert.equal(isDefunctBrand("Mint"), true);
+  assert.equal(isDefunctBrand("mint.com"), true);
+  assert.equal(isDefunctBrand("Budgeting App", ["Intuit Mint"]), true); // via alias
+  assert.equal(isDefunctBrand("Monarch Money"), false); // live rival stays
+  assert.equal(isDefunctBrand(""), false);
+});
+
+test("buildProfile drops defunct competitors (Mint) but keeps live ones", () => {
+  const p = buildProfile(
+    "https://copilot.money",
+    extracted({
+      competitors: [
+        { name: "Mint", aliases: ["mint.com"] },
+        { name: "YNAB", aliases: [] },
+        { name: "Monarch Money", aliases: [] },
+      ],
+    }),
+    "m",
+    FIXED,
+  );
+  assert.deepEqual(
+    p.competitors.map((c) => c.name),
+    ["YNAB", "Monarch Money"],
+  );
+});
+
+test("buildProfile drops a defunct brand named only via an alias", () => {
+  const p = buildProfile(
+    "https://copilot.money",
+    extracted({
+      competitors: [
+        { name: "The Mint App", aliases: ["Intuit Mint"] }, // alias is the dead brand
+        { name: "YNAB", aliases: [] },
+      ],
+    }),
+    "m",
+    FIXED,
+  );
+  assert.deepEqual(
+    p.competitors.map((c) => c.name),
+    ["YNAB"],
   );
 });
 

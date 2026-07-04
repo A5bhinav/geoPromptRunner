@@ -38,6 +38,7 @@ import {
 import { interactiveConfirm } from "./confirmGate.ts";
 import { isStale } from "./freshness.ts";
 import { runTeaserPipeline, type PipelineOptions } from "./pipeline.ts";
+import { relationshipGuard } from "./resolver/relationshipCheck.ts";
 import { renderHtml, renderPdf } from "./render/pdf.ts";
 
 interface Args {
@@ -126,6 +127,14 @@ function buildOptions(args: Args): Partial<PipelineOptions> {
           "LLM output — review the draft before sending. Pass --yes to silence this.\n",
       );
     }
+  }
+
+  // Relationship guard: only meaningful on a REAL resolved profile (a mock
+  // resolver invents competitors we won't web-check). Logs to stderr so --json
+  // stdout stays a single clean object. Recall-safe inside relationshipGuard.
+  if (adapterModes().resolver === "real") {
+    opts.relationshipCheck = (profile) =>
+      relationshipGuard(profile, (msg) => console.error(msg));
   }
   return opts;
 }

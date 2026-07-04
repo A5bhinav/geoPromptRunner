@@ -22,7 +22,7 @@ import {
 } from "./profileExtraction.ts";
 
 // Re-export so existing importers (tests, callers) keep their import path.
-export { buildProfile } from "./profileExtraction.ts";
+export { buildProfile, isDefunctBrand } from "./profileExtraction.ts";
 
 /** Build the labeled user content Claude reads. Pure (exported for tests). */
 export function buildExtractionInput(pages: LabeledPage[]): string {

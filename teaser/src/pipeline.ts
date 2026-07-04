@@ -51,11 +51,18 @@ export interface PipelineOptions {
     profile: CompanyProfile,
     querySet: GeneratedQuerySet,
   ) => Promise<{ profile: CompanyProfile; querySet: GeneratedQuerySet } | null>;
+  /**
+   * Optional web-search guard run right after resolution: drops competitors that
+   * are corporately entangled with the client (acquired it, were acquired by it,
+   * or are the same company) BEFORE they seed queries or reach the confirm gate.
+   * Returns the (possibly pruned) profile. Recall-safe — never throws.
+   */
+  relationshipCheck?: (profile: CompanyProfile) => Promise<CompanyProfile>;
 }
 
 export const DEFAULT_OPTIONS: PipelineOptions = {
   // Engine names must match the platform's KNOWN_ENGINES (src/prompts/csv_loader.py).
-  engines: ["perplexity", "google_ai_overviews", "openai"],
+  engines: ["perplexity", "openai_search", "gemini_grounded"],
   // Repeat every query so a printed claim can be shown to REPRODUCE, not rest on
   // a single nondeterministic sample. Engine answers vary run-to-run; a prospect
   // who re-asks the query must see the same loss. Selection then prefers findings
@@ -99,6 +106,13 @@ export async function runTeaserPipeline(
 
   // 1. Resolve URL -> company profile.
   let profile = await deps.resolver.resolve(url);
+
+  // 1b. Relationship guard: drop competitors corporately tied to the client
+  //     (acquisitions/mergers the resolver LLM couldn't know) before they seed
+  //     queries. Runs pre-confirm so the human reviews an already-clean list.
+  if (opts.relationshipCheck) {
+    profile = await opts.relationshipCheck(profile);
+  }
 
   // 2. Generate the teaser-grade query set, capped to the leanest N (by weight)
   //    when maxQueries is set — a teaser needs only enough queries to surface a
