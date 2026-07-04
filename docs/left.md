@@ -76,8 +76,8 @@ Per `CLAUDE.md` §11. Listed so they're not mistaken for omissions.
   plus the Supabase DB password, were all pasted in plaintext in chat. Rotate them in their
   consoles. `.env` stays gitignored; keys are never logged.
 - **Reconcile Supabase state.** The auto-memory note still says "tables not yet created," but
-  judgments now persist and re-read live — that note is stale. Confirm the full `schema_v5.sql`
-  set is migrated and the memory is updated.
+  judgments now persist and re-read live — that note is stale. Confirm the full `schema_ui.sql`
+  set (audit_runs, query_results, query_citations, judgments) is migrated and the memory is updated.
 
 ---
 

@@ -36,7 +36,7 @@ create table if not exists public.audit_runs (
     archived_at timestamptz
 );
 
--- If audit_runs already existed (from schema_v2), add the new state columns.
+-- If audit_runs already existed from an earlier version, add the new state columns.
 alter table public.audit_runs add column if not exists status text not null default 'running';
 alter table public.audit_runs add column if not exists completed_calls integer not null default 0;
 alter table public.audit_runs add column if not exists total_calls integer not null default 0;

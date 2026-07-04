@@ -71,7 +71,6 @@ TABLE_JUDGE_CACHE = "judge_cache"
 TABLE_CONTENT_JUDGE_CACHE = "content_judge_cache"
 
 # Site-audit pipeline tables (see data/schema_site_audit.sql).
-TABLE_SITE_AUDIT_PHASE = "site_audit_phase"
 TABLE_SITE_AUDIT_PAGE = "site_audit_page"
 TABLE_SITE_AUDIT_CHECK = "site_audit_check"
 TABLE_SITE_AUDIT_OFFSITE = "site_audit_offsite_finding"

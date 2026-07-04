@@ -430,11 +430,11 @@ engine phase or the run.
 - **Progress:** add an **additive** namespace (`phases.site_audit: {done, total,
   state}`); keep the existing `progress` semantics unchanged so old status consumers
   don't break; lock the shared status dict.
-- **Persistence:** child tables keyed on `run_id` — `site_audit_phase` (resumability
-  anchor), `site_audit_check` (`unique(run_id, check_key, page_url)` for idempotent
-  re-runs), `site_audit_page`, `site_audit_offsite_finding`; `jsonb` for variable
-  payloads. Postgres-as-source-of-truth means a restart resumes by skipping completed
-  `check_key`s.
+- **Persistence:** child tables keyed on `run_id` — `site_audit_check`
+  (`unique(run_id, check_key, page_url)` for idempotent re-runs), `site_audit_page`,
+  `site_audit_offsite_finding`; `jsonb` for variable payloads. Postgres-as-source-of-truth
+  means a restart resumes by skipping completed `check_key`s. (Phase-level progress is
+  tracked in-memory by the runner, not persisted — there is no separate phase table.)
 - **Report merge:** in `build_report`, union the existing answer report with whatever
   site-audit rows exist; render even if the audit is `partial`/`absent` (best-effort,
   read from DB so a retried/late audit is picked up next build).

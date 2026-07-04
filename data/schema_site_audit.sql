@@ -10,22 +10,6 @@
 -- site_audit_page.storage_path + content_sha256. Only the small queryable
 -- artifacts (extracted_text, json_ld, fetch_meta) live in Postgres.
 
--- --- Phase state (resumability anchor) ---------------------------------------
--- One row per (run, phase). A restart resumes by skipping phases already 'done'.
-create table if not exists public.site_audit_phase (
-    id uuid primary key default gen_random_uuid(),
-    run_id uuid not null references public.audit_runs (id) on delete cascade,
-    crawl_id uuid,
-    phase text not null,                       -- fetch | schema | linkgraph | judge | offsite
-    state text not null default 'pending',     -- pending | running | done | partial | failed
-    done integer not null default 0,
-    total integer not null default 0,
-    detail jsonb not null default '{}'::jsonb,
-    updated_at timestamptz not null default now(),
-    created_at timestamptz not null default now(),
-    unique (run_id, phase)
-);
-
 -- --- Page cache (the fetch & cache layer writes one row per crawled page) -----
 -- Key is (run_id, normalized_url): re-crawling a run upserts rather than
 -- duplicating. raw/rendered HTML are not columns — storage_path points at the
@@ -82,12 +66,10 @@ create table if not exists public.site_audit_offsite_finding (
     created_at timestamptz not null default now()
 );
 
-create index if not exists idx_site_audit_phase_run_id on public.site_audit_phase (run_id);
 create index if not exists idx_site_audit_page_run_id on public.site_audit_page (run_id);
 create index if not exists idx_site_audit_check_run_id on public.site_audit_check (run_id);
 create index if not exists idx_site_audit_offsite_run_id on public.site_audit_offsite_finding (run_id);
 
-alter table public.site_audit_phase enable row level security;
 alter table public.site_audit_page enable row level security;
 alter table public.site_audit_check enable row level security;
 alter table public.site_audit_offsite_finding enable row level security;
