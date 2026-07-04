@@ -67,3 +67,28 @@ def test_openai_engine_missing_key_raises(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(settings, "OPENAI_API_KEY", "")
     with pytest.raises(ValueError, match="OPENAI_API_KEY"):
         openai_engine.OpenAIEngine()
+
+def test_ai_overviews_never_raises_on_non_json_200(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A 200 with a non-JSON body (an edge-firewall challenge page served at 200)
+    # must not escape the engine — response.json() raises ValueError, which the
+    # parse guard turns into (None, []), honoring the never-raise contract.
+    import httpx
+
+    from src.config import settings
+    from src.engines import ai_overviews_engine
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+
+    class _FakeClient:
+        def get(self, *args: Any, **kwargs: Any) -> httpx.Response:
+            # 200 with an HTML body (a challenge page); request set so
+            # raise_for_status() passes and execution reaches the JSON parse.
+            req = httpx.Request("GET", "https://www.searchapi.io/api/v1/search")
+            return httpx.Response(
+                200, text="<html>Just a moment... (challenge)</html>", request=req
+            )
+
+    engine = ai_overviews_engine.AIOverviewsEngine()
+    engine._client = _FakeClient()  # type: ignore[assignment]
+    assert engine.query_with_citations("best budgeting app") == (None, [])
+    assert engine.query("best budgeting app") is None

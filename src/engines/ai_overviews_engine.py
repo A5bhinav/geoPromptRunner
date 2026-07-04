@@ -70,17 +70,24 @@ class AIOverviewsEngine(BaseEngine):
             logger.warning("SearchApi request error: %s", type(exc).__name__)
             return None, []
 
-        data: dict[str, Any] = response.json()
-        overview = data.get("ai_overview")
-        if not isinstance(overview, dict):
-            return None, []  # no AI Overview surfaced for this query
-
-        text = overview.get("markdown") or _extract_text(overview)
-        urls = [
-            str(ref["link"])
-            for ref in overview.get("reference_links", []) or []
-            if isinstance(ref, dict) and ref.get("link")
-        ]
+        # Parse + shape the response inside the guard too: a 200 with a non-JSON
+        # body (an error/challenge page served at 200) makes response.json() raise
+        # ValueError, and malformed JSON can trip the extraction — either would
+        # escape query_with_citations and break the "engines never raise" contract.
+        try:
+            data: dict[str, Any] = response.json()
+            overview = data.get("ai_overview")
+            if not isinstance(overview, dict):
+                return None, []  # no AI Overview surfaced for this query
+            text = overview.get("markdown") or _extract_text(overview)
+            urls = [
+                str(ref["link"])
+                for ref in overview.get("reference_links", []) or []
+                if isinstance(ref, dict) and ref.get("link")
+            ]
+        except Exception as exc:  # never let a bad response body crash the pipeline
+            logger.warning("SearchApi response parse error: %s", type(exc).__name__)
+            return None, []
         return (text or None), urls
 
 
