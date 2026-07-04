@@ -168,3 +168,24 @@ def test_sample_gold_loads_as_v2() -> None:
     assert items[0].expected_flags  # item 1 has real errors
     assert items[2].expected_flags == []  # item 3 accurate
     assert items[2].fact_sheet_candidates  # ...with an uncoverable-claim guard
+
+
+def test_isolated_cache_never_the_shared_supabase_notebook(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Calibration must measure the held-constant production judge, so its cache is
+    ISOLATED — even when the shared backend is selected, it must NOT be the Supabase
+    notebook the subscription pre-judge fills with Opus verdicts under the same keys."""
+    from src.config import settings
+    from src.pipeline.calibration import isolated_cache
+    from src.pipeline.judge_cache import (
+        InMemoryJudgeCache,
+        SupabaseJudgeCache,
+        make_judge_cache,
+    )
+
+    monkeypatch.setattr(settings, "JUDGE_CACHE_BACKEND", "supabase")
+    # The shared factory would hand back the Supabase notebook here...
+    assert isinstance(make_judge_cache(), SupabaseJudgeCache)
+    # ...but calibration's cache stays isolated in-memory regardless.
+    cache = isolated_cache()
+    assert isinstance(cache, InMemoryJudgeCache)
+    assert not isinstance(cache, SupabaseJudgeCache)

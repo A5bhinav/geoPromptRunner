@@ -367,6 +367,23 @@ def _tally(evals: list[_Eval], breakdowns: bool = True) -> CalibrationReport:
     )
 
 
+def isolated_cache() -> JudgeCache:
+    """A judge cache for CALIBRATION, isolated from the shared notebook.
+
+    Calibration must measure the held-constant production judge (temp-0 Sonnet).
+    The shared Supabase notebook (``make_judge_cache()``) is ALSO filled by the
+    subscription pre-judge with a *different* model's verdicts (Opus) under
+    identical keys — reading one would silently calibrate the wrong model. An
+    in-process cache can never hold a pre-judge entry: it dedups within a run
+    (killing temp-0 jitter on repeats) and re-judges fresh across runs, so
+    calibration always reflects the real judge. Callers that want calibration
+    caching MUST use this, never ``make_judge_cache()``.
+    """
+    from src.pipeline.judge_cache import InMemoryJudgeCache
+
+    return InMemoryJudgeCache()
+
+
 def calibrate(
     judge: Judge,
     gold: list[GoldItem],
