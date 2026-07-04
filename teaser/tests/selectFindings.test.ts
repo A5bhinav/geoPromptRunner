@@ -269,12 +269,16 @@ test("refuses when NO losing query foregrounds the competitor in the shown answe
   assert.match(r.reason, /provable hero/);
 });
 
-function siteAudit(roadmap: SiteAuditPayload["roadmap"], present = true): SiteAuditPayload {
+function siteAudit(
+  roadmap: SiteAuditPayload["roadmap"],
+  present = true,
+  checks: SiteAuditPayload["checks"] = [],
+): SiteAuditPayload {
   return {
     present,
     domain: "acme.io",
     pages_crawled: 3,
-    checks: [],
+    checks,
     summary: {},
     errors: 0,
     offsite: [],
@@ -302,6 +306,34 @@ test("selectWhyGaps orders by phase, fail-before-partial, then impact", () => {
   assert.equal(gaps[0]!.label, "robots.txt allows AI crawlers"); // phase 1 wins
   assert.equal(gaps[1]!.label, "schema.org markup"); // phase 2 fail/Medium beats phase 2 partial/Low
   assert.equal(gaps[0]!.status, "fail");
+});
+
+// B: when our own crawl probe was edge-blocked, the phase-1 technical-access gaps
+// reflect our client being blocked (not the prospect's policy) and must not be
+// printed as the prospect's failings. Content/offsite gaps survive.
+const ROADMAP_MIX: SiteAuditPayload["roadmap"] = [
+  { category: "technical_accessibility", check_name: "robots.txt allows AI crawlers", status: "fail", impact_label: "High", effort: "low", phase: 1 },
+  { category: "technical_accessibility", check_name: "content reachable, not gated", status: "fail", impact_label: "High", effort: "low", phase: 1 },
+  { category: "content_substance", check_name: "on-site comparison content", status: "fail", impact_label: "Medium", effort: "medium", phase: 2 },
+];
+const BLOCKED_CHECKS: SiteAuditPayload["checks"] = [
+  { check_key: "crawler_access", category: 1, page_url: "/", status: "fail", detail: "Homepage didn't return 200 for a normal browser; can't assess crawler access." },
+  { check_key: "gated_content", category: 1, page_url: "/", status: "fail", detail: "Homepage is gated for GPTBot: / (HTTP 403)." },
+];
+
+test("selectWhyGaps drops technical-access gaps when our crawl probe was edge-blocked", () => {
+  const gaps = selectWhyGaps(siteAudit(ROADMAP_MIX, true, BLOCKED_CHECKS), 3);
+  assert.deepEqual(gaps.map((g) => g.label), ["on-site comparison content"]);
+  assert.ok(!gaps.some((g) => /robots|gated|reachable/.test(g.label)), "no access falsehoods survive");
+});
+
+test("selectWhyGaps keeps technical-access gaps when the crawl reached the site", () => {
+  const reached: SiteAuditPayload["checks"] = [
+    { check_key: "crawler_access", category: 1, page_url: "/", status: "pass", detail: "All probed AI crawler UAs reach the site." },
+    { check_key: "robots_txt", category: 1, page_url: "/", status: "fail", detail: "All tracked AI crawlers are blocked in robots.txt." },
+  ];
+  const gaps = selectWhyGaps(siteAudit(ROADMAP_MIX, true, reached), 3);
+  assert.ok(gaps.some((g) => g.label === "robots.txt allows AI crawlers"), "a genuine, confirmed block still shows");
 });
 
 // Regression for #4: a losing row with no named competitor is not printable.

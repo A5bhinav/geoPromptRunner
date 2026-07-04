@@ -364,11 +364,46 @@ export interface WhyGap {
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
 const STATUS_RANK: Record<string, number> = { fail: 2, partial: 1 };
 
+/** A Category-1 check detail that means OUR probe was edge-blocked, not that the
+ * site has a real problem: an HTTP 403/429, an anti-bot/consent challenge, or the
+ * crawler admitting it couldn't even get a browser baseline. */
+const PROBE_BLOCKED_DETAIL = /http\s*40[39]|http\s*429|anti-bot|challenge|did[n'’]?t return 200|can[' ’]?t assess/i;
+
+/**
+ * True when our own crawl probe was edge-blocked (403 / anti-bot challenge / no
+ * browser baseline). Modern edge firewalls (Vercel, Cloudflare) reject our
+ * httpx client's fingerprint while serving real verified crawlers and browsers —
+ * proven on calai.app: `robots.txt: Allow /` + a sitemap, curl/GPTBot get 200,
+ * yet our probe gets 403. When that happens the Category-1 technical-ACCESS
+ * verdicts (robots.txt, sitemap, llms.txt, CDN/WAF, gating) describe OUR client
+ * being blocked, not the prospect's crawler policy — so they must not be printed
+ * as the prospect's own failings. (Fitbod's 403 is a genuine block, but the
+ * crawler can't yet tell the two apart — that's task A; until then we suppress
+ * conservatively rather than assert a checkable falsehood in cold outreach.)
+ */
+export function accessProbeUnreliable(site: SiteAuditPayload): boolean {
+  const cat1 = (site.checks ?? []).filter((c) => c.category === 1);
+  const crawlerAccess = cat1.find((c) => c.check_key === "crawler_access");
+  if (crawlerAccess?.status === "fail" && PROBE_BLOCKED_DETAIL.test(crawlerAccess.detail ?? "")) {
+    return true;
+  }
+  // Or ≥2 Cat-1 checks failing specifically with a block/challenge signature.
+  return (
+    cat1.filter((c) => c.status === "fail" && PROBE_BLOCKED_DETAIL.test(c.detail ?? "")).length >= 2
+  );
+}
+
 /**
  * Pick the top fixable gaps behind the visibility loss — the "why AI skips you"
  * block. The site-audit roadmap is already gaps-only (fail/partial); we order by
  * fix phase (technical accessibility first), then fail-before-partial, then
  * impact, and take the top `max`. Returns [] when no site audit ran.
+ *
+ * When our crawl probe was edge-blocked (`accessProbeUnreliable`), the phase-1
+ * technical-accessibility gaps are dropped: they'd otherwise tell the prospect
+ * "your site blocks AI crawlers / your content is gated" when in reality only our
+ * probe was blocked and real crawlers get in. Content/off-site gaps (judged from
+ * content we did obtain, or from the web) are kept.
  */
 export function selectWhyGaps(
   site: SiteAuditPayload | null | undefined,
@@ -377,7 +412,9 @@ export function selectWhyGaps(
   if (!site || !site.present || !Array.isArray(site.roadmap) || site.roadmap.length === 0) {
     return [];
   }
+  const dropAccessGaps = accessProbeUnreliable(site);
   return [...site.roadmap]
+    .filter((r) => !(dropAccessGaps && r.phase === 1))
     .sort(
       (a, b) =>
         a.phase - b.phase ||
