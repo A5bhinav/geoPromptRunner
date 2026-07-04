@@ -118,6 +118,17 @@ export async function runTeaserPipeline(
   //    when maxQueries is set — a teaser needs only enough queries to surface a
   //    losing one, not a full audit's breadth.
   let querySet = await deps.querySetGenerator.generate(profile);
+  // A teaser measures UNPROMPTED surfacing, so drop brand-intent queries. They
+  // NAME the client (rule 1 in the generator), which makes the client trivially
+  // "present" — inflating its headline count and category bar while never
+  // yielding a losing-query finding (the client can't be absent from a query
+  // that names it). Keep the neutral buyer queries. Guard the degenerate
+  // all-brand set so we never submit an empty audit. (The full paid audit keeps
+  // brand queries — brand visibility is a real signal there; this is teaser-only.)
+  const nonBrandQueries = querySet.queries.filter((q) => q.intent !== "brand");
+  if (nonBrandQueries.length > 0) {
+    querySet = { ...querySet, queries: nonBrandQueries };
+  }
   if (opts.maxQueries && opts.maxQueries > 0 && querySet.queries.length > opts.maxQueries) {
     const leanest = [...querySet.queries]
       .sort((a, b) => b.weight - a.weight)
