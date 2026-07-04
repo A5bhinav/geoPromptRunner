@@ -18,6 +18,40 @@ export function hostnameOf(url: string): string {
   }
 }
 
+/**
+ * Below this many chars of readable text across the fetched page(s), we REFUSE to
+ * profile. A bot-challenge interstitial (Cloudflare's "Just a moment…" is served
+ * at HTTP 200) or a JS-only SPA shell yields only a few words of noise, and
+ * extracting a company profile from that risks a hallucinated name/competitors
+ * that poison the whole teaser (the Mint/MyFitnessPal failure class, from a bad
+ * fetch). Failing here — no teaser — is the safe direction. A real homepage has
+ * thousands of chars; genuine sub-threshold pages can't yield competitors anyway.
+ */
+export const MIN_PROFILE_TEXT_CHARS = 200;
+
+/** Total readable characters across the pages handed to the profiler. Pure. */
+export function profileTextLength(texts: readonly string[]): number {
+  return texts.reduce((n, t) => n + (t ?? "").trim().length, 0);
+}
+
+/**
+ * Throw unless the fetched pages carry enough readable text to profile. Callers
+ * pass the per-page text (FetchClaudeResolver) or markdown (Crawl4ai) they were
+ * about to hand to Claude — so a thin/challenge/shell page fails fast with a
+ * clear, actionable message instead of producing a fabricated profile.
+ */
+export function assertSufficientProfileText(texts: readonly string[], url: string): void {
+  const chars = profileTextLength(texts);
+  if (chars < MIN_PROFILE_TEXT_CHARS) {
+    throw new Error(
+      `insufficient content to profile ${url} (${chars} readable chars, need ` +
+        `${MIN_PROFILE_TEXT_CHARS}). The page is likely JS-only or bot-blocked ` +
+        `(a challenge or SPA shell served at 200) — profiling from noise would ` +
+        `fabricate the company/competitors. Try crawl4ai or a different URL.`,
+    );
+  }
+}
+
 /** "acme-hq.io" -> "Acme Hq" — a readable name fallback if Claude omits one. */
 export function brandFromHostname(host: string): string {
   const core = host.split(".")[0] ?? host;

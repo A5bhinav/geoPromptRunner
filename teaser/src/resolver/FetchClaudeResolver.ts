@@ -22,6 +22,7 @@ import type { Resolver } from "./Resolver.ts";
 import {
   PROFILE_SCHEMA,
   PROFILE_SYSTEM_PROMPT,
+  assertSufficientProfileText,
   buildProfile,
   type ExtractedProfile,
 } from "./profileExtraction.ts";
@@ -263,9 +264,12 @@ export class FetchClaudeResolver implements Resolver {
     }
 
     const usable = pages.filter((p) => p.text.trim().length > 0);
-    if (usable.length === 0) {
-      throw new Error(`no readable text extracted from ${url} (JS-only page? try crawl4ai)`);
-    }
+    // Refuse to profile a thin/challenge/shell page: a few words of noise (a
+    // Cloudflare interstitial at 200, a JS-only SPA) would fabricate the profile.
+    assertSufficientProfileText(
+      usable.map((p) => p.text),
+      url,
+    );
 
     const extracted = await extractJson<ExtractedProfile>(
       PROFILE_SYSTEM_PROMPT,

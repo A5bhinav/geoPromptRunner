@@ -12,6 +12,11 @@ import {
   isDefunctBrand,
 } from "../src/resolver/Crawl4aiClaudeResolver.ts";
 import { pickInternalTargets } from "../src/resolver/Crawl4aiClient.ts";
+import {
+  MIN_PROFILE_TEXT_CHARS,
+  assertSufficientProfileText,
+  profileTextLength,
+} from "../src/resolver/profileExtraction.ts";
 
 const FIXED = new Date("2026-06-22T00:00:00.000Z");
 
@@ -178,4 +183,27 @@ test("pickInternalTargets returns [] when nothing matches", () => {
     3,
   );
   assert.deepEqual(targets, []);
+});
+
+test("profileTextLength sums trimmed readable chars across pages", () => {
+  assert.equal(profileTextLength(["  hello  ", "world!"]), "hello".length + "world!".length);
+  assert.equal(profileTextLength([]), 0);
+  assert.equal(profileTextLength(["   ", ""]), 0);
+});
+
+test("assertSufficientProfileText throws on a thin challenge page (fails safe)", () => {
+  // A Cloudflare interstitial served at HTTP 200 — a few words of noise.
+  const challenge = "Just a moment... Enable JavaScript and cookies to continue.";
+  assert.ok(challenge.length < MIN_PROFILE_TEXT_CHARS);
+  assert.throws(
+    () => assertSufficientProfileText([challenge], "https://calai.app"),
+    /insufficient content to profile/,
+  );
+  assert.throws(() => assertSufficientProfileText([], "https://x.com"), /insufficient content/);
+});
+
+test("assertSufficientProfileText passes a real page with enough text", () => {
+  const real = "Cal AI is an AI-powered calorie tracking app for your phone. ".repeat(6);
+  assert.ok(real.length >= MIN_PROFILE_TEXT_CHARS);
+  assertSufficientProfileText([real], "https://calai.app"); // must not throw
 });

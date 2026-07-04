@@ -17,6 +17,7 @@ import type { Resolver } from "./Resolver.ts";
 import {
   PROFILE_SCHEMA,
   PROFILE_SYSTEM_PROMPT,
+  assertSufficientProfileText,
   buildProfile,
   type ExtractedProfile,
 } from "./profileExtraction.ts";
@@ -41,6 +42,12 @@ export class Crawl4aiClaudeResolver implements Resolver {
     if (pages.length === 0) {
       throw new Error(`crawl4ai returned no usable markdown for ${url}`);
     }
+    // Even with page(s) returned, refuse to profile thin/challenge content — a
+    // rendered bot-challenge or empty shell would fabricate the profile.
+    assertSufficientProfileText(
+      pages.map((p) => p.markdown),
+      url,
+    );
 
     const input = buildExtractionInput(pages);
     const extracted = await extractJson<ExtractedProfile>(
