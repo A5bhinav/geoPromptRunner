@@ -12,6 +12,7 @@ The audit layer owns the mapping from check results → report rows and → pers
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -215,7 +216,7 @@ def run_site_audit(
     # Cat-1 technical accessibility (domain-level). Runs even when the crawl
     # found no pages — robots.txt / WAF / sitemap verdicts are exactly what you
     # want when a site blocks the crawler outright.
-    checks.extend(_run_technical(run_id, domain, rows))
+    checks.extend(_run_technical(run_id, domain, rows, _homepage_reachable(crawl)))
     for page in crawl.pages:
         checks.append(_run_ssr(run_id, page, rows))
         checks.append(_run_schema(run_id, page, rows))
@@ -347,13 +348,56 @@ _TECHNICAL_CHECKS: tuple[tuple[str, Callable[[str], CheckResult]], ...] = (
 )
 
 
-def _run_technical(run_id: str, domain: str, rows: list[dict[str, Any]]) -> list[SiteCheckRow]:
+# A Cat-1 detail that means the verdict is INCONCLUSIVE — our probe was edge-blocked
+# (HTTP 403/429 / anti-bot challenge) or the check admits it couldn't reach/assess the
+# page. None of these prove a site-side block, so they can't stand as a 'fail'.
+_INCONCLUSIVE_DETAIL = re.compile(
+    r"http\s*40[39]|http\s*429|anti-bot|challenge"
+    r"|did[n'’]?t return 200|can.t assess"
+    r"|could not reach|couldn.t reach|could not fetch|couldn.t fetch|request failed|no page to",
+    re.IGNORECASE,
+)
+# The crawler-access check's own admission that it couldn't establish a browser
+# baseline — so it can't tell "the site blocks bots" from "our client is blocked".
+_NO_BASELINE_DETAIL = re.compile(r"did[n'’]?t return 200|can.t assess", re.IGNORECASE)
+
+
+def _homepage_reachable(crawl: CrawlResult) -> bool:
+    """True when the deep crawl obtained a real page (HTTP 200, not challenge-blocked,
+    with content). Positive proof our client reached the site — so a 403 on a separate
+    Cat-1 probe was a transient/rate block of ours, not a site-side policy.
+    """
+    for page in crawl.pages:
+        meta = page.fetch_meta
+        has_content = bool(page.extracted_text or page.rendered_html or page.raw_html)
+        if meta.status_code == 200 and not meta.blocked and has_content:
+            return True
+    return False
+
+
+def _run_technical(
+    run_id: str,
+    domain: str,
+    rows: list[dict[str, Any]],
+    homepage_reachable: bool,
+) -> list[SiteCheckRow]:
     """Run the domain-level Cat-1 technical-accessibility checks (best-effort).
 
-    Each probe is independent; one that raises is logged and skipped so a single
-    failed check never sinks the audit phase.
+    The hard truth: modern edge firewalls (Vercel, Cloudflare) reject our httpx AND
+    our headless-render fingerprints while serving real IP-verified crawlers and
+    browsers. curl gets rate-limited the same way. So an edge-block of our probe can
+    never *prove* the site blocks AI crawlers (calai.app: robots.txt ``Allow: /`` + a
+    sitemap, yet every client we control gets 403). We therefore DOWNGRADE an
+    edge-blocked access 'fail' to 'ungradeable' (inconclusive — excluded from the
+    roadmap) whenever we couldn't confirm a real block, i.e. the ``crawler_access``
+    check got no browser baseline OR the crawl never reached a real page. A genuine,
+    confirmable block — ``crawler_access`` established a browser baseline (200) and
+    the bot UA specifically got 403 — keeps its 'fail'. A non-edge 'fail' (e.g. we
+    READ robots.txt and it disallows GPTBot) is untouched (its detail doesn't match).
+
+    Each probe is independent; one that raises is logged and skipped.
     """
-    out: list[SiteCheckRow] = []
+    results: list[tuple[str, str, str]] = []  # (check_key, status, detail)
     for check_key, fn in _TECHNICAL_CHECKS:
         try:
             result = fn(domain)
@@ -362,7 +406,23 @@ def _run_technical(run_id: str, domain: str, rows: list[dict[str, Any]]) -> list
                 "technical check %s failed for %s: %s", check_key, domain, type(exc).__name__
             )
             continue
-        status, detail = result["status"], result["details"]
+        results.append((check_key, result["status"], result["details"]))
+
+    # We can't trust an edge-block as a site-side verdict unless we positively
+    # confirmed access: a browser baseline from crawler_access, or a real page from
+    # the crawl. Absent that, edge-blocked fails are inconclusive.
+    ca = next((r for r in results if r[0] == "crawler_access"), None)
+    baseline_missing = bool(ca and ca[1] == "fail" and _NO_BASELINE_DETAIL.search(ca[2] or ""))
+    cannot_confirm = baseline_missing and not homepage_reachable
+
+    out: list[SiteCheckRow] = []
+    for check_key, status, detail in results:
+        if status == "fail" and cannot_confirm and _INCONCLUSIVE_DETAIL.search(detail or ""):
+            status, detail = "ungradeable", (
+                f"Inconclusive — our probe was edge-blocked ({(detail or '').rstrip('.')}) and "
+                "we couldn't establish a browser baseline. Edge firewalls block our client while "
+                "serving IP-verified crawlers, so this can't be confirmed as a site-side block."
+            )
         rows.append(_check_row(run_id, check_key, 1, "", status, {"reason": detail}, {}))
         out.append(
             SiteCheckRow(check_key=check_key, category=1, page_url="", status=status, detail=detail)

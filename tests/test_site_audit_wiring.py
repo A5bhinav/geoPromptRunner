@@ -54,6 +54,67 @@ def _outcome() -> AuditOutcome:
     )
 
 
+def _blocked_crawl() -> CrawlResult:
+    """A crawl that reached no real page (every client edge-blocked)."""
+    return CrawlResult(
+        run_id="rid", domain="x.com", crawl_id="cid", started_at="t", pages=[], errors=["blocked"]
+    )
+
+
+def _cat1(payload: dict[str, Any]) -> dict[str, str]:
+    return {c["check_key"]: c["status"] for c in payload["checks"] if c["category"] == 1}
+
+
+def _fake_check(status: str, details: str) -> Any:
+    return lambda _domain: {"status": status, "details": details}
+
+
+def test_edge_blocked_access_checks_downgrade_to_ungradeable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When we couldn't establish a baseline AND the crawl reached nothing, an
+    access 'fail' caused by our own probe being edge-blocked is inconclusive —
+    never a client-facing 'the site blocks crawlers' claim."""
+    import src.audit.site_audit as site_audit
+
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d: _blocked_crawl())
+    monkeypatch.setattr(
+        site_audit,
+        "_TECHNICAL_CHECKS",
+        [
+            ("crawler_access", _fake_check("fail", "Homepage didn't return 200; can't assess.")),
+            ("robots_txt", _fake_check("fail", "robots.txt returned HTTP 403.")),
+            ("gated_content", _fake_check("fail", "Could not reach any page to assess gating.")),
+        ],
+    )
+    cat1 = _cat1(site_audit.run_site_audit("rid", "x.com", persist=False))
+    assert cat1 == {
+        "crawler_access": "ungradeable",
+        "robots_txt": "ungradeable",
+        "gated_content": "ungradeable",
+    }
+
+
+def test_confirmed_block_with_baseline_stays_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A block confirmed via a browser baseline (browser 200, bot UA 403) is a real
+    finding and must NOT be softened to inconclusive."""
+    import src.audit.site_audit as site_audit
+
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d: _blocked_crawl())
+    # baseline established (no "can't assess") -> a genuine UA-specific block.
+    monkeypatch.setattr(
+        site_audit,
+        "_TECHNICAL_CHECKS",
+        [
+            ("crawler_access", _fake_check("fail", "AI crawler UAs blocked at the edge.")),
+            ("robots_txt", _fake_check("fail", "robots.txt disallows GPTBot.")),
+        ],
+    )
+    cat1 = _cat1(site_audit.run_site_audit("rid", "x.com", persist=False))
+    assert cat1["crawler_access"] == "fail"
+    assert cat1["robots_txt"] == "fail"
+
+
 def test_run_site_audit_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     import src.audit.site_audit as site_audit
 
