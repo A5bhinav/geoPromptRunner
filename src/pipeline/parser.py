@@ -21,13 +21,22 @@ class MentionType(StrEnum):
 
 
 # Explicit recommendation language. If any appears in a response that also
-# mentions the brand, the brand is treated as RECOMMENDED.
-RECOMMENDATION_TERMS: tuple[str, ...] = ("best", "recommend", "suggest", "top choice")
+# mentions the brand, the brand is treated as RECOMMENDED. Verb stems match their
+# inflections; a plain trailing \b on "recommend" anchored only the bare stem, so
+# "is recommended" / "recommends" (the most common phrasings) never matched.
+RECOMMENDATION_TERMS: tuple[str, ...] = ("best", "top choice")
+RECOMMENDATION_STEMS: tuple[str, ...] = ("recommend", "suggest")
 
-# Compiled once at import: matches any recommendation term on a word boundary.
+# Compiled once at import: matches any recommendation term on a word boundary,
+# allowing inflectional suffixes on the verb stems (recommend/recommended/…).
 # Precompiling avoids rebuilding the pattern on every response we parse.
 _RECOMMENDATION_RE = re.compile(
-    r"\b(?:" + "|".join(re.escape(term) for term in RECOMMENDATION_TERMS) + r")\b",
+    r"\b(?:"
+    + "|".join(
+        [re.escape(term) for term in RECOMMENDATION_TERMS]
+        + [re.escape(stem) + r"\w*" for stem in RECOMMENDATION_STEMS]
+    )
+    + r")\b",
     re.IGNORECASE,
 )
 

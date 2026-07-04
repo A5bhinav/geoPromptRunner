@@ -396,6 +396,17 @@ def parse_csv_files(files: list[tuple[str, str]]) -> ParseResult:
             )
         )
 
+    if not engines:
+        errors.append(
+            ValidationIssue(
+                message=(
+                    "no engines configured; add a 'config,engines,...' row (e.g. openai;anthropic)"
+                ),
+                block="config",
+                key="engines",
+            )
+        )
+
     if not queries:
         errors.append(
             ValidationIssue(message="no query rows found in any file; an audit needs at least one")

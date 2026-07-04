@@ -56,6 +56,18 @@ export function competitorVerb(lead: Finding): { active: string; passive: string
   return { active: "mentions", passive: "is mentioned" };
 }
 
+/**
+ * The past-participle a proof card may print for the competitor, graded by the
+ * same prominence rule as competitorVerb so the card never overclaims:
+ * "recommended" is reserved for recommended_first; a weaker prominence grades
+ * down to "featured"/"mentioned". (The card previously hardcoded "recommended".)
+ */
+export function competitorProminenceWord(lead: Finding): string {
+  if (isRecommendedFirst(lead.prominence)) return "recommended";
+  if (lead.prominence === "mid_pack") return "featured";
+  return "mentioned";
+}
+
 export function headline(companyName: string, lead: Finding): string {
   // A direct, present-tense threat — built to stop a busy reader, not read like an
   // article. Names the rival AI is steering buyers toward, and who it leaves out.

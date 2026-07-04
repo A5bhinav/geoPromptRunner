@@ -63,6 +63,11 @@ TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_JUDGMENTS = "judgments"
 
+# Fixed namespaces for deriving deterministic (idempotent) row ids from a row's
+# natural key, so a retried save upserts the same row rather than duplicating it.
+_QUERY_RESULT_NS = uuid.uuid5(uuid.NAMESPACE_URL, "geo:query_result")
+_QUERY_CITATION_NS = uuid.uuid5(uuid.NAMESPACE_URL, "geo:query_citation")
+
 # Content-addressed judge notebooks — shared so the subscription pre-judge and the
 # UI/report step read the same verdicts. Query-answer verdicts and on-site content
 # verdicts live in SEPARATE tables (different value shapes / keyspaces).
@@ -245,9 +250,19 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
     Safe to call incrementally (e.g. once per query) so a long run is resumable
     and partial progress survives a mid-run failure.
     """
+    # Deterministic ids (not random uuid4) keyed on the row's natural identity, so
+    # a retried flush upserts the SAME rows instead of inserting duplicates with
+    # fresh ids. The caller retries the whole pending batch on any StorageError, and
+    # the two inserts below are not one transaction — without this, a citation-insert
+    # failure after the result-insert commits would re-insert every answer.
     result_rows = [
         {
-            "id": str(uuid.uuid4()),
+            "id": str(
+                uuid.uuid5(
+                    _QUERY_RESULT_NS,
+                    f"{run_id}:{r['query_id']}:{r['engine_name']}:{r['run_index']}",
+                )
+            ),
             "run_id": run_id,
             "query_id": r["query_id"],
             "intent": r["intent"],
@@ -261,7 +276,9 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
     ]
     citation_rows = [
         {
-            "id": str(uuid.uuid4()),
+            "id": str(
+                uuid.uuid5(_QUERY_CITATION_NS, f"{run_id}:{r['query_id']}:{r['engine_name']}:{url}")
+            ),
             "run_id": run_id,
             "query_id": r["query_id"],
             "engine_name": r["engine_name"],
@@ -274,12 +291,14 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
     if result_rows:
         _execute(
             f"save_query_results for run {run_id}",
-            lambda c: c.table(TABLE_QUERY_RESULTS).insert(result_rows).execute(),
+            lambda c: c.table(TABLE_QUERY_RESULTS).upsert(result_rows, on_conflict="id").execute(),
         )
     if citation_rows:
         _execute(
             f"save_query_citations for run {run_id}",
-            lambda c: c.table(TABLE_QUERY_CITATIONS).insert(citation_rows).execute(),
+            lambda c: (
+                c.table(TABLE_QUERY_CITATIONS).upsert(citation_rows, on_conflict="id").execute()
+            ),
         )
 
 
@@ -634,6 +653,11 @@ def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
     same run is idempotent — the judge is explicitly meant to be re-run, and
     appending would accumulate duplicate rows. Expects the full judgment set for
     the run in one call (not incremental).
+
+    An empty ``judgments`` list is a deliberate no-op (returns without clearing):
+    a re-judge that yields nothing is almost always a failed/empty pass, and
+    wiping the prior verdicts in that case would lose good data. To truly clear a
+    run's judgments, delete the run.
     """
     rows = [_judgment_to_row(run_id, j) for j in judgments]
     if not rows:

@@ -50,6 +50,12 @@ CATEGORY_CAPS: dict[PageCategory, int] = {
 # Homepage is always included; this bounds the total pages fetched per domain.
 GLOBAL_PAGE_CAP: int = 20
 
+# Category → priority weight, so the global-cap allocation prefers decisive
+# sections (pricing/comparison) over voluminous ones (docs/blog).
+_CATEGORY_WEIGHT: dict[PageCategory, int] = {
+    cat: weight for cat, (_pat, weight) in CATEGORY_PATTERNS.items()
+}
+
 # Compiled once. Ordered high→low weight so the first match is the best category.
 _COMPILED_PATTERNS: list[tuple[PageCategory, re.Pattern[str], int]] = sorted(
     [
@@ -131,7 +137,11 @@ def select_pages(
         by_category.setdefault(category, []).append(url)
 
     # Apply per-category caps, preferring shallower paths (closer to the root).
-    for category, urls in by_category.items():
+    # Iterate categories by priority WEIGHT, not sitemap-insertion order — otherwise
+    # the global cap could be spent on whatever section happened to be listed first
+    # (e.g. a big blog) and drop the few decisive pricing/comparison pages.
+    for category in sorted(by_category, key=lambda c: _CATEGORY_WEIGHT.get(c, 0), reverse=True):
+        urls = by_category[category]
         cap = CATEGORY_CAPS.get(category, GLOBAL_PAGE_CAP)
         ranked = sorted(urls, key=_depth)[:cap]
         selected.extend((url, category) for url in ranked)

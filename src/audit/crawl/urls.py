@@ -42,10 +42,16 @@ def normalize_url(url: str) -> str:
     """
     canon = canonicalize_url(_strip_tracking_params(url))
     parts = urlsplit(canon)
+    scheme = parts.scheme.lower()
     host = (parts.hostname or "").lower()
-    netloc = f"{host}:{parts.port}" if parts.port else host
+    # Drop the port when it's the scheme default, so "host" and "host:443" (or
+    # "host:80") don't become two cache keys / two link-graph nodes for one page.
+    port = parts.port
+    if (scheme == "https" and port == 443) or (scheme == "http" and port == 80):
+        port = None
+    netloc = f"{host}:{port}" if port else host
     path = parts.path or "/"
-    return urlunsplit((parts.scheme.lower(), netloc, path, parts.query, ""))
+    return urlunsplit((scheme, netloc, path, parts.query, ""))
 
 
 def content_hash(raw_bytes: bytes) -> str:

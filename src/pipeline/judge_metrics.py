@@ -84,7 +84,12 @@ def _brand_cells(judgments: list[AnswerJudgment], brand: str) -> list[BrandCell]
             if present and present_proms
             else Prominence.ABSENT.value
         )
-        framing = Counter(f for _, _, f in rows).most_common(1)[0][0]
+        present_framings = [f for p, _, f in rows if p]
+        framing = (
+            Counter(present_framings).most_common(1)[0][0]
+            if present_framings
+            else Framing.NEUTRAL.value
+        )
         cells.append(BrandCell(key[0], key[1], intents[key], brand, present, prominence, framing))
     return cells
 
@@ -119,11 +124,21 @@ def brand_cells_map(
             if present and present_proms
             else Prominence.ABSENT.value
         )
-        framing = Counter(f for _, _, f in rows).most_common(1)[0][0]
+        present_framings = [f for p, _, f in rows if p]
+        framing = (
+            Counter(present_framings).most_common(1)[0][0]
+            if present_framings
+            else Framing.NEUTRAL.value
+        )
         out[brand].append(
             BrandCell(
-                query_id, engine, intents[(brand, query_id, engine)], brand, present,
-                prominence, framing,
+                query_id,
+                engine,
+                intents[(brand, query_id, engine)],
+                brand,
+                present,
+                prominence,
+                framing,
             )
         )
     return out
@@ -220,6 +235,7 @@ def grade_penalty_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
     replies make it) still weighs more than a one-off.
     """
     out: list[AccuracyFlag] = []
+
     def rank(sev: str) -> int:  # lower rank = worse severity
         return _SEVERITY_RANK.get(sev, 1)
 

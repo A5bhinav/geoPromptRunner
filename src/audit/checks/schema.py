@@ -244,14 +244,23 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", text)).strip().lower()
 
 
-_NUMBER_RE = re.compile(r"\d+(?:[.,]\d+)?")
+# Matches a whole number incl. thousands groups: "1,299.00", "1299.00", "4.5", "42".
+# The comma is a thousands separator (US convention — this audits US-market sites),
+# NOT a decimal point; treating "$1,299.00" as decimal made it parse to 1.299 and
+# falsely flag a correct price as "not in visible text" drift.
+_NUMBER_RE = re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?")
+
+
+def _strip_thousands(text: str) -> str:
+    """Drop thousands-separating commas so "1,299.00" parses as 1299.00."""
+    return text.replace(",", "")
 
 
 def _numbers_in(text: str) -> set[Decimal]:
     found: set[Decimal] = set()
     for token in _NUMBER_RE.findall(text):
         try:
-            found.add(Decimal(token.replace(",", ".")))
+            found.add(Decimal(_strip_thousands(token)))
         except InvalidOperation:
             continue
     return found
@@ -259,7 +268,7 @@ def _numbers_in(text: str) -> set[Decimal]:
 
 def _to_decimal(value: Any) -> Decimal | None:
     try:
-        return Decimal(str(value).replace(",", "."))
+        return Decimal(_strip_thousands(str(value)))
     except (InvalidOperation, ValueError, TypeError):
         return None
 

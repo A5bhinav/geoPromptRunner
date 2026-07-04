@@ -316,12 +316,24 @@ class OffsiteAgent:
 
     def _force_submit(self, messages: list[Any]) -> list[OffsiteFinding]:
         try:
-            messages.append(
-                {
-                    "role": "user",
-                    "content": "Budget reached. Call submit_findings now with what you found.",
-                }
-            )
+            # Every loop exit leaves `messages` ending on a USER turn (trailing
+            # tool_results, or the initial prompt). Appending another user turn
+            # would make two consecutive user messages, which the API rejects
+            # with a 400 — silently killing the force-submit. Instead fold the
+            # instruction into the existing final user turn so roles still
+            # alternate and the forced submit actually fires.
+            instruction = "Budget reached. Call submit_findings now with what you found."
+            last = messages[-1] if messages else None
+            if isinstance(last, dict) and last.get("role") == "user":
+                content = last.get("content")
+                if isinstance(content, str):
+                    last["content"] = f"{content}\n\n{instruction}"
+                elif isinstance(content, list):
+                    content.append({"type": "text", "text": instruction})
+                else:
+                    messages.append({"role": "user", "content": instruction})
+            else:
+                messages.append({"role": "user", "content": instruction})
             response = self._client.messages.create(
                 model=self._model,
                 max_tokens=_AGENT_MAX_TOKENS,

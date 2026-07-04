@@ -20,6 +20,13 @@ def test_original_cases() -> None:
     assert detect_mention("acme", "ACME syncs with most banks.") is M
 
 
+def test_recommendation_matches_inflections() -> None:
+    # Inflected forms are the most common phrasings; the bare-stem \b used to miss
+    # "recommended"/"suggests" and mislabel them as merely MENTIONED.
+    assert detect_mention("Acme", "Acme is highly recommended for students.") is R
+    assert detect_mention("Acme", "The guide suggests Acme first.") is R
+
+
 def test_recommendation_is_scoped_to_the_brands_segment() -> None:
     # "best" binds to YNAB; Acme is in a contrastive clause -> not recommended.
     assert detect_mention("Acme", "The best budgeting app is YNAB, but Acme also exists.") is M

@@ -80,7 +80,12 @@ def test_split_files_merge_into_one_audit() -> None:
 
 
 def test_merge_is_order_independent() -> None:
-    a = _csv("config,client_name,X,,", "config,category,c,,", "query,q1,t,brand,")
+    a = _csv(
+        "config,client_name,X,,",
+        "config,category,c,,",
+        "config,engines,openai,,",
+        "query,q1,t,brand,",
+    )
     b = _csv('fact,identity,"hello",,')
     forward = parse_csv_files([("a.csv", a), ("b.csv", b)])
     backward = parse_csv_files([("b.csv", b), ("a.csv", a)])
@@ -106,7 +111,12 @@ def test_conflicting_config_key_errors() -> None:
 
 
 def test_same_config_value_twice_is_fine() -> None:
-    a = _csv("config,client_name,Oura,,", "config,category,c,,", "query,q1,t,brand,")
+    a = _csv(
+        "config,client_name,Oura,,",
+        "config,category,c,,",
+        "config,engines,openai,,",
+        "query,q1,t,brand,",
+    )
     b = _csv("config,client_name,Oura,,")
     result = parse_csv_files([("a.csv", a), ("b.csv", b)])
     assert result.ok, [e.message for e in result.errors]
@@ -135,8 +145,20 @@ def test_no_queries_errors() -> None:
     assert any("no query rows" in e.message for e in result.errors)
 
 
-def test_no_facts_is_allowed() -> None:
+def test_no_engines_errors() -> None:
     text = _csv("config,client_name,X,,", "config,category,c,,", "query,q1,t,brand,")
+    result = parse_csv_files([("a.csv", text)])
+    assert not result.ok
+    assert any("no engines" in e.message for e in result.errors)
+
+
+def test_no_facts_is_allowed() -> None:
+    text = _csv(
+        "config,client_name,X,,",
+        "config,category,c,,",
+        "config,engines,openai,,",
+        "query,q1,t,brand,",
+    )
     result = parse_csv_files([("a.csv", text)])
     assert result.ok
     assert result.audit is not None

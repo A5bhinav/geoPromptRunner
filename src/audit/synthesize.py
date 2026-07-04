@@ -21,7 +21,7 @@ from collections import Counter
 
 from src.api.reports import SiteCheckRow
 from src.audit.checks.content_judge import CheckVerdict, ContentClass
-from src.audit.offsite.models import FindingType, OffsiteFinding
+from src.audit.offsite.models import Confidence, FindingType, OffsiteFinding
 from src.audit.rubric import (
     CheckStatus,
     RoadmapItem,
@@ -183,15 +183,33 @@ def _offsite_score(finding: OffsiteFinding) -> tuple[str, str, float] | None:
         total = len(platforms) or 1
         status = "pass" if present >= total / 2 else "partial" if present else "fail"
         return ("reviews on Trustpilot / consumer platforms", status, 1.5)
+    # For the presence-style findings the agent reports, the model's confidence is
+    # the only signal to how real the presence is — a low-confidence "one stale
+    # Reddit thread" must NOT score the same full pass as a strong presence, or the
+    # offsite grade inflates and the gap is wrongly dropped from the roadmap.
     if finding.finding_type is FindingType.ENTITY_CONSISTENCY:
-        return ("entity consistent across the web", "pass", 1.5)
+        return ("entity consistent across the web", _confidence_status(finding.confidence), 1.5)
     if finding.finding_type is FindingType.COMMUNITY:
-        return ("presence on Reddit / consumer forums", "pass", 2.0)
+        return ("presence on Reddit / consumer forums", _confidence_status(finding.confidence), 2.0)
     if finding.finding_type is FindingType.LISTICLE:
-        return ("named in 'best [category]' listicles / roundups", "pass", 1.5)
+        return (
+            "named in 'best [category]' listicles / roundups",
+            _confidence_status(finding.confidence),
+            1.5,
+        )
     if finding.finding_type is FindingType.PRESS:
-        return ("third-party citations / press", "pass", 1.0)
+        return ("third-party citations / press", _confidence_status(finding.confidence), 1.0)
     return None  # BACKLINKS et al. — informational, not a roadmap gap
+
+
+def _confidence_status(confidence: Confidence) -> str:
+    """Grade a presence finding by the agent's confidence: high→pass, medium→partial,
+    low→fail. Keeps a weak/uncertain presence from scoring full offsite credit."""
+    if confidence is Confidence.HIGH:
+        return "pass"
+    if confidence is Confidence.MEDIUM:
+        return "partial"
+    return "fail"
 
 
 def _content_to_scores(subject: str, verdicts: list[CheckVerdict]) -> list[RubricScore]:

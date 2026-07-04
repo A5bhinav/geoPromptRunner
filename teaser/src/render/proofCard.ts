@@ -9,7 +9,7 @@
  */
 
 import type { Finding } from "../types/domain.ts";
-import { engineColor, engineLabel } from "./copy.ts";
+import { competitorProminenceWord, engineColor, engineLabel } from "./copy.ts";
 
 function escapeHtml(s: string): string {
   return s
@@ -126,7 +126,7 @@ export function renderProofCard(companyName: string, finding: Finding, runDate: 
       <div class="proof-callout">
         <span class="x">✕</span>
         <strong>${escapeHtml(companyName)} appears nowhere in this answer.</strong>
-        <span class="rec">${escapeHtml(finding.competitor)} recommended instead</span>
+        <span class="rec">${escapeHtml(finding.competitor)} ${competitorProminenceWord(finding)} instead</span>
       </div>
       ${
         citations.length

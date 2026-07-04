@@ -87,6 +87,15 @@ def test_offsite_community_is_present_signal() -> None:
     assert scores[0]["check_name"] == "presence on Reddit / consumer forums"
 
 
+def test_offsite_presence_findings_graded_by_confidence() -> None:
+    # A low/medium-confidence presence finding must NOT score a full pass, or the
+    # offsite grade inflates and the gap is wrongly dropped from the roadmap.
+    low = OffsiteFinding(FindingType.COMMUNITY, "one stale thread", None, Confidence.LOW, {})
+    med = OffsiteFinding(FindingType.LISTICLE, "maybe listed", None, Confidence.MEDIUM, {})
+    assert site_audit_to_rubric_scores("A", [], offsite=[low])[0]["status"] == "fail"
+    assert site_audit_to_rubric_scores("A", [], offsite=[med])[0]["status"] == "partial"
+
+
 # --- content-judge verdicts (only when supplied) -----------------------------
 
 

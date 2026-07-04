@@ -4,10 +4,22 @@ from typing import Any
 
 from src.audit.checks.schema import (
     SchemaClass,
+    _number_matches,
+    _numbers_in,
     check_schema,
     flatten_typed_nodes,
 )
 from src.audit.crawl.models import FetchMeta, PageCategory, PageRecord
+
+
+def test_number_match_handles_thousands_separator() -> None:
+    # "$1,299.00" is one number (comma = thousands), not 1.299 — a schema price of
+    # "1299.00"/"1,299.00" must match it instead of being flagged as price drift.
+    visible = _numbers_in("Only $1,299.00 today — rated 4.5 stars")
+    assert _number_matches("1299.00", visible)
+    assert _number_matches("1,299.00", visible)
+    assert _number_matches("4.5", visible)
+    assert not _number_matches("1.299", visible)
 
 
 def _page(

@@ -93,7 +93,14 @@ class PerplexityEngine(BaseEngine):
             logger.warning("Perplexity unexpected error: %s", exc)
             return None, []
 
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError as exc:
+            # A 200 with a non-JSON body (e.g. an edge/CF challenge page) makes
+            # response.json() raise — catch it here so the engine never crashes
+            # the pipeline (mirrors ai_overviews_engine's guard).
+            logger.warning("Perplexity returned a non-JSON 200 body: %s", exc)
+            return None, []
         try:
             text: str | None = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:

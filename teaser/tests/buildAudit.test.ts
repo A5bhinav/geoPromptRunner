@@ -107,7 +107,7 @@ test("buildAudit assembles all sections from a full judge run", () => {
   // §1 grade + gap-led headline
   assert.equal(d.runId, "run-123");
   assert.equal(d.grade?.letter, "D");
-  assert.equal(d.achievableGrade, "B+"); // D -> B+ default target
+  assert.equal(d.achievableGrade, "B"); // D -> B default target (two bands up, capped at A-)
   assert.match(d.headline, /best budgeting app/);
   assert.match(d.headline, /Acme shows up in/);
   assert.equal(d.headlineNumber.competitorName, "Monarch Money");

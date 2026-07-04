@@ -125,6 +125,11 @@ def test_normalize_url() -> None:
     )
     assert normalize_url("https://example.com") == "https://example.com/"
     assert normalize_url("https://example.com/a?gclid=1") == "https://example.com/a"
+    # Default ports collapse onto the bare host (one cache key / graph node).
+    assert normalize_url("https://example.com:443/") == "https://example.com/"
+    assert normalize_url("http://example.com:80/a") == normalize_url("http://example.com/a")
+    # A non-default port is preserved.
+    assert normalize_url("https://example.com:8443/") == "https://example.com:8443/"
 
 
 def test_classify_url() -> None:
@@ -132,6 +137,40 @@ def test_classify_url() -> None:
     assert classify_url("https://x.com/compare/a-vs-b") is PageCategory.COMPARISON
     assert classify_url("https://x.com/docs/api") is PageCategory.DOCS
     assert classify_url("https://x.com/about") is PageCategory.OTHER
+
+
+def test_is_blocked_detects_200_challenge() -> None:
+    # A Cloudflare "Just a moment…" interstitial is served at HTTP 200 — it must
+    # still be flagged as blocked, not treated as a thin normal page.
+    import httpx
+
+    from src.audit.crawl.fetcher import _is_blocked
+
+    challenge = httpx.Response(
+        200, headers={"server": "cloudflare"}, text="<html>Just a moment...</html>"
+    )
+    assert _is_blocked(challenge, challenge.text) is True
+    # A normal 200 from a Cloudflare-fronted site (no challenge markers) is not blocked.
+    normal = httpx.Response(200, headers={"server": "cloudflare"}, text="<html>real content</html>")
+    assert _is_blocked(normal, normal.text) is False
+
+
+def test_select_pages_prioritizes_high_value_categories_under_the_cap() -> None:
+    # Low-value blog pages listed first must not crowd decisive comparison/pricing
+    # pages out of the global cap — allocation is by priority weight, not order.
+    import src.audit.crawl.page_select as ps
+
+    sitemap = (
+        [f"https://x.com/blog/post-{i}" for i in range(10)]
+        + [f"https://x.com/compare/x-vs-rival-{i}" for i in range(3)]
+        + [f"https://x.com/pricing/tier-{i}" for i in range(3)]
+    )
+    selected = ps.select_pages("https://x.com/", sitemap_urls=sitemap)
+    cats = [c for _u, c in selected]
+    # All 3 comparison and 3 pricing pages survive (their per-category caps), even
+    # though 10 blog pages appeared first in the sitemap.
+    assert cats.count(PageCategory.COMPARISON) == 3
+    assert cats.count(PageCategory.PRICING) == 3
 
 
 def test_select_pages_navlink_fallback(monkeypatch: pytest.MonkeyPatch) -> None:

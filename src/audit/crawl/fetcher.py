@@ -173,11 +173,18 @@ def should_escalate(
 
 
 def _is_blocked(response: httpx.Response, body: str) -> bool:
-    """Detect a Cloudflare/anti-bot challenge so we record it rather than bypass it."""
+    """Detect a Cloudflare/anti-bot challenge so we record it rather than bypass it.
+
+    Not gated on status: Cloudflare serves the "Just a moment…" interstitial at
+    HTTP **200** as often as 403/503. Gating on 403/503 (as this did) let a 200
+    challenge slip through as a normal-but-thin page, which then escalated to a
+    real-browser render, passed the challenge, and got mislabeled CSR/FAIL instead
+    of the intended "blocked/ungradeable". Mirrors technical_check._is_challenge.
+    """
     if "cf-mitigated" in response.headers:
         return True
     server = response.headers.get("server", "").lower()
-    if response.status_code in (403, 503) and "cloudflare" in server:
+    if "cloudflare" in server:
         low = body.lower()
         return any(marker in low for marker in _CF_CHALLENGE_MARKERS)
     return False

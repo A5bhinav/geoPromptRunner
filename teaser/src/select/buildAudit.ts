@@ -90,7 +90,10 @@ export interface BuildAuditOptions {
 function defaultAchievableGrade(letter: string | null): string | null {
   if (!letter) return null;
   const base = letter.charAt(0).toUpperCase();
-  const map: Record<string, string> = { F: "B", D: "B+", C: "A-", B: "A", A: "A" };
+  // At most two bands up and never above A- — a conservative target the analyst
+  // confirms, not a promise. (The old map claimed F→B / B→A / A→A, breaking both
+  // the "one or two bands" and "capped at A-" limits the doc/comment assert.)
+  const map: Record<string, string> = { F: "C", D: "B", C: "B+", B: "A-", A: "A-" };
   return map[base] ?? null;
 }
 

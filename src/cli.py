@@ -394,7 +394,10 @@ def main(argv: list[str] | None = None) -> int:
         "--runs",
         type=int,
         default=None,
-        help="runs per query (default 3; a resumed run inherits its stored value)",
+        help=(
+            f"runs per query (default {settings.DEFAULT_RUNS_PER_QUERY}; "
+            "a resumed run inherits its stored value)"
+        ),
     )
     p_audit.add_argument("--surface", choices=("memory", "search"), default="memory")
     p_audit.add_argument(
