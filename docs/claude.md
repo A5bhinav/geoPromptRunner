@@ -180,9 +180,11 @@ If a fix introduces a new type error in a file that was previously clean, that f
 
 ### Storage
 
-- Never hard-delete any row. Use `archived_at` timestamps for soft deletes.
-- All writes go through functions in `db.py`. No direct Supabase calls from pipeline or audit code.
-- Supabase calls use try/except. On failure: log the error, raise a custom `StorageError`.
+- Normal runs are **create-only** — the audit/teaser lifecycle never deletes rows.
+- The **only** deletion path is explicit, permanent project deletion (`delete_project` → `db.delete_audit_runs` / `delete_teasers`). This is a **hard delete** by design: audit-run children (`query_results`, `query_citations`, `judgments`, `site_audit_*`) are `ON DELETE CASCADE`, so removing the run removes them too. Gzipped HTML blobs in the `site-audit-html` Storage bucket are **not** cascaded — delete them first (`delete_site_audit_html_for_runs`, while the rows still point to them), then the rows. There is no soft-delete/undo; the deletion is irreversible.
+- `archived_at` is a **vestigial** column: rows are written with `archived_at=None` and reads filter it out, but nothing ever sets it (no soft-delete is implemented). Don't rely on it — it's a no-op filter kept for schema stability.
+- All core-data writes go through functions in `db.py` (single `_execute` owner of the storage try/except). **Exception:** the judge caches (`judge_cache.py`, `content_judge_cache.py`) are a separate, backend-pluggable store (`supabase`/`memory`/`none`) and talk to Supabase directly by design — they are a cache, not core data.
+- Supabase calls use try/except (via `_execute`). On failure: log only the exception **type** (a Postgres message can echo row values), raise `StorageError`, chain the original via `from exc`.
 
 ### Technical audit checks
 
