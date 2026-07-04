@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from src.audit.technical_check import (
     _base_url,
     _classify_crawler_access,
@@ -54,3 +56,66 @@ def test_classify_rendering_thin_text_is_partial() -> None:
 
 def test_classify_rendering_almost_empty_fails() -> None:
     assert _classify_rendering(50, spa_shell=False)["status"] == "fail"
+
+
+def test_parse_sitemap_directives() -> None:
+    from src.audit.technical_check import _parse_sitemap_directives
+
+    text = (
+        "User-agent: *\n"
+        "Sitemap: https://x.com/sm.xml\n"
+        "sitemap:   https://x.com/news.xml\n"
+        "Sitemap: /relative-ignored.xml\n"
+    )
+    assert _parse_sitemap_directives(text) == ["https://x.com/sm.xml", "https://x.com/news.xml"]
+    assert _parse_sitemap_directives("no directive here") == []
+
+
+def test_assess_sitemap_verdicts() -> None:
+    import httpx
+
+    from src.audit.technical_check import _assess_sitemap
+
+    assert _assess_sitemap(None)["status"] == "fail"
+    assert _assess_sitemap(httpx.Response(404))["status"] == "fail"
+    good = "<urlset><url><loc>https://x/a</loc></url></urlset>"
+    assert _assess_sitemap(httpx.Response(200, text=good))["status"] == "pass"
+    shell = httpx.Response(
+        200, text="<html><body>app</body></html>", headers={"content-type": "text/html"}
+    )
+    assert _assess_sitemap(shell)["status"] == "fail"
+    assert _assess_sitemap(httpx.Response(200, text="<urlset></urlset>"))["status"] == "partial"
+
+
+def test_check_sitemap_honors_robots_declared_sitemap(monkeypatch: Any) -> None:
+    import httpx
+
+    import src.audit.technical_check as tc
+
+    valid = "<urlset><url><loc>https://x.com/a</loc></url></urlset>"
+
+    def fake_get(url: str, user_agent: str | None = None) -> httpx.Response:
+        if url.endswith("/sitemap.xml"):
+            return httpx.Response(404)
+        if url.endswith("/robots.txt"):
+            return httpx.Response(200, text="Sitemap: https://x.com/custom.xml")
+        if url == "https://x.com/custom.xml":
+            return httpx.Response(200, text=valid)
+        return httpx.Response(404)
+
+    monkeypatch.setattr(tc, "_get", fake_get)
+    assert tc.check_sitemap("x.com")["status"] == "pass"
+
+
+def test_check_sitemap_fails_when_none_declared(monkeypatch: Any) -> None:
+    import httpx
+
+    import src.audit.technical_check as tc
+
+    def fake_get(url: str, user_agent: str | None = None) -> httpx.Response:
+        if url.endswith("/robots.txt"):
+            return httpx.Response(200, text="User-agent: *")
+        return httpx.Response(404)
+
+    monkeypatch.setattr(tc, "_get", fake_get)
+    assert tc.check_sitemap("x.com")["status"] == "fail"

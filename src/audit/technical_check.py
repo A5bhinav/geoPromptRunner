@@ -252,14 +252,31 @@ def check_llms_txt(domain: str) -> CheckResult:
     )
 
 
-def check_sitemap(domain: str) -> CheckResult:
-    """Check whether an XML sitemap is present, well-formed, and current (as GPTBot).
+def _parse_sitemap_directives(robots_text: str) -> list[str]:
+    """Absolute sitemap URLs declared via ``Sitemap:`` lines in robots.txt (RFC 9309).
+    Pure — parsing only. Relative or non-http(s) values are ignored."""
+    urls: list[str] = []
+    for line in robots_text.splitlines():
+        match = _SITEMAP_DIRECTIVE_RE.match(line)
+        if match:
+            url = match.group(1).strip()
+            if url.startswith(("http://", "https://")):
+                urls.append(url)
+    return urls
 
-    Guards the same app-shell trap as llms.txt (an SPA serving ``index.html`` at
-    200) and reports the ``<loc>`` count so an empty/near-empty sitemap is visible.
-    """
-    base = _base_url(domain)
-    response = _get(f"{base}/sitemap.xml", user_agent=GPTBOT_UA)
+
+def _robots_declared_sitemaps(base: str) -> list[str]:
+    """Sitemap URLs a site points to from robots.txt (fetched as GPTBot). Many sites
+    host the sitemap off the default path and only declare it here."""
+    response = _get(f"{base}/robots.txt", user_agent=GPTBOT_UA)
+    if response is None or response.status_code >= 400:
+        return []
+    return _parse_sitemap_directives(response.text)
+
+
+def _assess_sitemap(response: httpx.Response | None) -> CheckResult:
+    """Grade one fetched sitemap URL — well-formed root, <loc> count, freshness.
+    Pure on the response so it can be reused across candidate URLs and unit-tested."""
     if response is None:
         return CheckResult(status="fail", details="Could not fetch sitemap.xml (request failed).")
     if response.status_code == 404:
@@ -309,6 +326,32 @@ def check_sitemap(domain: str) -> CheckResult:
     )
 
 
+def check_sitemap(domain: str) -> CheckResult:
+    """Check whether an XML sitemap is present, well-formed, and current (as GPTBot).
+
+    Probes ``/sitemap.xml`` AND any ``Sitemap:`` URL declared in robots.txt (RFC
+    9309) — a site may host its sitemap off the default path and only point to it
+    there, so probing the default path alone under-reports. Returns the first
+    present/valid sitemap's verdict; otherwise the ``/sitemap.xml`` failure. Guards
+    the same app-shell trap as llms.txt (an SPA serving ``index.html`` at 200) and
+    reports the ``<loc>`` count so an empty/near-empty sitemap is visible.
+    """
+    base = _base_url(domain)
+    candidates = [f"{base}/sitemap.xml"]
+    for url in _robots_declared_sitemaps(base):
+        if url not in candidates:
+            candidates.append(url)
+    best_fail: CheckResult | None = None
+    for url in candidates:
+        verdict = _assess_sitemap(_get(url, user_agent=GPTBOT_UA))
+        if verdict["status"] in ("pass", "partial"):
+            return verdict
+        if best_fail is None:
+            best_fail = verdict
+    return best_fail or CheckResult(status="fail", details="No sitemap.xml found (HTTP 404).")
+
+
+_SITEMAP_DIRECTIVE_RE = re.compile(r"^\s*sitemap\s*:\s*(\S+)", re.IGNORECASE)
 _LASTMOD_RE = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
 _LOC_RE = re.compile(r"<loc>", re.IGNORECASE)
 _SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)

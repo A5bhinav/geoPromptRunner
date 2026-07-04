@@ -75,9 +75,11 @@ class PageRecord:
 class CrawlResult:
     """The whole fetch phase for one domain — handed to the downstream checkers.
 
-    Best-effort by design (plan §6): ``errors`` collects per-page failures so a
-    single bad page never sinks the crawl, and the report renders from whatever
-    pages succeeded.
+    Best-effort by design (plan §6): ``errors`` collects per-page CRAWL failures
+    (fetch/render errors, robots-disallowed) so a single bad page never sinks the
+    phase. ``save_errors`` is kept separate — a page that fetched fine but failed to
+    PERSIST to the cache is a storage concern, not a crawl-health signal, so it must
+    not inflate the reported crawl error count.
     """
 
     run_id: str
@@ -85,5 +87,6 @@ class CrawlResult:
     crawl_id: str
     started_at: str  # ISO-8601 UTC
     pages: list[PageRecord] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)  # crawl/fetch failures + robots-disallowed
+    save_errors: list[str] = field(default_factory=list)  # persistence failures (best-effort)
     sitemap_urls: list[str] = field(default_factory=list)  # full discovered set (for orphan checks)

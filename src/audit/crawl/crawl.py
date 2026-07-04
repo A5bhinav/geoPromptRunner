@@ -99,7 +99,9 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
                 cache.save_page(run_id, crawl_id, page)
             except Exception as exc:  # persistence best-effort — keep page in memory
                 logger.warning("page save failed %s: %s", url, type(exc).__name__)
-                result.errors.append(f"{url}: save {type(exc).__name__}")
+                # A save failure is a storage concern, not a crawl-health signal —
+                # track it apart from fetch/crawl errors so it doesn't inflate them.
+                result.save_errors.append(f"{url}: save {type(exc).__name__}")
 
     async with AsyncExitStack() as stack:
         renderer: object | None = None
@@ -109,7 +111,13 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
             logger.warning("browser launch failed; raw-only crawl: %s", type(exc).__name__)
         await asyncio.gather(*(_crawl_one(url, cat, renderer) for url, cat in pages))
 
-    logger.info("crawl %s done: %d pages, %d errors", domain, len(result.pages), len(result.errors))
+    logger.info(
+        "crawl %s done: %d pages, %d errors, %d save-errors",
+        domain,
+        len(result.pages),
+        len(result.errors),
+        len(result.save_errors),
+    )
     return result
 
 
