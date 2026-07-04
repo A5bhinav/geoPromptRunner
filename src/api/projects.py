@@ -103,6 +103,15 @@ def _slugify(raw: object) -> str:
     return re.sub(r"[^a-z0-9]+", "-", str(raw or "").strip().lower()).strip("-")
 
 
+def _domains_of(raw: object) -> list[str]:
+    """A row's ``client_domains`` as a clean list of strings. DB row values are
+    typed ``object``, so guard the type: a non-list value (e.g. a bare string)
+    must yield ``[]`` rather than being iterated character-by-character."""
+    if not isinstance(raw, list):
+        return []
+    return [str(d) for d in raw if d]
+
+
 def _key_for(domain: str, name: object) -> tuple[str, str, str | None]:
     """(key, label, domain) for a domain (preferred) or a client/company name."""
     if domain:
@@ -130,9 +139,7 @@ def _collect() -> dict[str, _Acc]:
     domains_by_id: dict[str, list[str]] = {}
     try:
         for row in db.list_all_audit_runs():
-            domains_by_id[str(row.get("id", ""))] = [
-                str(d) for d in (row.get("client_domains") or []) if d
-            ]
+            domains_by_id[str(row.get("id", ""))] = _domains_of(row.get("client_domains"))
     except db.StorageError:
         pass
 
@@ -231,7 +238,7 @@ def delete_project(key: str) -> dict[str, object] | None:
 
     try:
         for row in db.list_all_audit_runs(limit=_DELETE_SCAN_LIMIT):
-            doms = [str(d) for d in (row.get("client_domains") or []) if d]
+            doms = _domains_of(row.get("client_domains"))
             k, lbl, _ = _key_for(_norm_domain(doms[0]) if doms else "", row.get("client_name"))
             if k == key:
                 run_ids.add(str(row.get("id", "")))
