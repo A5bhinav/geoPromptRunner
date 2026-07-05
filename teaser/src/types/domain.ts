@@ -101,5 +101,15 @@ export interface TeaserDraft {
   /** Cached report + answers so the teaser is reproducible as engines drift. */
   report: ReportPayload;
   answers: AnswerRecord[];
+  /**
+   * Aliases captured at generation time so a teaser REGENERATED from storage
+   * isn't alias-blind (T3). The stored ReportPayload carries only competitor/
+   * client NAMES, so without these `profileFromStored` would reset aliases to []
+   * and an alias-only client mention would re-count as a loss (re-opening S4).
+   * Optional: legacy drafts saved before this field fall back to name-only.
+   */
+  clientAliases?: string[];
+  /** competitor name → aliases, persisted for the same reason (T3). */
+  competitorAliases?: Record<string, string[]>;
   status: "draft" | "approved" | "rejected" | "exported";
 }

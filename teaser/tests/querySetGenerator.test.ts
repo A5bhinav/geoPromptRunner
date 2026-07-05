@@ -127,6 +127,24 @@ test("invalid intents are dropped", () => {
   assert.ok(!queries.some((q) => q.text === "Some text"));
 });
 
+// T5/C4: a category (or adjacent) query that drifted off the client's specific
+// category — no category signal token — is dropped, while an on-category one stays.
+test("category queries that drift off the specific category are dropped (C4)", () => {
+  const queries = validateAndRepair(profile(), [
+    raw("What's the best CRM for a startup?", "category"), // on-category → kept
+    raw("What's the best tool for a growing startup?", "category"), // drifted, no "CRM" → dropped
+    raw("What are the best alternatives to Salesforce?", "comparison"),
+    raw("HubSpot vs other CRM options?", "comparison"),
+    raw("Is Acme any good?", "brand"),
+  ]);
+  const texts = queries.map((q) => q.text);
+  assert.ok(texts.includes("What's the best CRM for a startup?"), "on-category query kept");
+  assert.ok(
+    !texts.includes("What's the best tool for a growing startup?"),
+    "off-category drift dropped",
+  );
+});
+
 test("rules hold even with a single competitor", () => {
   const queries = validateAndRepair(
     profile({ competitors: [{ name: "Salesforce", aliases: [], confirmed: false }] }),

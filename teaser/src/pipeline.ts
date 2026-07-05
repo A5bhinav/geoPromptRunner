@@ -212,6 +212,12 @@ export function assembleDraft(
     table: selection.table,
     report,
     answers,
+    // Persist the resolved aliases so a regeneration from storage matches by
+    // alias too (T3) — the stored report carries only names.
+    clientAliases: profile.aliases ?? [],
+    competitorAliases: Object.fromEntries(
+      profile.competitors.map((c) => [c.name, c.aliases]),
+    ),
     // Fresh runs are drafts; regeneration preserves the saved status so a
     // re-render of an already-approved teaser stays clean (no draft banner).
     status: opts.status ?? "draft",
@@ -221,20 +227,31 @@ export function assembleDraft(
 
 /**
  * Reconstruct the minimal CompanyProfile that selection/assembly needs, from a
- * stored run's report (+ the draft's category/url). No crawl — competitor
- * aliases aren't stored, so they fall back to []; selection still matches on the
- * competitor names the report already carries (only alias-only mentions are
- * missed, a small precision cost vs. re-running the whole audit).
+ * stored run's report (+ the draft's category/url). No crawl. Client/competitor
+ * aliases are rehydrated from the saved draft when present (T3) — the stored
+ * ReportPayload itself carries only names, so a draft saved before aliases were
+ * persisted (or a report with none) falls back to name-only matching.
  */
 export function profileFromStored(
   report: ReportPayload,
-  opts: { url: string; category: string },
+  opts: {
+    url: string;
+    category: string;
+    clientAliases?: string[];
+    competitorAliases?: Record<string, string[]>;
+  },
 ): CompanyProfile {
+  const competitorAliases = opts.competitorAliases ?? {};
   return {
     url: opts.url,
     name: report.client_name,
+    aliases: opts.clientAliases ?? [],
     category: opts.category,
-    competitors: report.competitors.map((name) => ({ name, aliases: [], confirmed: true })),
+    competitors: report.competitors.map((name) => ({
+      name,
+      aliases: competitorAliases[name] ?? [],
+      confirmed: true,
+    })),
     clientDomains: report.client_domains,
     productClaims: [],
     resolvedAt: "",
@@ -259,6 +276,8 @@ export function regenerateFromDraft(saved: TeaserDraft): PipelineResult {
   const profile = profileFromStored(saved.report, {
     url: saved.prospectUrl,
     category: saved.category,
+    clientAliases: saved.clientAliases,
+    competitorAliases: saved.competitorAliases,
   });
   return assembleDraft(profile, saved.report, saved.answers, saved.prospectUrl, {
     status: saved.status,

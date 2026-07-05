@@ -26,7 +26,7 @@ import type {
   SiteCheckRow,
 } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
-import { countReproduction, isUnwinnableQuery } from "./selectFindings.ts";
+import { countReproduction, findAnswer, isUnwinnableQuery } from "./selectFindings.ts";
 import { answerSnippet } from "../render/proofCard.ts";
 
 // --- ranking constants (mirror selectFindings: engine credibility × intent) ---
@@ -65,20 +65,29 @@ const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 /**
  * Journey-stage order for the evidence section (§3): a buyer moves
- * problem-aware → category → comparison → brand. We surface losses in that order
- * so the audit reads as a pattern across the funnel, not cherry-picking.
+ * problem-aware → category → comparison. We surface losses in that order so the
+ * audit reads as a pattern across the funnel, not cherry-picking. "brand" is
+ * intentionally ABSENT (T1): a brand query names the client by construction, so
+ * it can't be an honest "client absent, competitor recommended" evidence card.
  */
 const EVIDENCE_BUCKET_ORDER: IntentBucket[] = [
   "problem_aware",
   "category",
   "comparison",
-  "brand",
   "adjacent_authority",
 ];
 
 export interface BuildAuditOptions {
   /** Evidence proof cards per journey-stage bucket (§3). Default 2 (doc §15.4: K=2–3). */
   evidencePerBucket?: number;
+  /**
+   * Client name variants — threaded into the audit's client matcher so an
+   * alias-only client mention counts as present (R4/T7). Absent → match on name
+   * only (the from-run_id audit path has no alias source today).
+   */
+  clientAliases?: string[];
+  /** Competitor name → aliases, threaded into the competitor matchers (R4/T7). */
+  competitorAliases?: Record<string, string[]>;
 }
 
 // --- §1 grade trajectory --------------------------------------------------------
@@ -104,23 +113,37 @@ function pctOf(fraction: number | null | undefined): number {
 
 // --- §1/§2 headline number (appears in X of N), computed from verbatim answers --
 
-function computeHeadline(
+interface QueryAnalysis {
+  /** Brand + A-vs-B query ids — excluded from the denominator AND the evidence. */
+  excluded: Set<string>;
+  /** Winnable queries where the client is present. */
+  clientAppears: number;
+  /** competitor name → winnable queries where it is present. */
+  compCount: Map<string, number>;
+  /** Winnable query count (the "of N" denominator). */
+  n: number;
+}
+
+/**
+ * Score the winnable demand-side set ONCE (S1/S2/S3, parity with the teaser):
+ * brand queries name the client and A-vs-B head-to-heads never had the client as
+ * a candidate, so both are excluded from the denominator AND from evidence. The
+ * result feeds computeHeadline (honest-hero) and buildEvidence (gate) from one
+ * source, so the §1 number and the §3 cards can never disagree about which
+ * queries count. Matchers are alias-aware (passed in) — R4/T7.
+ */
+function analyzeQueries(
   report: ReportPayload,
   answers: AnswerRecord[],
-): AuditHeadlineNumber {
-  const clientMatch = buildMatcher(report.client_name);
-  const competitorMatchers = report.competitors.map((c) => buildMatcher(c));
-
-  // Winnable denominator only: brand queries name the client (trivially present)
-  // and A-vs-B head-to-heads never had the client as a candidate — counting
-  // either inflates the "X of N" gap (S3, parity with the teaser).
+  clientMatch: (t: string) => boolean,
+  competitorMatchers: ((t: string) => boolean)[],
+): QueryAnalysis {
   const excluded = new Set<string>();
   for (const a of answers) {
     if (a.intent === "brand" || isUnwinnableQuery(a.prompt ?? "", clientMatch, competitorMatchers)) {
       excluded.add(a.query_id);
     }
   }
-
   const byQuery = new Map<string, { client: boolean; comps: Set<string> }>();
   for (const a of answers) {
     if (!a.response || excluded.has(a.query_id)) continue;
@@ -131,14 +154,17 @@ function computeHeadline(
     });
     byQuery.set(a.query_id, entry);
   }
-
   let clientAppears = 0;
   const compCount = new Map<string, number>();
   for (const v of byQuery.values()) {
     if (v.client) clientAppears++;
     for (const c of v.comps) compCount.set(c, (compCount.get(c) ?? 0) + 1);
   }
+  return { excluded, clientAppears, compCount, n: byQuery.size };
+}
 
+function computeHeadline(report: ReportPayload, analysis: QueryAnalysis): AuditHeadlineNumber {
+  const { clientAppears, compCount, n } = analysis;
   // Honest-hero (R3): name the rival that OUT-APPEARS the client the most (not
   // the scorecard's top-share brand, which can be one the client actually beats
   // on these queries). If NO competitor out-appears the client, drop the name so
@@ -157,33 +183,24 @@ function computeHeadline(
     competitorName = "";
     competitorAppears = 0;
   }
-
-  return { clientAppears, competitorAppears, competitorName, n: byQuery.size };
+  return { clientAppears, competitorAppears, competitorName, n };
 }
 
 // --- §3 evidence ----------------------------------------------------------------
 
-function findAnswer(
+function toFinding(
+  row: LosingRow,
   answers: AnswerRecord[],
-  queryId: string,
-  engineName: string,
-): AnswerRecord | undefined {
-  const cell = answers.filter((a) => a.query_id === queryId && a.engine_name === engineName);
-  return cell.find((a) => a.run_index === 0 && a.response) ?? cell.find((a) => a.response);
-}
-
-function toFinding(row: LosingRow, answers: AnswerRecord[], clientName: string): Finding | null {
-  const answer = findAnswer(answers, row.query_id, row.engine_name);
+  clientMatch: (t: string) => boolean,
+  competitorMatch: (t: string) => boolean,
+): Finding | null {
+  // Prefer a run that REPRODUCES the loss (client absent, competitor present) so
+  // the quoted proof actually backs the claim (T4, parity with the teaser) — not
+  // run_index 0 blindly, which could quote a run where the loss didn't hold.
+  const prefer = (resp: string) => !clientMatch(resp) && competitorMatch(resp);
+  const answer = findAnswer(answers, row.query_id, row.engine_name, prefer);
   if (!answer || !answer.response) return null;
-  // Reproducibility across the cell's runs (name-only matching — the audit has
-  // no alias source here, matching profileFromStored's reconstruction).
-  const repro = countReproduction(
-    answers,
-    row.query_id,
-    row.engine_name,
-    buildMatcher(clientName),
-    buildMatcher(row.competitor),
-  );
+  const repro = countReproduction(answers, row.query_id, row.engine_name, clientMatch, competitorMatch);
   return {
     role: "lead",
     source: "losing_query",
@@ -205,12 +222,20 @@ function buildEvidence(
   report: ReportPayload,
   answers: AnswerRecord[],
   perBucket: number,
+  analysis: QueryAnalysis,
+  clientMatch: (t: string) => boolean,
+  competitorMatcherFor: (name: string) => (t: string) => boolean,
 ): EvidenceGroup[] {
   const named = report.losing_queries.filter((r) => r.competitor.trim() !== "");
   const groups: EvidenceGroup[] = [];
   for (const bucket of EVIDENCE_BUCKET_ORDER) {
     const rows = named
       .filter((r) => r.intent === bucket)
+      // Exclude brand / A-vs-B rows (T1), and require the competitor to OUT-APPEAR
+      // the client (honest-hero parity with selectFindings' heroPool) — an evidence
+      // card must not name a rival the client actually beats on these queries.
+      .filter((r) => !analysis.excluded.has(r.query_id))
+      .filter((r) => (analysis.compCount.get(r.competitor) ?? 0) > analysis.clientAppears)
       .sort(
         (a, b) =>
           scoreRow(b) - scoreRow(a) ||
@@ -222,13 +247,14 @@ function buildEvidence(
     for (const row of rows) {
       if (findings.length >= perBucket) break;
       if (seenQueries.has(row.query_id)) continue; // one card per query within a bucket
-      const f = toFinding(row, answers, report.client_name);
+      const competitorMatch = competitorMatcherFor(row.competitor);
+      const f = toFinding(row, answers, clientMatch, competitorMatch);
       if (!f) continue;
       // Proof-foregrounding gate (R6, parity with the teaser): the card renders
       // only the LEADING prose (answerSnippet) and labels it "<competitor>
       // recommended instead" — so the competitor must actually appear in that
       // shown snippet, or the card contradicts its own callout.
-      if (!buildMatcher(row.competitor)(answerSnippet(f.verbatimAnswer))) continue;
+      if (!competitorMatch(answerSnippet(f.verbatimAnswer))) continue;
       seenQueries.add(row.query_id);
       findings.push(f);
     }
@@ -291,19 +317,23 @@ function buildRoadmap(roadmap: RoadmapRow[]): RoadmapPhase[] {
 // --- §1 copy (deterministic templating; analyst-editable) -----------------------
 
 function verdictLine(report: ReportPayload, h: AuditHeadlineNumber): string {
-  // These percentages are MENTION rate (how often the brand is NAMED), not a
-  // recommended-first rate — so the copy says "named", not "recommended". Saying
-  // "recommended in X%" over a mention-rate number was the deliverable's single
-  // most prominent overclaim (audit R1).
-  const clientPct = pctOf(report.scorecard.mention_rate_client);
-  const compPct = pctOf(report.scorecard.mention_rate_top_competitor);
+  // Percentages are derived from the SAME winnable-query counts as the §1
+  // headline (h.clientAppears/h.competitorAppears over h.n), NOT the scorecard's
+  // all-query mention_rate. This fixes two bugs at once: (R1) "named" not
+  // "recommended" over a mention-rate number, and (T2) the old compPct came from
+  // mention_rate_top_competitor — the SHARE-based top brand — while h.competitorName
+  // is the COUNT-based honest-hero pick, so in a multi-competitor report the
+  // verdict attributed one brand's % to a different named brand. One basis =
+  // brand and % always agree, and the verdict matches the "X of N" headline (T6).
+  const clientPct = h.n > 0 ? pctOf(h.clientAppears / h.n) : 0;
   if (h.competitorName) {
+    const compPct = h.n > 0 ? pctOf(h.competitorAppears / h.n) : 0;
     return (
-      `${report.client_name} is named in ${clientPct}% of buyer queries; ` +
+      `${report.client_name} is named in ${clientPct}% of the buyer queries we measured; ` +
       `${h.competitorName} in ${compPct}%. The gap is the visibility you're losing at the moment buyers decide.`
     );
   }
-  return `${report.client_name} is named in ${clientPct}% of buyer queries.`;
+  return `${report.client_name} is named in ${clientPct}% of the buyer queries we measured.`;
 }
 
 // --- §8 engagement scaffolding (analyst edits these; no fabricated numbers) ------
@@ -337,6 +367,15 @@ export function buildAudit(
   const site = report.site_audit;
   const sitePresent = Boolean(site && site.present);
 
+  // Alias-aware matchers, built once (R4/T7). The from-run_id audit path has no
+  // alias source, so these default to name-only; a caller that has a resolved
+  // profile can pass clientAliases/competitorAliases and the matchers use them.
+  const competitorAliases = opts.competitorAliases ?? {};
+  const clientMatch = buildMatcher(report.client_name, opts.clientAliases ?? []);
+  const competitorMatcherFor = (name: string) => buildMatcher(name, competitorAliases[name] ?? []);
+  const competitorMatchers = report.competitors.map(competitorMatcherFor);
+  const analysis = analyzeQueries(report, answers, clientMatch, competitorMatchers);
+
   const gp = report.scorecard.visibility_grade;
   const grade: AuditGrade | null = gp
     ? {
@@ -348,7 +387,7 @@ export function buildAudit(
       }
     : null;
 
-  const headlineNumber = computeHeadline(report, answers);
+  const headlineNumber = computeHeadline(report, analysis);
 
   const accuracyFlags = [...report.accuracy_flags].sort(
     (a, b) =>
@@ -380,7 +419,7 @@ export function buildAudit(
     topCompetitor: report.scorecard.top_competitor,
     topCompetitorShare: report.scorecard.top_competitor_share,
 
-    evidence: buildEvidence(report, answers, perBucket),
+    evidence: buildEvidence(report, answers, perBucket, analysis, clientMatch, competitorMatcherFor),
 
     accuracy: {
       assessed: report.scorecard.accuracy_assessed,

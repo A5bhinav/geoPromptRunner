@@ -140,6 +140,121 @@ test("buildAudit assembles all sections from a full judge run", () => {
   assert.deepEqual(d.roadmap.phases.map((p) => p.phase), [1, 2, 3]);
 });
 
+// A prompt-carrying answer builder for the multi-competitor / gating tests — the
+// bugs below only surface with real prompts (A-vs-B detection) and >=2 rivals.
+function mkA(
+  qid: string,
+  intent: AnswerRecord["intent"],
+  engine: string,
+  resp: string,
+  prompt: string,
+  run = 0,
+): AnswerRecord {
+  return {
+    query_id: qid,
+    intent,
+    prompt,
+    engine_name: engine,
+    run_index: run,
+    response: resp,
+    citations: [],
+    timestamp: "t",
+  };
+}
+
+// T1: the paid §3 evidence must inherit the teaser's gates — an A-vs-B head-to-head
+// and a brand query can't become evidence cards; a legit category loss still does.
+test("evidence excludes A-vs-B and brand rows, keeps a real category loss (T1)", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "c1", intent: "category", engine_name: "perplexity", competitor: "Monarch Money" },
+      { query_id: "avb", intent: "comparison", engine_name: "openai", competitor: "YNAB" },
+      { query_id: "b1", intent: "brand", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+    site_audit: null,
+  });
+  const ans = [
+    mkA("c1", "category", "perplexity", "Monarch Money is the best budgeting app.", "best budgeting app?"),
+    mkA("avb", "comparison", "openai", "Between them, YNAB edges out Monarch Money.", "YNAB vs Monarch Money — which is better?"),
+    mkA("b1", "brand", "perplexity", "Acme is decent but Monarch Money is better.", "is Acme any good?"),
+  ];
+  const d = buildAudit("run-t1", "budgeting app", report, ans);
+  const qids = d.evidence.flatMap((g) => g.findings.map((f) => f.queryId));
+  assert.ok(qids.includes("c1"), "a real category loss is evidence");
+  assert.ok(!qids.includes("avb"), "the A-vs-B head-to-head is excluded");
+  assert.ok(!qids.includes("b1"), "the brand query is excluded");
+});
+
+// T2: honest-hero picks the count-based rival, and the verdict's % is derived from
+// that same count — never mention_rate_top_competitor (a possibly-different brand).
+test("multi-competitor verdict names the honest-hero rival with a consistent % (T2)", () => {
+  const report = baseReport({
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "YNAB" },
+      { query_id: "q2", intent: "category", engine_name: "openai", competitor: "YNAB" },
+      { query_id: "q3", intent: "comparison", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+    site_audit: null,
+  });
+  const ans = [
+    mkA("q1", "category", "perplexity", "YNAB is the best budgeting app.", "best budgeting app?"),
+    mkA("q2", "category", "openai", "Most people pick YNAB.", "top budgeting app?"),
+    mkA("q3", "comparison", "perplexity", "Monarch Money is a solid alternative.", "alternatives to Mint?"),
+  ];
+  const d = buildAudit("run-t2", "budgeting app", report, ans);
+  // YNAB out-appears the client the most (2), NOT the share-based top_competitor
+  // "Monarch Money" (1) → honest-hero names YNAB.
+  assert.equal(d.headlineNumber.competitorName, "YNAB");
+  assert.equal(d.headlineNumber.competitorAppears, 2);
+  assert.equal(d.headlineNumber.n, 3);
+  // Verdict % comes from the same count (2/3 = 67%), so brand and number agree.
+  assert.match(d.verdictSentence, /YNAB in 67%/);
+  assert.ok(!d.verdictSentence.includes("Monarch"), "no share-based brand leaks into the verdict");
+});
+
+// T4: the audit must quote a run that reproduces the loss, not run_index 0 blindly.
+test("evidence quotes a run that reproduces the loss, not run 0 (T4)", () => {
+  const report = baseReport({
+    competitors: ["Monarch Money"],
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+    site_audit: null,
+  });
+  const ans = [
+    // run 0: competitor NOT foregrounded → doesn't back the claim.
+    mkA("q1", "category", "perplexity", "The best budgeting apps vary by need.", "best budgeting app?", 0),
+    // run 1: client absent, Monarch present → the reproducing loss; must be quoted.
+    mkA("q1", "category", "perplexity", "Monarch Money is the top pick.", "best budgeting app?", 1),
+  ];
+  const d = buildAudit("run-t4", "budgeting app", report, ans);
+  const f = d.evidence.flatMap((g) => g.findings).find((x) => x.queryId === "q1");
+  assert.ok(f, "the category loss is present");
+  assert.match(f!.verbatimAnswer, /top pick/, "quotes run 1 (reproduces), not run 0");
+});
+
+// T7: competitor aliases, when supplied, thread into the audit's matchers.
+test("competitor aliases thread into the audit matchers (T7)", () => {
+  const report = baseReport({
+    competitors: ["Monarch Money"],
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+    site_audit: null,
+  });
+  // The answer names the rival only by its alias "Monarch".
+  const ans = [mkA("q1", "category", "perplexity", "Monarch is the top pick.", "best budgeting app?")];
+  const withAlias = buildAudit("r", "budgeting app", report, ans, {
+    competitorAliases: { "Monarch Money": ["Monarch"] },
+  });
+  assert.equal(withAlias.headlineNumber.competitorName, "Monarch Money");
+  assert.equal(withAlias.headlineNumber.competitorAppears, 1);
+  // Without the alias the bare-name matcher misses "Monarch" → nobody out-appears
+  // the client → honest-hero drops the competitor name.
+  const without = buildAudit("r", "budgeting app", report, ans);
+  assert.equal(without.headlineNumber.competitorName, "");
+});
+
 test("buildAudit degrades cleanly when accuracy + site audit are absent", () => {
   const report = baseReport({
     accuracy_flags: [],

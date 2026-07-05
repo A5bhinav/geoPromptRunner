@@ -19,6 +19,57 @@ wording · `[MODEL]` a stronger model would materially help.
 
 ---
 
+## ✅ Verification status (post-fix, commit `bb1a7d8`, 2026-07-05)
+
+A second multi-agent pass verified the fixes. **The teaser itself is fully fixed** —
+D1–D5, S1–S8, C1/C2/C3/C5/C6, R1/R2/R3/R5/R6/R7/R8 all **RESOLVED** and correct; 112
+tests pass, `tsc` clean; no regressions in the teaser path. The remaining work is
+concentrated in the **paid audit deliverable** (`buildAudit.ts` + `render/audit/*`),
+which didn't fully inherit the teaser's guards, plus the **regenerate/stored path** — and
+two genuinely NEW issues the fixes surfaced.
+
+**Remaining changes (do these — the teaser is done, these are the audit + regen paths):**
+
+1. **[MED-HIGH] Audit evidence cards bypass the un-winnable / brand / honest-hero gates.**
+   `buildAudit.buildEvidence` imports `isUnwinnableQuery` but only uses it in
+   `computeHeadline`, not in the evidence cards — so the paid audit §3 can still render a
+   "Whoop vs Fitbit, client nowhere" A-vs-B card or a brand-query card (the exact S1/S3
+   embarrassment, in the thing you charge for). Apply the same `excludedQueryIds` +
+   honest-hero check in `buildEvidence`. (`buildAudit.ts:204-238`)
+2. **[MED] NEW — audit verdict can pair the wrong brand with its %.** `verdictLine` prints
+   `h.competitorName` (count-based honest-hero pick) with `mention_rate_top_competitor`
+   (share-based top brand) — different brands in a multi-competitor report. Source the %
+   from the same aggregation (`h.competitorAppears / h.n`) or fall back to client-only.
+   Not caught by tests (single-competitor fixture). (`buildAudit.ts:298-305`)
+3. **[MED] Client aliases dropped on regenerate.** `profileFromStored` sets no client
+   aliases, so a regenerated teaser runs alias-blind and re-opens S4. Persist
+   `profile.aliases` into the stored draft/report and rehydrate. (This is also why R4/audit
+   aliases are "data-blocked" — the stored payload needs an alias field.)
+   (`pipeline.ts:229-242`)
+4. **[MED] D3 not ported to the audit.** `buildAudit.findAnswer` still quotes `run_index 0`;
+   port the reproduction-preferring `findAnswer` so audit proof cards don't quote a
+   non-reproducing run. (`buildAudit.ts:166-173`)
+5. **[LOW-MED] C4 validator half missing.** The query-gen prompt was tightened, but
+   `validateAndRepair` still has no deterministic check that category-intent queries contain
+   the client's category token (defense-in-depth). Add it; optionally drop the residual
+   "may carry a real qualifier" clause. (`ClaudeQuerySetGenerator.ts:81,139-187`)
+6. **[LOW] NEW — mixed denominators.** Audit §1 headline ("X of N", winnable-only) sits
+   beside the verdict ("named in Y%", all-queries) — both honest but can read inconsistent.
+   Reconcile the basis or add a note. (`buildAudit.ts:298-352`)
+7. **[LOW] R4 audit competitor aliases** — data-blocked; unlocks with #3's schema change.
+   Minor watch items: C1 could over-narrow a legitimately broad-category client; `pipeline.ts`
+   query-cap sort lacks a tiebreaker (deterministic in practice).
+
+**Theme:** the thing prospects see first (the teaser) is clean; the thing they *pay* for
+(the audit deliverable) still carries 3–4 of the same-class issues plus one new brand/%
+mismatch. That's where the next pass should go.
+
+➡️ **These remaining items are scoped into a build-ready plan:
+[`audit-deliverable-fix-plan.md`](./audit-deliverable-fix-plan.md)** (T1–T7, file/line +
+change + regression test each).
+
+---
+
 ## Fix in this order (highest leverage first)
 
 - **P0 — `[CONFIG]` Pin `temperature: 0`** on both Claude calls (`llm/claude.ts:78`, `:195`).

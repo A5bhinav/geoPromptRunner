@@ -121,6 +121,48 @@ test("profileFromStored fills competitors from the report (empty aliases, no cra
   assert.equal(p.competitors[0]?.aliases.length, 0);
 });
 
+// T3: a teaser regenerated from storage must rehydrate client aliases, so an
+// answer that names the client only by an alias is counted as PRESENCE, not a
+// loss. The stored report carries only names, so the aliases ride on the draft.
+test("regeneration rehydrates client aliases: an alias-only client mention isn't a loss", () => {
+  const report: ReportPayload = {
+    ...baseReport(),
+    client_name: "You Need A Budget",
+    competitors: ["Monarch Money"],
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "openai", competitor: "Monarch Money" },
+    ],
+  };
+  const ans: AnswerRecord[] = [
+    {
+      query_id: "q1",
+      intent: "category",
+      prompt: "best budgeting app?",
+      engine_name: "openai",
+      run_index: 0,
+      // client present ONLY via the alias "YNAB"; competitor also present.
+      response: "YNAB and Monarch Money are both solid.",
+      citations: [],
+      timestamp: "t",
+    },
+  ];
+  const base: TeaserDraft = { ...savedDraft(), report, answers: ans, category: "budgeting app" };
+
+  // Alias-blind (no rehydrated aliases): the alias-only mention is missed, so the
+  // client reads as absent and the query is (wrongly) printed as a loss.
+  const blind = regenerateFromDraft({ ...base, clientAliases: [], competitorAliases: {} });
+  assert.equal(blind.ok, true, "without aliases the alias-only mention is wrongly a loss");
+
+  // With aliases rehydrated: the client is present via "YNAB" → the competitor no
+  // longer out-appears it → no honest hero → not a printable loss.
+  const withAliases = regenerateFromDraft({
+    ...base,
+    clientAliases: ["YNAB"],
+    competitorAliases: { "Monarch Money": [] },
+  });
+  assert.equal(withAliases.ok, false, "the alias-only mention counts as presence, not a loss");
+});
+
 test("assembleDraft surfaces a clean reason when nothing loses", () => {
   const empty = { ...baseReport(), losing_queries: [] };
   const r = assembleDraft(

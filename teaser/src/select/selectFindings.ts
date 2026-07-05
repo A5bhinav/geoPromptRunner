@@ -172,7 +172,7 @@ export type SelectionResult =
   | { ok: true; lead: Finding; table: Finding[]; headline: HeadlineNumber; heroEngine: string }
   | { ok: false; reason: string };
 
-function findAnswer(
+export function findAnswer(
   answers: AnswerRecord[],
   queryId: string,
   engineName: string,

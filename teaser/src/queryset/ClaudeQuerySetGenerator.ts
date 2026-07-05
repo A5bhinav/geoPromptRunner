@@ -123,6 +123,42 @@ function mentions(text: string, name: string): boolean {
 }
 
 /**
+ * Generic category words too broad to distinguish a category — "best app" fits
+ * everything. Stripped before the remaining words are treated as the category's
+ * distinguishing signal tokens.
+ */
+const CATEGORY_STOPWORDS: ReadonlySet<string> = new Set([
+  "app", "apps", "application", "applications", "service", "services", "tool",
+  "tools", "platform", "platforms", "software", "system", "systems", "product",
+  "products", "solution", "solutions", "online", "best", "top", "for", "the",
+  "and", "of", "to", "a", "an",
+]);
+
+/**
+ * The distinguishing tokens of the client's SPECIFIC category — the words a
+ * category/adjacent query should echo to prove it didn't drift to a generic
+ * parent. Empty when the category is ALL generic (then the C4 check is skipped,
+ * recall-safe): "strength-training wearable" → ["strength","training","wearable"];
+ * "budgeting app" → ["budgeting"]; "CRM" → ["crm"]; "product" → [].
+ */
+function categorySignals(category: string): string[] {
+  return category
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 2 && !CATEGORY_STOPWORDS.has(w));
+}
+
+/**
+ * True when `text` echoes at least one category signal token (leading
+ * word-boundary, plural-tolerant so "crm" matches "crms") — i.e. the query
+ * stayed inside the client's specific category rather than broadening out.
+ */
+function echoesCategory(text: string, signals: string[]): boolean {
+  const t = text.toLowerCase();
+  return signals.some((s) => new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(s)}`, "u").test(t));
+}
+
+/**
  * Validate the raw queries against the hard rules and repair deterministically.
  * Pure (no network) — the core of the tested logic.
  *
@@ -144,6 +180,9 @@ export function validateAndRepair(
   const competitorNames = profile.competitors.map((c) => c.name).filter(Boolean);
   const namesAnyCompetitor = (text: string): boolean =>
     competitorNames.some((c) => mentions(text, c));
+  // C4/T5: the distinguishing tokens of the client's specific category. Empty for
+  // an all-generic category → the drift check below is skipped (recall-safe).
+  const catSignals = categorySignals(profile.category);
 
   // Pass 1: keep only well-formed, rule-1/rule-3-compliant queries.
   const kept: RawQuery[] = [];
@@ -155,6 +194,18 @@ export function validateAndRepair(
     if (q.intent !== "brand" && mentions(text, client)) continue;
     // Rule 3: comparison queries must name a competitor.
     if (q.intent === "comparison" && !namesAnyCompetitor(text)) continue;
+    // C4/T5: a category/adjacent query must echo the client's specific category —
+    // drop one that drifted to a generic parent ("best product for a startup").
+    // Only enforced when the category has distinguishing tokens (recall-safe); if
+    // this over-drops and <3 queries survive, the template fallback (which uses
+    // the real category verbatim) still produces a valid, on-category set.
+    if (
+      (q.intent === "category" || q.intent === "adjacent_authority") &&
+      catSignals.length > 0 &&
+      !echoesCategory(text, catSignals)
+    ) {
+      continue;
+    }
     kept.push({ text, intent: q.intent });
   }
 
