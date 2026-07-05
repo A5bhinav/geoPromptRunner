@@ -27,16 +27,28 @@ export type RelationshipVerdict =
   | "same_company" // merger / rebrand / one entity — DROP
   | "unknown"; // no reliable evidence — keep (recall-safe)
 
+/**
+ * Whether a "competitor" is a DIRECT SUBSTITUTE in the client's specific category
+ * (audit C3). An off-category brand (a general fitness tracker seeded as a rival
+ * for a strength-training wearable) makes the comparison invalid the same way an
+ * acquirer does. Recall-safe: only "different_category" drops; unknown is kept.
+ */
+export type CategoryVerdict = "same_category" | "different_category" | "unknown";
+
 export interface CompetitorRelationship {
   competitor: string;
   verdict: RelationshipVerdict;
   evidence: string;
+  /** Same-specific-category judgment (audit C3). Optional/legacy → unknown (kept). */
+  categoryMatch?: CategoryVerdict;
 }
 
 export interface DroppedCompetitor {
   name: string;
   verdict: RelationshipVerdict;
   evidence: string;
+  /** True when the drop reason was an off-category rival, not a corporate tie. */
+  categoryMismatch?: boolean;
 }
 
 const DROP_VERDICTS: ReadonlySet<RelationshipVerdict> = new Set<RelationshipVerdict>([
@@ -63,7 +75,7 @@ function describeVerdict(v: RelationshipVerdict): string {
   }
 }
 
-const SYSTEM_PROMPT = `You verify whether a company's listed "competitors" are genuinely independent rivals, or whether a corporate relationship makes a competitive comparison invalid. This gates a competitive-visibility teaser: naming a competitor that ACQUIRED, OWNS, MERGED WITH, or IS THE SAME COMPANY AS the client would be embarrassing and factually wrong.
+const SYSTEM_PROMPT = `You verify whether a company's listed "competitors" are genuinely independent rivals in the SAME product category, or whether a corporate relationship OR a category mismatch makes a competitive comparison invalid. This gates a competitive-visibility teaser: naming a competitor that ACQUIRED, OWNS, MERGED WITH, or IS THE SAME COMPANY AS the client — or that is really a DIFFERENT product category (not a direct substitute) — would be embarrassing and factually wrong.
 
 Use web search to check CURRENT ownership (as of today). Acquisitions and mergers can be very recent — rely on what search returns, not on prior assumptions.
 
@@ -74,19 +86,24 @@ For each competitor, classify its relationship TO THE CLIENT:
 - "same_company": the same entity, a merger of the two, or one is a rebrand of the other
 - "unknown": you could not find reliable evidence either way
 
-Only use a verdict other than "independent" or "unknown" when search results CLEARLY support it. When unsure, use "unknown" — it will be kept. Put the source domain in "evidence".
+ALSO classify whether it is in the client's SPECIFIC category (a direct substitute a buyer would cross-shop against the client), given the client's category below:
+- "same_category": a direct substitute in the same specific category
+- "different_category": clearly a different product category (e.g. a general fitness tracker vs a strength-training wearable) — not a real head-to-head
+- "unknown": not sure
+
+Only use a verdict other than "independent"/"unknown" (or a category other than "same_category"/"unknown") when search results CLEARLY support it. When unsure, use "unknown" — it will be KEPT. Put the source domain in "evidence".
 
 Return ONLY a JSON array, one object per competitor:
-[{"competitor": "<name exactly as given>", "verdict": "<one of the five>", "evidence": "<one line incl. source>"}]`;
+[{"competitor": "<name exactly as given>", "verdict": "<one of the five>", "category": "<one of the three>", "evidence": "<one line incl. source>"}]`;
 
 function userPrompt(profile: CompanyProfile): string {
   const comps = profile.competitors.map((c) => c.name).join(", ");
   return [
     `Client company: ${profile.name} (${profile.url})`,
-    `Category: ${profile.category}`,
+    `Client's SPECIFIC category: ${profile.category}`,
     `Competitors to check: ${comps}`,
     "",
-    `For EACH competitor above, determine its current corporate relationship to ${profile.name}. Return the JSON array only.`,
+    `For EACH competitor above, determine (a) its current corporate relationship to ${profile.name} and (b) whether it is a direct substitute in the "${profile.category}" category. Return the JSON array only.`,
   ].join("\n");
 }
 
@@ -100,6 +117,12 @@ function coerceVerdict(v: unknown): RelationshipVerdict {
   ) {
     return s;
   }
+  return "unknown";
+}
+
+function coerceCategory(v: unknown): CategoryVerdict {
+  const s = typeof v === "string" ? v.trim().toLowerCase() : "";
+  if (s === "same_category" || s === "different_category") return s;
   return "unknown";
 }
 
@@ -130,6 +153,7 @@ export function normalizeRelationships(
       out.push({
         competitor: canonical,
         verdict: coerceVerdict(r.verdict),
+        categoryMatch: coerceCategory(r.category),
         evidence: typeof r.evidence === "string" ? r.evidence.trim() : "",
       });
     }
@@ -137,7 +161,12 @@ export function normalizeRelationships(
 
   for (const c of profile.competitors) {
     if (!seen.has(c.name)) {
-      out.push({ competitor: c.name, verdict: "unknown", evidence: "no verdict returned" });
+      out.push({
+        competitor: c.name,
+        verdict: "unknown",
+        categoryMatch: "unknown",
+        evidence: "no verdict returned",
+      });
     }
   }
   return out;
@@ -160,6 +189,11 @@ export function pruneRelatedCompetitors(
     const r = byLower.get(c.name.toLowerCase());
     if (r && isRelatedVerdict(r.verdict)) {
       dropped.push({ name: c.name, verdict: r.verdict, evidence: r.evidence });
+    } else if (r && r.categoryMatch === "different_category") {
+      // Off-category "competitor" (audit C3) — a different product category, not
+      // a direct substitute. Recall-safe: only "different_category" drops here;
+      // same_category and unknown are kept.
+      dropped.push({ name: c.name, verdict: r.verdict, evidence: r.evidence, categoryMismatch: true });
     } else {
       kept.push(c);
     }
@@ -210,8 +244,11 @@ export async function relationshipGuard(
 
   const { profile: pruned, dropped } = pruneRelatedCompetitors(profile, relationships);
   for (const d of dropped) {
+    const why = d.categoryMismatch
+      ? "it is a different product category (not a direct substitute)"
+      : describeVerdict(d.verdict);
     log(
-      `  ⚠️  dropped competitor "${d.name}" — ${describeVerdict(d.verdict)}${
+      `  ⚠️  dropped competitor "${d.name}" — ${why}${
         d.evidence ? ` (${d.evidence})` : ""
       }. Not a valid rival for this teaser.`,
     );

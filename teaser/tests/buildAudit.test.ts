@@ -111,9 +111,12 @@ test("buildAudit assembles all sections from a full judge run", () => {
   assert.match(d.headline, /best budgeting app/);
   assert.match(d.headline, /Acme shows up in/);
   assert.equal(d.headlineNumber.competitorName, "Monarch Money");
-  assert.equal(d.headlineNumber.clientAppears, 1); // only the brand query mentions Acme
+  // The brand query (q4, the only one naming Acme) is EXCLUDED from the headline
+  // denominator (S3) — it names the client by construction, so counting it would
+  // inflate the number. That leaves 3 winnable queries, Acme in none of them.
+  assert.equal(d.headlineNumber.clientAppears, 0);
   assert.equal(d.headlineNumber.competitorAppears, 3);
-  assert.equal(d.headlineNumber.n, 4);
+  assert.equal(d.headlineNumber.n, 3);
 
   // §3 evidence grouped by journey order (problem_aware before category before comparison)
   assert.deepEqual(d.evidence.map((g) => g.bucket), ["problem_aware", "category", "comparison"]);

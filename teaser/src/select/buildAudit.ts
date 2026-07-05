@@ -26,7 +26,8 @@ import type {
   SiteCheckRow,
 } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
-import { countReproduction } from "./selectFindings.ts";
+import { countReproduction, isUnwinnableQuery } from "./selectFindings.ts";
+import { answerSnippet } from "../render/proofCard.ts";
 
 // --- ranking constants (mirror selectFindings: engine credibility × intent) ---
 
@@ -107,24 +108,56 @@ function computeHeadline(
   report: ReportPayload,
   answers: AnswerRecord[],
 ): AuditHeadlineNumber {
-  const competitorName = report.scorecard.top_competitor ?? report.competitors[0] ?? "";
   const clientMatch = buildMatcher(report.client_name);
-  const competitorMatch = competitorName ? buildMatcher(competitorName) : () => false;
+  const competitorMatchers = report.competitors.map((c) => buildMatcher(c));
 
-  const byQuery = new Map<string, { client: boolean; competitor: boolean }>();
+  // Winnable denominator only: brand queries name the client (trivially present)
+  // and A-vs-B head-to-heads never had the client as a candidate — counting
+  // either inflates the "X of N" gap (S3, parity with the teaser).
+  const excluded = new Set<string>();
   for (const a of answers) {
-    if (!a.response) continue;
-    const entry = byQuery.get(a.query_id) ?? { client: false, competitor: false };
+    if (a.intent === "brand" || isUnwinnableQuery(a.prompt ?? "", clientMatch, competitorMatchers)) {
+      excluded.add(a.query_id);
+    }
+  }
+
+  const byQuery = new Map<string, { client: boolean; comps: Set<string> }>();
+  for (const a of answers) {
+    if (!a.response || excluded.has(a.query_id)) continue;
+    const entry = byQuery.get(a.query_id) ?? { client: false, comps: new Set<string>() };
     if (clientMatch(a.response)) entry.client = true;
-    if (competitorMatch(a.response)) entry.competitor = true;
+    report.competitors.forEach((c, i) => {
+      if (competitorMatchers[i]!(a.response as string)) entry.comps.add(c);
+    });
     byQuery.set(a.query_id, entry);
   }
+
   let clientAppears = 0;
-  let competitorAppears = 0;
+  const compCount = new Map<string, number>();
   for (const v of byQuery.values()) {
     if (v.client) clientAppears++;
-    if (v.competitor) competitorAppears++;
+    for (const c of v.comps) compCount.set(c, (compCount.get(c) ?? 0) + 1);
   }
+
+  // Honest-hero (R3): name the rival that OUT-APPEARS the client the most (not
+  // the scorecard's top-share brand, which can be one the client actually beats
+  // on these queries). If NO competitor out-appears the client, drop the name so
+  // the headline softens to a client-only statement instead of asserting a loss
+  // its own numbers contradict. Iterate in report order for a deterministic pick.
+  let competitorName = "";
+  let competitorAppears = 0;
+  for (const c of report.competitors) {
+    const appears = compCount.get(c) ?? 0;
+    if (appears > competitorAppears) {
+      competitorAppears = appears;
+      competitorName = c;
+    }
+  }
+  if (competitorAppears <= clientAppears) {
+    competitorName = "";
+    competitorAppears = 0;
+  }
+
   return { clientAppears, competitorAppears, competitorName, n: byQuery.size };
 }
 
@@ -178,7 +211,12 @@ function buildEvidence(
   for (const bucket of EVIDENCE_BUCKET_ORDER) {
     const rows = named
       .filter((r) => r.intent === bucket)
-      .sort((a, b) => scoreRow(b) - scoreRow(a));
+      .sort(
+        (a, b) =>
+          scoreRow(b) - scoreRow(a) ||
+          a.query_id.localeCompare(b.query_id) ||
+          a.engine_name.localeCompare(b.engine_name),
+      );
     const findings: Finding[] = [];
     const seenQueries = new Set<string>();
     for (const row of rows) {
@@ -186,6 +224,11 @@ function buildEvidence(
       if (seenQueries.has(row.query_id)) continue; // one card per query within a bucket
       const f = toFinding(row, answers, report.client_name);
       if (!f) continue;
+      // Proof-foregrounding gate (R6, parity with the teaser): the card renders
+      // only the LEADING prose (answerSnippet) and labels it "<competitor>
+      // recommended instead" — so the competitor must actually appear in that
+      // shown snippet, or the card contradicts its own callout.
+      if (!buildMatcher(row.competitor)(answerSnippet(f.verbatimAnswer))) continue;
       seenQueries.add(row.query_id);
       findings.push(f);
     }
@@ -215,7 +258,9 @@ function buildDiagnosis(checks: SiteCheckRow[]): DiagnosisCategory[] {
       category,
       verdict: rollUpVerdict(rows),
       checks: [...rows].sort(
-        (a, b) => (STATUS_RANK[b.status] ?? 0) - (STATUS_RANK[a.status] ?? 0),
+        (a, b) =>
+          (STATUS_RANK[b.status] ?? 0) - (STATUS_RANK[a.status] ?? 0) ||
+          a.check_key.localeCompare(b.check_key),
       ),
     }));
 }
@@ -237,7 +282,8 @@ function buildRoadmap(roadmap: RoadmapRow[]): RoadmapPhase[] {
         (a, b) =>
           (STATUS_RANK[b.status] ?? 0) - (STATUS_RANK[a.status] ?? 0) ||
           (IMPACT_RANK[(b.impact_label ?? "").toLowerCase()] ?? 0) -
-            (IMPACT_RANK[(a.impact_label ?? "").toLowerCase()] ?? 0),
+            (IMPACT_RANK[(a.impact_label ?? "").toLowerCase()] ?? 0) ||
+          a.check_name.localeCompare(b.check_name),
       ),
     }));
 }
@@ -245,15 +291,19 @@ function buildRoadmap(roadmap: RoadmapRow[]): RoadmapPhase[] {
 // --- §1 copy (deterministic templating; analyst-editable) -----------------------
 
 function verdictLine(report: ReportPayload, h: AuditHeadlineNumber): string {
+  // These percentages are MENTION rate (how often the brand is NAMED), not a
+  // recommended-first rate — so the copy says "named", not "recommended". Saying
+  // "recommended in X%" over a mention-rate number was the deliverable's single
+  // most prominent overclaim (audit R1).
   const clientPct = pctOf(report.scorecard.mention_rate_client);
   const compPct = pctOf(report.scorecard.mention_rate_top_competitor);
   if (h.competitorName) {
     return (
-      `${report.client_name} is recommended in ${clientPct}% of buyer queries; ` +
+      `${report.client_name} is named in ${clientPct}% of buyer queries; ` +
       `${h.competitorName} in ${compPct}%. The gap is the visibility you're losing at the moment buyers decide.`
     );
   }
-  return `${report.client_name} is recommended in ${clientPct}% of buyer queries.`;
+  return `${report.client_name} is named in ${clientPct}% of buyer queries.`;
 }
 
 // --- §8 engagement scaffolding (analyst edits these; no fabricated numbers) ------
@@ -301,7 +351,9 @@ export function buildAudit(
   const headlineNumber = computeHeadline(report, answers);
 
   const accuracyFlags = [...report.accuracy_flags].sort(
-    (a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0),
+    (a, b) =>
+      (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0) ||
+      a.claim.localeCompare(b.claim),
   );
 
   // §1 copy uses the real category label (passed in; the report lacks one).
@@ -338,7 +390,9 @@ export function buildAudit(
 
     competitiveGap: {
       offsite: site?.offsite ?? [],
-      citedSources: [...report.sources].sort((a, b) => b.count - a.count).slice(0, 8),
+      citedSources: [...report.sources]
+        .sort((a, b) => b.count - a.count || a.domain.localeCompare(b.domain))
+        .slice(0, 8),
     },
 
     diagnosis: {

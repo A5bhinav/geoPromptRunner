@@ -65,6 +65,8 @@ export function brandFromHostname(host: string): string {
 /** The raw shape Claude returns (validated/normalized into CompanyProfile). */
 export interface ExtractedProfile {
   name: string;
+  /** Known variants of the CLIENT's own brand name (optional for legacy fixtures). */
+  aliases?: string[];
   category: string;
   competitors: { name: string; aliases: string[] }[];
   clientDomains: string[];
@@ -77,6 +79,7 @@ export const PROFILE_SCHEMA = {
   additionalProperties: false,
   properties: {
     name: { type: "string" },
+    aliases: { type: "array", items: { type: "string" } },
     category: { type: "string" },
     competitors: {
       type: "array",
@@ -104,7 +107,7 @@ export const PROFILE_SCHEMA = {
       },
     },
   },
-  required: ["name", "category", "competitors", "clientDomains", "productClaims"],
+  required: ["name", "aliases", "category", "competitors", "clientDomains", "productClaims"],
 } as const;
 
 export const PROFILE_SYSTEM_PROMPT = `You analyze a company's own website to build a structured profile for a competitive-visibility audit.
@@ -113,8 +116,9 @@ You will receive labeled text for one or more pages of a single company's site (
 
 Return:
 - name: the company's brand name as customers say it (not the legal entity, not the domain).
-- category: a short, consumer-facing product category (e.g. "budgeting app", "smart ring", "meal-kit service"). Use the language a consumer would use, not internal jargon.
-- competitors: 2-5 REAL, CURRENTLY-OPERATING rival brands a buyer would compare this company against. Use real, well-known competitor names — NOT made-up names and NOT names that merely prefix this company. EXCLUDE any product that has been discontinued, shut down, or sunset and no longer serves customers (a dead brand poisons the audit — buyers can't switch to a product that no longer exists). For each, list any aliases/name variants (e.g. "WHOOP", "Whoop band"); use [] if none.
+- aliases: known variants of the CLIENT's OWN name (a shortened form, an abbreviation, a common misspelling, e.g. "YNAB" for "You Need A Budget"). Use [] if none.
+- category: the MOST SPECIFIC consumer-facing category that distinguishes this company from ADJACENT products — the narrow sub-category a buyer cross-shopping DIRECT substitutes would name, not the generic parent. Return the narrowest TRUE category, e.g. "strength-training wearable" NOT "fitness tracker"; "zero-based budgeting app" NOT "finance app"; "meal-kit delivery service" NOT "food app". Use consumer language, not internal jargon — but do NOT broaden to a generic parent category.
+- competitors: 2-5 REAL, CURRENTLY-OPERATING rival brands. Each MUST be a DIRECT SUBSTITUTE in the SAME specific category above — a product a buyer would genuinely cross-shop against this company, NOT merely an adjacent product or a famous brand in the broader parent category (e.g. for a strength-training wearable, do NOT return a general fitness tracker just because it's well known). Use real, well-known names — NOT made-up names and NOT names that merely prefix this company. EXCLUDE any product that has been discontinued, shut down, or sunset and no longer serves customers (a dead brand poisons the audit — buyers can't switch to a product that no longer exists). For each, list any aliases/name variants (e.g. "WHOOP", "Whoop band"); use [] if none.
 - clientDomains: domains owned by this company (include the site's own domain).
 - productClaims: 0-6 concrete, falsifiable claims the site makes (pricing, a required subscription, a flagship feature, the current model/version) that could seed a fact sheet. sourceUrl is the page the claim came from. Use [] if you can't ground any.
 
@@ -175,7 +179,29 @@ export function buildProfile(
   const host = hostnameOf(url);
 
   const name = extracted.name.trim() || brandFromHostname(host);
-  const category = extracted.category.trim() || "product";
+  // A blank (or degenerate "product") category is a HARD FAILURE, not a silent
+  // fallback: the old `|| "product"` produced "best product for a growing
+  // startup" queries and a bland-but-wrong teaser that could still be sent. If
+  // the resolver couldn't name a real category, we'd rather build no teaser (the
+  // same safe direction as assertSufficientProfileText). Audit finding C6.
+  const category = extracted.category.trim();
+  if (!category || category.toLowerCase() === "product") {
+    throw new Error(
+      `resolver could not determine a specific product category for ${url} ` +
+        `(got ${JSON.stringify(extracted.category)}). Profiling would emit generic ` +
+        `"best product" queries — refusing to build a teaser from an empty category.`,
+    );
+  }
+
+  const aliases: string[] = [];
+  const seenAliases = new Set<string>([name.toLowerCase()]);
+  for (const a of extracted.aliases ?? []) {
+    const trimmed = a.trim();
+    const key = trimmed.toLowerCase();
+    if (!trimmed || seenAliases.has(key)) continue; // drop blanks, the name itself, and dups
+    seenAliases.add(key);
+    aliases.push(trimmed);
+  }
 
   const competitors: Competitor[] = [];
   const seen = new Set<string>();
@@ -211,6 +237,7 @@ export function buildProfile(
   return {
     url,
     name,
+    aliases,
     category,
     competitors,
     clientDomains,

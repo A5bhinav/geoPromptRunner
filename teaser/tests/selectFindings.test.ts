@@ -336,6 +336,61 @@ test("selectWhyGaps keeps technical-access gaps when the crawl reached the site"
   assert.ok(gaps.some((g) => g.label === "robots.txt allows AI crawlers"), "a genuine, confirmed block still shows");
 });
 
+// S1/S2: an A-vs-B head-to-head (query names TWO tracked rivals, client never a
+// candidate) must be excluded from the hero, the table, AND the denominator —
+// this is the "Whoop vs Fitbit, client nowhere" embarrassment.
+test("A-vs-B head-to-heads are excluded from hero, table, and denominator", () => {
+  const p = profile();
+  p.competitors = [
+    { name: "YNAB", aliases: [], confirmed: true },
+    { name: "Monarch Money", aliases: ["Monarch"], confirmed: true },
+  ];
+  const report = baseReport({
+    competitors: ["YNAB", "Monarch Money"],
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "openai", competitor: "YNAB" },
+      { query_id: "q2", intent: "comparison", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "openai", run_index: 0, response: "YNAB is the top pick.", citations: [], timestamp: "t" },
+    // Names BOTH rivals in the QUESTION → un-winnable, excluded everywhere.
+    { query_id: "q2", intent: "comparison", prompt: "YNAB vs Monarch — which is better?", engine_name: "perplexity", run_index: 0, response: "Monarch edges out YNAB.", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(p, report, ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.lead.queryId, "q1"); // the winnable category loss, not the A-vs-B
+  assert.ok(!r.table.some((f) => f.queryId === "q2"), "A-vs-B row excluded from the table");
+  assert.equal(r.headline.n, 1, "denominator counts only the winnable query");
+});
+
+// S4: the client matched WITH its aliases — an answer that names it only by a
+// variant counts as present, so a real appearance isn't printed as a loss.
+test("an answer naming the client only by an alias counts as present", () => {
+  const p = profile();
+  p.name = "You Need A Budget";
+  p.aliases = ["YNAB"];
+  p.competitors = [{ name: "Monarch Money", aliases: [], confirmed: true }];
+  const report = baseReport({
+    competitors: ["Monarch Money"],
+    scorecard: { ...baseReport().scorecard, top_competitor: "Monarch Money" },
+    losing_queries: [
+      { query_id: "q1", intent: "category", engine_name: "openai", competitor: "Monarch Money" },
+      { query_id: "q2", intent: "category", engine_name: "perplexity", competitor: "Monarch Money" },
+    ],
+  });
+  const ans: AnswerRecord[] = [
+    { query_id: "q1", intent: "category", prompt: "best budgeting app?", engine_name: "openai", run_index: 0, response: "YNAB and Monarch Money are both solid.", citations: [], timestamp: "t" },
+    { query_id: "q2", intent: "category", prompt: "top budgeting app?", engine_name: "perplexity", run_index: 0, response: "Monarch Money is the top pick.", citations: [], timestamp: "t" },
+  ];
+  const r = selectFindings(p, report, ans);
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  // Client present in q1 via the alias "YNAB" → companyAppears is 1, not 0.
+  assert.equal(r.headline.companyAppears, 1);
+});
+
 // Regression for #4: a losing row with no named competitor is not printable.
 test("losing rows without a named competitor are refused", () => {
   const report = baseReport({

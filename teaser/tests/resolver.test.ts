@@ -56,15 +56,42 @@ test("client host is always present in clientDomains (sans www, deduped)", () =>
   assert.deepEqual(p.clientDomains, ["acme.io"]);
 });
 
-test("blank name/category fall back to a hostname-derived brand", () => {
+test("blank name falls back to a hostname-derived brand (category present)", () => {
   const p = buildProfile(
     "https://acme-hq.io",
-    extracted({ name: "  ", category: "" }),
+    extracted({ name: "  " }),
     "m",
     FIXED,
   );
   assert.equal(p.name, "Acme Hq");
-  assert.equal(p.category, "product");
+  assert.equal(p.category, "CRM");
+});
+
+// C6: a blank or degenerate "product" category is a HARD FAILURE, not a silent
+// "best product for a growing startup" teaser. buildProfile refuses to build one.
+test("blank category is a hard failure (throws)", () => {
+  assert.throws(
+    () => buildProfile("https://acme-hq.io", extracted({ category: "" }), "m", FIXED),
+    /could not determine a specific product category/,
+  );
+});
+
+test('a degenerate "product" category also hard-fails', () => {
+  assert.throws(
+    () => buildProfile("https://acme-hq.io", extracted({ category: "product" }), "m", FIXED),
+    /could not determine a specific product category/,
+  );
+});
+
+// S4: client aliases are normalized (trimmed, de-duped vs the name) onto the profile.
+test("client aliases are threaded onto the profile", () => {
+  const p = buildProfile(
+    "https://ynab.com",
+    extracted({ name: "You Need A Budget", aliases: ["YNAB", " YNAB ", "You Need A Budget"] }),
+    "m",
+    FIXED,
+  );
+  assert.deepEqual(p.aliases, ["YNAB"]);
 });
 
 test("competitors are de-duped case-insensitively and blanks dropped", () => {

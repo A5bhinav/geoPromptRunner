@@ -123,13 +123,40 @@ function scoreRow(row: LosingRow): number {
 }
 
 /**
- * Whether the copy may print "recommends" for this row. The platform's judge
- * path only emits recommended_first losing cells today, and rows stored before
- * prominence was sent (undefined) all came through that filter — so only an
- * explicit non-first prominence demotes the claim.
+ * Whether the copy may print "recommends" (and whether selection may boost the
+ * row into the hero slot). ONLY an explicit `recommended_first` qualifies — a
+ * null/undefined prominence is UNKNOWN, and cold outreach must not print its
+ * strongest verb on a claim the judge didn't measure. Defaulting unknown to the
+ * weaker claim under-claims at worst, which is the safe direction (the whole
+ * teaser philosophy: only claim what the judge measured). This intentionally
+ * reverses the old "legacy null == recommends" default (audit finding S7).
  */
 export function isRecommendedFirst(prominence: LosingRow["prominence"]): boolean {
-  return prominence == null || prominence === "recommended_first";
+  return prominence === "recommended_first";
+}
+
+/**
+ * A query is UN-WINNABLE for the client when its TEXT pits two or more tracked
+ * rivals against each other (an A-vs-B head-to-head) and never names the client.
+ * The client was structurally never a candidate, so its absence there is not a
+ * loss — printing it produces the "Whoop vs Fitbit, <client> nowhere"
+ * embarrassment and inflates the "appears in 0 of N" denominator. Judged on the
+ * QUESTION text, not the answer: a category query names 0 rivals; "alternatives
+ * to X" names 1 (still winnable — the client should surface); "X vs Y" names 2.
+ */
+export function isUnwinnableQuery(
+  text: string,
+  clientMatch: (t: string) => boolean,
+  competitorMatchers: ((t: string) => boolean)[],
+): boolean {
+  if (!text.trim()) return false;
+  if (clientMatch(text)) return false; // the client is named → it IS a candidate
+  let named = 0;
+  for (const m of competitorMatchers) {
+    if (m(text)) named++;
+    if (named >= 2) return true;
+  }
+  return false;
 }
 
 /** Lead ranking — demand-side intent dominates (×10), engine credibility breaks ties. */
@@ -149,10 +176,23 @@ function findAnswer(
   answers: AnswerRecord[],
   queryId: string,
   engineName: string,
+  prefer?: (response: string) => boolean,
 ): AnswerRecord | undefined {
-  // Prefer run_index 0; fall back to any run that actually returned a response.
-  const cell = answers.filter((a) => a.query_id === queryId && a.engine_name === engineName);
-  return cell.find((a) => a.run_index === 0 && a.response) ?? cell.find((a) => a.response);
+  const cell = answers.filter(
+    (a) => a.query_id === queryId && a.engine_name === engineName && a.response,
+  );
+  // D3: when we can, show a run that actually REPRODUCES the printed loss (client
+  // absent, competitor foregrounded) rather than run_index 0 blindly — engine
+  // text drifts run-to-run, and the proof quote must back the claim. Pick the
+  // lowest run_index among the confirming runs (deterministic). Fall back to
+  // run_index 0, then any run.
+  if (prefer) {
+    const confirming = cell
+      .filter((a) => prefer(a.response as string))
+      .sort((x, y) => x.run_index - y.run_index);
+    if (confirming.length) return confirming[0];
+  }
+  return cell.find((a) => a.run_index === 0) ?? cell[0];
 }
 
 function toFinding(
@@ -160,8 +200,9 @@ function toFinding(
   role: "lead" | "table",
   answers: AnswerRecord[],
   repro: Reproduction,
+  prefer?: (response: string) => boolean,
 ): Finding | null {
-  const answer = findAnswer(answers, row.query_id, row.engine_name);
+  const answer = findAnswer(answers, row.query_id, row.engine_name, prefer);
   if (!answer || !answer.response) return null;
   return {
     role,
@@ -184,9 +225,12 @@ function computeHeadline(
   profile: CompanyProfile,
   answers: AnswerRecord[],
   competitorName: string,
+  excludedQueryIds: ReadonlySet<string>,
 ): HeadlineNumber {
-  // The client has no alias source in CompanyProfile today, so match on its name.
-  const clientMatch = buildMatcher(profile.name);
+  // Match the client on its name AND any known client aliases, so an answer that
+  // names it only by a variant still counts as present — otherwise a real
+  // appearance would print as a reproduced loss and understate the headline.
+  const clientMatch = buildMatcher(profile.name, profile.aliases ?? []);
   // Feed the competitor's known aliases so an answer that names it only by an
   // alias (e.g. "YNAB" for "You Need A Budget") still counts toward competitorAppears —
   // otherwise the headline understates the gap the teaser exists to show.
@@ -197,6 +241,10 @@ function computeHeadline(
   const byQuery = new Map<string, { client: boolean; competitor: boolean }>();
   for (const a of answers) {
     if (!a.response) continue;
+    // Denominator is the WINNABLE demand-side set only: brand queries name the
+    // client (trivially present) and A-vs-B head-to-heads never had the client as
+    // a candidate — counting either inflates "0 of N" and the stakes line (S2/S3).
+    if (excludedQueryIds.has(a.query_id)) continue;
     const entry = byQuery.get(a.query_id) ?? { client: false, competitor: false };
     if (clientMatch(a.response)) entry.client = true;
     if (competitorMatch(a.response)) entry.competitor = true;
@@ -234,17 +282,59 @@ export function selectFindings(
 
   // Only rows that name a competitor are printable — the teaser names the rival
   // the client is losing to (BUILD_PLAN.md §7 #8: "with a named competitor").
-  const named = report.losing_queries.filter((r) => r.competitor.trim() !== "");
-  if (named.length === 0) {
+  const namedRows = report.losing_queries.filter((r) => r.competitor.trim() !== "");
+  if (namedRows.length === 0) {
     return { ok: false, reason: "no losing query names a competitor — nothing to print against" };
   }
 
-  // Reproducibility of each candidate loss across its runs, from the verbatim
-  // answers. Client is matched on name (no alias source on CompanyProfile);
-  // competitors feed their known aliases so an alias-only mention still counts.
-  const clientMatch = buildMatcher(profile.name);
+  // Client is matched on its name AND any known client aliases; competitors feed
+  // their own aliases so an alias-only mention still counts.
+  const clientMatch = buildMatcher(profile.name, profile.aliases ?? []);
   const competitorMatcher = (name: string) =>
     buildMatcher(name, profile.competitors.find((c) => c.name === name)?.aliases ?? []);
+  // One matcher per tracked competitor entity — used to detect A-vs-B queries.
+  const competitorMatchers = profile.competitors.map((c) => buildMatcher(c.name, c.aliases));
+  // The run to SHOW for a given competitor: one that reproduces the loss (client
+  // absent, that competitor present) so the proof card foregrounds the claim.
+  const preferFor = (name: string) => (resp: string) =>
+    !clientMatch(resp) && competitorMatcher(name)(resp);
+
+  // First question text seen per query — the un-winnable (A-vs-B) test reads the
+  // QUESTION, not the answer.
+  const promptOf = new Map<string, string>();
+  for (const a of answers) {
+    if (a.prompt && !promptOf.has(a.query_id)) promptOf.set(a.query_id, a.prompt);
+  }
+
+  // The WINNABLE demand-side set: exclude brand-intent queries (they name the
+  // client → trivially present) and A-vs-B head-to-heads (the client was never a
+  // candidate). Applied to the printable rows AND the headline denominator so
+  // selection and the "X of N" number tell one honest story (S1/S2/S3). Brand is
+  // already dropped pre-submit in the live pipeline; this also covers regenerate.
+  const excludedQueryIds = new Set<string>();
+  for (const a of answers) {
+    if (
+      a.intent === "brand" ||
+      isUnwinnableQuery(a.prompt ?? "", clientMatch, competitorMatchers)
+    ) {
+      excludedQueryIds.add(a.query_id);
+    }
+  }
+  const isExcludedRow = (row: LosingRow): boolean =>
+    row.intent === "brand" ||
+    excludedQueryIds.has(row.query_id) ||
+    isUnwinnableQuery(promptOf.get(row.query_id) ?? "", clientMatch, competitorMatchers);
+
+  const named = namedRows.filter((r) => !isExcludedRow(r));
+  if (named.length === 0) {
+    return {
+      ok: false,
+      reason:
+        "every losing query is a brand query or an A-vs-B head-to-head where the client was never a candidate — no winnable demand-side loss to print",
+    };
+  }
+
+  // Reproducibility of each candidate loss across its runs, from the verbatim answers.
   const reproOf = new Map<LosingRow, Reproduction>();
   for (const row of named) {
     reproOf.set(
@@ -267,7 +357,7 @@ export function selectFindings(
   const headlineFor = (competitor: string): HeadlineNumber => {
     const hit = headlineCache.get(competitor);
     if (hit) return hit;
-    const h = computeHeadline(profile, answers, competitor);
+    const h = computeHeadline(profile, answers, competitor, excludedQueryIds);
     headlineCache.set(competitor, h);
     return h;
   };
@@ -294,7 +384,7 @@ export function selectFindings(
   // Requiring the competitor in the rendered snippet moves the hero to a query
   // where it is genuinely foregrounded. Match exactly what renderProofCard shows.
   const shownInProof = (row: LosingRow): boolean => {
-    const a = findAnswer(answers, row.query_id, row.engine_name);
+    const a = findAnswer(answers, row.query_id, row.engine_name, preferFor(row.competitor));
     if (!a || !a.response) return false;
     return competitorMatcher(row.competitor)(answerSnippet(a.response));
   };
@@ -307,22 +397,28 @@ export function selectFindings(
     };
   }
 
-  // Lead = the best cell that joins to a verbatim answer. A loss that REPRODUCES
-  // across all its runs outranks any that doesn't (a claim a prospect can re-run
-  // and see must not rest on a single flaky sample); within that, leadScore puts
-  // a recommended-first, demand-side loss in the hero slot. The hero engine
-  // follows the lead (NOT the globally-most-credible engine), so the proof card
-  // and headline stay on one engine. Skip any top row we can't join to an answer.
-  const leadRanked = [...provablePool].sort((a, b) => {
+  // Lead = the best cell that joins to a verbatim answer. In a MULTI-RUN audit,
+  // reproduction is a GATE, not just a tiebreaker (S6): if any hero-eligible row
+  // held on every run, the hero MUST be one of those — a single-run fluke can't
+  // become the hero while the copy asserts it as a repeatable fact. Within the
+  // eligible pool, leadScore puts a recommended-first, demand-side loss in the
+  // hero slot; query_id/engine break ties DETERMINISTICALLY (D4) so equal-ranked
+  // findings can't swap on incoming order. The hero engine follows the lead (NOT
+  // the globally-most-credible engine), so proof card + headline stay on one engine.
+  const multiRun = provablePool.some((r) => repro(r).observed >= 2);
+  const reproducingPool = provablePool.filter((r) => reproduces(repro(r)));
+  const leadPool = multiRun && reproducingPool.length > 0 ? reproducingPool : provablePool;
+  const leadRanked = [...leadPool].sort((a, b) => {
     const ra = reproduces(repro(a)) ? 1 : 0;
     const rb = reproduces(repro(b)) ? 1 : 0;
     if (ra !== rb) return rb - ra;
-    return leadScore(b) - leadScore(a);
+    if (leadScore(b) !== leadScore(a)) return leadScore(b) - leadScore(a);
+    return a.query_id.localeCompare(b.query_id) || a.engine_name.localeCompare(b.engine_name);
   });
   let leadRow: LosingRow | null = null;
   let lead: Finding | null = null;
   for (const row of leadRanked) {
-    const f = toFinding(row, "lead", answers, repro(row));
+    const f = toFinding(row, "lead", answers, repro(row), preferFor(row.competitor));
     if (f) {
       leadRow = row;
       lead = f;
@@ -334,15 +430,22 @@ export function selectFindings(
   }
   const heroEngine = leadRow.engine_name;
 
-  // Table: next 2 DISTINCT queries (not the lead's), ranked by COMMERCIAL intent
-  // (scoreRow) so the high-intent comparison rows corroborate the lead.
-  const tableRanked = [...named].sort((a, b) => scoreRow(b) - scoreRow(a));
+  // Table: next 2 DISTINCT queries (not the lead's), drawn from the SAME gated
+  // pool the hero passed (S8) — every table row has cleared the honest-hero,
+  // proof-foregrounding, and winnable gates, so a row can't contradict the
+  // headline. Ranked by COMMERCIAL intent (scoreRow), deterministic tiebreak (D4).
+  const tableRanked = [...provablePool].sort(
+    (a, b) =>
+      scoreRow(b) - scoreRow(a) ||
+      a.query_id.localeCompare(b.query_id) ||
+      a.engine_name.localeCompare(b.engine_name),
+  );
   const seen = new Set<string>([leadRow.query_id]);
   const table: Finding[] = [];
   for (const row of tableRanked) {
     if (table.length >= 2) break;
     if (seen.has(row.query_id)) continue;
-    const f = toFinding(row, "table", answers, repro(row));
+    const f = toFinding(row, "table", answers, repro(row), preferFor(row.competitor));
     if (!f) continue;
     seen.add(row.query_id);
     table.push(f);

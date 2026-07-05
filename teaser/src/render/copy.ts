@@ -7,6 +7,19 @@
 import { isRecommendedFirst } from "../select/selectFindings.ts";
 import type { Finding, HeadlineNumber } from "../types/domain.ts";
 
+/**
+ * Humanize an unknown engine id so a raw snake_case token
+ * ("bing_copilot") never leaks into a client deliverable: "bing_copilot" →
+ * "Bing Copilot". A safe fallback for any platform engine not in the label map.
+ */
+function humanizeEngine(engine: string): string {
+  return engine
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ") || engine;
+}
+
 /** Pretty engine label for captions/headlines. */
 export function engineLabel(engine: string): string {
   const map: Record<string, string> = {
@@ -19,8 +32,13 @@ export function engineLabel(engine: string): string {
     gemini_grounded: "Gemini",
     anthropic: "Claude",
     anthropic_search: "Claude",
+    // Bing Copilot family — the platform may emit any of these ids.
+    copilot: "Copilot",
+    bing_copilot: "Copilot",
+    bing: "Bing",
   };
-  return map[engine] ?? engine;
+  // Humanize (not raw id) on miss so a new engine never prints as snake_case.
+  return map[engine] ?? humanizeEngine(engine);
 }
 
 /** Brand color for the proof-card engine avatar. */
@@ -35,6 +53,9 @@ export function engineColor(engine: string): string {
     gemini_grounded: "#8E75F0",
     anthropic: "#CC785C",
     anthropic_search: "#CC785C",
+    copilot: "#0F6CBD",
+    bing_copilot: "#0F6CBD",
+    bing: "#0F6CBD",
   };
   return map[engine] ?? "#1b1a17";
 }

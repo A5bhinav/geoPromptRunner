@@ -13,6 +13,15 @@ export interface Competitor {
 export interface CompanyProfile {
   url: string;
   name: string;
+  /**
+   * Known name variants for the CLIENT itself (e.g. "YNAB" for "You Need A
+   * Budget", a shortened brand form). Threaded into every client matcher so an
+   * engine that names the client only by a variant still counts as present —
+   * otherwise a real appearance prints as a reproduced loss and understates the
+   * headline. Optional: mock/legacy/stored profiles that have no alias source
+   * fall back to []. Competitors carry their own aliases on `Competitor`.
+   */
+  aliases?: string[];
   category: string;
   competitors: Competitor[];
   clientDomains: string[];

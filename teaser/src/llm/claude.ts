@@ -57,6 +57,14 @@ export interface ExtractOptions {
   model?: string;
   /** Generous default so structured output isn't truncated. */
   maxTokens?: number;
+  /**
+   * Sampling temperature. Defaults to 0 so profile extraction and query
+   * generation are DETERMINISTIC — without this the call runs at the API default
+   * (1.0) and the same URL yields a different profile/query set every run (the
+   * "different every time" teaser symptom). Structured output constrains the
+   * shape, not the content, so a pinned temperature is what stabilizes content.
+   */
+  temperature?: number;
 }
 
 /**
@@ -74,10 +82,12 @@ export async function extractJson<T>(
 ): Promise<T> {
   const model = opts.model ?? claudeModel();
   const maxTokens = opts.maxTokens ?? 4096;
+  const temperature = opts.temperature ?? 0;
 
   const response = await client().messages.create({
     model,
     max_tokens: maxTokens,
+    temperature,
     system,
     messages: [{ role: "user", content: user }],
     // Constrain the output to the schema. The API guarantees the text block is
@@ -163,6 +173,12 @@ export interface ResearchOptions {
   maxTokens?: number;
   /** Cap on server-side web searches (max_uses on the tool). */
   maxSearches?: number;
+  /**
+   * Sampling temperature. Defaults to 0 so the relationship/category guard reads
+   * the same web results the same way run-to-run (a paused-and-resumed check
+   * otherwise resumes into different sampling). See ExtractOptions.temperature.
+   */
+  temperature?: number;
 }
 
 /**
@@ -183,6 +199,7 @@ export async function researchJson<T>(
   const model = opts.model ?? claudeModel();
   const maxTokens = opts.maxTokens ?? 3072;
   const maxUses = opts.maxSearches ?? 4;
+  const temperature = opts.temperature ?? 0;
   const tools = [
     { type: "web_search_20250305", name: "web_search", max_uses: maxUses },
   ] as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming["tools"];
@@ -190,16 +207,20 @@ export async function researchJson<T>(
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: user }];
   let response: Anthropic.Message | null = null;
   // Resume on pause_turn (server-tool loop hit its iteration cap); bounded so a
-  // misbehaving loop can't spin forever.
+  // misbehaving loop can't spin forever. Progress guard: a pause_turn must carry
+  // assistant content to append — if it doesn't, the loop is stalled, so we stop
+  // rather than resubmit an identical request that would pause again forever.
   for (let hop = 0; hop < 6; hop++) {
     response = await client().messages.create({
       model,
       max_tokens: maxTokens,
+      temperature,
       system,
       messages,
       tools,
     });
     if (response.stop_reason !== "pause_turn") break;
+    if (response.content.length === 0) break;
     messages.push({ role: "assistant", content: response.content });
   }
   if (!response) throw new Error("no response from Claude web-search call");

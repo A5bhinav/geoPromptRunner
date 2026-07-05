@@ -78,10 +78,10 @@ function systemPrompt(): string {
 
 Tag each query with exactly one intent bucket:
 - problem_aware: first-person buyer pain; NEVER name the category, the client, or any brand.
-- category: "best <category> for X" style; may carry a real qualifier; do NOT name the client.
+- category: "best <category> for X" style; use the client's SPECIFIC category verbatim (do NOT broaden it to a generic parent — a buyer cross-shopping this product would name the narrow category); may carry a real qualifier; do NOT name the client.
 - comparison: head-to-heads and "alternatives to <competitor>"; name competitors. At least TWO comparison queries must NOT name the client (these test whether the client surfaces unprompted).
 - brand: bottom-funnel about the CLIENT specifically (this is the ONLY bucket that may name the client).
-- adjacent_authority: a topic the client could plausibly own as an expert; name no brand.
+- adjacent_authority: a topic the client could plausibly own as an expert, WITHIN its specific category; name no brand.
 
 Hard rules:
 1. The client is named ONLY in brand-intent queries — never in category/comparison/problem_aware/adjacent_authority.
@@ -98,7 +98,7 @@ function userPrompt(profile: CompanyProfile): string {
   return [
     `Client (the company being audited): ${profile.name}`,
     `Category: ${profile.category}`,
-    `Competitors: ${competitorNames.length ? competitorNames.join(", ") : "(none provided — use real category leaders)"}`,
+    `Competitors: ${competitorNames.length ? competitorNames.join(", ") : "(none provided — do NOT invent brands or reach for the biggest generic names in a broader category; emit extra category/problem_aware queries instead of comparison queries)"}`,
     "",
     "Generate the query set following the rules. Remember: name the client ONLY in brand queries; name competitors in comparison queries; >=2 comparison queries leave the client unnamed.",
   ].join("\n");
@@ -266,8 +266,15 @@ export class ClaudeQuerySetGenerator implements QuerySetGenerator {
         QUERY_SCHEMA as unknown as Record<string, unknown>,
       );
       raw = Array.isArray(result.queries) ? result.queries : [];
-    } catch {
-      // Leave raw empty -> validateAndRepair falls back to the template set.
+    } catch (err) {
+      // Leave raw empty -> validateAndRepair falls back to the template set. Do
+      // NOT swallow silently (audit C6): a bland-but-wrong template teaser could
+      // otherwise ship with no trace of why the LLM set was discarded.
+      console.warn(
+        `⚠️  query-set generation failed (${
+          err instanceof Error ? err.message : String(err)
+        }) — falling back to the deterministic template set.`,
+      );
       raw = [];
     }
 

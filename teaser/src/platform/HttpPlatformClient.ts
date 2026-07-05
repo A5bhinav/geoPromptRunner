@@ -88,19 +88,38 @@ export class HttpPlatformClient implements PlatformClient {
   }
 
   async getReport(runId: string): Promise<ReportPayload> {
-    return this.request<ReportPayload>(
+    const raw = await this.request<Record<string, unknown>>(
       "GET",
       `/audits/${encodeURIComponent(runId)}/report`,
     );
+    // Light shape check (R8): a renamed/removed platform field would otherwise
+    // cast to undefined and silently produce blank cells / wrong counts in a
+    // client deliverable. Fail loud on the load-bearing fields instead.
+    for (const key of ["client_name", "scorecard", "leaderboard", "losing_queries"]) {
+      if (!(key in raw)) {
+        throw new Error(
+          `platform /report is missing "${key}" — the report schema may have ` +
+            `changed (see types/platform.ts). Refusing a malformed report.`,
+        );
+      }
+    }
+    if (!Array.isArray(raw.losing_queries) || !Array.isArray(raw.leaderboard)) {
+      throw new Error(`platform /report has a non-array leaderboard/losing_queries — malformed report.`);
+    }
+    return raw as unknown as ReportPayload;
   }
 
   async getAnswers(runId: string): Promise<AnswerRecord[]> {
     // The endpoint returns rows in the storage QueryResult shape, which is
     // field-for-field AnswerRecord (see types/platform.ts).
-    return this.request<AnswerRecord[]>(
+    const raw = await this.request<unknown>(
       "GET",
       `/audits/${encodeURIComponent(runId)}/answers`,
     );
+    if (!Array.isArray(raw)) {
+      throw new Error(`platform /answers did not return an array — malformed answers payload.`);
+    }
+    return raw as AnswerRecord[];
   }
 
   async saveTeaser(draft: TeaserDraft, html: string): Promise<string | null> {

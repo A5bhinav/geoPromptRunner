@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   competitorVerb,
+  engineLabel,
   headline,
   leadSentence,
   proofCaption,
@@ -36,8 +37,8 @@ test("competitorVerb: 'recommends' only for recommended_first", () => {
   assert.equal(competitorVerb(lead("also_ran")).active, "mentions");
 });
 
-test("competitorVerb: legacy rows (no prominence) keep 'recommends' — they all came through the recommended-first filter", () => {
-  assert.equal(competitorVerb(lead(null)).active, "recommends");
+test("competitorVerb: unknown prominence (null) downgrades to 'mentions' — cold outreach never prints its strongest verb on an unmeasured claim (S7)", () => {
+  assert.equal(competitorVerb(lead(null)).active, "mentions");
 });
 
 test("leadSentence grades its verb by prominence", () => {
@@ -74,6 +75,15 @@ test("stakesLine only claims the client's measured absence, not competitor prese
 test("stakesLine singular query", () => {
   const h: HeadlineNumber = { companyAppears: 2, competitorAppears: 3, competitorName: "Whoop", n: 3 };
   assert.ok(stakesLine("Fort", h).includes("1 of 3 buyer query answered"));
+});
+
+// R7: an unknown engine id must never leak into a deliverable as raw snake_case,
+// and the Bing Copilot family is labelled.
+test("engineLabel humanizes an unknown engine id and knows Copilot", () => {
+  assert.equal(engineLabel("bing_copilot"), "Copilot");
+  assert.equal(engineLabel("copilot"), "Copilot");
+  assert.equal(engineLabel("some_new_engine"), "Some New Engine");
+  assert.equal(engineLabel("perplexity"), "Perplexity");
 });
 
 test("reproNote: printed only when the loss held on every run (>=2)", () => {

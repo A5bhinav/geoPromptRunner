@@ -12,7 +12,8 @@ import type { Finding, TeaserDraft } from "../types/domain.ts";
 import type { LeaderRow } from "../types/platform.ts";
 import { competitorVerb, ctaLine, engineLabel, proofCaption, reproNote } from "./copy.ts";
 import { renderProofCard } from "./proofCard.ts";
-import { selectWhyGaps } from "../select/selectFindings.ts";
+import { isUnwinnableQuery, selectWhyGaps } from "../select/selectFindings.ts";
+import { buildMatcher } from "../select/entity.ts";
 import { SHELF_LIFE_DAYS, validThrough } from "../freshness.ts";
 
 function escapeHtml(s: string): string {
@@ -25,17 +26,6 @@ function escapeHtml(s: string): string {
 
 function pct(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n * 100)));
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** Brand strings to look for in an answer — the full name and its TLD-stripped core. */
-function mentionNeedles(companyName: string): string[] {
-  const base = companyName.trim().toLowerCase();
-  const core = base.replace(/\.(ai|io|com|co|app|net|org|dev|xyz)$/, "").trim();
-  return [...new Set([base, core])].filter((s) => s.length >= 3);
 }
 
 /**
@@ -53,11 +43,22 @@ function clientAppearanceLine(t: TeaserDraft): string {
     // measured for all n queries.
     return `AI named ${company} in 0 of ${n} queries — every one of those answers went out without ${company} in it.`;
   }
-  const needles = mentionNeedles(company).map((nd) => new RegExp(`\\b${escapeRegExp(nd)}\\b`));
-  const hit = t.answers.find((a) => {
-    const r = (a.response ?? "").toLowerCase();
-    return needles.some((re) => re.test(r));
-  });
+  // Use the SAME word-boundary matcher the headline count uses (not a looser
+  // needle set), and skip brand / A-vs-B queries, so the query we point to as
+  // "the one place" is genuinely one of the COUNTED appearances — never a
+  // different or excluded query (audit R5). Deterministic scan order so the pick
+  // is stable run-to-run. (No stored client-alias source here, so match on name.)
+  const clientMatch = buildMatcher(company);
+  const competitorMatchers = t.report.competitors.map((c) => buildMatcher(c));
+  const hit = [...t.answers]
+    .filter((a) => a.response)
+    .sort((x, y) => x.query_id.localeCompare(y.query_id) || x.run_index - y.run_index)
+    .find(
+      (a) =>
+        a.intent !== "brand" &&
+        !isUnwinnableQuery(a.prompt ?? "", clientMatch, competitorMatchers) &&
+        clientMatch(a.response as string),
+    );
   if (!hit) {
     return `AI named ${company} in just ${companyAppears} of ${n} buyer queries.`;
   }
@@ -366,7 +367,7 @@ export function renderTeaserHtml(
       </section>
 
       <section class="section">
-        <div class="kicker">Who AI recommends in your category</div>
+        <div class="kicker">Who AI names in your category</div>
         <p class="caption legend">Each bar is how often AI named that brand across every buyer query and engine we ran — not just the ${h.n} shown above.</p>
         ${visibilityChart(t.report.leaderboard, h.competitorName)}
         <p class="caption">${escapeHtml(clientAppearanceLine(t))}</p>
