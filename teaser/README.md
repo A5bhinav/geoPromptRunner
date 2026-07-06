@@ -121,8 +121,9 @@ Environment variables:
   one injected by the web route's parent process) still takes precedence. A
   `teaser/.env`, if present, overrides the repo-root one.
 - `TEASER_CLAUDE_MODEL` *(optional)* — the Claude model id, **separately
-  configurable** from the key (default `claude-haiku-4-5`). Lets you point the
-  teaser at a different model without touching the platform's own model config.
+  configurable** from the key (default `claude-sonnet-5`). Lets you point the
+  teaser at a different model without touching the platform's own model config
+  (e.g. `claude-haiku-4-5` for a cheaper run).
 - `CRAWL4AI_BASE_URL` *(default `http://localhost:11235`)* — the self-hosted
   crawl4ai REST server. Its presence (with a Claude key) selects the real resolver.
 - `CRAWL4AI_API_TOKEN` *(optional)* — sent as `Authorization: Bearer` **only when

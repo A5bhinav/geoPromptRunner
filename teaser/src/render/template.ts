@@ -43,13 +43,16 @@ function clientAppearanceLine(t: TeaserDraft): string {
     // measured for all n queries.
     return `AI named ${company} in 0 of ${n} queries — every one of those answers went out without ${company} in it.`;
   }
-  // Use the SAME word-boundary matcher the headline count uses (not a looser
-  // needle set), and skip brand / A-vs-B queries, so the query we point to as
-  // "the one place" is genuinely one of the COUNTED appearances — never a
+  // Use the SAME alias-aware word-boundary matcher the headline count uses (not a
+  // looser needle set), and skip brand / A-vs-B queries, so the query we point to
+  // as "the one place" is genuinely one of the COUNTED appearances — never a
   // different or excluded query (audit R5). Deterministic scan order so the pick
-  // is stable run-to-run. (No stored client-alias source here, so match on name.)
-  const clientMatch = buildMatcher(company);
-  const competitorMatchers = t.report.competitors.map((c) => buildMatcher(c));
+  // is stable run-to-run. The stored draft carries aliases, so an alias-only
+  // client mention still resolves to its specific query instead of the generic line.
+  const clientMatch = buildMatcher(company, t.clientAliases ?? []);
+  const competitorMatchers = t.report.competitors.map((c) =>
+    buildMatcher(c, t.competitorAliases?.[c] ?? []),
+  );
   const hit = [...t.answers]
     .filter((a) => a.response)
     .sort((x, y) => x.query_id.localeCompare(y.query_id) || x.run_index - y.run_index)

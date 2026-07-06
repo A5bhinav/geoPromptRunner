@@ -6,20 +6,23 @@
  * with `output_config.format` (json_schema) to constrain the response, then
  * finds the text content block and JSON.parses it.
  *
- * Model comes from TEASER_CLAUDE_MODEL (default "claude-haiku-4-5"); the API key
+ * Model comes from TEASER_CLAUDE_MODEL (default "claude-sonnet-5"); the API key
  * is the platform's own ANTHROPIC_API_KEY (no new key var). We do NOT pass
- * temperature/top_p/top_k/budget_tokens; thinking is omitted. Haiku 4.5 supports
- * output_config json_schema structured outputs, which is all this wrapper needs —
- * a much cheaper/faster model for the teaser extraction calls than opus.
+ * temperature/top_p/top_k/budget_tokens; thinking is omitted. Sonnet 5 supports
+ * output_config json_schema structured outputs, which is all this wrapper needs.
+ * The teaser resolves + generates queries on Sonnet for higher-quality profiles
+ * and query sets than Haiku produced; it's still only ~3 calls per prospect, so
+ * the extra cost is pennies. Drop back to Haiku for a cheaper run by setting
+ * TEASER_CLAUDE_MODEL=claude-haiku-4-5.
  *
  * No network happens at module load — the client is built lazily on first call.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 
-export const DEFAULT_CLAUDE_MODEL = "claude-haiku-4-5";
+export const DEFAULT_CLAUDE_MODEL = "claude-sonnet-5";
 
-/** Resolve the model id from env, falling back to haiku-4-5. */
+/** Resolve the model id from env, falling back to the default (sonnet-5). */
 export function claudeModel(): string {
   const m = process.env.TEASER_CLAUDE_MODEL;
   return m && m.trim() ? m.trim() : DEFAULT_CLAUDE_MODEL;
@@ -183,8 +186,8 @@ export interface ResearchOptions {
 
 /**
  * One web-search-grounded call that returns a parsed JSON value. Enables the
- * `web_search_20250305` server tool (the basic variant — the only one available
- * on Haiku 4.5, this project's default model), lets Claude search, then parses
+ * `web_search_20250305` server tool (the basic variant — broadly compatible
+ * across models, incl. the Haiku fallback), lets Claude search, then parses
  * the JSON it ends with. Resumes across `pause_turn` (the server-tool loop cap).
  *
  * Used for questions that need CURRENT web knowledge the model can't have from

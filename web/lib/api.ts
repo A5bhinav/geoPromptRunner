@@ -253,6 +253,10 @@ export interface TeaserDraft {
   headlineNumber: TeaserHeadlineNumber;
   lead: { verbatimQuery: string };
   table: unknown[];
+  // Persisted so a regenerated teaser matches the client/competitors by their
+  // aliases, not just their names (kept in sync with teaser/src/types/domain.ts).
+  clientAliases?: string[];
+  competitorAliases?: Record<string, string[]>;
 }
 
 // Reviewer overrides for the printable copy. All optional — only edited fields

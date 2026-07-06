@@ -11,6 +11,29 @@
 
 ---
 
+## ✅ DONE + verified (commit `d24cb38`, 2026-07-05)
+
+Implemented and verified by a 3-agent pass. **T1–T7 all RESOLVED and correct**; 118 tests
+pass (incl. the new multi-competitor fixture + T1/T2/T3/T4/T5/T7 regressions), `tsc` clean,
+**no regressions** — the shared-helper refactor (`computeHeadline`→`analyzeQueries`, exported
+`findAnswer`) did not change the teaser path. Highlights confirmed: evidence cards now drop
+brand + A-vs-B and apply the honest-hero filter; verdict %s share the winnable-count basis
+(the multi-competitor case that hid T2 is now tested); aliases round-trip through the stored
+draft's jsonb; the category validator is recall-safe.
+
+**Two minor, non-blocking cosmetic follow-ups** (neither affects a number or re-opens a bug):
+- **[LOW]** `render/audit/template.ts:51-52` — `clientAppearanceLine`/`selectWhyGaps` still build
+  name-only matchers (no aliases), though the draft now carries them. Counts stay correct
+  (they come from the alias-aware headline); only the "the one place AI named you" sentence
+  degrades to a generic line when the client appears *alias-only*. Thread `t.clientAliases`.
+- **[LOW]** `web/lib/api.ts:247-256` — the web-side `TeaserDraft` type doesn't declare the new
+  `clientAliases`/`competitorAliases` fields. Works today (whole draft is JSON-serialized), but
+  the type is out of sync; add the fields so a future stricter serializer can't drop them.
+- **[LOW, no fix needed]** T5's token match can drop a valid query phrased with a pure category
+  *synonym* — bounded by the recall-safe fallback; the audit called it not worth fixing.
+
+---
+
 ## T1 — [MED-HIGH] Gate the audit's evidence cards (un-winnable + brand + honest-hero)
 **Bug:** `computeHeadline` already excludes brand/A-vs-B rows (`buildAudit.ts:117-120,156`),
 but `buildEvidence` (`buildAudit.ts:204-238`) iterates `EVIDENCE_BUCKET_ORDER` — which
