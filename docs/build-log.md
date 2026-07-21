@@ -4,6 +4,47 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## Research-validation fixes — rubric evidence alignment (llms.txt note-only, schema hygiene framing, doc corrections) — Completed 2026-07-21
+
+Applied the geoPromptRunner-flagged items from the 2026-07-21 deep-research
+validation run (site/roadmap evidence base; adversarially verified claims).
+
+### What was built
+
+- **`src/audit/synthesize.py`** — dropped `llms_txt` from `_CHECK_MAP`: the
+  check still runs and shows in the raw Cat-1 table, but a missing llms.txt can
+  no longer synthesize into a rubric score or roadmap gap (no engine confirms
+  consuming it; ~300k-domain analyses show zero correlation with AI citations).
+  Renamed the `schema_valid` check to "schema.org markup valid and matching
+  visible content (hygiene)" — controlled studies (Ahrefs matched-control) show
+  no citation lift from JSON-LD, so the name must not imply visibility impact.
+- **`src/audit/rubric.py`** — `DEFAULT_CHECKLIST`: removed "llms.txt present"
+  from Cat 1; reworded Cat 5 to hygiene/entity-clarity framing and added
+  "entity identifiers consistent across the web".
+- **`tests/test_synthesize.py`** — new
+  `test_llms_txt_is_note_only_never_a_roadmap_gap` guard; updated the schema
+  check-name assertion.
+- **`docs/smb-pivot-plan.md`** — corrected the Foundation/AirOps attribution
+  (the ~60% home-services third-party figure is from a different study; the
+  claimed Perplexity–Yelp API deal didn't verify and was dropped; added the
+  verified 62.1% Perplexity share). Replaced the conflated "65–81% turnover"
+  volatility phrasing with the verified "~80% of URLs / >60% of domains" from
+  SE Ranking's AI Mode volatility test; Ahrefs CTR claim tightened to 34.5%
+  (dropped the unsubstantiated –58% bound); run-rate example aligned to n/5.
+- **`docs/website-plan.md`** — fixed the Whitespark stat tile (68% is the
+  *local-business* average; 92% informational — the old wording mismatched the
+  number); aligned mention-rate examples to `RUNS_PER_QUERY=5` and recorded the
+  run-count-language decision (copy states what the instrument does; bump
+  config before copy if we want a bigger-K story).
+
+### Acceptance criteria — all passed
+
+- ✅ `mypy src/` clean (76 files)
+- ✅ `ruff check src/` clean
+- ✅ `pytest tests/` — 264 passed, 1 skipped (includes the new llms.txt guard)
+
+---
+
 ## Isolation & Determinism — Engine isolation proven, pinned, and guarded (docs/isolation-determinism-plan.md) — Completed 2026-06-11
 
 Converted the implicit "every call is fresh" property into a proven, guarded

@@ -64,11 +64,10 @@ _CHECK_MAP: dict[str, tuple[RubricCategory, str, float]] = {
         "content reachable, not gated behind a login/paywall",
         2.5,
     ),
-    "llms_txt": (
-        RubricCategory.TECHNICAL_ACCESSIBILITY,
-        "llms.txt present and valid",
-        1.0,
-    ),
+    # llms_txt is deliberately unmapped: no engine confirms consuming it and
+    # ~300k-domain analyses show zero correlation with AI citations, so a missing
+    # llms.txt must never surface as a roadmap gap. The Cat-1 check still runs and
+    # appears in the raw check table as an informational note.
     "sitemap": (
         RubricCategory.TECHNICAL_ACCESSIBILITY,
         "XML sitemap present and current",
@@ -79,9 +78,12 @@ _CHECK_MAP: dict[str, tuple[RubricCategory, str, float]] = {
         "internal linking establishes topical authority",
         1.5,
     ),
+    # Schema is scored as hygiene/entity clarity, not a citation driver —
+    # controlled studies show no AI-citation lift from JSON-LD (retrieval reads
+    # visible HTML), so the check name must not imply visibility impact.
     "schema_valid": (
         RubricCategory.STRUCTURED_DATA,
-        "schema.org markup present and valid",
+        "schema.org markup valid and matching visible content (hygiene)",
         1.5,
     ),
     # Deterministic Cat 3/4 content primitives (§3.3).

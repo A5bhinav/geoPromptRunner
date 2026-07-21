@@ -39,10 +39,12 @@ class RubricCategory(StrEnum):
 # a human fills. Not exhaustive; enough to drive a roadmap.
 DEFAULT_CHECKLIST: dict[RubricCategory, tuple[str, ...]] = {
     RubricCategory.TECHNICAL_ACCESSIBILITY: (
+        # llms.txt is deliberately absent: no engine confirms consuming it and
+        # large-scale analyses show zero correlation with AI citations — it is
+        # reported as an informational note, never a scored gap.
         "robots.txt allows AI crawlers",
         "not blocked at CDN/WAF",
         "core content server-rendered",
-        "llms.txt present",
         "sitemap present and current",
         "target content not gated",
     ),
@@ -62,8 +64,12 @@ DEFAULT_CHECKLIST: dict[RubricCategory, tuple[str, ...]] = {
         "comparison content (X vs Y, alternatives)",
     ),
     RubricCategory.STRUCTURED_DATA: (
-        "schema.org markup present and valid",
+        # Hygiene/entity-clarity framing only: controlled studies show no
+        # AI-citation lift from JSON-LD (retrieval reads visible HTML) — never
+        # sell schema as a citation driver.
+        "schema.org markup valid and matching visible content (hygiene)",
         "relevant types (Organization/Product/FAQ)",
+        "entity identifiers consistent across the web",
     ),
     RubricCategory.OFFSITE_AUTHORITY: (
         # B2C consumer channels (Berkeley/SV consumer-startup niche): the sources

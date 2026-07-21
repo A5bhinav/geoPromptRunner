@@ -31,7 +31,16 @@ def test_check_rollup_fail_beats_partial_beats_pass() -> None:
     scores = site_audit_to_rubric_scores("Acme", checks)
     by_name = _by_check(scores)
     assert by_name["core content server-rendered (AI-crawler visible)"] == "fail"
-    assert by_name["schema.org markup present and valid"] == "partial"
+    assert by_name["schema.org markup valid and matching visible content (hygiene)"] == "partial"
+
+
+def test_llms_txt_is_note_only_never_a_roadmap_gap() -> None:
+    # llms.txt is deliberately unscored (no engine consumes it) — even a hard
+    # fail must not synthesize into a rubric score or roadmap item.
+    row = SiteCheckRow(
+        check_key="llms_txt", category=1, page_url="https://x.com/", status="fail", detail=""
+    )
+    assert site_audit_to_rubric_scores("Acme", [row]) == []
 
 
 def test_all_ungradeable_check_is_dropped() -> None:
