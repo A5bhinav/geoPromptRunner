@@ -61,3 +61,6 @@ tmp/
 # Persistent judge verdict cache (content-addressed; safe to delete to re-judge).
 data/judge_cache.sqlite
 data/judge_cache.sqlite-*
+
+# Supabase CLI link state (local only; created by `supabase link`)
+supabase/.temp/
