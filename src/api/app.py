@@ -238,7 +238,7 @@ def local_entities(q: str, location: str) -> dict[str, object]:
     second SearchApi credential.
 
     ``location`` is required and must be a SearchApi canonical name
-    ("Berkeley,California,US"). Without it Google answers from an unpinned locale and
+    ("Berkeley,California,United States"). Without it Google answers from an unpinned locale and
     names businesses in the wrong metro — which, seeded into a teaser as "your
     competitors", is exactly the fabrication this endpoint exists to prevent. A
     missing location is a 422, never a silent nationwide lookup.

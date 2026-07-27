@@ -145,7 +145,7 @@ function localProfileWithRivals() {
     name: "Berkeley Plumbing Co",
     aliases: [],
     businessKind: "local_service" as const,
-    location: { city: "Berkeley", region: "California", country: "US" },
+    location: { city: "Berkeley", region: "California", country: "United States" },
     category: "plumbing service",
     competitors: [
       { name: "Bay Area Rooter", aliases: [], confirmed: true },

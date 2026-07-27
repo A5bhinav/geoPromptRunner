@@ -272,7 +272,7 @@ test("a located business emits the canonical location row", async () => {
       ...consumerProfile(),
       businessKind: "local_service",
       category: "plumbing service",
-      location: { city: "Berkeley", region: "California", country: "US", serviceArea: ["Oakland"] },
+      location: { city: "Berkeley", region: "California", country: "United States", serviceArea: ["Oakland"] },
     },
     { version: "v1", queries: [{ query_id: "q1", text: "best plumber in Berkeley", intent: "category", weight: 1, persona: null }] },
     { engines: ["google_ai_overviews"], runsPerQuery: 5, judge: true },
@@ -280,7 +280,7 @@ test("a located business emits the canonical location row", async () => {
 
   // Quoted because the canonical form contains commas — "," stays the CSV column
   // delimiter, so the cell must be quoted rather than split across columns.
-  assert.ok(csv.includes('config,location,"Berkeley,California,US"'), csv);
+  assert.ok(csv.includes('config,location,"Berkeley,California,United States"'), csv);
   // serviceArea widens the query; it does not move the search origin, so it must
   // not leak into the location cell.
   assert.ok(!csv.includes("Oakland"));

@@ -100,7 +100,7 @@ def build_engines(
     or an SDK that isn't installed. Never raises: a bad engine is skipped, not
     fatal, so one unavailable provider can't sink the whole run.
 
-    ``location`` is a SearchApi canonical location NAME ("Berkeley,California,US")
+    ``location`` is a SearchApi canonical location NAME ("Berkeley,California,United States")
     for service-area businesses (W1.4). Only ``google_ai_overviews`` consumes it —
     it is the one surface with a location parameter. The others are model APIs with
     no locale knob, so a location is silently irrelevant to them rather than an

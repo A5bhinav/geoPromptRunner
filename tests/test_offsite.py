@@ -246,9 +246,9 @@ def test_local_research_brief_is_a_fork_not_a_rewrite() -> None:
 def test_local_brief_carries_the_client_city_when_known() -> None:
     from src.audit.offsite.agent import _system_prompt
 
-    located = _system_prompt("local_service", "Berkeley,California,US")
-    assert "Berkeley,California,US" in located
+    located = _system_prompt("local_service", "Berkeley,California,United States")
+    assert "Berkeley,California,United States" in located
     # Without a location the brief still works — it just can't disambiguate.
     assert "operates in" not in _system_prompt("local_service")
     # A location must never leak onto the consumer brief.
-    assert "Berkeley" not in _system_prompt("product", "Berkeley,California,US")
+    assert "Berkeley" not in _system_prompt("product", "Berkeley,California,United States")

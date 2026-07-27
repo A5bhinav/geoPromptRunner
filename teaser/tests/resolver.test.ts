@@ -258,13 +258,13 @@ test("the local path is now ROUTED, not refused (W2.4 flipped the gate)", () => 
       businessKind: "local_service",
       name: "Berkeley Plumbing Co",
       category: "plumbing service",
-      location: { city: "Berkeley", region: "California", country: "US", serviceArea: [] },
+      location: { city: "Berkeley", region: "California", country: "United States", serviceArea: [] },
     }),
     "claude-sonnet-5",
     FIXED,
   );
   assert.equal(p.businessKind, "local_service");
-  assert.deepEqual(p.location, { city: "Berkeley", region: "California", country: "US" });
+  assert.deepEqual(p.location, { city: "Berkeley", region: "California", country: "United States" });
 });
 
 test("a local profile is built with NO competitors — LLM recall is discarded", () => {
@@ -334,14 +334,28 @@ test("businessKind is a required, enumerated field in the extraction contract", 
 // most popular match" — a different metro entirely, silently measuring the wrong
 // market. Dropping to undefined makes the absence visible instead.
 
-test("normalizeLocation keeps a complete location and uppercases the country", () => {
-  const loc = normalizeLocation({ city: " Berkeley ", region: " California ", country: "us" });
-  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "US" });
+test("normalizeLocation keeps a complete location, trimmed", () => {
+  const loc = normalizeLocation({
+    city: " Berkeley ",
+    region: " California ",
+    country: " United States ",
+  });
+  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "United States" });
+});
+
+test("normalizeLocation REJECTS an ISO country code", () => {
+  // Verified live against SearchApi 2026-07-27: location="Berkeley,California,US"
+  // is rejected with "Location was not found", while ",United States" resolves. An
+  // unresolvable location silently falls back to an unpinned locale — it measures
+  // the wrong market while looking like it worked — so drop it, same as a partial.
+  assert.equal(normalizeLocation({ city: "Berkeley", region: "California", country: "US" }), undefined);
+  assert.equal(normalizeLocation({ city: "Berkeley", region: "California", country: "us" }), undefined);
+  assert.equal(normalizeLocation({ city: "Toronto", region: "Ontario", country: "CA" }), undefined);
 });
 
 test("normalizeLocation drops a PARTIAL location rather than guessing", () => {
-  assert.equal(normalizeLocation({ city: "Berkeley", region: "", country: "US" }), undefined);
-  assert.equal(normalizeLocation({ city: "", region: "California", country: "US" }), undefined);
+  assert.equal(normalizeLocation({ city: "Berkeley", region: "", country: "United States" }), undefined);
+  assert.equal(normalizeLocation({ city: "", region: "California", country: "United States" }), undefined);
   assert.equal(normalizeLocation({ city: "Berkeley", region: "California", country: "  " }), undefined);
   assert.equal(normalizeLocation(null), undefined);
   assert.equal(normalizeLocation(undefined), undefined);
@@ -351,15 +365,20 @@ test("normalizeLocation de-dupes serviceArea and drops the primary city echoed b
   const loc = normalizeLocation({
     city: "Berkeley",
     region: "California",
-    country: "US",
+    country: "United States",
     serviceArea: ["Oakland", " oakland ", "berkeley", "", "Albany"],
   });
   assert.deepEqual(loc?.serviceArea, ["Oakland", "Albany"]);
 });
 
 test("normalizeLocation omits serviceArea entirely when none survive", () => {
-  const loc = normalizeLocation({ city: "Berkeley", region: "California", country: "US", serviceArea: [] });
-  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "US" });
+  const loc = normalizeLocation({
+    city: "Berkeley",
+    region: "California",
+    country: "United States",
+    serviceArea: [],
+  });
+  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "United States" });
   assert.ok(!("serviceArea" in (loc ?? {})));
 });
 
@@ -368,8 +387,13 @@ test("canonicalLocation builds the SearchApi location string (serviceArea exclud
   // canonical NAME and SearchApi builds the uule itself. serviceArea widens the
   // query, it does not move the search origin — so it must not leak in here.
   assert.equal(
-    canonicalLocation({ city: "Berkeley", region: "California", country: "US", serviceArea: ["Oakland"] }),
-    "Berkeley,California,US",
+    canonicalLocation({
+      city: "Berkeley",
+      region: "California",
+      country: "United States",
+      serviceArea: ["Oakland"],
+    }),
+    "Berkeley,California,United States",
   );
 });
 
@@ -380,7 +404,7 @@ test("a consumer product never acquires a location, even if one is extracted", (
     "https://acme.io",
     extracted({
       businessKind: "product",
-      location: { city: "Berkeley", region: "California", country: "US", serviceArea: [] },
+      location: { city: "Berkeley", region: "California", country: "United States", serviceArea: [] },
     }),
     "m",
     FIXED,
@@ -407,7 +431,7 @@ function localProfile(over: Record<string, unknown> = {}) {
     name: "Berkeley Plumbing Co",
     aliases: ["BPC"],
     businessKind: "local_service" as const,
-    location: { city: "Berkeley", region: "California", country: "US" },
+    location: { city: "Berkeley", region: "California", country: "United States" },
     category: "plumbing service",
     competitors: [],
     clientDomains: ["berkeleyplumbingco.com"],

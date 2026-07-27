@@ -157,7 +157,7 @@ Return:
 - name: the company's brand name as customers say it (not the legal entity, not the domain).
 - aliases: known variants of the CLIENT's OWN name (a shortened form, an abbreviation, a common misspelling, e.g. "YNAB" for "You Need A Budget"). Use [] if none.
 - businessKind: "local_service" if this business serves customers in a specific geographic area and buyers would choose it BASED ON LOCATION — a plumber, HVAC contractor, barbershop, salon, dentist, auto repair shop, roofer, landscaper, restaurant. Signals: a street address or service-area list, "serving <city/county>", phone-first calls-to-action, "near you", licence numbers, emergency/same-day availability. Otherwise "product" — something sold or delivered nationally/online where the buyer's city is irrelevant (an app, a device, a subscription, a DTC brand, a SaaS tool). A company with physical stores is still "product" if buyers nationwide use it without regard to location.
-- location: for a "local_service" business ONLY, where it actually serves customers, read from the site's own NAP block (the footer address, a contact/locations page, or schema.org LocalBusiness markup). city = the primary city it operates from; region = the state/province SPELLED AS THE SITE SPELLS IT ("California", not "CA"); country = ISO-3166 alpha-2 uppercase ("US"); serviceArea = any ADDITIONAL named towns, neighborhoods or counties the site explicitly says it serves (use [] if it names none). Return null when the site is not service-area-bound, or when you cannot find a real address/service area on the page — do NOT infer a location from the brand name, a phone area code, or general knowledge. A guessed city silently geo-anchors every query to the wrong place.
+- location: for a "local_service" business ONLY, where it actually serves customers, read from the site's own NAP block (the footer address, a contact/locations page, or schema.org LocalBusiness markup). city = the primary city it operates from; region = the state/province SPELLED AS THE SITE SPELLS IT ("California", not "CA"); country = the country's full English name ("United States", not "US" or "USA"); serviceArea = any ADDITIONAL named towns, neighborhoods or counties the site explicitly says it serves (use [] if it names none). Return null when the site is not service-area-bound, or when you cannot find a real address/service area on the page — do NOT infer a location from the brand name, a phone area code, or general knowledge. A guessed city silently geo-anchors every query to the wrong place.
 - category: the MOST SPECIFIC consumer-facing category that distinguishes this company from ADJACENT products — the narrow sub-category a buyer cross-shopping DIRECT substitutes would name, not the generic parent. Return the narrowest TRUE category, e.g. "strength-training wearable" NOT "fitness tracker"; "zero-based budgeting app" NOT "finance app"; "meal-kit delivery service" NOT "food app". Use consumer language, not internal jargon — but do NOT broaden to a generic parent category.
 - competitors: 2-5 REAL, CURRENTLY-OPERATING rival brands. Each MUST be a DIRECT SUBSTITUTE in the SAME specific category above — a product a buyer would genuinely cross-shop against this company, NOT merely an adjacent product or a famous brand in the broader parent category (e.g. for a strength-training wearable, do NOT return a general fitness tracker just because it's well known). Use real, well-known names — NOT made-up names and NOT names that merely prefix this company. EXCLUDE any product that has been discontinued, shut down, or sunset and no longer serves customers (a dead brand poisons the audit — buyers can't switch to a product that no longer exists). For each, list any aliases/name variants (e.g. "WHOOP", "Whoop band"); use [] if none.
 - clientDomains: domains owned by this company (include the site's own domain).
@@ -218,8 +218,15 @@ export function normalizeLocation(raw: BusinessLocation | null | undefined): Bus
 
   const city = (raw.city ?? "").trim();
   const region = (raw.region ?? "").trim();
-  const country = (raw.country ?? "").trim().toUpperCase();
+  const country = (raw.country ?? "").trim();
   if (!city || !region || !country) return undefined;
+
+  // A 2-letter country is an ISO code, and SearchApi rejects those outright
+  // ("Location was not found" — verified live 2026-07-27). Dropping is the safe
+  // direction, consistent with the partial-location rule above: an unresolvable
+  // location silently falls back to an unpinned locale, which measures the wrong
+  // market while looking like it worked.
+  if (country.length <= 2) return undefined;
 
   const seen = new Set<string>();
   const serviceArea: string[] = [];

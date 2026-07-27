@@ -73,7 +73,7 @@ def test_local_entities_requires_a_non_empty_location() -> None:
 
 def test_local_entities_requires_a_non_empty_query() -> None:
     with pytest.raises(HTTPException) as exc:
-        api_app.local_entities(q="  ", location="Berkeley,California,US")
+        api_app.local_entities(q="  ", location="Berkeley,California,United States")
     assert exc.value.status_code == 422
 
 
@@ -85,5 +85,5 @@ def test_local_entities_is_503_when_the_engine_cannot_be_built(
     has no plumbers"."""
     monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "")
     with pytest.raises(HTTPException) as exc:
-        api_app.local_entities(q="best plumber", location="Berkeley,California,US")
+        api_app.local_entities(q="best plumber", location="Berkeley,California,United States")
     assert exc.value.status_code == 503

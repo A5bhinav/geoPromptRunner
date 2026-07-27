@@ -68,7 +68,7 @@ class RunConfig:
     runs_per_query: int
     client_domains: list[str]
     judge: bool  # run the LLM judge after the audit (needs OPENAI_API_KEY)
-    # SearchApi canonical location NAME ("Berkeley,California,US") for service-area
+    # SearchApi canonical location NAME ("Berkeley,California,United States") for service-area
     # businesses; only the google_ai_overviews engine consumes it (W1.3/W1.4). None
     # for nationally-marketed products — that is the pre-pivot behaviour and stays
     # the default, so a CSV with no `location` row parses exactly as before.

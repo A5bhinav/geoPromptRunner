@@ -36,7 +36,13 @@ export interface BusinessLocation {
   city: string;
   /** State / province, spelled as the site spells it ("California", not "CA"). */
   region: string;
-  /** ISO-3166 alpha-2, uppercase ("US"). */
+  /**
+   * Country as SearchApi's location database spells it — the full NAME
+   * ("United States"), NOT an ISO code. Verified live 2026-07-27: `location=
+   * "Berkeley,California,US"` is rejected with "Location was not found", while
+   * "Berkeley,California,United States" resolves. Stored in the form the one
+   * consumer needs, rather than storing ISO and mapping at every call site.
+   */
   country: string;
   /** Additional named towns/neighborhoods the business explicitly serves. */
   serviceArea?: string[];
@@ -44,11 +50,12 @@ export interface BusinessLocation {
 
 /**
  * The canonical location string SearchApi's Google engine accepts — "City,Region,US".
- * Verified against SearchApi's Google-engine docs (2026-07): `location` takes a
- * canonical location NAME (it builds the `uule` encoding itself, and the two params
- * are mutually exclusive). Kept here so the teaser and the Python engine agree on one
- * serialization; `serviceArea` is deliberately NOT included — it widens the query, it
- * does not move the search origin.
+ * Verified LIVE against SearchApi 2026-07-27, not just against its docs: the country
+ * must be the full name ("United States"); an ISO code is rejected outright with
+ * "Location was not found". SearchApi builds the `uule` encoding itself, and
+ * `location`/`uule` are mutually exclusive. Kept here so the teaser and the Python
+ * engine agree on one serialization; `serviceArea` is deliberately NOT included — it
+ * widens the query, it does not move the search origin.
  */
 export function canonicalLocation(loc: BusinessLocation): string {
   return [loc.city, loc.region, loc.country]

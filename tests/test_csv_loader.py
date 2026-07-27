@@ -228,13 +228,13 @@ def test_location_row_round_trips_into_run_config() -> None:
         "config,category,plumbing service,,\n"
         "config,competitors,Acme Plumbing;Bay Rooter,,\n"
         "config,engines,google_ai_overviews,,\n"
-        '"config",location,"Berkeley,California,US",,\n'
+        '"config",location,"Berkeley,California,United States",,\n'
         "query,q1,best plumber in Berkeley,category,\n"
     )
     result = parse_csv_files([("local.csv", csv_text)])
     assert result.ok, result.errors
     assert result.audit is not None
-    assert result.audit.config.location == "Berkeley,California,US"
+    assert result.audit.config.location == "Berkeley,California,United States"
 
 
 def test_blank_location_row_collapses_to_none() -> None:

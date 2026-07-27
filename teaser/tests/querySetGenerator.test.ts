@@ -169,7 +169,7 @@ function localProfileForQueries(over: Record<string, unknown> = {}) {
     name: "Berkeley Plumbing Co",
     aliases: [],
     businessKind: "local_service" as const,
-    location: { city: "Berkeley", region: "California", country: "US" },
+    location: { city: "Berkeley", region: "California", country: "United States" },
     category: "plumber",
     competitors: [],
     clientDomains: ["berkeleyplumbingco.com"],

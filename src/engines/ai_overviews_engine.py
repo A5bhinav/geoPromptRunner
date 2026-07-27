@@ -57,7 +57,7 @@ class AIOverviewsEngine(BaseEngine):
 
     def __init__(self, location: str | None = None) -> None:
         """``location`` is SearchApi's canonical location NAME, e.g.
-        ``"Berkeley,California,US"`` (W1.3).
+        ``"Berkeley,California,United States"`` (W1.3).
 
         Verified against SearchApi's Google-engine docs (2026-07): the ``location``
         param takes a canonical name and SearchApi builds the ``uule`` encoding

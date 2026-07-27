@@ -4,6 +4,65 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## SMB pivot patch — SearchApi location format was wrong (caught by running it) — Completed 2026-07-27
+
+### The bug
+
+W1.1-W1.4 specified `BusinessLocation.country` as **ISO-3166 alpha-2** and serialized
+`"Berkeley,California,US"`. SearchApi rejects that outright:
+
+    400  {"error": "Location was not found. Double check location parameter."}
+
+It wants the country's **full name** — `"Berkeley,California,United States"` resolves
+and returns a local pack. Verified live 2026-07-27 against the real API; SearchApi also
+accepts `"Berkeley,CA,United States"` and `"Berkeley,California"` (it normalizes both),
+but never a bare ISO country code.
+
+This was written from the docs (which say a "canonical location name" without spelling
+out the country form) and was never exercised against the live API until now. Every
+unit test passed the whole time — they asserted our own wrong string.
+
+**Impact had it shipped:** every local run would have failed the AI Overviews call.
+Because `BaseEngine` contracts engines to return `None` rather than raise, the run
+would have completed with that surface simply empty — a local audit reporting "you
+don't appear" from a request that was never accepted.
+
+### Fixed
+
+- `BusinessLocation.country` is now the SearchApi country NAME, documented as such
+- `normalizeLocation()` no longer uppercases the country, and **rejects any ≤2-char
+  country** — an ISO code now drops the location rather than producing an unresolvable
+  one, the same safe direction as the partial-location rule
+- Corrected the resolver prompt, the trade starter CSV placeholder, the local
+  fact-sheet template, the local gold template, and every docstring/test carrying the
+  bad example
+
+### Verified live, not just in tests
+
+    AIOverviewsEngine(location="Berkeley,California,United States")
+      .query_local_entities("best plumber in Berkeley")
+    -> 3 entities:
+       1. Albert Nahman Plumbing, Heating, and Cooling   HVAC contractor  4.7 (3400)
+       2. LemonTree Plumbing                             Plumber          5.0 (30)
+       3. J J Rooter & Plumbing                          Plumber          4.9 (94)
+
+**W1.6's entity capture works end to end against the real API.** This is the first
+real-money confirmation that the local path produces genuine local competitors.
+
+### Gate
+
+mypy clean (78 files), ruff clean, pytest 321 passed / 1 skipped, tsc clean,
+npm test 162 passed (+1: the ISO-rejection guard).
+
+### Lesson recorded
+
+A format taken from documentation and covered only by tests asserting our own output
+is not verified. The determinism/isolation work already had this instinct (Test E
+records the payload actually sent); location needed the same and didn't get it until a
+live call was made.
+
+---
+
 ## SMB pivot Phase 5 — sampling bands, local report template, cadence guard — Completed 2026-07-27
 
 The last plan phase. Small, and mostly about refusing to invent numbers.

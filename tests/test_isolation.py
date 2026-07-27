@@ -345,13 +345,13 @@ def test_ai_overviews_sends_the_canonical_location_when_given(
     from src.engines import ai_overviews_engine as mod
 
     monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
-    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,United States")
     fake = _CapturingSerpClient()
     engine._client = fake  # type: ignore[assignment]
     engine.query_with_citations("best plumber near me")
 
     (params,) = fake.captured
-    assert params["location"] == "Berkeley,California,US"
+    assert params["location"] == "Berkeley,California,United States"
     assert params["q"] == "best plumber near me"
     # `location` and `uule` are mutually exclusive at SearchApi — never send both.
     assert "uule" not in params
@@ -387,7 +387,7 @@ def test_ai_overviews_recorded_payload_is_the_dict_that_was_sent(
     recorded: list[dict[str, object]] = []
     monkeypatch.setattr(mod, "record_payload", lambda name, payload: recorded.append(payload))
 
-    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,United States")
     fake = _CapturingSerpClient()
     engine._client = fake  # type: ignore[assignment]
     engine.query_with_citations("best plumber near me")
@@ -400,7 +400,7 @@ def test_ai_overviews_recorded_payload_is_the_dict_that_was_sent(
     from src.engines.payload_log import _scrub
 
     assert _scrub(sent)["api_key"] == "[redacted]"
-    assert _scrub(sent)["location"] == "Berkeley,California,US"
+    assert _scrub(sent)["location"] == "Berkeley,California,United States"
 
 
 def test_ai_overviews_with_location_still_returns_none_on_transport_error(
@@ -421,7 +421,7 @@ def test_ai_overviews_with_location_still_returns_none_on_transport_error(
         def close(self) -> None:
             return None
 
-    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,United States")
     engine._client = _Boom()  # type: ignore[assignment]
     assert engine.query_with_citations("best plumber near me") == (None, [])
     assert engine.query("best plumber near me") is None
@@ -510,12 +510,12 @@ def test_build_engines_passes_location_only_to_ai_overviews(
     monkeypatch.setattr(settings, "OPENAI_API_KEY", "test-key")
 
     engines, skipped = build_engines(
-        ["google_ai_overviews", "openai"], location="Berkeley,California,US"
+        ["google_ai_overviews", "openai"], location="Berkeley,California,United States"
     )
     by_name = {e.ENGINE_NAME: e for e in engines}
 
     assert "google_ai_overviews" in by_name, f"unexpectedly skipped: {skipped}"
-    assert by_name["google_ai_overviews"]._location == "Berkeley,California,US"  # type: ignore[attr-defined]
+    assert by_name["google_ai_overviews"]._location == "Berkeley,California,United States"  # type: ignore[attr-defined]
     # The model-API engine built fine and simply has no location concept.
     assert "openai" in by_name
     assert not hasattr(by_name["openai"], "_location")
@@ -602,7 +602,7 @@ def _local_engine(monkeypatch: pytest.MonkeyPatch, body: dict[str, Any], locatio
 
 
 def test_local_entities_are_typed_and_filtered(monkeypatch: pytest.MonkeyPatch) -> None:
-    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,US")
+    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,United States")
     entities = engine.query_local_entities("best plumber in Berkeley")
 
     # Closed business and the nameless row are dropped; the rest keep their order.
@@ -635,7 +635,7 @@ def test_local_entities_refuse_to_run_without_a_location(
 
 
 def test_local_entities_empty_when_no_local_pack(monkeypatch: pytest.MonkeyPatch) -> None:
-    engine = _local_engine(monkeypatch, {"organic_results": []}, "Berkeley,California,US")
+    engine = _local_engine(monkeypatch, {"organic_results": []}, "Berkeley,California,United States")
     assert engine.query_local_entities("how often should a furnace be serviced") == []
 
 
@@ -643,7 +643,7 @@ def test_local_entities_never_raise_on_a_malformed_body(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     engine = _local_engine(
-        monkeypatch, {"local_results": ["not-a-dict", None, 42]}, "Berkeley,California,US"
+        monkeypatch, {"local_results": ["not-a-dict", None, 42]}, "Berkeley,California,United States"
     )
     assert engine.query_local_entities("best plumber in Berkeley") == []
 
@@ -664,14 +664,14 @@ def test_local_entities_return_empty_on_transport_error(
         def close(self) -> None:
             return None
 
-    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,United States")
     engine._client = _Boom()  # type: ignore[assignment]
     assert engine.query_local_entities("best plumber in Berkeley") == []
 
 
 def test_local_entity_capture_sends_the_location(monkeypatch: pytest.MonkeyPatch) -> None:
-    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,US")
+    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,United States")
     engine.query_local_entities("best plumber in Berkeley")
     (params,) = engine._client.captured  # type: ignore[attr-defined]
-    assert params["location"] == "Berkeley,California,US"
+    assert params["location"] == "Berkeley,California,United States"
     assert params["q"] == "best plumber in Berkeley"

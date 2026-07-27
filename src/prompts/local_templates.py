@@ -106,9 +106,10 @@ def build_trade_template_csv(trade: str, city: str = "{city}", brand: str = "{br
         ["config", "engines", "google_ai_overviews;perplexity;openai_search", "", ""],
         ["config", "runs_per_query", "5", "", ""],
         ["config", "client_domains", "", "", ""],
-        # Canonical SearchApi location — "City,Region,US". Without it a local run
+        # Canonical SearchApi location — "City,State,United States" (the country's
+        # FULL NAME; an ISO code is rejected). Without it a local run
         # measures an unpinned locale, i.e. the wrong market.
-        ["config", "location", f"{city},<STATE>,US", "", ""],
+        ["config", "location", f"{city},<STATE>,United States", "", ""],
     ]
     for q in template.queries:
         text = q.text.replace(_CITY_SLOT, city).replace(_BRAND_SLOT, brand)

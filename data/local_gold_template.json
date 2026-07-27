@@ -32,7 +32,7 @@
       "competitors": ["Bay Area Rooter"],
       "category": "plumbing service",
       "engine": "google_ai_overviews",
-      "location": "Berkeley,California,US",
+      "location": "Berkeley,California,United States",
       "fact_sheet": "Hours: Mon-Sat 7am-6pm. Closed Sunday. Emergency: no after-hours service. Service area: Berkeley, Oakland, Albany, El Cerrito. Phone: 510-555-0100. Licence: CSLB #123456, bonded and insured.",
       "labels": {
         "Berkeley Plumbing Co": { "present": true, "prominence": "mid_pack", "framing": "negative" },
