@@ -145,6 +145,26 @@ Per-type rules (each STILL requires a verbatim contradicted line):
 - competitor_confusion: only if the answer attributes a named rival's
   identity/feature to the client against a sheet line.
 
+The next four apply to SERVICE-AREA BUSINESSES (a contractor, shop or salon a
+customer calls or visits). They work exactly like the types above — each still
+requires a verbatim contradicted line — so if the sheet has no such line (a
+nationally-sold product's sheet never will), they can never fire:
+- wrong_hours: only if the answer states opening hours, days, or emergency /
+  same-day / 24-7 availability that an hours or availability line contradicts
+  (e.g. the answer says "open Sundays" and a sheet line says "Closed Sunday", or
+  "24/7 emergency service" against "No after-hours service"). A vague "call
+  ahead" with no stated hours is NOT a flag.
+- wrong_service_area: only if the answer says the client serves (or does not
+  serve) a named town, neighborhood, county or radius that a service-area line
+  contradicts. Naming the client's own city is agreement, not a flag.
+- wrong_contact: only if the answer states a phone number or street address that
+  a sheet contact line contradicts. A different FORMAT of the same number
+  ("(510) 555-0100" vs "510-555-0100") is the SAME number — agreement, not a flag.
+- licensing: only if the answer states a licence, bond, insurance or
+  certification status that a sheet line contradicts — including asserting a
+  credential the sheet does not grant, or denying one it lists. Do NOT flag a
+  credential the sheet is simply silent about.
+
 Each client_accuracy_flags entry:
 - "type": the dimension of the contradicted line.
 - "claim": what the answer said (quote it)
@@ -216,7 +236,18 @@ _RUBRIC_TAIL = _BASE_INSTRUCTIONS[_BASE_INSTRUCTIONS.index(_RUBRIC_MARKER) :]
 # Anthropic prompt cache can reuse it across every answer in a run. That reorders what
 # the model sees, so bump this to force a clean re-judge instead of mixing verdicts
 # from the two layouts. Change this string whenever the delivery changes again.
-_PROMPT_LAYOUT = "single:rubric-in-cached-system:v1"
+# 2026-07-27 (W3.3): the accuracy block gained four SERVICE-AREA flag types
+# (wrong_hours / wrong_service_area / wrong_contact / licensing) and the tool schema's
+# type enum grew with them. Both feed the fingerprint, so every cached verdict —
+# consumer as well as local — becomes a miss. That is correct, not a bug: re-warm with
+# the prejudge skill (free) rather than paying to re-judge on the API.
+#
+# The change is deliberately APPEND-ONLY — no existing rule was reworded and no
+# existing flag type renamed — so a product answer should judge identically. "Should"
+# is not "does": W3.4 re-runs the consumer gold sets to confirm the 96/88/93 agreement
+# figures still describe the shipped judge. Until that passes, quote no accuracy
+# figure for either ICP.
+_PROMPT_LAYOUT = "single:rubric-in-cached-system:v2-local-accuracy"
 
 
 def _judgment_tool() -> ToolParam:

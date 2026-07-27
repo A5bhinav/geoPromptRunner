@@ -205,15 +205,18 @@ def test_consumer_review_platforms_unchanged() -> None:
 
 
 def test_judge_prompt_fingerprint_is_pinned() -> None:
-    """Pinned at 907d447, pre-pivot.
+    """Re-pinned 2026-07-27 by W3.3 — the ONE sanctioned change to this constant.
 
-    If this fails and you are NOT in the W3.3 commit: you edited a judge prompt, the
-    tool schema, or the prompt layout by accident. Revert it.
+    Was ``5e8caed0…b13b3d`` (907d447, pre-pivot). W3.1 appended four service-area flag
+    types to the accuracy block and the tool-schema enum, and W3.3 bumped
+    ``_PROMPT_LAYOUT`` alongside them, so every cached verdict became a miss on
+    purpose. Re-warm with the prejudge skill (free) rather than re-judging on the API.
 
-    If this fails and you ARE in W3.3: update the constant below in that same commit,
-    bump _PROMPT_LAYOUT alongside it, and re-warm caches with the prejudge skill.
+    If this fails and you are NOT in a deliberate, _PROMPT_LAYOUT-bumping commit: you
+    edited a judge prompt, the tool schema, or the prompt layout by accident. Revert
+    it — an unbumped prompt edit silently turns prejudge into a $0-savings no-op.
     """
-    pinned = "5e8caed0a4ee2a8c5eec8290248de0dc78f55beb91c6a2997ddaada0a7b13b3d"
+    pinned = "c9e86fcad1f7d17d03cbda3b266e5ec1698bb5257d6f92b2c07c78d8a6701d10"
     assert _single_fingerprint(_judgment_tool()) == pinned, (
         "judge prompt fingerprint changed — every cached verdict just became a miss. "
         "Legitimate ONLY in the W3.3 commit (see docs/smb-pivot-build-plan.md §W3.3)."
@@ -237,3 +240,75 @@ def test_local_extraction_prompt_is_a_fork_not_a_rewrite() -> None:
     # Unknown kinds fall back to consumer — the pre-pivot default.
     assert extract_prompt_for("anything-else") == consumer
     assert extract_prompt_for() == consumer
+
+
+# --- W3.1/W3.4: the accuracy block change was APPEND-ONLY --------------------------
+# W3.4 gets to choose the CHEAP resolution (re-run the consumer gold sets and confirm
+# agreement holds) only if W3.1 was surgical: no existing rule reworded, no existing
+# flag type renamed. If someone later edits a consumer rule "while they're in there",
+# the cheap path silently stops being valid and the 96/88/93 figures quietly stop
+# describing the shipped judge. These pins make that edit loud.
+
+
+def test_consumer_accuracy_flag_types_are_unchanged() -> None:
+    """The original five keep their exact wire values — they are persisted in
+    judgments rows and gold sets, so a rename would orphan historical data."""
+    from src.storage.models import AccuracyFlagType
+
+    for name, value in [
+        ("WRONG_PRICING", "wrong_pricing"),
+        ("MISSING_OR_INVENTED_FEATURE", "missing_or_invented_feature"),
+        ("COMPETITOR_CONFUSION", "competitor_confusion"),
+        ("IDENTITY", "identity"),
+        ("STALE", "stale"),
+    ]:
+        assert getattr(AccuracyFlagType, name).value == value
+
+
+def test_consumer_accuracy_rules_are_byte_identical() -> None:
+    """Every consumer per-type rule, verbatim as it stood pre-pivot at 907d447."""
+    from src.pipeline.judge import _ACCURACY_BLOCK
+
+    consumer_rules = [
+        "- wrong_pricing: only if the answer states a specific price/subscription figure",
+        "- stale: you MUST flag it when the answer names an old model/version/date a",
+        "- missing_or_invented_feature: only if a sheet feature line or its \"is NOT /",
+        "- identity: only if the answer states who/what the brand is in a way a sheet",
+        "- competitor_confusion: only if the answer attributes a named rival's",
+    ]
+    for rule in consumer_rules:
+        assert rule in _ACCURACY_BLOCK, f"consumer rule reworded: {rule!r}"
+
+    # The delete gate and the hard verbatim gate are the two guards that keep the
+    # judge from over-flagging. Neither may be softened to accommodate local flags.
+    assert "STOP — RUN THIS DELETE GATE ON EVERY FLAG BEFORE YOU OUTPUT." in _ACCURACY_BLOCK
+    assert "HARD GATE: \"reality\" MUST be a span copied VERBATIM" in _ACCURACY_BLOCK
+    assert "OMISSION: an omission is NEVER a flag." in _ACCURACY_BLOCK
+
+
+def test_local_flags_are_structurally_inert_on_a_product_sheet() -> None:
+    """The local flags need no gating to stay off the consumer path.
+
+    Every flag requires a VERBATIM contradicting line from the fact sheet, and the
+    appended rules each name the sheet line they need (an hours line, a service-area
+    line, a contact line, a licence line). A consumer product's sheet has none of
+    those, so a local flag has nothing valid to cite. This pins the wording that
+    makes that true — if a future edit drops the "only if ... line contradicts"
+    construction, the flag could start firing on product answers.
+    """
+    from src.pipeline.judge import _ACCURACY_BLOCK
+
+    for rule, required_line in [
+        ("- wrong_hours:", "an hours or availability line contradicts"),
+        ("- wrong_service_area:", "that a service-area line\n  contradicts"),
+        ("- wrong_contact:", "a sheet contact line contradicts"),
+        ("- licensing:", "certification status that a sheet line contradicts"),
+    ]:
+        assert rule in _ACCURACY_BLOCK, f"missing local rule {rule!r}"
+        assert required_line in _ACCURACY_BLOCK, (
+            f"{rule} no longer requires a contradicting sheet line — it could now fire "
+            f"on a consumer product answer"
+        )
+
+    # And they are introduced as explicitly conditional on the sheet having such lines.
+    assert "if the sheet has no such line" in _ACCURACY_BLOCK

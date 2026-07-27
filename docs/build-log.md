@@ -4,6 +4,88 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## SMB pivot Phase 3 — local accuracy flags, local fact sheet, the cache bump — Completed 2026-07-27
+
+The cache-invalidating phase, in ONE commit and ONE `_PROMPT_LAYOUT` bump as the plan
+requires. W3.4 is PARTIAL by necessity — see below.
+
+### What was built
+
+- **W3.1 — local accuracy flags.** `AccuracyFlagType` gains `wrong_hours`,
+  `wrong_service_area`, `wrong_contact`, `licensing`. A product's accuracy is
+  pricing/features/model; a local business's is "can I get them, where, and are they
+  legitimate". Deliberately **append-only**: no existing rule reworded, no existing
+  flag renamed, so a product answer should judge identically.
+  They are **structurally inert on the consumer path** rather than gated — every flag
+  needs a VERBATIM contradicting fact-sheet line, and a product sheet has no
+  hours/service-area/licence lines to cite. Nothing has to remember to switch them off.
+- **W3.2 — local fact-sheet template.** `docs/fact-sheet-template-local.md`, organised
+  around contact / hours / service area / licensing (mapped to the four new flags)
+  rather than pricing/features/versions. Emphasises that the NEGATIVE lines ("Closed
+  Sunday", "No after-hours service", "Does not serve Marin") are what make an
+  over-claiming answer flaggable at all.
+- **W3.3 — the cache bump.** `_PROMPT_LAYOUT` →
+  `single:rubric-in-cached-system:v2-local-accuracy`. Fingerprint
+  `5e8caed0…b13b3d` → `c9e86fca…01d10`. The W0.4 pin was updated in THIS commit, which
+  is the one sanctioned change to that constant. All 15 `tests/test_judge.py` parity
+  assertions pass unweakened; the HEAD/RUBRIC split still reassembles byte-identically.
+- **Bug found and fixed while bumping:** `scripts/prejudge_workflow.js` **hardcodes**
+  the `record_judgment` enums to keep Workflow args small, and still listed only the
+  original five flag types. A prejudged LOCAL run would have come back with zero local
+  accuracy flags and **looked clean** — the worst failure mode for an accuracy check.
+  Synced, and pinned by a new `test_prejudge_workflow_js_enums_match_the_python_types`
+  so all four enums (prominence/framing/flag types/severity) can never drift again.
+- **W3.4 — gold-set scaffolding (see limits).** `data/local_gold_template.json`
+  (verified to load through the real `calibration.load_gold_set`, new flag types
+  parsing correctly), plus local labeling traps, and `docs/gold-set-template.json`
+  updated to name the local flag types and to state that ICPs are never mixed in one
+  gold file.
+- **Append-only verification.** Three new tests pin that the five consumer flag values
+  are unchanged, that every consumer per-type rule is byte-identical, that the delete
+  gate / verbatim gate / omission rule are unsoftened, and that each local rule still
+  requires a contradicting sheet line. These are what make W3.4's CHEAP resolution
+  (re-run the consumer gold sets, confirm agreement holds) legitimate rather than
+  hopeful.
+
+### Acceptance criteria — passed
+
+- ✅ One `_PROMPT_LAYOUT` bump, one commit; parity tests pass unweakened (15)
+- ✅ Prejudge JS enums match the Python types, now guarded
+- ✅ Local gold template loads through the real loader with local flags parsed
+- ✅ Consumer rules byte-identical; local rules structurally inert on product sheets
+- ✅ Gate: mypy clean (77 files), ruff clean, pytest 305 passed / 1 skipped
+  (was 301), tsc clean, npm test 161 passed
+
+### W3.4 is NOT complete, and cannot be completed by the build
+
+Two things remain, both requiring humans and real spend:
+
+1. **Label a local gold set.** 25-40 real answers from a real local audit run,
+   hand-labeled. Models must not label their own gold set — independence is the point.
+2. **Run calibration twice.** The new local set, AND a re-run of the existing consumer
+   sets (Oura, Fort) to confirm 96/88/93 still describe the post-bump judge. Uses the
+   held-constant API judge with `isolated_cache()` — never the shared cache, never
+   subscription/Opus verdicts.
+
+**Standing gate until both pass: NO report of either ICP may quote an accuracy or
+agreement figure.** The bump was global, so the freeze is global. Mention, prominence
+and framing are unaffected and remain quotable.
+
+### Also outstanding
+
+- Every cached verdict is now a MISS. Re-warm with the `prejudge` skill (free) rather
+  than paying to re-judge on the API.
+- The `audit_runs.location` migration (`data/schema_ui.sql`, from Phase 1) still needs
+  applying to Supabase.
+
+### Up next — Phase 4 (W4.1-W4.3): site audit for local
+
+Local review platforms (keep BOTH sets, select by kind), offsite agent NAP/directory
+checks, GBP/NAP Cat 5-6 checks. Every new local check must clear the `llms_txt` bar:
+evidence it affects citations, or it ships note-only.
+
+---
+
 ## SMB pivot W1.6 + Phase 2 — local-pack entity capture, local query sets and teaser — Completed 2026-07-27
 
 Closed the W2.4 data-source gap flagged in the previous entry, then executed Phase 2

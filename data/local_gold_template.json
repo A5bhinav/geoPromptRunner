@@ -1,0 +1,59 @@
+{
+  "_comment": "LOCAL gold-set template (W3.4). Same format as docs/gold-set-template.json — read by src/pipeline/calibration.py (load_gold_set) — but for service-area businesses. Replace the skeleton items with 25-40 REAL answers pulled from a local proxy run, hand-labeled by a HUMAN (never by a model; independence is the entire point). Run: python -m src.cli calibrate data/local_gold.json",
+  "_why_a_separate_file": "Never mix ICPs in one gold set. The consumer figures (96/88/93) were measured on Oura and Fort; a blended file would produce an agreement number that describes neither ICP. Local calibrates separately and reports separately.",
+  "_procedure": [
+    "1. Run a real local audit (a trade template from data/queries_<trade>.json, rendered with a real city + brand, engines including google_ai_overviews WITH a location).",
+    "2. Export the answers (python -m src.cli report <run_id>, or docs/answers.md style) and paste real answer text into the items below. Never write synthetic answers - the judge is being measured against reality.",
+    "3. Fill the fact_sheet field from that business's docs/fact-sheet-template-local.md sheet. Only items WITH a fact sheet count toward flag precision/recall.",
+    "4. Label present/prominence/framing per brand, and expected_flags per item, BY HAND.",
+    "5. Freeze the file. Split into a tune subset and a held-out subset; report only on held-out; draw any judge-prompt few-shot examples ONLY from tune.",
+    "6. Calibration uses the held-constant API judge with isolated_cache() - NEVER the shared Supabase cache, and NEVER subscription/Opus (prejudge) verdicts. Those are dev-only."
+  ],
+  "_local_flag_types": {
+    "wrong_hours": "opening hours, days, emergency / same-day / 24-7 availability",
+    "wrong_service_area": "which towns, neighborhoods, counties or radius they cover",
+    "wrong_contact": "phone number or street address (format differences are AGREEMENT, not a flag)",
+    "licensing": "licence, bond, insurance or certification status",
+    "_also_available": "wrong_pricing, missing_or_invented_feature, competitor_confusion, identity, stale - a local business still has services and prices"
+  },
+  "_labeling_traps_specific_to_local": [
+    "A same-named business in another metro is the #1 local confusion - label it identity, not competitor_confusion, when the answer describes the WRONG business under the client's name.",
+    "'Open 24/7' against a sheet that says 'No after-hours service' is wrong_hours. 'Call for availability' with no stated hours is NOT a flag - no value was asserted.",
+    "An AI naming the client's own city as served is AGREEMENT. Only a town the sheet's service-area line contradicts is wrong_service_area.",
+    "An omission is never a flag - an AI failing to mention the emergency line is a VISIBILITY finding, not an accuracy one.",
+    "Local answers frequently name businesses that do not exist or have closed. If the CLIENT is described accurately, that is not a client accuracy flag - it is a competitor-set problem, noted separately."
+  ],
+  "items": [
+    {
+      "_skeleton": "DELETE this item. It shows the shape only - the answer text below is illustrative, not a real capture.",
+      "query": "best plumber in Berkeley",
+      "answer": "For plumbing in Berkeley, Bay Area Rooter is the most frequently recommended, with 24/7 emergency service. Berkeley Plumbing Co is another option, though they only serve the immediate Berkeley area and are closed weekends.",
+      "client": "Berkeley Plumbing Co",
+      "competitors": ["Bay Area Rooter"],
+      "category": "plumbing service",
+      "engine": "google_ai_overviews",
+      "location": "Berkeley,California,US",
+      "fact_sheet": "Hours: Mon-Sat 7am-6pm. Closed Sunday. Emergency: no after-hours service. Service area: Berkeley, Oakland, Albany, El Cerrito. Phone: 510-555-0100. Licence: CSLB #123456, bonded and insured.",
+      "labels": {
+        "Berkeley Plumbing Co": { "present": true, "prominence": "mid_pack", "framing": "negative" },
+        "Bay Area Rooter": { "present": true, "prominence": "recommended_first", "framing": "positive" }
+      },
+      "expected_flags": [
+        {
+          "type": "wrong_service_area",
+          "severity": "high",
+          "note": "says 'only serve the immediate Berkeley area'; sheet line lists Berkeley, Oakland, Albany, El Cerrito"
+        },
+        {
+          "type": "wrong_hours",
+          "severity": "high",
+          "note": "says 'closed weekends'; sheet line says Mon-Sat 7am-6pm (open Saturday)"
+        }
+      ],
+      "fact_sheet_candidates": [
+        "'most frequently recommended' about the competitor - a claim about a rival, never a client accuracy flag",
+        "nothing in the sheet addresses pricing, so any price claim here would be UNVERIFIABLE and must NOT be flagged"
+      ]
+    }
+  ]
+}

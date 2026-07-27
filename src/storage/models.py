@@ -129,11 +129,30 @@ class Framing(StrEnum):
 
 
 class AccuracyFlagType(StrEnum):
+    """Dimensions on which an answer can contradict the client's fact sheet.
+
+    The local members are APPENDED, never substituted (SMB pivot §0.6). They are
+    inert on the consumer path by construction rather than by gating: every flag
+    requires a VERBATIM contradicting line from the fact sheet, and a consumer
+    product's sheet has no hours / service-area / licensing lines for a local flag
+    to cite. Nothing has to remember to switch them off.
+    """
+
+    # --- product + local (shared) ---
     WRONG_PRICING = "wrong_pricing"
     MISSING_OR_INVENTED_FEATURE = "missing_or_invented_feature"
     COMPETITOR_CONFUSION = "competitor_confusion"
     IDENTITY = "identity"
     STALE = "stale"
+
+    # --- local-service dimensions (SMB pivot, W3.1) ---
+    # A product's accuracy is pricing/features/model. A local business's accuracy is
+    # "can I actually get them, where, and are they legitimate" — the facts a
+    # customer acts on when their AC just died.
+    WRONG_HOURS = "wrong_hours"  # opening hours, emergency/same-day availability
+    WRONG_SERVICE_AREA = "wrong_service_area"  # which towns/areas they cover
+    WRONG_CONTACT = "wrong_contact"  # phone number, address
+    LICENSING = "licensing"  # licence, bonding, insurance, certifications
 
 
 class Severity(StrEnum):

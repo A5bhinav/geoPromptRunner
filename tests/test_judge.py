@@ -266,3 +266,34 @@ def test_verifier_prompt_carries_the_one_flag_and_sheet() -> None:
     assert "Oura Ring 5: $399" in prompt
     # The verifier prompt is independent of the main accuracy block.
     assert _ACCURACY_BLOCK not in prompt
+
+
+def test_prejudge_workflow_js_enums_match_the_python_types() -> None:
+    """scripts/prejudge_workflow.js HARDCODES the record_judgment enums to keep the
+    Workflow args small. A value missing there is silently unreportable: the
+    subagent's forced schema rejects it, so a prejudged run comes back with those
+    flags absent and LOOKS CLEAN. That is the worst possible failure for an accuracy
+    check, so pin the two lists together.
+
+    Caught for real in W3.1: the four service-area flag types were added to the Python
+    enum, and this file still listed only the original five.
+    """
+    import re
+    from pathlib import Path
+
+    from src.storage.models import AccuracyFlagType, Framing, Prominence, Severity
+
+    js = (Path(__file__).resolve().parents[1] / "scripts" / "prejudge_workflow.js").read_text()
+
+    def js_enum(after: str) -> set[str]:
+        """The first `enum: [...]` list appearing after a marker in the JS source."""
+        start = js.index(after)
+        block = js[start : start + 1200]
+        raw = re.search(r"enum:\s*\[(.*?)\]", block, re.DOTALL)
+        assert raw is not None, f"no enum found after {after!r}"
+        return set(re.findall(r"'([^']+)'", raw.group(1)))
+
+    assert js_enum("prominence:") == {p.value for p in Prominence}
+    assert js_enum("framing:") == {f.value for f in Framing}
+    assert js_enum("client_accuracy_flags:") == {t.value for t in AccuracyFlagType}
+    assert js_enum("severity:") == {s.value for s in Severity}

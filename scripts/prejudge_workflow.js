@@ -69,7 +69,21 @@ const VERDICT_PROPS = {
       properties: {
         type: {
           type: 'string',
-          enum: ['wrong_pricing', 'missing_or_invented_feature', 'competitor_confusion', 'identity', 'stale'],
+          // Must match AccuracyFlagType in src/storage/models.py EXACTLY. A type
+          // missing here is silently unreportable: the subagent's forced schema
+          // rejects it, so a prejudged LOCAL run would come back with zero local
+          // accuracy flags and look clean. Last synced 2026-07-27 (W3.1).
+          enum: [
+            'wrong_pricing',
+            'missing_or_invented_feature',
+            'competitor_confusion',
+            'identity',
+            'stale',
+            'wrong_hours',
+            'wrong_service_area',
+            'wrong_contact',
+            'licensing',
+          ],
         },
         claim: { type: 'string' },
         reality: { type: 'string' },
