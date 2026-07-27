@@ -11,12 +11,26 @@
  */
 
 /** Funnel-stage intent buckets (src/prompts/intent.py). */
+/**
+ * Must stay in lockstep with `IntentBucket` in `src/prompts/intent.py` — these
+ * strings cross the CSV boundary and the platform validates them against that enum,
+ * so a value here that the platform doesn't know fails the upload.
+ *
+ * Two families, selected by business kind (pivot §0.6). `brand` is shared: "is X
+ * legit" is the same question whether X is an app or a plumber.
+ */
 export type IntentBucket =
+  // consumer-product funnel
   | "problem_aware"
   | "category"
   | "comparison"
-  | "brand"
-  | "adjacent_authority";
+  | "adjacent_authority"
+  // local-service intents
+  | "local_intent"
+  | "hybrid"
+  | "informational"
+  // shared
+  | "brand";
 
 /** How a brand appears in one answer (judge layer). */
 export type Prominence =

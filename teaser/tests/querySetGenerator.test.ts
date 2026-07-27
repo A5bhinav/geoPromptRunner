@@ -6,7 +6,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validateAndRepair } from "../src/queryset/ClaudeQuerySetGenerator.ts";
+import { fallbackQueries, validateAndRepair } from "../src/queryset/ClaudeQuerySetGenerator.ts";
 import type { CompanyProfile } from "../src/types/domain.ts";
 import type { IntentBucket } from "../src/types/platform.ts";
 
@@ -156,5 +156,90 @@ test("rules hold even with a single competitor", () => {
   assert.ok(clientFreeComparisons.length >= 2);
   for (const q of clientFreeComparisons) {
     assert.ok(q.text.toLowerCase().includes("salesforce"), "names the one competitor");
+  }
+});
+
+// --- W2.3: kind-selected fallback query templates ---------------------------------
+// The plan said "delete the startup fallbacks". Deleting is fine; REPLACING them with
+// local-only templates would leave the consumer path with no correct fallback at all.
+
+function localProfileForQueries(over: Record<string, unknown> = {}) {
+  return {
+    url: "https://berkeleyplumbingco.com",
+    name: "Berkeley Plumbing Co",
+    aliases: [],
+    businessKind: "local_service" as const,
+    location: { city: "Berkeley", region: "California", country: "US" },
+    category: "plumber",
+    competitors: [],
+    clientDomains: ["berkeleyplumbingco.com"],
+    productClaims: [],
+    resolvedAt: "2026-07-27T00:00:00.000Z",
+    resolverModel: "m",
+    ...over,
+  };
+}
+
+test("the local fallback set is geo-anchored and uses local intents", () => {
+  const qs = fallbackQueries(localProfileForQueries());
+  const texts = qs.map((q) => q.text);
+
+  assert.ok(texts.some((t) => t.includes("best plumber in Berkeley".replace("best", "Best"))));
+  for (const q of qs) {
+    assert.ok(
+      ["local_intent", "hybrid", "informational", "brand"].includes(q.intent),
+      `consumer intent ${q.intent} leaked into the local fallback`,
+    );
+  }
+  // Every non-brand local query carries the city.
+  for (const q of qs) {
+    if (q.intent === "local_intent" || q.intent === "hybrid") {
+      assert.ok(q.text.includes("Berkeley"), `local query without a city: ${q.text}`);
+    }
+  }
+});
+
+test("the local fallback NEVER names a competitor", () => {
+  // A local rival can only come from captured local-pack entities (W2.4). A fallback
+  // that invented a "vs <competitor>" query would reintroduce the fabrication risk.
+  const qs = fallbackQueries(
+    localProfileForQueries({
+      competitors: [{ name: "Roto-Rooter", aliases: [], confirmed: true }],
+    }),
+  );
+  for (const q of qs) {
+    assert.ok(!q.text.includes("Roto-Rooter"), `fallback named a competitor: ${q.text}`);
+    assert.notEqual(q.intent, "comparison");
+  }
+});
+
+test("a local profile with no city fails loudly rather than measuring nowhere", () => {
+  assert.throws(
+    () => fallbackQueries(localProfileForQueries({ location: undefined })),
+    /no city on the profile/,
+  );
+});
+
+test("the consumer fallback is unchanged in shape and carries no startup phrasing", () => {
+  const consumer = {
+    ...localProfileForQueries(),
+    name: "Acme Ring",
+    url: "https://acmering.io",
+    businessKind: "product" as const,
+    location: undefined,
+    category: "sleep-tracking smart ring",
+    competitors: [{ name: "Oura", aliases: [], confirmed: true }],
+  };
+  const qs = fallbackQueries(consumer);
+  const all = qs.map((q) => q.text).join("\n");
+
+  // The stale B2B-SaaS-era phrasing is gone...
+  assert.ok(!all.includes("growing startup"));
+  assert.ok(!all.includes("scales with my needs"));
+  // ...but the consumer branch still resolves to consumer-shaped queries.
+  assert.ok(all.includes("sleep-tracking smart ring"));
+  assert.ok(!all.includes("Berkeley"));
+  for (const q of qs) {
+    assert.ok(!["local_intent", "hybrid", "informational"].includes(q.intent));
   }
 });

@@ -22,7 +22,7 @@ import type {
   RunState,
   RunStatus,
 } from "../types/platform.ts";
-import type { AuditInput, PlatformClient } from "./PlatformClient.ts";
+import type { AuditInput, LocalEntity, PlatformClient } from "./PlatformClient.ts";
 
 export interface HttpPlatformClientOptions {
   /** Base URL of the GEO Audit API, e.g. "http://localhost:8000". */
@@ -52,6 +52,16 @@ export class HttpPlatformClient implements PlatformClient {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, "");
     this.timeoutMs = opts.timeoutMs ?? 0;
     this.apiKey = opts.apiKey || undefined;
+  }
+
+  async getLocalEntities(query: string, location: string): Promise<LocalEntity[]> {
+    const q = encodeURIComponent(query);
+    const loc = encodeURIComponent(location);
+    const body = await this.request<{ entities: LocalEntity[] }>(
+      "GET",
+      `/local-entities?q=${q}&location=${loc}`,
+    );
+    return body.entities ?? [];
   }
 
   async submitAudit(input: AuditInput): Promise<{ runId: string }> {

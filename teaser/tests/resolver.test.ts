@@ -12,9 +12,18 @@ import {
   isDefunctBrand,
 } from "../src/resolver/Crawl4aiClaudeResolver.ts";
 import { pickInternalTargets } from "../src/resolver/Crawl4aiClient.ts";
+import { canonicalLocation } from "../src/types/domain.ts";
 import {
   MIN_PROFILE_TEXT_CHARS,
+  LOCAL_SERVICE_PATH_READY,
+  PROFILE_SCHEMA,
+  PROFILE_SYSTEM_PROMPT,
   assertSufficientProfileText,
+  assertSupportedBusinessKind,
+  businessKindOf,
+  attachLocalCompetitors,
+  MAX_LOCAL_COMPETITORS,
+  normalizeLocation,
   profileTextLength,
 } from "../src/resolver/profileExtraction.ts";
 
@@ -233,4 +242,241 @@ test("assertSufficientProfileText passes a real page with enough text", () => {
   const real = "Cal AI is an AI-powered calorie tracking app for your phone. ".repeat(6);
   assert.ok(real.length >= MIN_PROFILE_TEXT_CHARS);
   assertSufficientProfileText([real], "https://calai.app"); // must not throw
+});
+
+// --- W0.1: the businessKind classifier -------------------------------------------
+// Until the local path exists (Phases 1-2), a service-area business is REFUSED rather
+// than silently mis-profiled. The teaser today would emit a confident, wrong artifact
+// for a plumber — national franchises or invented locals named as "competitors".
+// Forward-compatible by design: this same classifier becomes the W2.4 router.
+
+test("the local path is now ROUTED, not refused (W2.4 flipped the gate)", () => {
+  assert.equal(LOCAL_SERVICE_PATH_READY, true);
+  const p = buildProfile(
+    "https://berkeleyplumbingco.com",
+    extracted({
+      businessKind: "local_service",
+      name: "Berkeley Plumbing Co",
+      category: "plumbing service",
+      location: { city: "Berkeley", region: "California", country: "US", serviceArea: [] },
+    }),
+    "claude-sonnet-5",
+    FIXED,
+  );
+  assert.equal(p.businessKind, "local_service");
+  assert.deepEqual(p.location, { city: "Berkeley", region: "California", country: "US" });
+});
+
+test("a local profile is built with NO competitors — LLM recall is discarded", () => {
+  // THE anti-fabrication guarantee, enforced structurally. The extraction prompt asks
+  // for "REAL, CURRENTLY-OPERATING rival brands... use real, well-known names", which
+  // for a local trade yields national franchises or plausible inventions. Whatever the
+  // model returned is dropped; only attachLocalCompetitors (which requires captured
+  // local-pack entities) can name a local rival.
+  const p = buildProfile(
+    "https://joesbarbershop.com",
+    extracted({
+      businessKind: "local_service",
+      name: "Joe's Barbershop",
+      category: "barbershop",
+      competitors: [
+        { name: "Supercuts", aliases: [] },
+        { name: "Great Clips", aliases: [] },
+      ],
+    }),
+    "claude-sonnet-5",
+    FIXED,
+  );
+  assert.deepEqual(p.competitors, [], "no competitor may reach a local profile from extraction");
+});
+
+test("a consumer profile still takes its competitors from the extraction", () => {
+  const p = buildProfile("https://acme.io", extracted({ businessKind: "product" }), "m", FIXED);
+  assert.deepEqual(p.competitors.map((c) => c.name), ["Salesforce", "HubSpot"]);
+});
+
+test("a consumer product still resolves, and carries businessKind product", () => {
+  const p = buildProfile("https://acme.io", extracted({ businessKind: "product" }), "m", FIXED);
+  assert.equal(p.businessKind, "product");
+  assert.equal(p.category, "CRM");
+  assert.equal(p.competitors.length, 2);
+});
+
+test("a legacy extraction with no businessKind defaults to product (back-compat)", () => {
+  // Optional on ExtractedProfile for legacy fixtures only; the schema marks it
+  // required, so a live extraction always returns it.
+  const p = buildProfile("https://acme.io", extracted(), "m", FIXED);
+  assert.equal(p.businessKind, "product");
+});
+
+test("businessKindOf is the one canonical default", () => {
+  assert.equal(businessKindOf({}), "product");
+  assert.equal(businessKindOf({ businessKind: undefined }), "product");
+  assert.equal(businessKindOf({ businessKind: "product" }), "product");
+  assert.equal(businessKindOf({ businessKind: "local_service" }), "local_service");
+});
+
+test("assertSupportedBusinessKind is a no-op for products", () => {
+  assertSupportedBusinessKind("product", "https://acme.io"); // must not throw
+});
+
+test("businessKind is a required, enumerated field in the extraction contract", () => {
+  // required + additionalProperties:false means Claude must classify every site;
+  // it can never quietly omit the field and fall through to the product default.
+  assert.ok(PROFILE_SCHEMA.required.includes("businessKind"));
+  assert.deepEqual(PROFILE_SCHEMA.properties.businessKind.enum, ["product", "local_service"]);
+  assert.match(PROFILE_SYSTEM_PROMPT, /businessKind: "local_service" if this business serves/);
+});
+
+// --- W1.1 / W1.2: location plumbing ----------------------------------------------
+// A location is kept ONLY when city+region+country are all present. A partial one
+// ("Berkeley", no state) serializes to a canonical string SearchApi resolves to "the
+// most popular match" — a different metro entirely, silently measuring the wrong
+// market. Dropping to undefined makes the absence visible instead.
+
+test("normalizeLocation keeps a complete location and uppercases the country", () => {
+  const loc = normalizeLocation({ city: " Berkeley ", region: " California ", country: "us" });
+  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "US" });
+});
+
+test("normalizeLocation drops a PARTIAL location rather than guessing", () => {
+  assert.equal(normalizeLocation({ city: "Berkeley", region: "", country: "US" }), undefined);
+  assert.equal(normalizeLocation({ city: "", region: "California", country: "US" }), undefined);
+  assert.equal(normalizeLocation({ city: "Berkeley", region: "California", country: "  " }), undefined);
+  assert.equal(normalizeLocation(null), undefined);
+  assert.equal(normalizeLocation(undefined), undefined);
+});
+
+test("normalizeLocation de-dupes serviceArea and drops the primary city echoed back", () => {
+  const loc = normalizeLocation({
+    city: "Berkeley",
+    region: "California",
+    country: "US",
+    serviceArea: ["Oakland", " oakland ", "berkeley", "", "Albany"],
+  });
+  assert.deepEqual(loc?.serviceArea, ["Oakland", "Albany"]);
+});
+
+test("normalizeLocation omits serviceArea entirely when none survive", () => {
+  const loc = normalizeLocation({ city: "Berkeley", region: "California", country: "US", serviceArea: [] });
+  assert.deepEqual(loc, { city: "Berkeley", region: "California", country: "US" });
+  assert.ok(!("serviceArea" in (loc ?? {})));
+});
+
+test("canonicalLocation builds the SearchApi location string (serviceArea excluded)", () => {
+  // Verified against SearchApi's Google-engine docs (2026-07): `location` takes a
+  // canonical NAME and SearchApi builds the uule itself. serviceArea widens the
+  // query, it does not move the search origin — so it must not leak in here.
+  assert.equal(
+    canonicalLocation({ city: "Berkeley", region: "California", country: "US", serviceArea: ["Oakland"] }),
+    "Berkeley,California,US",
+  );
+});
+
+test("a consumer product never acquires a location, even if one is extracted", () => {
+  // Absent is MEANINGFUL on the consumer path: a national product has no service
+  // area, and a spurious one would geo-anchor its queries and invalidate the audit.
+  const p = buildProfile(
+    "https://acme.io",
+    extracted({
+      businessKind: "product",
+      location: { city: "Berkeley", region: "California", country: "US", serviceArea: [] },
+    }),
+    "m",
+    FIXED,
+  );
+  assert.equal(p.location, undefined);
+});
+
+test("location is a required key in the extraction contract (null, not omitted)", () => {
+  // Required means Claude must DECIDE. If it could omit the key we couldn't tell
+  // "not a service-area business" from "forgot to look".
+  assert.ok(PROFILE_SCHEMA.required.includes("location"));
+  assert.match(PROFILE_SYSTEM_PROMPT, /Return null when the site is not service-area-bound/);
+  assert.match(PROFILE_SYSTEM_PROMPT, /do NOT infer a location from the brand name/);
+});
+
+// --- W2.4: entity-sourced local competitors ---------------------------------------
+// The ONLY path from a real business to a named local rival. Pure: the caller does
+// the capture and hands entities in, so the fabrication guarantee is checkable
+// without a network.
+
+function localProfile(over: Record<string, unknown> = {}) {
+  return {
+    url: "https://berkeleyplumbingco.com",
+    name: "Berkeley Plumbing Co",
+    aliases: ["BPC"],
+    businessKind: "local_service" as const,
+    location: { city: "Berkeley", region: "California", country: "US" },
+    category: "plumbing service",
+    competitors: [],
+    clientDomains: ["berkeleyplumbingco.com"],
+    productClaims: [],
+    resolvedAt: FIXED.toISOString(),
+    resolverModel: "m",
+    ...over,
+  };
+}
+
+function entity(name: string, over: Record<string, unknown> = {}) {
+  return {
+    name,
+    address: "1 Main St",
+    category: "Plumber",
+    rating: 4.5,
+    reviews: 100,
+    ludocid: null,
+    position: null,
+    ...over,
+  };
+}
+
+test("attachLocalCompetitors names rivals from captured entities, unconfirmed", () => {
+  const p = attachLocalCompetitors(localProfile(), [
+    entity("Bay Area Rooter"),
+    entity("Berkeley Drain Co"),
+  ]);
+  assert.deepEqual(p.competitors, [
+    { name: "Bay Area Rooter", aliases: [], confirmed: false },
+    { name: "Berkeley Drain Co", aliases: [], confirmed: false },
+  ]);
+});
+
+test("the client itself is dropped from its own competitor list", () => {
+  // Google's local pack naturally returns the client. Naming a shop as its own
+  // competitor is an obvious tell that the artifact is machine-generated.
+  const p = attachLocalCompetitors(localProfile(), [
+    entity("Berkeley Plumbing Co"), // the client, by name
+    entity("BPC"), // the client, by alias
+    entity("Bay Area Rooter"),
+  ]);
+  assert.deepEqual(p.competitors.map((c) => c.name), ["Bay Area Rooter"]);
+});
+
+test("duplicates are collapsed case-insensitively and the list is capped", () => {
+  const many = ["A Co", "a co", "B Co", "C Co", "D Co", "E Co", "F Co"].map((n) => entity(n));
+  const p = attachLocalCompetitors(localProfile(), many);
+  assert.equal(p.competitors.length, MAX_LOCAL_COMPETITORS);
+  assert.deepEqual(p.competitors.map((c) => c.name), ["A Co", "B Co", "C Co", "D Co"]);
+});
+
+test("attachLocalCompetitors FAILS LOUDLY rather than leaving a teaser rival-less", () => {
+  // The alternative is a teaser claiming "AI recommends <nobody> instead of you", or
+  // a fallback to model recall. Both are worse than no teaser.
+  assert.throws(() => attachLocalCompetitors(localProfile(), []), /no local competitors could be sourced/);
+  // Only the client came back — still nothing usable.
+  assert.throws(
+    () => attachLocalCompetitors(localProfile(), [entity("Berkeley Plumbing Co")]),
+    /Refusing to build a local teaser/,
+  );
+  // Blank names are not rivals.
+  assert.throws(() => attachLocalCompetitors(localProfile(), [entity("   ")]), /no local competitors/);
+});
+
+test("attachLocalCompetitors refuses a consumer product", () => {
+  const consumer = localProfile({ businessKind: "product", location: undefined });
+  assert.throws(
+    () => attachLocalCompetitors(consumer, [entity("Bay Area Rooter")]),
+    /is a product/,
+  );
 });

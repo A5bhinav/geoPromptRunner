@@ -152,3 +152,74 @@ export function proofCaption(companyName: string, lead: Finding): string {
     `${lead.competitor} ${competitorVerb(lead).passive}; ${companyName} is absent.`
   );
 }
+
+// --- W2.6: local-service copy -----------------------------------------------------
+// FORKED from the consumer strings, not a rewrite (pivot §0.6). The local variants
+// INHERIT every claim-fidelity rule above unchanged: they call competitorVerb /
+// competitorProminenceWord rather than hardcoding a verb, so the teaser still never
+// claims more than the judge measured.
+//
+// Two deliberate differences from the consumer copy, per the strategy doc — "owners
+// respond to named competitors and phone-call economics, not dashboards":
+//   1. "buyers" becomes "customers" / "homeowners".
+//   2. No aggregate appearance ratio. The denominator is a query set WE chose, so
+//      "appears in 3 of 12" reads as a visibility rate and is not one. Local copy
+//      makes the reproducible per-query claim instead.
+
+/** The sources AI actually cites for local businesses, in rough citation order. */
+export const LOCAL_SOURCE_CHECKLIST: readonly string[] = [
+  "Google Business Profile",
+  "Yelp",
+  "BBB",
+  "Angi",
+  "Thumbtack",
+  "Facebook",
+  "Bing Places",
+  "Reddit",
+];
+
+export function localHeadline(companyName: string, lead: Finding): string {
+  // Same prominence grading as the consumer headline: "sending your customers to"
+  // is only printable when the judge saw the rival recommended first.
+  if (isRecommendedFirst(lead.prominence)) {
+    return `AI is sending your customers to ${lead.competitor} — not ${companyName}.`;
+  }
+  return `When customers ask AI, ${lead.competitor} is in the answer — ${companyName} isn't.`;
+}
+
+export function localLeadSentence(companyName: string, lead: Finding): string {
+  return (
+    `Ask ${engineLabel(lead.engineName)} “${lead.verbatimQuery}” and it ${competitorVerb(lead).active} ` +
+    `${lead.competitor} — ${companyName} is nowhere in the answer.`
+  );
+}
+
+/**
+ * The local stakes line. Deliberately makes NO aggregate-ratio claim (see above) and
+ * no dollar claim: we have not measured this shop's job value, and inventing one
+ * would be the same class of error as an unmeasured prominence verb.
+ */
+export function localStakesLine(companyName: string, lead: Finding): string {
+  return (
+    `That's a customer with a problem right now, being handed ${lead.competitor}'s name ` +
+    `instead of ${companyName}'s.`
+  );
+}
+
+export function localCtaLine(companyName: string): string {
+  return (
+    `Want to see every question your customers ask AI — and what it takes to get ` +
+    `${companyName} named? 15 minutes.`
+  );
+}
+
+/** Kind-selected copy, so callers thread business kind rather than branching. */
+export function copyFor(businessKind: string): {
+  headline: (companyName: string, lead: Finding) => string;
+  leadSentence: (companyName: string, lead: Finding) => string;
+  ctaLine: (companyName: string) => string;
+} {
+  return businessKind === "local_service"
+    ? { headline: localHeadline, leadSentence: localLeadSentence, ctaLine: localCtaLine }
+    : { headline, leadSentence, ctaLine };
+}

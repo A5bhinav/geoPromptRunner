@@ -32,8 +32,36 @@ export interface AuditInput {
   queries: { query_id: string; text: string; intent: string }[];
 }
 
+/** One business from Google's local pack, as the platform's /local-entities returns it. */
+export interface LocalEntity {
+  name: string;
+  address: string;
+  /** Google's own category string ("Plumber", "Barber shop"). */
+  category: string;
+  rating: number | null;
+  reviews: number | null;
+  ludocid: string | null;
+  position: number | null;
+}
+
 export interface PlatformClient {
   submitAudit(input: AuditInput): Promise<{ runId: string }>;
+  /**
+   * Businesses in Google's local pack for a query at a canonical location (W1.6).
+   *
+   * The ONLY sanctioned source of local competitor candidates. Claude does not
+   * reliably know the plumbers in a given city, and a fabricated rival printed in a
+   * teaser emailed to a real shop owner is the unrecoverable failure for this
+   * product — so local rivals come from captured entities or the resolver fails.
+   *
+   * Goes through the platform rather than SearchApi directly because
+   * SEARCHAPI_API_KEY lives in the platform's settings and nowhere else.
+   *
+   * Throws when the capture is unavailable; returns [] when the query genuinely
+   * surfaced no local pack. Those are different situations and the caller must be
+   * able to tell them apart — an empty list must never be read as "no competitors".
+   */
+  getLocalEntities(query: string, location: string): Promise<LocalEntity[]>;
   getStatus(runId: string): Promise<RunStatus>;
   getReport(runId: string): Promise<ReportPayload>;
   getAnswers(runId: string): Promise<AnswerRecord[]>;

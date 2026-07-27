@@ -7,7 +7,7 @@ from collections import Counter
 from src.engines.base import BaseEngine
 from src.storage.models import QueryResult
 
-__all__ = ["discover_competitors"]
+__all__ = ["discover_competitors", "extract_prompt_for"]
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,29 @@ _EXTRACT_PROMPT = (
     "or extra words. If none, return nothing.\n\nTEXT:\n{response}"
 )
 
-# Lines that clearly aren't product names (model preamble / refusals).
-_NOISE = re.compile(r"^(here|none|no |the following|sure|products?:|tools?:)\b", re.IGNORECASE)
+# FORKED, not rewritten (pivot §0.6). The consumer prompt above still reads
+# "software products, tools, or companies"; reprompting it in place for local would
+# degrade consumer discovery SILENTLY, because extraction quality has no loud failure
+# mode — you just get slightly worse competitor lists forever.
+_LOCAL_EXTRACT_PROMPT = (
+    "Extract the names of local businesses mentioned in the text below — the kind of "
+    "service business a customer would call or visit (contractors, shops, salons, "
+    "restaurants, trades). Include the business name only, not the city, the street "
+    "address, or a description. Return ONLY the names, one per line, with no "
+    "numbering, commentary, or extra words. If none, return nothing.\n\nTEXT:\n{response}"
+)
+
+# Lines that clearly aren't product names (model preamble / refusals). Additive for
+# local: the local-shaped preambles are harmless to the consumer path.
+_NOISE = re.compile(
+    r"^(here|none|no |the following|sure|products?:|tools?:|businesses?:|companies:)\b",
+    re.IGNORECASE,
+)
+
+
+def extract_prompt_for(business_kind: str = "product") -> str:
+    """The extraction prompt for one business kind. Unknown kinds → consumer."""
+    return _LOCAL_EXTRACT_PROMPT if business_kind == "local_service" else _EXTRACT_PROMPT
 
 
 def _normalize(name: str) -> str:
@@ -42,6 +63,7 @@ def discover_competitors(
     known: list[str],
     extractor: BaseEngine,
     limit: int = 15,
+    business_kind: str = "product",
 ) -> list[tuple[str, int]]:
     """Find brands/products that appear in answers but weren't in ``known``.
 
@@ -49,7 +71,15 @@ def discover_competitors(
     response, then drops the client + named competitors and ranks the rest by
     how many distinct responses mention them. Surfaces rivals you didn't name —
     e.g. a newcomer dominating answers. Counts once per distinct response.
+
+    ``business_kind`` selects the extraction prompt; it defaults to ``"product"``, so
+    every existing consumer caller is unchanged.
+
+    Note this discovers rivals *from measured answers*, which is a different job from
+    seeding a local competitor SET — that must come from captured local-pack entities
+    (W1.6), never from LLM recall.
     """
+    prompt_template = extract_prompt_for(business_kind)
     known_lower = {k.strip().lower() for k in known if k.strip()}
     seen_responses: set[str] = set()
     counts: Counter[str] = Counter()
@@ -59,7 +89,7 @@ def discover_competitors(
         if not response or response in seen_responses:
             continue
         seen_responses.add(response)
-        extracted = extractor.query(_EXTRACT_PROMPT.format(response=response))
+        extracted = extractor.query(prompt_template.format(response=response))
         for name in _parse_names(extracted):
             if name.lower() in known_lower:
                 continue

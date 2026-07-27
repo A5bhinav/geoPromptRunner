@@ -9,6 +9,54 @@ export interface Competitor {
   confirmed: boolean;
 }
 
+/**
+ * Which ICP a resolved site belongs to — the SINGLE selector for every
+ * consumer/local divergence in the SMB pivot (docs/smb-pivot-build-plan.md §0.6).
+ *
+ * - `product`: a nationally-marketed consumer product. Competitors are direct
+ *   substitutes anywhere; queries carry no geography.
+ * - `local_service`: a service-area business (HVAC, plumbing, barbershop). Rivals
+ *   are other shops in the same trade AND metro; queries are geo-anchored.
+ *
+ * The pivot ADDS the local ICP — it does not replace the consumer one. Every
+ * divergence keys off this value; shared constants are forked by it, never edited
+ * in place. `tests/consumerPathRegression.test.ts` guards that rule.
+ */
+export type BusinessKind = "product" | "local_service";
+
+/**
+ * Where a service-area business actually serves customers (W1.1).
+ *
+ * Absent for nationally-marketed products — a spurious location would geo-anchor
+ * their queries and invalidate the measurement. Present only when the resolver read
+ * a real NAP block (name/address/phone, contact page, or schema.org LocalBusiness)
+ * off the site; it is never inferred from the brand name or a guess.
+ */
+export interface BusinessLocation {
+  city: string;
+  /** State / province, spelled as the site spells it ("California", not "CA"). */
+  region: string;
+  /** ISO-3166 alpha-2, uppercase ("US"). */
+  country: string;
+  /** Additional named towns/neighborhoods the business explicitly serves. */
+  serviceArea?: string[];
+}
+
+/**
+ * The canonical location string SearchApi's Google engine accepts — "City,Region,US".
+ * Verified against SearchApi's Google-engine docs (2026-07): `location` takes a
+ * canonical location NAME (it builds the `uule` encoding itself, and the two params
+ * are mutually exclusive). Kept here so the teaser and the Python engine agree on one
+ * serialization; `serviceArea` is deliberately NOT included — it widens the query, it
+ * does not move the search origin.
+ */
+export function canonicalLocation(loc: BusinessLocation): string {
+  return [loc.city, loc.region, loc.country]
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join(",");
+}
+
 /** Resolver output: URL → company profile. */
 export interface CompanyProfile {
   url: string;
@@ -22,6 +70,19 @@ export interface CompanyProfile {
    * fall back to []. Competitors carry their own aliases on `Competitor`.
    */
   aliases?: string[];
+  /**
+   * Which ICP this site belongs to (W0.1). Optional by design so every existing
+   * consumer call site compiles untouched; absent means `product`. Read it through
+   * `businessKindOf()` rather than defaulting inline, so the fallback lives in one
+   * place. Becomes the router in W2.4.
+   */
+  businessKind?: BusinessKind;
+  /**
+   * Service-area business location (W1.1). Optional by design so every existing
+   * consumer call site compiles untouched — and absent is MEANINGFUL, not a
+   * placeholder: a nationally-marketed product genuinely has no service area.
+   */
+  location?: BusinessLocation;
   category: string;
   competitors: Competitor[];
   clientDomains: string[];
@@ -111,5 +172,15 @@ export interface TeaserDraft {
   clientAliases?: string[];
   /** competitor name → aliases, persisted for the same reason (T3). */
   competitorAliases?: Record<string, string[]>;
+  /**
+   * Business kind + location captured at generation time, for the SAME reason as
+   * clientAliases (T3): a teaser REGENERATED from storage rebuilds its profile from
+   * the stored ReportPayload, which carries neither. Without these, regenerating a
+   * LOCAL teaser would silently produce a consumer-shaped one — the losing-cell
+   * geography, the copy, and the source checklist would all revert. Optional:
+   * legacy drafts saved before this field fall back to product/no-location.
+   */
+  businessKind?: BusinessKind;
+  location?: BusinessLocation;
   status: "draft" | "approved" | "rejected" | "exported";
 }

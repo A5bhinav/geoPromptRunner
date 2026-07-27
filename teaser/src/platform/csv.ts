@@ -8,6 +8,7 @@
  * fact rows (optional) build the fact sheet for the wrong-claim branch.
  */
 
+import { canonicalLocation } from "../types/domain.ts";
 import type { CompanyProfile, GeneratedQuerySet } from "../types/domain.ts";
 
 function csvCell(value: string): string {
@@ -47,6 +48,12 @@ export function buildAuditCsv(
   lines.push(row("config", "engines", opts.engines.join(";")));
   lines.push(row("config", "runs_per_query", String(opts.runsPerQuery)));
   lines.push(row("config", "judge", opts.judge ? "true" : "false"));
+  // Emitted ONLY for service-area businesses (W1.4). A consumer product has no
+  // location, so its CSV is byte-identical to the pre-pivot one and the platform
+  // parses it exactly as before.
+  if (profile.location) {
+    lines.push(row("config", "location", canonicalLocation(profile.location)));
+  }
 
   // --- query block ---
   for (const q of querySet.queries) {

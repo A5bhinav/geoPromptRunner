@@ -30,6 +30,9 @@ create table if not exists public.audit_runs (
     queries jsonb not null default '[]'::jsonb,
     fact_sheet text,
     judge boolean not null default false,
+    -- SearchApi canonical location name for service-area businesses; NULL for
+    -- nationally-marketed products. See the alter below for why it is persisted.
+    location text,
     error text,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
@@ -48,6 +51,12 @@ alter table public.audit_runs add column if not exists updated_at timestamptz no
 alter table public.audit_runs add column if not exists queries jsonb not null default '[]'::jsonb;
 alter table public.audit_runs add column if not exists fact_sheet text;
 alter table public.audit_runs add column if not exists judge boolean not null default false;
+-- SearchApi canonical location NAME ("Berkeley,California,US") for a service-area
+-- business (W1.4). NULL for nationally-marketed products, which is the pre-pivot
+-- default. Persisted because an interrupted LOCAL run rebuilds its RunConfig from
+-- this row on resume — without the column, the resumed half would run un-localized
+-- and quietly mix two different markets into one measurement.
+alter table public.audit_runs add column if not exists location text;
 
 -- --- Per-(query, engine, run) answers ----------------------------------------
 create table if not exists public.query_results (

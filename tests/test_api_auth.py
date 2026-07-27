@@ -56,3 +56,34 @@ def test_warn_if_open_logs_only_when_blank(
     with caplog.at_level(logging.WARNING):
         api_app._warn_if_open()
     assert not any("API is OPEN" in r.message for r in caplog.records)
+
+
+# --- W1.6: the /local-entities endpoint's location guard --------------------------
+
+
+def test_local_entities_requires_a_non_empty_location() -> None:
+    """A local pack from an unpinned locale names businesses in the wrong metro. The
+    endpoint refuses rather than silently doing a nationwide lookup — 422, not a
+    plausible-but-wrong entity list."""
+    with pytest.raises(HTTPException) as exc:
+        api_app.local_entities(q="best plumber", location="   ")
+    assert exc.value.status_code == 422
+    assert "location is required" in str(exc.value.detail)
+
+
+def test_local_entities_requires_a_non_empty_query() -> None:
+    with pytest.raises(HTTPException) as exc:
+        api_app.local_entities(q="  ", location="Berkeley,California,US")
+    assert exc.value.status_code == 422
+
+
+def test_local_entities_is_503_when_the_engine_cannot_be_built(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No SEARCHAPI_API_KEY → build_engines skips the engine. That is a 503 (the
+    capability is unavailable), not a 200 with an empty list that reads as "this city
+    has no plumbers"."""
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "")
+    with pytest.raises(HTTPException) as exc:
+        api_app.local_entities(q="best plumber", location="Berkeley,California,US")
+    assert exc.value.status_code == 503

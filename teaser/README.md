@@ -30,8 +30,11 @@ npm test                                            # unit + end-to-end (mock) t
 npm run typecheck
 ```
 
-Open the generated `out/<slug>.html` to review the draft teaser. (PDF export is the
-next step — `src/render/pdf.ts` is a documented stub.)
+Open the generated `out/<slug>.html` to review the draft teaser. PDF export is
+implemented (`src/render/pdf.ts`): it prints the self-contained HTML with Playwright's
+headless Chromium. Playwright is imported lazily, so the package and the test suite
+never depend on the browser binaries — if Chromium is missing, `renderPdf` throws an
+actionable install hint and you can fall back to the print-ready `.html`.
 
 ## Connecting to the real platform
 
@@ -56,7 +59,15 @@ then fetches `GET /audits/{id}/report` and `GET /audits/{id}/answers`.
 - A printable finding needs **judge** detection, so the platform must have the
   engine + judge API keys configured (`OPENAI_API_KEY`, etc.); the teaser refuses
   to render from `regex`-mode reports. Default engines are
-  `perplexity`, `google_ai_overviews`, `openai`.
+  `perplexity`, `openai_search`, `gemini_grounded` (`DEFAULT_OPTIONS` in
+  `src/pipeline.ts`); `runsPerQuery` defaults to 3. Override either per run with
+  `--engines <csv>` / `--runs <n>`.
+- **Google AI Overviews is reachable today** but is NOT in the defaults:
+  `npm run teaser -- <url> --engines google_ai_overviews,openai_search,perplexity`.
+  Caveat — the engine currently sends no location, so every query runs from
+  SearchApi's unpinned default locale. Fine for a nationally-marketed consumer
+  product; **not valid for any local/geo-anchored query** until W1.3 of
+  `docs/smb-pivot-build-plan.md` lands.
 
 ## What it does (pipeline)
 
@@ -75,7 +86,7 @@ src/
   queryset/     QuerySetGenerator + Mock + ClaudeQuerySetGenerator (profile → buyer queries)
   platform/     PlatformClient interface + MockPlatformClient + csv.ts (audit input)
   select/       selectFindings.ts (REAL ranking logic) + entity.ts
-  render/       copy.ts, proofCard.ts, template.ts (HTML one-pager), pdf.ts (stub)
+  render/       copy.ts, proofCard.ts, template.ts (HTML one-pager), pdf.ts (Playwright)
   pipeline.ts   orchestration (deps injected)
   config.ts     wires Mock or real adapters per env gate
   cli.ts        URL → draft teaser on disk

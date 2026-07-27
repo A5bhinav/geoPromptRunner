@@ -17,6 +17,7 @@
  */
 
 import { extractJson } from "../llm/claude.ts";
+import { businessKindOf } from "../resolver/profileExtraction.ts";
 import type {
   CompanyProfile,
   GeneratedQuery,
@@ -42,6 +43,11 @@ const WEIGHTS: Record<IntentBucket, number> = {
   comparison: 1.8,
   brand: 2.0,
   adjacent_authority: 1.0,
+  // Local: the local pack IS the buying moment, so local_intent outranks everything
+  // but a direct brand lookup. informational earns authority ahead of the purchase.
+  local_intent: 1.8,
+  hybrid: 1.4,
+  informational: 1.0,
 };
 
 /** Raw query shape Claude returns (no weight/query_id — we assign those). */
@@ -223,8 +229,10 @@ export function validateAndRepair(
     kept.push({ intent: "brand", text: brandTemplate(client) });
   }
 
-  // Last resort: if somehow nothing usable remains, use the full template set.
-  const usable = kept.length >= 3 ? kept : templateQueries(profile);
+  // Last resort: if somehow nothing usable remains, use the full template set —
+  // kind-selected, so a local profile falls back to local queries and a consumer
+  // profile falls back to consumer ones (pivot §0.6).
+  const usable = kept.length >= 3 ? kept : fallbackQueries(profile);
 
   return usable.map(
     (q, i): GeneratedQuery => ({
@@ -269,6 +277,52 @@ function brandTemplate(client: string): string {
  * The full deterministic template set (mirrors MockQuerySetGenerator's hard-rule
  * shape). Used only as a total fallback when the LLM output is unusable.
  */
+/**
+ * Deterministic LOCAL fallback set (W2.3).
+ *
+ * FORKED from the consumer templates, not a replacement (pivot §0.6): the consumer
+ * branch below still resolves to consumer-shaped queries. Mirrors the hand-written
+ * per-trade sets in `data/queries_<trade>.json`, in miniature — the trade files are
+ * the real instrument; this is the safety net when the LLM output is unusable.
+ *
+ * Competitors are NOT named here. Unlike the consumer path, a local rival can only
+ * come from captured local-pack entities (W2.4), so a fallback that invented a
+ * "comparison vs <competitor>" query would reintroduce exactly the fabrication risk
+ * attachLocalCompetitors exists to close.
+ */
+function localTemplateQueries(profile: CompanyProfile): RawQuery[] {
+  const trade = profile.category;
+  const client = profile.name;
+  const city = profile.location?.city;
+
+  // Without a city there is no local query to write. The caller (generate) is
+  // responsible for never routing a location-less local profile here.
+  if (!city) {
+    throw new Error(
+      `cannot build local queries for ${profile.url}: no city on the profile. A local ` +
+        `query set without geography measures the wrong market.`,
+    );
+  }
+
+  return [
+    { intent: "local_intent", text: `Who is the best ${trade} in ${city}?` },
+    { intent: "local_intent", text: `Best ${trade} in ${city}` },
+    { intent: "local_intent", text: `Top rated ${trade} in ${city}` },
+    { intent: "local_intent", text: `Who should I call for ${trade} in ${city}?` },
+    { intent: "hybrid", text: `How much does a ${trade} cost in ${city}?` },
+    { intent: "hybrid", text: `What should I look for when hiring a ${trade} in ${city}?` },
+    { intent: "informational", text: `How do I choose a good ${trade}?` },
+    { intent: "brand", text: brandTemplate(client) },
+  ];
+}
+
+/** The deterministic fallback set for a profile's business kind. */
+export function fallbackQueries(profile: CompanyProfile): RawQuery[] {
+  return businessKindOf(profile) === "local_service"
+    ? localTemplateQueries(profile)
+    : templateQueries(profile);
+}
+
 function templateQueries(profile: CompanyProfile): RawQuery[] {
   const cat = profile.category;
   const client = profile.name;
@@ -292,12 +346,12 @@ function templateQueries(profile: CompanyProfile): RawQuery[] {
         },
       ];
   return [
-    { intent: "category", text: `What's the best ${cat} for a growing startup?` },
+    { intent: "category", text: `What's the best ${cat} right now?` },
     { intent: "category", text: `Which ${cat} do people recommend in 2026?` },
     ...comparisons,
     {
       intent: "problem_aware",
-      text: `How do I choose something that scales with my needs?`,
+      text: `How do I choose the right ${cat} for me?`,
     },
     {
       intent: "adjacent_authority",

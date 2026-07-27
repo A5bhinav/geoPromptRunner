@@ -134,3 +134,60 @@ test("isRelatedVerdict: the three entanglement verdicts drop; independent/unknow
   assert.equal(isRelatedVerdict("independent"), false);
   assert.equal(isRelatedVerdict("unknown"), false);
 });
+
+// --- W2.5: service-area overlap (local_service only) ------------------------------
+// CategoryVerdict has no geography: a Phoenix plumber and a Berkeley plumber are both
+// same_category and both passed. Recall-safe — only an explicit different_area drops.
+
+function localProfileWithRivals() {
+  return {
+    url: "https://berkeleyplumbingco.com",
+    name: "Berkeley Plumbing Co",
+    aliases: [],
+    businessKind: "local_service" as const,
+    location: { city: "Berkeley", region: "California", country: "US" },
+    category: "plumbing service",
+    competitors: [
+      { name: "Bay Area Rooter", aliases: [], confirmed: true },
+      { name: "Phoenix Pipe Pros", aliases: [], confirmed: true },
+      { name: "Mystery Plumbing", aliases: [], confirmed: true },
+    ],
+    clientDomains: ["berkeleyplumbingco.com"],
+    productClaims: [],
+    resolvedAt: "2026-07-27T00:00:00.000Z",
+    resolverModel: "m",
+  };
+}
+
+test("a same-trade different-metro rival is dropped with service-area provenance", () => {
+  const profile = localProfileWithRivals();
+  const rels = normalizeRelationships(
+    [
+      { competitor: "Bay Area Rooter", verdict: "independent", category: "same_category", service_area: "same_area", evidence: "berkeley" },
+      { competitor: "Phoenix Pipe Pros", verdict: "independent", category: "same_category", service_area: "different_area", evidence: "phoenix az" },
+      { competitor: "Mystery Plumbing", verdict: "independent", category: "same_category", service_area: "unknown", evidence: "" },
+    ],
+    profile,
+  );
+
+  const { profile: pruned, dropped } = pruneRelatedCompetitors(profile, rels);
+
+  // Same metro kept; unknown kept (recall-safe); only the explicit different_area drops.
+  assert.deepEqual(pruned.competitors.map((c) => c.name), ["Bay Area Rooter", "Mystery Plumbing"]);
+  assert.equal(dropped.length, 1);
+  assert.equal(dropped[0]?.name, "Phoenix Pipe Pros");
+  assert.equal(dropped[0]?.serviceAreaMismatch, true);
+  // The drop reason is distinguishable from a category mismatch.
+  assert.notEqual(dropped[0]?.categoryMismatch, true);
+});
+
+test("a missing service_area key defaults to unknown and keeps the competitor", () => {
+  const profile = localProfileWithRivals();
+  const rels = normalizeRelationships(
+    [{ competitor: "Bay Area Rooter", verdict: "independent", category: "same_category", evidence: "" }],
+    profile,
+  );
+  assert.equal(rels.find((r) => r.competitor === "Bay Area Rooter")?.serviceAreaMatch, "unknown");
+  const { dropped } = pruneRelatedCompetitors(profile, rels);
+  assert.equal(dropped.length, 0);
+});

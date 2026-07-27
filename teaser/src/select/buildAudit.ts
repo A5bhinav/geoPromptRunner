@@ -37,6 +37,10 @@ const INTENT_PRIORITY: Record<IntentBucket, number> = {
   problem_aware: 3,
   adjacent_authority: 2,
   brand: 1,
+  // Local mirrors the consumer shape: the query closest to hiring ranks highest.
+  local_intent: 5,
+  hybrid: 4,
+  informational: 3,
 };
 
 const ENGINE_CREDIBILITY: Record<string, number> = {

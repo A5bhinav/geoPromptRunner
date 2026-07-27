@@ -179,6 +179,7 @@ def create_audit_run(
     fact_sheet: str | None = None,
     judge: bool = False,
     engine_models: dict[str, str] | None = None,
+    location: str | None = None,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -211,6 +212,9 @@ def create_audit_run(
         "queries": queries or [],
         "fact_sheet": fact_sheet,
         "judge": judge,
+        # Persisted so an interrupted LOCAL run resumes with the same market (W1.4);
+        # None for nationally-marketed products, the pre-pivot default.
+        "location": location,
         "engine_models": engine_models or {},
         "created_at": _now(),
         "updated_at": _now(),

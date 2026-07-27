@@ -130,3 +130,51 @@ def test_run_audit_resume_fills_only_missing_cells(monkeypatch: pytest.MonkeyPat
     assert {r["engine_name"] for r in saved} == {"gemini"}
     # Run was marked terminal.
     assert progress_calls and progress_calls[-1][1] == "done"
+
+
+# --- W2.1: kind-keyed teaser bucket selection -------------------------------------
+# The consumer pair and the local intents are DISJOINT. Before the fork, a local query
+# set intersected _TEASER_BUCKETS in zero queries and the teaser ran empty.
+
+
+def test_teaser_buckets_are_forked_by_business_kind() -> None:
+    from src.pipeline.orchestrator import teaser_buckets
+    from src.prompts.intent import IntentBucket
+
+    assert teaser_buckets() == (IntentBucket.CATEGORY, IntentBucket.COMPARISON)
+    assert teaser_buckets("product") == (IntentBucket.CATEGORY, IntentBucket.COMPARISON)
+    assert teaser_buckets("local_service") == (IntentBucket.LOCAL_INTENT, IntentBucket.HYBRID)
+    # Unknown kinds fall back to the pre-pivot consumer pair.
+    assert teaser_buckets("something-else") == (IntentBucket.CATEGORY, IntentBucket.COMPARISON)
+
+
+def test_local_teaser_excludes_informational() -> None:
+    """'how often should a furnace be serviced' surfaces an AI Overview but yields
+    advice, not a ranked set of shops — it cannot produce the competitor-naming
+    moment the teaser exists for."""
+    from src.pipeline.orchestrator import teaser_buckets
+    from src.prompts.intent import IntentBucket
+
+    assert IntentBucket.INFORMATIONAL not in teaser_buckets("local_service")
+
+
+def test_run_teaser_raises_rather_than_running_an_empty_query_set() -> None:
+    """A zero-query teaser would report 'you appear nowhere' from no measurement at
+    all — the exact silent-and-wrong failure the pivot plan guards against."""
+    import pytest
+
+    from src.pipeline.orchestrator import run_teaser
+    from src.prompts.intent import IntentBucket
+    from src.prompts.query_set import Query, QuerySet
+
+    local_set = QuerySet(
+        version="v1",
+        locked_at="2026-07-27",
+        category="plumbing service",
+        client="Bay Rooter",
+        competitors=[],
+        queries=[Query(query_id="l1", text="best plumber in Berkeley", intent=IntentBucket.LOCAL_INTENT)],
+    )
+    # Running a LOCAL set through the CONSUMER buckets matches nothing.
+    with pytest.raises(ValueError, match="no queries match the product teaser buckets"):
+        run_teaser(local_set, engines=[], business_kind="product")

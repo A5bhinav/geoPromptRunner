@@ -19,7 +19,7 @@ import type {
   ReportPayload,
   RunStatus,
 } from "../types/platform.ts";
-import type { AuditInput, PlatformClient } from "./PlatformClient.ts";
+import type { AuditInput, LocalEntity, PlatformClient } from "./PlatformClient.ts";
 
 interface StoredRun {
   input: AuditInput;
@@ -68,6 +68,24 @@ const SAMPLE_DOMAINS = ["reddit.com", "trustpilot.com", "apps.apple.com", "youtu
 export class MockPlatformClient implements PlatformClient {
   private runs = new Map<string, StoredRun>();
   private counter = 0;
+
+  /**
+   * The mock has no local pack and must NOT invent one.
+   *
+   * Every other mock method fabricates plausible data, which is safe because the CLI
+   * refuses to send a mock-backed teaser (--allow-mock is an explicit opt-out). Local
+   * competitors are different in kind: a fabricated rival is the one failure that
+   * survives review, because "Bay Area Rooter" reads exactly like a real shop. So this
+   * throws rather than returning synthetic entities — the local path is only ever
+   * exercisable against the real platform.
+   */
+  async getLocalEntities(_query: string, _location: string): Promise<LocalEntity[]> {
+    throw new Error(
+      "MockPlatformClient cannot supply local-pack entities: fabricating local " +
+        "competitors is the one failure mode that survives human review. Point the " +
+        "teaser at a real platform (GEO_PLATFORM_URL) to build a local teaser.",
+    );
+  }
 
   async submitAudit(input: AuditInput): Promise<{ runId: string }> {
     const runId = `mock-run-${++this.counter}`;

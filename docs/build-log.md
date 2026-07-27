@@ -4,6 +4,185 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## SMB pivot W1.6 + Phase 2 — local-pack entity capture, local query sets and teaser — Completed 2026-07-27
+
+Closed the W2.4 data-source gap flagged in the previous entry, then executed Phase 2
+(W2.1-W2.7). The consumer ICP is unchanged throughout; every divergence is selected by
+`business_kind`.
+
+### What was built
+
+- **W1.6 — local-pack entity capture (NEW work item; added to the plan).** W2.4
+  requires competitors "seeded from captured local-pack entities" and forbids LLM
+  recall, but no original Phase 1 item built that capture — W2.4 as specified had no
+  data source. Added `LocalEntity` + `AIOverviewsEngine.query_local_entities()`
+  (SearchApi's `local_results`, verified against its Google-engine docs) and a
+  `GET /api/local-entities` endpoint so the TypeScript teaser reaches it without a
+  second SearchApi credential. Refuses to run without a location; drops closed
+  businesses (the local twin of `DEFUNCT_BRANDS`).
+- **W2.1 — local intent buckets.** `IntentBucket` gains `LOCAL_INTENT`/`HYBRID`/
+  `INFORMATIONAL`; `BRAND` is shared. `BUCKET_ALLOCATION` was FORKED, not rebalanced.
+  The real break was `_TEASER_BUCKETS`, hardcoded to `(CATEGORY, COMPARISON)`: a local
+  set intersects it in ZERO queries. Now `teaser_buckets(business_kind)`, and
+  `run_teaser` RAISES on an empty selection instead of reporting "you appear nowhere"
+  from no measurement.
+- **W2.2 — per-trade query templates.** `data/queries_{hvac,plumbing,barbershop}.json`
+  (29/29/28 queries) with `{city}`/`{brand}` slots, plus `src/prompts/local_templates.py`.
+  `build_template_csv()` is now parameterized — no-arg returns the Oura consumer CSV
+  byte-for-byte (the plan's "replace it" would have been a consumer regression).
+- **W2.3 — kind-selected query generation.** Local fallback templates that are
+  geo-anchored and NEVER name a competitor. The stale B2B-SaaS phrasing ("for a
+  growing startup", "scales with my needs") was fixed rather than deleted, so the
+  consumer branch still has a correct fallback.
+- **W2.4 — local resolver path.** `LOCAL_SERVICE_PATH_READY` flipped to `true`. The
+  anti-fabrication guarantee is now STRUCTURAL, not prompt discipline: `buildProfile`
+  discards the model's competitors wholesale for a local site, and only
+  `attachLocalCompetitors()` — which requires captured entities — can name a rival. It
+  drops the client from its own list and throws rather than emit a rival-less teaser.
+  `MockPlatformClient.getLocalEntities()` throws by design: every other mock method
+  fabricates, but a fake local rival is the one failure that survives human review.
+- **W2.5 — service-area overlap.** New `ServiceAreaVerdict`; a same-trade
+  different-metro rival now drops with `serviceAreaMismatch` provenance. Recall-safe
+  (only an explicit `different_area` drops) and gated to local: the prompt block is
+  APPENDED for local clients, so the consumer prompt is byte-identical.
+- **W2.6 — local copy.** `localHeadline`/`localLeadSentence`/`localStakesLine`/
+  `localCtaLine` + `LOCAL_SOURCE_CHECKLIST` (GBP, Yelp, BBB, Angi, Thumbtack,
+  Facebook, Bing Places, Reddit). "buyers" → "customers"; **no aggregate appearance
+  ratio** on the local path (the denominator is a set we chose, so it reads as a
+  visibility rate and is not one). Every claim-fidelity guard is inherited, not
+  reimplemented — local verbs still grade off judged prominence.
+- **W2.7 — forked discovery prompt.** `_LOCAL_EXTRACT_PROMPT` alongside the untouched
+  consumer `_EXTRACT_PROMPT`, selected by `extract_prompt_for(business_kind)`.
+- **Cross-boundary:** the TypeScript `IntentBucket` union was extended to match the
+  Python enum. That surfaced five `Record<IntentBucket, …>` ranking/label tables
+  needing local values (weights, bucket labels, two intent priorities, lead priority);
+  each got a deliberate local entry rather than a default.
+
+### Acceptance criteria — all passed
+
+- ✅ Local entities: typed and filtered; `[]` on no pack / malformed body / transport
+  error; refuses without a location; endpoint 422s on a missing location, 503s when
+  the engine can't build
+- ✅ Consumer teaser still selects exactly `(category, comparison)`; local selects
+  `(local_intent, hybrid)`; empty selection raises
+- ✅ All three trade sets load, use only local buckets, 25-40 queries, unique ids,
+  slots substitute, unfilled slots fail loudly
+- ✅ A local profile is built with NO competitors; `attachLocalCompetitors` sources
+  only from captured entities, drops the client, caps at 4, and throws on none
+- ✅ Same-metro rival kept, unknown kept, different-metro dropped with provenance;
+  consumer competitor sets unaffected
+- ✅ Local copy is prominence-graded and prints no ratio
+- ✅ Gate: mypy clean (77 files), ruff clean, pytest 301 passed / 1 skipped
+  (was 283), `tsc --noEmit` clean, npm test 161 passed (was 143)
+
+### Deviations, and one deliberate test change
+
+- **Two W0.1 tests were rewritten, not deleted.** They pinned "local is refused",
+  which W2.4 legitimately changes. They now pin the replacement contract: local
+  ROUTES, and a local profile carries no extraction-sourced competitors. This is the
+  W0.1 → W2.4 transition the plan describes, not a weakened guard.
+- **The consumer-path regression lock never had to be touched.** All 20 assertions
+  passed unchanged through every Phase 2 work item — including the judge fingerprint,
+  which Phase 2 does not go near.
+
+### Up next — Phase 3 (W3.1-W3.4): judge and fact sheet
+
+The cache-invalidating phase: one `_PROMPT_LAYOUT` bump, one commit. Note W3.4 needs a
+hand-labeled local gold set and held-constant API-judge calibration runs — real spend
+and human labeling, not something the build can complete on its own.
+
+---
+
+## SMB pivot Phases 0-1 — regression lock, businessKind classifier, location plumbing — Completed 2026-07-27
+
+Executed `docs/smb-pivot-build-plan.md` Phase 0 (W0.1-W0.4) and Phase 1 (W1.1-W1.4).
+The pivot ADDS the local-service ICP; the consumer-product ICP stays live and
+unchanged. Every change is additive and selected by business kind.
+
+### What was built
+
+- **W0.4 — consumer-path regression lock (built FIRST, as the hard gate).**
+  `tests/test_consumer_path_regression.py` (9 tests) + `teaser/tests/consumerPathRegression.test.ts`
+  (11 tests). Pins today's consumer behaviour across the six shared symbols Phases 1-4
+  touch: `build_template_csv()`, `_TEASER_BUCKETS`, `_EXTRACT_PROMPT`,
+  `REVIEW_PLATFORMS`, the teaser resolver/copy path, and `_single_fingerprint()`.
+  Designed to fail loudly on an in-place edit; the fix is to fork by business kind,
+  never to relax an assertion. The judge-fingerprint pin
+  (`5e8caed0…b13b3d`) is the ONE assertion that may change, and only in W3.3.
+- **W0.1 — `businessKind` classifier.** `teaser/src/types/domain.ts` gains the
+  `BusinessKind` type — the single selector for every consumer/local divergence.
+  `profileExtraction.ts` gains the field in the extraction schema (required +
+  enumerated) and prompt, `businessKindOf()` (the one canonical default),
+  `LOCAL_SERVICE_PATH_READY = false`, and `assertSupportedBusinessKind()`, which
+  REFUSES a local-service site until the local path exists. Checked before any other
+  field is normalized, because on a local site every downstream field was extracted by
+  consumer-shaped instructions and is untrustworthy. Becomes the W2.4 router.
+- **W0.2/W0.3 — docs.** `teaser/README.md`: corrected the default engine list to
+  `perplexity, openai_search, gemini_grounded` (was three wrong names), corrected
+  `pdf.ts` from "documented stub" to the real Playwright renderer it is, and
+  documented the `--engines google_ai_overviews` flag WITH the unpinned-locale caveat
+  (valid for consumer prospects, not for any local query until W1.3).
+- **W1.1 — location on the profile.** `BusinessLocation` + `canonicalLocation()` in
+  `domain.ts`; optional `location?` on `CompanyProfile` and mirrored onto `TeaserDraft`
+  (with `businessKind`) for regeneration parity — the `clientAliases` precedent, so a
+  regenerated local teaser can't silently revert to consumer-shaped.
+- **W1.2 — resolver extracts NAP.** `location` added to the extraction schema
+  (required, nullable) and prompt, sourced from the site's own NAP block/contact
+  page/schema.org `LocalBusiness`, with an explicit "do NOT infer from the brand name
+  or area code" clause. `normalizeLocation()` keeps a location only when
+  city+region+country are ALL present — a partial one resolves at SearchApi to "the
+  most popular match", i.e. a different metro, silently measuring the wrong market.
+- **W1.3 — AI Overviews accepts a location.** `AIOverviewsEngine(location=...)`,
+  constructor-injected so the uniform `BaseEngine.query(prompt)` fan-out contract is
+  untouched. Param name VERIFIED against SearchApi's Google-engine docs (2026-07):
+  `location` takes a canonical NAME and SearchApi builds `uule` itself; the two are
+  mutually exclusive, so only `location` is sent. The recorded and sent params are now
+  literally the same dict, so the audit log cannot drift from the request (Test E).
+- **W1.4 — location through the audit contract.** `config,location` row emitted by
+  `teaser/src/platform/csv.ts` (only when a location exists), parsed into
+  `RunConfig.location` by `csv_loader.py`, threaded through `build_engines(location=)`
+  — which passes it ONLY to `google_ai_overviews`, the one surface with a locale knob —
+  and through both `runner.py` call sites. Persisted on `audit_runs.location`
+  (`data/schema_ui.sql`, idempotent `add column if not exists`) and restored on resume,
+  so an interrupted local run cannot finish un-localized and mix two markets.
+
+### Acceptance criteria — all passed
+
+- ✅ W0.4 green at the pre-pivot baseline before any shared symbol was touched
+- ✅ A local-service fixture throws with an actionable message; a consumer-product
+  fixture still resolves unchanged; the blank/`"product"` category guard still fires
+- ✅ Location: complete → kept; partial → dropped, never guessed; product → never acquires one
+- ✅ AI Overviews with no location produces today's payload key-for-key
+  (`{engine, q, api_key}`); with one, sends `location` and never `uule`; error paths
+  still return `None`
+- ✅ A CSV with no `location` row parses exactly as before (`location is None`, not `""`)
+- ✅ CSV round-trip: `config,location` → `RunConfig.location` → engine
+- ✅ `tests/test_isolation.py` updated narrowly (14 → 21); no matcher loosened
+- ✅ Gate: mypy clean (76 files), ruff clean, pytest 283 passed / 1 skipped
+  (was 264), `tsc --noEmit` clean, npm test 143 passed (was 118)
+
+### Deviations from the plan, and why
+
+- **W2.2's "replace the Oura starter template" was NOT done** — it is a consumer
+  regression (`build_template_csv()` is served at `GET /api/template.csv`). The plan
+  was amended to parameterize instead; W0.4 pins the no-arg output.
+- **`_PROMPT_LAYOUT` deliberately untouched.** Nothing in Phases 0-1 goes near a judge
+  prompt, so no cached verdict was invalidated.
+- **Schema migration is written but NOT applied.** `audit_runs.location` exists in
+  `data/schema_ui.sql`; it still needs running against Supabase. Until then a resumed
+  run reads `None` and behaves as today.
+
+### Up next — Phase 2 (W2.1-W2.7): local query sets and the teaser
+
+Blocked on one unresolved plan dependency: **W2.4 requires competitors "seeded from
+local-pack / directory entities captured in Phase 1", but no Phase 1 work item builds
+that capture.** W1.3 localizes the AI Overviews request; it does not persist the
+local-pack entities W2.4 needs, and the plan is explicit that LLM recall must never
+supply local rivals. Phase 2 needs an entity-capture work item added before W2.4 can
+be built as specified.
+
+---
+
 ## Research-validation fixes — rubric evidence alignment (llms.txt note-only, schema hygiene framing, doc corrections) — Completed 2026-07-21
 
 Applied the geoPromptRunner-flagged items from the 2026-07-21 deep-research

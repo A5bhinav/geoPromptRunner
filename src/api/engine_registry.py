@@ -88,7 +88,10 @@ def _load_class(name: str) -> type[BaseEngine] | None:
 
 
 def build_engines(
-    names: list[str], client: str = "", competitors: list[str] | None = None
+    names: list[str],
+    client: str = "",
+    competitors: list[str] | None = None,
+    location: str | None = None,
 ) -> tuple[list[BaseEngine], list[tuple[str, str]]]:
     """Instantiate the requested engines.
 
@@ -96,6 +99,13 @@ def build_engines(
     ``(name, reason)`` for engines that couldn't be built — a missing API key,
     or an SDK that isn't installed. Never raises: a bad engine is skipped, not
     fatal, so one unavailable provider can't sink the whole run.
+
+    ``location`` is a SearchApi canonical location NAME ("Berkeley,California,US")
+    for service-area businesses (W1.4). Only ``google_ai_overviews`` consumes it —
+    it is the one surface with a location parameter. The others are model APIs with
+    no locale knob, so a location is silently irrelevant to them rather than an
+    error: a local run still wants those surfaces measured, just un-localized.
+    ``None`` (the default) reproduces the pre-pivot behaviour exactly.
     """
     engines: list[BaseEngine] = []
     skipped: list[tuple[str, str]] = []
@@ -108,7 +118,10 @@ def build_engines(
             skipped.append((name, "engine SDK not installed"))
             continue
         try:
-            engines.append(cls())
+            if location and name == "google_ai_overviews":
+                engines.append(cls(location=location))  # type: ignore[call-arg]  # only AIOverviewsEngine takes it
+            else:
+                engines.append(cls())
         except ValueError as exc:
             skipped.append((name, str(exc)))
     return engines, skipped

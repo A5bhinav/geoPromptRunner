@@ -316,6 +316,117 @@ def test_ai_overviews_request_is_bare_query(monkeypatch: pytest.MonkeyPatch) -> 
     assert not forbidden
 
 
+# --- W1.3: optional location on the AI Overviews capture --------------------------
+# SearchApi's Google engine takes a canonical location NAME (it builds `uule` itself;
+# the two params are mutually exclusive). Verified against SearchApi's Google-engine
+# docs, 2026-07. The consumer path sends no location and must be unchanged.
+
+
+def test_ai_overviews_omits_location_when_none_given(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The no-location payload is EXACTLY today's — key-for-key. The consumer ICP
+    still runs through this engine and must not acquire a locale it never had."""
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    engine = mod.AIOverviewsEngine()
+    fake = _CapturingSerpClient()
+    engine._client = fake  # type: ignore[assignment]
+    engine.query_with_citations("best smart ring")
+
+    (params,) = fake.captured
+    assert set(params) == {"engine", "q", "api_key"}
+    assert "location" not in params
+    assert "uule" not in params
+
+
+def test_ai_overviews_sends_the_canonical_location_when_given(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    fake = _CapturingSerpClient()
+    engine._client = fake  # type: ignore[assignment]
+    engine.query_with_citations("best plumber near me")
+
+    (params,) = fake.captured
+    assert params["location"] == "Berkeley,California,US"
+    assert params["q"] == "best plumber near me"
+    # `location` and `uule` are mutually exclusive at SearchApi — never send both.
+    assert "uule" not in params
+    assert not (FORBIDDEN_STATE_PARAMS & set(params))
+
+
+def test_ai_overviews_blank_location_is_treated_as_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty/whitespace location must not become `location=""` — SearchApi would
+    take that as a real (empty) locale rather than falling back to its default."""
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    for blank in ("", "   "):
+        engine = mod.AIOverviewsEngine(location=blank)
+        fake = _CapturingSerpClient()
+        engine._client = fake  # type: ignore[assignment]
+        engine.query_with_citations("best smart ring")
+        (params,) = fake.captured
+        assert "location" not in params
+
+
+def test_ai_overviews_recorded_payload_is_the_dict_that_was_sent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test E: the audit log must not be able to drift from the real request. The
+    engine records and sends the SAME dict object, and the key is scrubbed on the way
+    into the log."""
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    recorded: list[dict[str, object]] = []
+    monkeypatch.setattr(mod, "record_payload", lambda name, payload: recorded.append(payload))
+
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    fake = _CapturingSerpClient()
+    engine._client = fake  # type: ignore[assignment]
+    engine.query_with_citations("best plumber near me")
+
+    (sent,) = fake.captured
+    (logged,) = recorded
+    assert logged is sent, "recorded payload must BE the sent dict, not a copy"
+
+    # And the real record_payload redacts the key rather than logging it.
+    from src.engines.payload_log import _scrub
+
+    assert _scrub(sent)["api_key"] == "[redacted]"
+    assert _scrub(sent)["location"] == "Berkeley,California,US"
+
+
+def test_ai_overviews_with_location_still_returns_none_on_transport_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """BaseEngine contract: engines return None on error, never raise — the location
+    param must not open a new escape path."""
+    import httpx
+
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+
+    class _Boom:
+        def get(self, url: str, params: dict[str, object]) -> object:
+            raise httpx.ConnectError("no route to host")
+
+        def close(self) -> None:
+            return None
+
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine._client = _Boom()  # type: ignore[assignment]
+    assert engine.query_with_citations("best plumber near me") == (None, [])
+    assert engine.query("best plumber near me") is None
+
+
 # --- Run metadata (Layer 3) -------------------------------------------------------
 
 
@@ -384,3 +495,183 @@ def test_record_payload_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     # Unserializable payload: also swallowed.
     monkeypatch.setattr(settings, "PAYLOAD_LOG_PATH", None)
     record_payload("demo", {"bad": object()})
+
+
+def test_build_engines_passes_location_only_to_ai_overviews(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """W1.4: google_ai_overviews is the ONE surface with a location parameter. The
+    others are model APIs with no locale knob — handing them one would be a
+    TypeError, so build_engines must not. A location is silently irrelevant to them
+    rather than an error: a local run still wants those surfaces measured."""
+    from src.api.engine_registry import build_engines
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", "test-key")
+
+    engines, skipped = build_engines(
+        ["google_ai_overviews", "openai"], location="Berkeley,California,US"
+    )
+    by_name = {e.ENGINE_NAME: e for e in engines}
+
+    assert "google_ai_overviews" in by_name, f"unexpectedly skipped: {skipped}"
+    assert by_name["google_ai_overviews"]._location == "Berkeley,California,US"  # type: ignore[attr-defined]
+    # The model-API engine built fine and simply has no location concept.
+    assert "openai" in by_name
+    assert not hasattr(by_name["openai"], "_location")
+
+
+def test_build_engines_without_location_is_todays_behaviour(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.api.engine_registry import build_engines
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    engines, _ = build_engines(["google_ai_overviews"])
+    assert engines[0]._location is None  # type: ignore[attr-defined]
+
+
+# --- W1.6: local-pack entity capture ----------------------------------------------
+# The ONLY sanctioned source of local competitor candidates. Claude does not reliably
+# know the plumbers in a given city, and a fabricated rival printed in a teaser sent to
+# a real shop owner is the unrecoverable failure for this product.
+
+
+class _LocalPackResponse:
+    def __init__(self, body: dict[str, Any]) -> None:
+        self._body = body
+
+    def raise_for_status(self) -> None:
+        return None
+
+    def json(self) -> dict[str, Any]:
+        return self._body
+
+
+class _LocalPackClient:
+    def __init__(self, body: dict[str, Any]) -> None:
+        self._body = body
+        self.captured: list[dict[str, Any]] = []
+
+    def get(self, url: str, params: dict[str, Any]) -> _LocalPackResponse:
+        self.captured.append(params)
+        return _LocalPackResponse(self._body)
+
+    def close(self) -> None:
+        return None
+
+
+_LOCAL_PACK = {
+    "local_results": [
+        {
+            "position": 1,
+            "title": "Bay Area Rooter",
+            "address": "1200 University Ave",
+            "type": "Plumber",
+            "rating": 4.7,
+            "reviews": 312,
+            "ludocid": "1234567890",
+        },
+        {
+            "position": 2,
+            "title": "Gone Fishin' Plumbing",
+            "address": "55 Shattuck Ave",
+            "type": "Plumber",
+            "is_closed": True,  # shut down — must be dropped
+        },
+        {"position": 3, "title": "   ", "address": "x"},  # no usable name — dropped
+        {
+            "position": 4,
+            "title": "Berkeley Drain Co",
+            "address": "900 Ashby Ave",
+            "type": "Plumber",
+            "rating": "4.2",  # string rating still coerces
+            "reviews": "88",
+        },
+    ]
+}
+
+
+def _local_engine(monkeypatch: pytest.MonkeyPatch, body: dict[str, Any], location: str | None):  # type: ignore[no-untyped-def]
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    engine = mod.AIOverviewsEngine(location=location)
+    engine._client = _LocalPackClient(body)  # type: ignore[assignment]
+    return engine
+
+
+def test_local_entities_are_typed_and_filtered(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,US")
+    entities = engine.query_local_entities("best plumber in Berkeley")
+
+    # Closed business and the nameless row are dropped; the rest keep their order.
+    assert [e["name"] for e in entities] == ["Bay Area Rooter", "Berkeley Drain Co"]
+
+    first = entities[0]
+    assert first["address"] == "1200 University Ave"
+    assert first["category"] == "Plumber"
+    assert first["rating"] == 4.7
+    assert first["reviews"] == 312
+    assert first["ludocid"] == "1234567890"
+    assert first["position"] == 1
+
+    # String numerics coerce; absent ones become None rather than raising.
+    assert entities[1]["rating"] == 4.2
+    assert entities[1]["reviews"] == 88
+    assert entities[1]["ludocid"] is None
+
+
+def test_local_entities_refuse_to_run_without_a_location(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A local pack from an unpinned locale names businesses in the WRONG metro.
+    Seeded into a teaser as "your competitors", that is exactly the fabrication this
+    capture exists to prevent — so it returns nothing rather than something wrong."""
+    engine = _local_engine(monkeypatch, _LOCAL_PACK, None)
+    assert engine.query_local_entities("best plumber in Berkeley") == []
+    # And it never even issued the request.
+    assert engine._client.captured == []  # type: ignore[attr-defined]
+
+
+def test_local_entities_empty_when_no_local_pack(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = _local_engine(monkeypatch, {"organic_results": []}, "Berkeley,California,US")
+    assert engine.query_local_entities("how often should a furnace be serviced") == []
+
+
+def test_local_entities_never_raise_on_a_malformed_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = _local_engine(
+        monkeypatch, {"local_results": ["not-a-dict", None, 42]}, "Berkeley,California,US"
+    )
+    assert engine.query_local_entities("best plumber in Berkeley") == []
+
+
+def test_local_entities_return_empty_on_transport_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import httpx
+
+    from src.engines import ai_overviews_engine as mod
+
+    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+
+    class _Boom:
+        def get(self, url: str, params: dict[str, Any]) -> object:
+            raise httpx.ConnectError("no route to host")
+
+        def close(self) -> None:
+            return None
+
+    engine = mod.AIOverviewsEngine(location="Berkeley,California,US")
+    engine._client = _Boom()  # type: ignore[assignment]
+    assert engine.query_local_entities("best plumber in Berkeley") == []
+
+
+def test_local_entity_capture_sends_the_location(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = _local_engine(monkeypatch, _LOCAL_PACK, "Berkeley,California,US")
+    engine.query_local_entities("best plumber in Berkeley")
+    (params,) = engine._client.captured  # type: ignore[attr-defined]
+    assert params["location"] == "Berkeley,California,US"
+    assert params["q"] == "best plumber in Berkeley"

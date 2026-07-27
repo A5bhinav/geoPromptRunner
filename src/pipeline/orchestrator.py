@@ -27,9 +27,26 @@ def engine_models(engines: list[BaseEngine]) -> dict[str, str]:
     return {e.ENGINE_NAME: e.MODEL_ID for e in engines if e.MODEL_ID}
 
 
-# Buckets used for the fast teaser demo — the category/comparison answers are the
-# visceral "here's what ChatGPT recommends instead of you" moment.
+# Buckets used for the fast teaser demo — the visceral "here's who AI recommends
+# instead of you" moment. FORKED by business kind (pivot §0.6), because the two
+# families of intent are disjoint: a local query set built from local_intent/hybrid/
+# informational intersects the consumer pair in ZERO queries, and the teaser would
+# silently run empty rather than fail.
+#
+# Local picks local_intent + hybrid deliberately: both are buying-moment queries that
+# return a RANKED SET of named shops, which is what a teaser needs. `informational`
+# is excluded — "how often should a furnace be serviced" yields advice, not rivals,
+# so it can't produce the competitor-naming moment even though it surfaces an AIO.
 _TEASER_BUCKETS = (IntentBucket.CATEGORY, IntentBucket.COMPARISON)
+_LOCAL_TEASER_BUCKETS = (IntentBucket.LOCAL_INTENT, IntentBucket.HYBRID)
+
+
+def teaser_buckets(business_kind: str = "product") -> tuple[IntentBucket, ...]:
+    """The teaser's query-selection buckets for one business kind.
+
+    Unknown kinds fall back to the consumer pair — the pre-pivot behaviour.
+    """
+    return _LOCAL_TEASER_BUCKETS if business_kind == "local_service" else _TEASER_BUCKETS
 
 
 @dataclasses.dataclass(frozen=True)
@@ -165,15 +182,31 @@ def run_teaser(
     engines: list[BaseEngine],
     client_domains: list[str] | None = None,
     max_queries: int = 5,
+    business_kind: str = "product",
 ) -> AuditOutcome:
-    """Fast meeting-booking demo: a few category/comparison queries, 1 run, no persist.
+    """Fast meeting-booking demo: a few buying-moment queries, 1 run, no persist.
 
     The shallow Steps 1+5 path the method leans on to book the meeting — runs the
-    same instrument, just trimmed and fast.
+    same instrument, just trimmed and fast. ``business_kind`` selects which intents
+    count as the buying moment; it defaults to ``"product"``, so every existing
+    consumer caller is unchanged.
+
+    Raises ``ValueError`` when no query matches the selected buckets. An empty teaser
+    is never a valid outcome — it means the query set and the business kind disagree,
+    and running it would report "you appear nowhere" from a zero-query measurement.
     """
-    teaser_queries: list[Query] = [q for q in query_set.queries if q.intent in _TEASER_BUCKETS][
+    buckets = teaser_buckets(business_kind)
+    teaser_queries: list[Query] = [q for q in query_set.queries if q.intent in buckets][
         :max_queries
     ]
+    if not teaser_queries:
+        present = sorted({q.intent.value for q in query_set.queries})
+        raise ValueError(
+            f"no queries match the {business_kind} teaser buckets "
+            f"({', '.join(b.value for b in buckets)}); the set contains: "
+            f"{', '.join(present) or 'nothing'}. A zero-query teaser would report "
+            f"'you appear nowhere' from no measurement at all."
+        )
     trimmed = dataclasses.replace(query_set, queries=teaser_queries)
     return run_audit(
         trimmed,

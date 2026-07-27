@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   competitorVerb,
+  copyFor,
   engineLabel,
   headline,
   leadSentence,
+  localCtaLine,
+  localHeadline,
+  localLeadSentence,
+  localStakesLine,
+  LOCAL_SOURCE_CHECKLIST,
   proofCaption,
   reproNote,
   stakesLine,
@@ -92,4 +98,70 @@ test("reproNote: printed only when the loss held on every run (>=2)", () => {
   assert.equal(reproNote(lead("recommended_first", { observed: 1, confirming: 1 })), "");
   // Held on only 2 of 3 → not "every time" → no claim.
   assert.equal(reproNote(lead("recommended_first", { observed: 3, confirming: 2 })), "");
+});
+
+// --- W2.6: local copy -------------------------------------------------------------
+// Forked from the consumer strings. The claim-fidelity rules are INHERITED, not
+// reimplemented — local copy grades its verbs by the same judged prominence.
+
+function localLead(prominence: Finding["prominence"]): Finding {
+  return {
+    engineName: "google_ai_overviews",
+    verbatimQuery: "best plumber in Berkeley",
+    competitor: "Bay Area Rooter",
+    prominence,
+    runsObserved: 3,
+    runsConfirming: 3,
+  } as Finding;
+}
+
+test("local copy says customers, never buyers", () => {
+  const h = localHeadline("Berkeley Plumbing Co", localLead("recommended_first"));
+  assert.ok(h.includes("customers"));
+  assert.ok(!h.includes("buyers"));
+  assert.ok(!localCtaLine("Berkeley Plumbing Co").includes("buyers"));
+  assert.ok(!localStakesLine("Berkeley Plumbing Co", localLead("recommended_first")).includes("buyers"));
+});
+
+test("local headline is prominence-graded exactly like the consumer one", () => {
+  // "sending your customers to" is reserved for recommended_first; anything weaker
+  // grades down to a presence claim. The local path may not overclaim.
+  assert.equal(
+    localHeadline("Berkeley Plumbing Co", localLead("recommended_first")),
+    "AI is sending your customers to Bay Area Rooter — not Berkeley Plumbing Co.",
+  );
+  assert.equal(
+    localHeadline("Berkeley Plumbing Co", localLead("mid_pack")),
+    "When customers ask AI, Bay Area Rooter is in the answer — Berkeley Plumbing Co isn't.",
+  );
+});
+
+test("local lead sentence inherits the graded verb", () => {
+  assert.ok(localLeadSentence("BPC", localLead("recommended_first")).includes("recommends"));
+  assert.ok(localLeadSentence("BPC", localLead("mid_pack")).includes("features"));
+  assert.ok(localLeadSentence("BPC", localLead("buried")).includes("mentions"));
+});
+
+test("local stakes line makes NO aggregate-ratio claim", () => {
+  // The denominator is a query set we chose, so "appears in X of N" reads as a
+  // visibility rate and is not one. Local copy makes the per-query claim instead.
+  const s = localStakesLine("Berkeley Plumbing Co", localLead("recommended_first"));
+  assert.ok(!/\d+ of \d+/.test(s), `local stakes must not print a ratio: ${s}`);
+  assert.ok(s.includes("Bay Area Rooter"));
+});
+
+test("copyFor selects by business kind and defaults to consumer", () => {
+  assert.equal(copyFor("local_service").headline, localHeadline);
+  assert.equal(copyFor("product").headline, headline);
+  assert.equal(copyFor("anything-else").headline, headline);
+});
+
+test("the local source checklist is the directories AI actually cites", () => {
+  // Yelp dominates local directory citations; GBP is the entity of record.
+  assert.ok(LOCAL_SOURCE_CHECKLIST.includes("Google Business Profile"));
+  assert.ok(LOCAL_SOURCE_CHECKLIST.includes("Yelp"));
+  // Consumer-product platforms must not leak into the local checklist.
+  for (const consumerOnly of ["Trustpilot", "App Store", "Play Store"]) {
+    assert.ok(!LOCAL_SOURCE_CHECKLIST.includes(consumerOnly));
+  }
 });

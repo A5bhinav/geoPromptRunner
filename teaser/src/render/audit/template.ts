@@ -43,6 +43,10 @@ const BUCKET_LABEL: Record<IntentBucket, string> = {
   comparison: "Comparison",
   brand: "Brand",
   adjacent_authority: "Adjacent authority",
+  // Owner-facing wording: a shop owner reads "Ready to hire", not "local intent".
+  local_intent: "Ready to hire",
+  hybrid: "Cost & research",
+  informational: "General questions",
 };
 
 const CATEGORY_LABEL: Record<number, string> = {

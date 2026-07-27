@@ -15,7 +15,9 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api import projects, runner
+from src.api.engine_registry import build_engines
 from src.config import settings
+from src.engines.ai_overviews_engine import AIOverviewsEngine
 from src.pipeline.cost import CostBudgetExceeded
 from src.prompts.csv_loader import (
     ParseResult,
@@ -224,6 +226,45 @@ def template_csv() -> Response:
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="geo-audit-template.csv"'},
     )
+
+
+@api.get("/local-entities")
+def local_entities(q: str, location: str) -> dict[str, object]:
+    """Businesses in Google's local pack for ``q`` at ``location`` (W1.6).
+
+    The teaser's ONLY sanctioned source of local competitor candidates. Exposed here
+    rather than called from TypeScript because ``SEARCHAPI_API_KEY`` lives in
+    ``settings.py`` and nowhere else (hard invariant) — the teaser must not hold a
+    second SearchApi credential.
+
+    ``location`` is required and must be a SearchApi canonical name
+    ("Berkeley,California,US"). Without it Google answers from an unpinned locale and
+    names businesses in the wrong metro — which, seeded into a teaser as "your
+    competitors", is exactly the fabrication this endpoint exists to prevent. A
+    missing location is a 422, never a silent nationwide lookup.
+    """
+    query = q.strip()
+    canonical = location.strip()
+    if not query:
+        raise HTTPException(status_code=422, detail="q must not be empty")
+    if not canonical:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "location is required — a local pack from an unpinned locale names "
+                "businesses in the wrong metro"
+            ),
+        )
+
+    engines, skipped = build_engines(["google_ai_overviews"], location=canonical)
+    if not engines:
+        reason = skipped[0][1] if skipped else "engine unavailable"
+        raise HTTPException(status_code=503, detail=f"local-entity capture unavailable: {reason}")
+
+    engine = engines[0]
+    assert isinstance(engine, AIOverviewsEngine)  # build_engines was asked for exactly this one
+    entities = engine.query_local_entities(query)
+    return {"query": query, "location": canonical, "entities": entities}
 
 
 @api.post("/audits/preview")

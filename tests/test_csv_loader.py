@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.prompts.csv_loader import (
     build_template_csv,
     parse_csv_files,
@@ -202,3 +204,107 @@ def test_template_round_trips_clean() -> None:
     assert result.audit is not None
     assert result.audit.config.client_name == "Oura"
     assert len(result.audit.query_set.queries) == 4
+
+
+# --- W1.4: location threading through the audit contract --------------------------
+# The `config,location` row carries a SearchApi canonical location NAME for
+# service-area businesses. It is additive: a CSV without it must parse exactly as it
+# did pre-pivot, because the consumer ICP is still live.
+
+
+def test_csv_without_a_location_row_parses_exactly_as_before() -> None:
+    """The backwards-compatibility regression the plan requires. Absent location is
+    None, not "" — an empty string would reach SearchApi as a real (empty) locale."""
+    result = parse_csv_files([("t.csv", build_template_csv())])
+    assert result.ok, result.errors
+    assert result.audit is not None
+    assert result.audit.config.location is None
+
+
+def test_location_row_round_trips_into_run_config() -> None:
+    csv_text = (
+        "block,key,value,intent,persona\n"
+        "config,client_name,Berkeley Plumbing Co,,\n"
+        "config,category,plumbing service,,\n"
+        "config,competitors,Acme Plumbing;Bay Rooter,,\n"
+        "config,engines,google_ai_overviews,,\n"
+        '"config",location,"Berkeley,California,US",,\n'
+        "query,q1,best plumber in Berkeley,category,\n"
+    )
+    result = parse_csv_files([("local.csv", csv_text)])
+    assert result.ok, result.errors
+    assert result.audit is not None
+    assert result.audit.config.location == "Berkeley,California,US"
+
+
+def test_blank_location_row_collapses_to_none() -> None:
+    csv_text = (
+        "block,key,value,intent,persona\n"
+        "config,client_name,Acme,,\n"
+        "config,category,smart ring,,\n"
+        "config,engines,openai,,\n"
+        "config,location,   ,,\n"
+        "query,q1,best smart ring,category,\n"
+    )
+    result = parse_csv_files([("blank.csv", csv_text)])
+    assert result.ok, result.errors
+    assert result.audit is not None
+    assert result.audit.config.location is None
+
+
+# --- W2.2: per-trade local templates ----------------------------------------------
+# FORKED from the consumer starter, not a replacement (pivot §0.6). The no-argument
+# call is pinned byte-for-byte by tests/test_consumer_path_regression.py.
+
+
+def test_every_trade_template_loads_and_uses_local_buckets() -> None:
+    from src.prompts.intent import LOCAL_BUCKETS
+    from src.prompts.local_templates import TRADES, load_trade_template
+
+    for trade in TRADES:
+        qs = load_trade_template(trade)
+        assert 25 <= len(qs.queries) <= 40, f"{trade}: {len(qs.queries)} queries"
+        for q in qs.queries:
+            assert q.intent in LOCAL_BUCKETS, f"{trade}/{q.query_id}: consumer intent {q.intent}"
+        ids = [q.query_id for q in qs.queries]
+        assert len(ids) == len(set(ids)), f"{trade}: duplicate query_id"
+
+
+def test_trade_templates_carry_slots_that_substitution_fills() -> None:
+    from src.prompts.local_templates import render_trade_queries
+
+    qs = render_trade_queries("plumbing", city="Berkeley", brand="Bay Rooter")
+    assert qs.client == "Bay Rooter"
+    texts = [q.text for q in qs.queries]
+    assert "best plumber in Berkeley" in texts
+    assert any("Bay Rooter" in t for t in texts)
+    # No slot may survive — a literal "{city}" reaching an engine measures a question
+    # no customer asks, and scores as a loss.
+    for t in texts:
+        assert "{city}" not in t and "{brand}" not in t
+
+
+def test_render_refuses_blank_city_or_brand() -> None:
+    from src.prompts.local_templates import render_trade_queries
+
+    with pytest.raises(ValueError, match="city is required"):
+        render_trade_queries("hvac", city="  ", brand="Acme")
+    with pytest.raises(ValueError, match="brand is required"):
+        render_trade_queries("hvac", city="Berkeley", brand="")
+
+
+def test_unknown_trade_fails_loudly() -> None:
+    from src.prompts.local_templates import trade_template_path
+
+    with pytest.raises(ValueError, match="unknown trade"):
+        trade_template_path("dogwalking")
+
+
+def test_trade_template_csv_carries_a_location_row_and_local_intents() -> None:
+    csv_text = build_template_csv(trade="hvac")
+    assert "config,location," in csv_text
+    assert "google_ai_overviews" in csv_text
+    assert "local_intent" in csv_text
+    # And the consumer default is untouched by the existence of the trade path.
+    assert "Oura" in build_template_csv()
+    assert "Oura" not in csv_text

@@ -41,6 +41,11 @@ const INTENT_PRIORITY: Record<IntentBucket, number> = {
   problem_aware: 3,
   adjacent_authority: 2,
   brand: 1,
+  // Local: "best plumber in Berkeley" is the local equivalent of a comparison — it
+  // returns a ranked set of named rivals, which is what corroborates the pattern.
+  local_intent: 5,
+  hybrid: 4,
+  informational: 3,
 };
 
 /**
@@ -55,6 +60,12 @@ const LEAD_INTENT_PRIORITY: Record<IntentBucket, number> = {
   comparison: 3,
   adjacent_authority: 2,
   brand: 1,
+  // For the HERO slot local_intent still leads: unlike the consumer case there is no
+  // "names a rival in the question" weakness to discount — "best plumber in Berkeley"
+  // is a neutral, open question whose answer simply omits the client.
+  local_intent: 5,
+  hybrid: 4,
+  informational: 2,
 };
 
 /** Engine credibility for hero selection + scoring (BUILD_PLAN.md §4d). */

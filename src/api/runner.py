@@ -197,7 +197,9 @@ def start_run(audit: ParsedAudit) -> str:
     run_id = str(uuid.uuid4())
     # Cost/total are estimated against the engines that will actually build, so
     # the progress denominator matches what runs (a missing key drops calls).
-    engines, skipped = build_engines(cfg.engines, cfg.client_name, cfg.competitors)
+    engines, skipped = build_engines(
+        cfg.engines, cfg.client_name, cfg.competitors, location=cfg.location
+    )
     estimated, total_calls = estimate_total_cost(
         len(audit.query_set.queries), engines, cfg.runs_per_query, cfg.judge
     )
@@ -235,6 +237,7 @@ def start_run(audit: ParsedAudit) -> str:
             queries=_serialize_queries(qs.queries),
             fact_sheet=audit.fact_sheet,
             judge=cfg.judge,
+            location=cfg.location,
             engine_models=engine_models(engines),
         )
         state.db_run_id = run_id
@@ -915,6 +918,9 @@ def _rebuild_audit_from_row(row: dict[str, object]) -> ParsedAudit | None:
         runs_per_query=int(str(row.get("runs_per_query") or 1)),
         client_domains=_str_list(row.get("client_domains")),
         judge=bool(row.get("judge")),
+        # Restored so a resumed LOCAL run keeps measuring the SAME market. A row
+        # written before the column existed yields None — i.e. today's behaviour.
+        location=(str(row["location"]).strip() or None) if row.get("location") else None,
     )
     query_set = QuerySet(
         version=str(row.get("query_set_version", "")),
@@ -970,7 +976,9 @@ def resume_interrupted_runs() -> int:
             continue
 
         cfg = audit.config
-        engines, skipped = build_engines(cfg.engines, cfg.client_name, cfg.competitors)
+        engines, skipped = build_engines(
+            cfg.engines, cfg.client_name, cfg.competitors, location=cfg.location
+        )
         state = _RunState(
             run_id=run_id,
             audit=audit,

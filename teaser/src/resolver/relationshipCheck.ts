@@ -18,6 +18,7 @@
  */
 
 import { researchJson } from "../llm/claude.ts";
+import { businessKindOf } from "./profileExtraction.ts";
 import type { CompanyProfile, Competitor } from "../types/domain.ts";
 
 export type RelationshipVerdict =
@@ -35,12 +36,32 @@ export type RelationshipVerdict =
  */
 export type CategoryVerdict = "same_category" | "different_category" | "unknown";
 
+/**
+ * Whether a competitor serves the SAME market as a service-area client (W2.5).
+ *
+ * `CategoryVerdict` has no geography: a Phoenix plumber and a Boston plumber are both
+ * `same_category` and both pass. For a local business that comparison is meaningless —
+ * a customer in Berkeley will never choose between them.
+ *
+ * Recall-safe, matching the posture of every other verdict here: only a clear
+ * `different_area` drops; `unknown` is kept and the human confirm gate catches the
+ * rest. **Only ever computed for local_service clients** — a nationally-marketed
+ * product has no service area, so running this on one would drop legitimate rivals on
+ * a dimension that does not apply.
+ */
+export type ServiceAreaVerdict = "same_area" | "different_area" | "unknown";
+
 export interface CompetitorRelationship {
   competitor: string;
   verdict: RelationshipVerdict;
   evidence: string;
   /** Same-specific-category judgment (audit C3). Optional/legacy → unknown (kept). */
   categoryMatch?: CategoryVerdict;
+  /**
+   * Same-service-area judgment (W2.5). Only populated for local_service clients;
+   * absent/legacy → unknown (kept), so the consumer path is untouched.
+   */
+  serviceAreaMatch?: ServiceAreaVerdict;
 }
 
 export interface DroppedCompetitor {
@@ -49,6 +70,8 @@ export interface DroppedCompetitor {
   evidence: string;
   /** True when the drop reason was an off-category rival, not a corporate tie. */
   categoryMismatch?: boolean;
+  /** True when the drop reason was a different service area (W2.5, local only). */
+  serviceAreaMismatch?: boolean;
 }
 
 const DROP_VERDICTS: ReadonlySet<RelationshipVerdict> = new Set<RelationshipVerdict>([
@@ -75,7 +98,7 @@ function describeVerdict(v: RelationshipVerdict): string {
   }
 }
 
-const SYSTEM_PROMPT = `You verify whether a company's listed "competitors" are genuinely independent rivals in the SAME product category, or whether a corporate relationship OR a category mismatch makes a competitive comparison invalid. This gates a competitive-visibility teaser: naming a competitor that ACQUIRED, OWNS, MERGED WITH, or IS THE SAME COMPANY AS the client — or that is really a DIFFERENT product category (not a direct substitute) — would be embarrassing and factually wrong.
+const CONSUMER_SYSTEM_PROMPT = `You verify whether a company's listed "competitors" are genuinely independent rivals in the SAME product category, or whether a corporate relationship OR a category mismatch makes a competitive comparison invalid. This gates a competitive-visibility teaser: naming a competitor that ACQUIRED, OWNS, MERGED WITH, or IS THE SAME COMPANY AS the client — or that is really a DIFFERENT product category (not a direct substitute) — would be embarrassing and factually wrong.
 
 Use web search to check CURRENT ownership (as of today). Acquisitions and mergers can be very recent — rely on what search returns, not on prior assumptions.
 
@@ -96,11 +119,41 @@ Only use a verdict other than "independent"/"unknown" (or a category other than 
 Return ONLY a JSON array, one object per competitor:
 [{"competitor": "<name exactly as given>", "verdict": "<one of the five>", "category": "<one of the three>", "evidence": "<one line incl. source>"}]`;
 
+/**
+ * The service-area question, APPENDED for local_service clients only (W2.5).
+ *
+ * Forked rather than folded into the consumer prompt (pivot §0.6): asking a national
+ * product's rivals about "service area" would invite spurious different_area verdicts
+ * and drop legitimate competitors on a dimension that does not apply to them.
+ */
+const LOCAL_SERVICE_AREA_BLOCK = `
+
+ALSO classify whether it serves the SAME LOCAL MARKET as the client. Two businesses in the same trade but different metros are NOT rivals — a customer in the client's city would never choose between them:
+- "same_area": it serves the client's city or an overlapping service area
+- "different_area": it clearly operates in a different metro/region
+- "unknown": not sure
+
+Add a "service_area" key to each object with one of those three values.`;
+
+function systemPrompt(businessKind: string): string {
+  return businessKind === "local_service"
+    ? CONSUMER_SYSTEM_PROMPT + LOCAL_SERVICE_AREA_BLOCK
+    : CONSUMER_SYSTEM_PROMPT;
+}
+
 function userPrompt(profile: CompanyProfile): string {
   const comps = profile.competitors.map((c) => c.name).join(", ");
+  const loc = profile.location;
+  const areaLine = loc
+    ? [
+        `Client's SERVICE AREA: ${loc.city}, ${loc.region}, ${loc.country}` +
+          (loc.serviceArea?.length ? ` (also serves: ${loc.serviceArea.join(", ")})` : ""),
+      ]
+    : [];
   return [
     `Client company: ${profile.name} (${profile.url})`,
     `Client's SPECIFIC category: ${profile.category}`,
+    ...areaLine,
     `Competitors to check: ${comps}`,
     "",
     `For EACH competitor above, determine (a) its current corporate relationship to ${profile.name} and (b) whether it is a direct substitute in the "${profile.category}" category. Return the JSON array only.`,
@@ -123,6 +176,12 @@ function coerceVerdict(v: unknown): RelationshipVerdict {
 function coerceCategory(v: unknown): CategoryVerdict {
   const s = typeof v === "string" ? v.trim().toLowerCase() : "";
   if (s === "same_category" || s === "different_category") return s;
+  return "unknown";
+}
+
+function coerceServiceArea(v: unknown): ServiceAreaVerdict {
+  const s = typeof v === "string" ? v.trim().toLowerCase() : "";
+  if (s === "same_area" || s === "different_area") return s;
   return "unknown";
 }
 
@@ -154,6 +213,7 @@ export function normalizeRelationships(
         competitor: canonical,
         verdict: coerceVerdict(r.verdict),
         categoryMatch: coerceCategory(r.category),
+        serviceAreaMatch: coerceServiceArea(r.service_area),
         evidence: typeof r.evidence === "string" ? r.evidence.trim() : "",
       });
     }
@@ -165,6 +225,7 @@ export function normalizeRelationships(
         competitor: c.name,
         verdict: "unknown",
         categoryMatch: "unknown",
+        serviceAreaMatch: "unknown",
         evidence: "no verdict returned",
       });
     }
@@ -194,6 +255,18 @@ export function pruneRelatedCompetitors(
       // a direct substitute. Recall-safe: only "different_category" drops here;
       // same_category and unknown are kept.
       dropped.push({ name: c.name, verdict: r.verdict, evidence: r.evidence, categoryMismatch: true });
+    } else if (r && r.serviceAreaMatch === "different_area") {
+      // Same trade, different metro (W2.5). A Phoenix plumber is `same_category` for
+      // a Berkeley plumber and would pass the check above, but a Berkeley customer
+      // will never choose between them. Only ever set for local_service clients, so
+      // a national product cannot lose a rival here. Recall-safe: only an explicit
+      // "different_area" drops; unknown is kept.
+      dropped.push({
+        name: c.name,
+        verdict: r.verdict,
+        evidence: r.evidence,
+        serviceAreaMismatch: true,
+      });
     } else {
       kept.push(c);
     }
@@ -209,11 +282,15 @@ export async function checkCompetitorRelationships(
   opts: { model?: string } = {},
 ): Promise<CompetitorRelationship[]> {
   if (profile.competitors.length === 0) return [];
-  const raw = await researchJson<unknown>(SYSTEM_PROMPT, userPrompt(profile), {
-    model: opts.model,
-    // A couple of searches per competitor, capped.
-    maxSearches: Math.min(2 + profile.competitors.length, 8),
-  });
+  const raw = await researchJson<unknown>(
+    systemPrompt(businessKindOf(profile)),
+    userPrompt(profile),
+    {
+      model: opts.model,
+      // A couple of searches per competitor, capped.
+      maxSearches: Math.min(2 + profile.competitors.length, 8),
+    },
+  );
   return normalizeRelationships(raw, profile);
 }
 
@@ -246,7 +323,9 @@ export async function relationshipGuard(
   for (const d of dropped) {
     const why = d.categoryMismatch
       ? "it is a different product category (not a direct substitute)"
-      : describeVerdict(d.verdict);
+      : d.serviceAreaMismatch
+        ? "it serves a different area (a customer here would never choose between them)"
+        : describeVerdict(d.verdict);
     log(
       `  ⚠️  dropped competitor "${d.name}" — ${why}${
         d.evidence ? ` (${d.evidence})` : ""

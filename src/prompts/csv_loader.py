@@ -68,6 +68,11 @@ class RunConfig:
     runs_per_query: int
     client_domains: list[str]
     judge: bool  # run the LLM judge after the audit (needs OPENAI_API_KEY)
+    # SearchApi canonical location NAME ("Berkeley,California,US") for service-area
+    # businesses; only the google_ai_overviews engine consumes it (W1.3/W1.4). None
+    # for nationally-marketed products — that is the pre-pivot behaviour and stays
+    # the default, so a CSV with no `location` row parses exactly as before.
+    location: str | None = None
 
 
 @dataclass(frozen=True)
@@ -429,6 +434,9 @@ def parse_csv_files(files: list[tuple[str, str]]) -> ParseResult:
             runs_per_query=runs_per_query,
             client_domains=_split_list(merged_config.get("client_domains", "")),
             judge=merged_config.get("judge", "").strip().lower() in {"true", "1", "yes"},
+            # Blank/whitespace collapses to None so an empty row can't be sent to
+            # SearchApi as a real (empty) locale.
+            location=(merged_config.get("location", "").strip() or None),
         )
         today = datetime.now(UTC).date().isoformat()
         query_set = QuerySet(
@@ -458,8 +466,23 @@ def parse_csv_files(files: list[tuple[str, str]]) -> ParseResult:
     return ParseResult(preview=preview, errors=errors, audit=audit)
 
 
-def build_template_csv() -> str:
-    """A starter CSV (the Oura example from the UI plan) users can edit."""
+def build_template_csv(trade: str | None = None) -> str:
+    """A starter CSV users can edit.
+
+    No argument → the Oura consumer example, **byte-for-byte unchanged**. This is
+    served as a download at ``GET /api/template.csv``, so replacing it would change
+    what every consumer prospect receives; the local ICP gets its own template rather
+    than overwriting this one (pivot §0.6). Pinned by
+    ``tests/test_consumer_path_regression.py``.
+
+    ``trade`` (one of ``local_templates.TRADES``) → that trade's local starter, with
+    ``{city}``/``{brand}`` slots left in for the user to fill.
+    """
+    if trade is not None:
+        from src.prompts.local_templates import build_trade_template_csv
+
+        return build_trade_template_csv(trade)
+
     rows: list[list[str]] = [
         list(_COLUMNS),
         ["config", "client_name", "Oura", "", ""],
