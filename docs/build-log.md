@@ -4,6 +4,60 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## SMB pivot Phase 5 — sampling bands, local report template, cadence guard — Completed 2026-07-27
+
+The last plan phase. Small, and mostly about refusing to invent numbers.
+
+### What was built
+
+- **W5.1 — per-trade sampling bands** (`src/pipeline/local_sampling.py`).
+  `TradeSamplingBand` carries `runs_per_query` PLUS `measured_on` / `measured_note`,
+  so a band can never become a folk number nobody can trace. **`SAMPLING_BANDS` ships
+  EMPTY** — the plan says set K empirically via `geo verify determinism`, and inventing
+  per-trade values would launder a guess into the report as a methodology figure.
+  Unmeasured trades fall back to the global default with `is_measured=False`, and
+  `sampling_note()` says so out loud. `exceeds_cap` surfaces a measured band above
+  `MAX_RUNS_PER_QUERY` as a real finding (local too unstable to measure at the current
+  ceiling) rather than clamping it away silently.
+- **W5.3 — the cadence guard.** Found a live trap: `trend.render_comparison` with
+  `noise_floor=None` tags NOTHING as within-noise, so every delta reads as a real move.
+  Survivable on the consumer path (measured baseline, stable engines); not on local,
+  where SE Ranking saw ~80% of URLs churn between repeats — a month-on-month
+  "improvement" would more likely be jitter, reported to a shop owner as progress.
+  `local_cadence_warning(trade)` returns the banner that must accompany an unmeasured
+  local comparison, and returns None once a band exists.
+- **W5.2 — local report template** (`docs/report-template-local.md`). Section order,
+  the consumer→local diff table, and six hard rules (no aggregate ratio, no unmeasured
+  claim, no uncaptured competitor, no accuracy figure until W3.4, no cadence delta
+  without a noise floor, always print the location).
+
+### The number we refused to invent
+
+Dollar framing. The strategy doc calls for phone-call economics, but **we do not have
+any given shop's job value**, so a dollar figure would be fabricated — the same class
+of error as an unmeasured prominence verb. The template records what it would take to
+add one honestly (cited industry average, labelled as such, never multiplied by our own
+query-set denominator to manufacture a "lost revenue" total).
+
+### Acceptance criteria — all passed
+
+- ✅ No trade band exists without a `measured_on` date (guarded by a test that fails if
+  someone adds one)
+- ✅ Unmeasured trades fall back to the default and the note says "not established"
+- ✅ Cap overflow stays visible via `exceeds_cap`
+- ✅ "near me" cohort identified; each trade set leans on at most one such query
+- ✅ Cadence warning fires when unmeasured, clears when measured
+- ✅ Gate: mypy clean (78 files), ruff clean, pytest 321 passed / 1 skipped (was 314),
+  tsc clean, npm test 161 passed
+
+### Plan status: Phases 0-5 complete
+
+Remaining work is operational, not build: apply the `audit_runs.location` migration,
+re-warm the judge cache after the Phase-3 bump, populate `SAMPLING_BANDS` from real
+determinism runs, and complete W3.4 calibration (local gold set + consumer re-run).
+
+---
+
 ## SMB pivot Phase 4 — site audit for local (directories, NAP, Cat 5/6) — Completed 2026-07-27
 
 Local Cat 5/6, with the `llms_txt` evidence bar applied to every candidate check —
