@@ -154,7 +154,9 @@ def test_prepass_maps_findings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         agent_mod,
         "reviews_presence",
-        lambda b: ToolResult(True, "reviews", {"platforms": {"trustpilot.com": {"present": True}}}),
+        lambda b, kind="product": ToolResult(
+            True, "reviews", {"platforms": {"trustpilot.com": {"present": True}}}
+        ),
     )
     monkeypatch.setattr(
         agent_mod,
@@ -180,7 +182,7 @@ def test_run_offsite_research_no_search_keys_returns_prepass(
     monkeypatch.setattr(
         agent_mod,
         "_deterministic_prepass",
-        lambda b, d: (
+        lambda b, d, kind="product": (
             [OffsiteFinding(FindingType.WIKIDATA, "found", None, Confidence.HIGH, {})],
             [],
         ),
@@ -192,3 +194,61 @@ def test_run_offsite_research_no_search_keys_returns_prepass(
     assert result.status == "partial"
     assert len(result.findings) == 1
     assert "pre-pass only" in result.note
+
+
+# --- W4.1 / W4.2: local directories and the local research brief -------------------
+
+
+def test_review_platforms_are_forked_by_business_kind() -> None:
+    from src.audit.offsite.tools import (
+        LOCAL_REVIEW_PLATFORMS,
+        REVIEW_PLATFORMS,
+        review_platforms_for,
+    )
+
+    assert review_platforms_for() == REVIEW_PLATFORMS
+    assert review_platforms_for("product") == REVIEW_PLATFORMS
+    assert review_platforms_for("local_service") == LOCAL_REVIEW_PLATFORMS
+    assert review_platforms_for("unknown-kind") == REVIEW_PLATFORMS
+
+    # The consumer tuple is unchanged, and the two sets are disjoint — a plumber has
+    # no App Store presence, a phone app has no BBB page.
+    assert REVIEW_PLATFORMS == ("trustpilot.com", "apps.apple.com", "play.google.com")
+    assert not set(REVIEW_PLATFORMS) & set(LOCAL_REVIEW_PLATFORMS)
+
+    # Yelp and GBP are the two that matter most for local.
+    assert "yelp.com" in LOCAL_REVIEW_PLATFORMS
+    assert "google.com/maps" in LOCAL_REVIEW_PLATFORMS
+
+
+def test_local_research_brief_is_a_fork_not_a_rewrite() -> None:
+    from src.audit.offsite.agent import _SYSTEM, _system_prompt
+
+    consumer = _system_prompt("product")
+    local = _system_prompt("local_service")
+
+    # The consumer brief still hunts threads, listicles and press, unchanged.
+    assert consumer == _SYSTEM
+    assert "listicles" in consumer
+    assert _system_prompt() == consumer
+    assert _system_prompt("unknown-kind") == consumer
+
+    # The local brief leads with NAP consistency and directory presence instead.
+    assert "NAP CONSISTENCY" in local
+    assert "DIRECTORY PRESENCE" in local
+    assert local != consumer
+
+    # Same-name confusion across metros is the #1 local research error.
+    assert "same-name confusion" in local
+    assert "confirm the CITY matches" in local
+
+
+def test_local_brief_carries_the_client_city_when_known() -> None:
+    from src.audit.offsite.agent import _system_prompt
+
+    located = _system_prompt("local_service", "Berkeley,California,US")
+    assert "Berkeley,California,US" in located
+    # Without a location the brief still works — it just can't disambiguate.
+    assert "operates in" not in _system_prompt("local_service")
+    # A location must never leak onto the consumer brief.
+    assert "Berkeley" not in _system_prompt("product", "Berkeley,California,US")

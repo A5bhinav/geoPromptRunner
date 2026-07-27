@@ -63,7 +63,7 @@ def _hash(payload: Any) -> str:
 
 
 def _deterministic_prepass(
-    brand: str, domain: str
+    brand: str, domain: str, business_kind: str = "product"
 ) -> tuple[list[OffsiteFinding], list[ToolLogEntry]]:
     findings: list[OffsiteFinding] = []
     log: list[ToolLogEntry] = []
@@ -94,8 +94,8 @@ def _deterministic_prepass(
             )
         )
 
-    reviews = reviews_presence(brand)
-    _record("reviews", {"brand": brand}, reviews)
+    reviews = reviews_presence(brand, business_kind)
+    _record("reviews", {"brand": brand, "business_kind": business_kind}, reviews)
     if reviews.available:
         platforms = reviews.data.get("platforms", {})
         present = [host for host, info in platforms.items() if info.get("present")]
@@ -237,6 +237,50 @@ _SYSTEM = (
     "findings (real URLs). Do not invent results."
 )
 
+# The LOCAL research brief (W4.2). FORKED from the consumer prompt above, never a
+# rewrite of it (SMB pivot §0.6): the consumer ICP still hunts Reddit threads,
+# listicles and press, and reprompting that in place would degrade it silently.
+#
+# What changes for a local business is what "offsite presence" even means. Nobody
+# writes a listicle about a Berkeley plumber; what AI reads instead is the directory
+# layer — and whether the business's name, address and phone AGREE across it. An
+# inconsistent NAP is the local equivalent of an entity-consistency failure: it splits
+# the entity, so no single listing accumulates enough authority to be cited.
+_LOCAL_SYSTEM = (
+    "You are an offsite-presence researcher for a LOCAL SERVICE BUSINESS's GEO/AEO "
+    "audit (a contractor, shop or salon customers call or visit). The deterministic "
+    "facts (Wikidata, directory presence, backlinks) are already gathered and given "
+    "to you.\n\n"
+    "Your job is the open-ended part, and for a local business that is NOT listicles "
+    "or press — it is the DIRECTORY layer AI actually reads:\n"
+    "1. NAP CONSISTENCY: find the business's name, street address and phone number as "
+    "they appear on each directory you can reach. Report any DISAGREEMENT between "
+    "them — a different phone number, a former address, a name spelled differently "
+    "(\"& Sons\" vs \"and Sons\"), or duplicate/unclaimed listings for the same "
+    "business. This is the highest-value finding you can return: inconsistent NAP "
+    "splits the entity so no listing accumulates enough authority to be cited.\n"
+    "2. DIRECTORY PRESENCE: note which of the major local directories the business is "
+    "MISSING from entirely.\n"
+    "3. Local community mentions (neighborhood subreddits, Nextdoor-style threads, "
+    "local news) where they exist — but do not force it; most local businesses have "
+    "none, and reporting nothing is the correct answer when there is nothing.\n\n"
+    "IMPORTANT — same-name confusion is the #1 error here: many local businesses "
+    "share a name with an unrelated business in another city. Before reporting any "
+    "listing, confirm the CITY matches. If you cannot confirm it is the same business, "
+    "say so rather than reporting it.\n\n"
+    "Be efficient — you have a small search budget. When done, call submit_findings "
+    "with concrete, evidence-backed findings (real URLs). Do not invent results."
+)
+
+
+def _system_prompt(business_kind: str = "product", location: str | None = None) -> str:
+    """The research brief for one business kind. Unknown kinds → consumer."""
+    if business_kind != "local_service":
+        return _SYSTEM
+    if location:
+        return f"{_LOCAL_SYSTEM}\n\nThe client operates in: {location}."
+    return _LOCAL_SYSTEM
+
 
 class OffsiteAgent:
     """Hand-rolled, budget-bounded Anthropic tool-calling loop (§5.1)."""
@@ -252,7 +296,12 @@ class OffsiteAgent:
         )
 
     def run(
-        self, brand: str, domain: str, prepass: list[OffsiteFinding]
+        self,
+        brand: str,
+        domain: str,
+        prepass: list[OffsiteFinding],
+        business_kind: str = "product",
+        location: str | None = None,
     ) -> tuple[list[OffsiteFinding], list[ToolLogEntry], str]:
         tools: list[ToolParam] = [_search_tool(), _reddit_tool(), _submit_tool()]
         quotas = dict(TOOL_QUOTAS)
@@ -282,7 +331,7 @@ class OffsiteAgent:
                     model=self._model,
                     max_tokens=_AGENT_MAX_TOKENS,
                     temperature=temperature,
-                    system=_SYSTEM,
+                    system=_system_prompt(business_kind, location),
                     messages=messages,
                     tools=tools,
                     tool_choice={"type": "auto"},
@@ -312,9 +361,14 @@ class OffsiteAgent:
             messages.append({"role": "user", "content": tool_results})
 
         # Budget exhausted without a submit — force one final structured submit.
-        return self._force_submit(messages), log, "partial"
+        return self._force_submit(messages, business_kind, location), log, "partial"
 
-    def _force_submit(self, messages: list[Any]) -> list[OffsiteFinding]:
+    def _force_submit(
+        self,
+        messages: list[Any],
+        business_kind: str = "product",
+        location: str | None = None,
+    ) -> list[OffsiteFinding]:
         try:
             # Every loop exit leaves `messages` ending on a USER turn (trailing
             # tool_results, or the initial prompt). Appending another user turn
@@ -338,7 +392,7 @@ class OffsiteAgent:
                 model=self._model,
                 max_tokens=_AGENT_MAX_TOKENS,
                 temperature=anthropic.omit if "opus-4-8" in self._model else 0.0,
-                system=_SYSTEM,
+                system=_system_prompt(business_kind, location),
                 messages=messages,
                 tools=[_submit_tool()],
                 tool_choice={"type": "tool", "name": "submit_findings"},
@@ -392,14 +446,21 @@ def _parse_findings(submitted: dict[str, Any]) -> list[OffsiteFinding]:
 # --- orchestrator ------------------------------------------------------------
 
 
-def run_offsite_research(brand: str, domain: str) -> OffsiteResult:
+def run_offsite_research(
+    brand: str, domain: str, business_kind: str = "product", location: str | None = None
+) -> OffsiteResult:
     """Run the pre-pass (always) and the agent loop (if an LLM + a search tool exist).
 
     Never raises — degrades to whatever findings the available sources produced.
+
+    ``business_kind`` selects the directory set and the agent's research brief (W4.1 /
+    W4.2). ``location`` is the client's city, used only to disambiguate a local brand
+    from a same-named business in another metro — the single most common local
+    research error. Both default to the pre-pivot consumer behaviour.
     """
     result = OffsiteResult(brand=brand, domain=domain)
     try:
-        pre_findings, pre_log = _deterministic_prepass(brand, domain)
+        pre_findings, pre_log = _deterministic_prepass(brand, domain, business_kind)
     except Exception as exc:  # best-effort: pre-pass network hiccup
         logger.warning("offsite pre-pass failed: %s", type(exc).__name__)
         pre_findings, pre_log = [], []
@@ -419,7 +480,9 @@ def run_offsite_research(brand: str, domain: str) -> OffsiteResult:
         return result
 
     try:
-        findings, log, status = OffsiteAgent().run(brand, domain, pre_findings)
+        findings, log, status = OffsiteAgent().run(
+            brand, domain, pre_findings, business_kind, location
+        )
         result.findings.extend(findings)
         result.audit_log.extend(log)
         result.status = status

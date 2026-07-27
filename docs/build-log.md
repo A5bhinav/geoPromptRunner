@@ -4,6 +4,73 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## SMB pivot Phase 4 — site audit for local (directories, NAP, Cat 5/6) — Completed 2026-07-27
+
+Local Cat 5/6, with the `llms_txt` evidence bar applied to every candidate check —
+including one we declined to score.
+
+### What was built
+
+- **W4.1 — local directories.** `LOCAL_REVIEW_PLATFORMS` (yelp, google.com/maps,
+  bbb, angi, thumbtack, homeadvisor, facebook, nextdoor) forked from the consumer
+  tuple, selected by `review_platforms_for(business_kind)`. The two sets are disjoint
+  by design — a plumber has no App Store presence, a phone app has no BBB page.
+  `google.com/maps` is the deterministic stand-in for GBP: a Maps listing is the
+  SERP-visible surface of the profile, reachable with the same `site:` probe (no
+  scraping, no Places API).
+- **W4.2 — local research brief.** `_LOCAL_SYSTEM` forked from `_SYSTEM`; the consumer
+  brief still hunts Reddit threads, listicles and press, unchanged. What "offsite
+  presence" MEANS differs for local: nobody writes a listicle about a Berkeley
+  plumber, so the local brief leads with NAP consistency and directory presence, and
+  explicitly warns about same-name confusion across metros (the #1 local research
+  error) — it must confirm the city matches before reporting a listing. The client's
+  city is threaded in when known.
+- **W4.3 — local Cat 6 scoring.** GBP is pulled out of the directory tally and scored
+  SEPARATELY at weight 3.0, matching SSR: the local pack and the AI answers built on
+  it are generated FROM the GBP entity, so no profile means structurally absent, and
+  averaging that away inside a "3 of 8 directories" pass would hide it. The remaining
+  directories score 2.5. `ENTITY_CONSISTENCY` on the local path becomes the NAP check
+  at 2.5 (up from the generic 1.5) — an inconsistent NAP splits the entity, so no
+  single listing accumulates enough authority to be cited at all.
+
+### The check we deliberately did NOT score
+
+`LocalBusiness` schema on a local homepage is a real gap, and W4.3 adds the
+expectation (`_LOCAL_CATEGORY_EXPECTED`) so it feeds the existing `schema_valid`
+check. But it is **hygiene-only and never a roadmap item**: controlled studies show no
+AI-citation lift from JSON-LD because retrieval reads visible HTML, so elevating it
+would fail the same evidence bar that keeps `llms_txt` note-only. The visible NAP
+block on the page is what matters; the markup is tidy-up. Guarded by
+`test_local_business_schema_is_never_a_roadmap_gap`.
+
+### Acceptance criteria — all passed
+
+- ✅ Platform sets forked, disjoint, consumer tuple byte-identical, unknown kinds fall
+  back to consumer
+- ✅ Consumer research brief unchanged; local brief leads with NAP + directories and
+  carries the city; a location never leaks onto the consumer brief
+- ✅ GBP scored separately at 3.0; directories at 2.5; NAP at 2.5; consumer offsite
+  scoring (labels AND weights) untouched
+- ✅ Local schema never becomes a scored gap
+- ✅ Gate: mypy clean (77 files), ruff clean, pytest 314 passed / 1 skipped (was 305),
+  tsc clean, npm test 161 passed
+
+### Deviation
+
+Two `tests/test_offsite.py` stubs needed their arity widened (`reviews_presence` and
+`_deterministic_prepass` both take a business kind now). Signature churn only — no
+assertion was changed or relaxed.
+
+### Up next — Phase 5: metrics, report, sampling
+
+Per-trade sampling bands, local report template, cadence comparison. Use
+`geo verify determinism` to set K empirically per trade rather than by assumption —
+SE Ranking measured ~80% of URLs swapping between repeat runs of "near me" queries,
+and `MAX_RUNS_PER_QUERY` is currently 5. If local needs K > 5, raise it deliberately
+and record the cost.
+
+---
+
 ## SMB pivot Phase 3 — local accuracy flags, local fact sheet, the cache bump — Completed 2026-07-27
 
 The cache-invalidating phase, in ONE commit and ONE `_PROMPT_LAYOUT` bump as the plan

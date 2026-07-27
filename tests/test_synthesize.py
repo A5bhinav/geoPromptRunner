@@ -134,3 +134,93 @@ def test_roadmap_sequences_accessibility_first() -> None:
     assert items[0].category == "technical_accessibility"  # SSR fail leads
     # passing/dropped checks aren't gaps; only the three fails/partials appear.
     assert {i.status for i in items} <= {"fail", "partial"}
+
+
+# --- W4.3: local Cat 6 checks -----------------------------------------------------
+# Every local check must clear the bar the llms_txt precedent sets: evidence an engine
+# consumes the source, or it ships note-only. GBP and the directory layer clear it —
+# local AI answers are generated FROM the GBP entity and cite Yelp/BBB/Angi by name.
+# LocalBusiness SCHEMA does not, and is deliberately absent from this rubric.
+
+
+def _reviews_finding(platforms: dict[str, dict[str, bool]]) -> OffsiteFinding:
+    return OffsiteFinding(
+        FindingType.REVIEWS,
+        "directory presence",
+        None,
+        Confidence.MEDIUM,
+        {"platforms": platforms},
+    )
+
+
+def test_local_gbp_is_scored_separately_and_carries_the_top_weight() -> None:
+    """GBP is not just another directory: the local pack — and the AI answers built on
+    it — are generated FROM the profile. No profile = structurally absent, the local
+    equivalent of failing SSR, so it must not be averaged away inside a directory
+    tally."""
+    finding = _reviews_finding(
+        {
+            "google.com/maps": {"present": False},
+            "yelp.com": {"present": True},
+            "bbb.org": {"present": True},
+        }
+    )
+    scores = site_audit_to_rubric_scores(
+        "Acme Plumbing", [], offsite=[finding], business_kind="local_service"
+    )
+    by_name = {s["check_name"]: s for s in scores}
+
+    gbp = by_name["Google Business Profile listing present"]
+    assert gbp["status"] == "fail"
+    assert gbp["weight"] == 3.0
+    assert gbp["category"] == "offsite_authority"
+
+    directories = by_name["listed on the local directories AI cites (Yelp, BBB, Angi)"]
+    assert directories["status"] == "pass"  # 2 of 2 non-GBP present
+    assert directories["weight"] == 2.5
+
+
+def test_local_nap_consistency_outweighs_generic_entity_consistency() -> None:
+    """An inconsistent NAP splits the entity, so no listing accumulates enough
+    authority to be cited at all — a bigger deal locally than generic web entity
+    consistency (1.5)."""
+    finding = OffsiteFinding(
+        FindingType.ENTITY_CONSISTENCY, "phone differs on Yelp", None, Confidence.LOW, {}
+    )
+    scores = site_audit_to_rubric_scores(
+        "Acme Plumbing", [], offsite=[finding], business_kind="local_service"
+    )
+    (score,) = scores
+    assert score["check_name"] == "name/address/phone consistent across directories (NAP)"
+    assert score["status"] == "fail"  # low confidence
+    assert score["weight"] == 2.5
+
+
+def test_consumer_offsite_scoring_is_untouched_by_the_local_path() -> None:
+    """The consumer ICP is still live: same labels, same weights, no GBP row."""
+    finding = _reviews_finding({"trustpilot.com": {"present": True}})
+    scores = site_audit_to_rubric_scores("Oura", [], offsite=[finding])
+    (score,) = scores
+    assert score["check_name"] == "reviews on Trustpilot / consumer platforms"
+    assert score["weight"] == 1.5
+    assert "Google Business Profile" not in str(scores)
+
+
+def test_local_business_schema_is_never_a_roadmap_gap() -> None:
+    """The llms_txt bar, applied to ourselves.
+
+    A local homepage missing LocalBusiness markup is real, and it feeds the existing
+    HYGIENE-framed schema_valid check — but it must NEVER become its own roadmap item.
+    Controlled studies show no AI-citation lift from JSON-LD (retrieval reads visible
+    HTML), so elevating it would fail the same evidence bar that keeps llms_txt
+    note-only. The visible NAP block is what matters; the markup is tidy-up.
+    """
+    finding = _reviews_finding({"google.com/maps": {"present": True}})
+    scores = site_audit_to_rubric_scores(
+        "Acme Plumbing", [], offsite=[finding], business_kind="local_service"
+    )
+    for score in scores:
+        assert "schema" not in score["check_name"].lower(), (
+            f"local schema became a scored gap: {score['check_name']!r} — it must stay "
+            "hygiene-only under the llms_txt evidence bar"
+        )

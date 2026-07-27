@@ -312,3 +312,33 @@ def test_local_flags_are_structurally_inert_on_a_product_sheet() -> None:
 
     # And they are introduced as explicitly conditional on the sheet having such lines.
     assert "if the sheet has no such line" in _ACCURACY_BLOCK
+
+
+def test_local_platforms_were_forked_not_appended_to_the_consumer_tuple() -> None:
+    """W4.1's fork verified from the consumer side.
+
+    The plan already said "keep both sets and select by kind" for this one, but it is
+    the most tempting symbol to overwrite — the local list is longer and feels like a
+    superset. It is not: a phone app has no BBB page.
+    """
+    from src.audit.offsite.tools import LOCAL_REVIEW_PLATFORMS, review_platforms_for
+
+    assert review_platforms_for("product") == REVIEW_PLATFORMS
+    assert REVIEW_PLATFORMS == ("trustpilot.com", "apps.apple.com", "play.google.com")
+    assert not set(REVIEW_PLATFORMS) & set(LOCAL_REVIEW_PLATFORMS)
+
+
+def test_consumer_schema_expectations_unchanged() -> None:
+    """W4.3 forks the per-page-category expected schema types. A consumer homepage
+    still wants Organization, not LocalBusiness."""
+    from src.audit.checks.schema import category_expectations
+
+    consumer = category_expectations("product")
+    assert consumer["homepage"] == {"Organization"}
+    assert consumer["pricing"] == {"Product", "Offer"}
+    assert category_expectations() == consumer
+    assert category_expectations("unknown-kind") == consumer
+
+    local = category_expectations("local_service")
+    assert local["homepage"] == {"LocalBusiness"}
+    assert local != consumer

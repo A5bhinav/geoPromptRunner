@@ -29,6 +29,8 @@ __all__ = [
     "reviews_presence",
     "configured_tools",
     "REVIEW_PLATFORMS",
+    "LOCAL_REVIEW_PLATFORMS",
+    "review_platforms_for",
 ]
 
 logger = logging.getLogger(__name__)
@@ -51,6 +53,37 @@ REVIEW_PLATFORMS = (
     "apps.apple.com",
     "play.google.com",
 )
+
+# The directories AI actually cites for LOCAL businesses. FORKED from the consumer
+# tuple above, never merged into it (SMB pivot §0.6): the consumer ICP is still live,
+# and a plumber has no App Store presence any more than a phone app has a BBB page.
+#
+# Ordering reflects observed citation share, not alphabetics — Yelp dominates local
+# directory citations by a wide margin, and Google Business Profile is the entity of
+# record every other source is reconciled against. Both are checked via the same
+# SERP `site:` probe as the consumer set (no scraping).
+#
+# google.com/maps stands in for GBP: a business's Maps listing is the publicly
+# SERP-visible surface of its profile, so `site:google.com/maps "<brand>"` is the
+# closest deterministic probe available without the Places API.
+LOCAL_REVIEW_PLATFORMS = (
+    "yelp.com",
+    "google.com/maps",
+    "bbb.org",
+    "angi.com",
+    "thumbtack.com",
+    "homeadvisor.com",
+    "facebook.com",
+    "nextdoor.com",
+)
+
+
+def review_platforms_for(business_kind: str = "product") -> tuple[str, ...]:
+    """The review/directory platforms to probe for one business kind.
+
+    Unknown kinds fall back to the consumer set — the pre-pivot behaviour.
+    """
+    return LOCAL_REVIEW_PLATFORMS if business_kind == "local_service" else REVIEW_PLATFORMS
 
 
 @dataclass
@@ -281,12 +314,16 @@ def dataforseo_backlinks(domain: str) -> ToolResult:
 # --- Reviews presence (SERP-based, lowest-risk) ------------------------------
 
 
-def reviews_presence(brand: str) -> ToolResult:
-    """Detect review-platform presence via SERP ``site:`` queries (no scraping, §5.3)."""
+def reviews_presence(brand: str, business_kind: str = "product") -> ToolResult:
+    """Detect review-platform presence via SERP ``site:`` queries (no scraping, §5.3).
+
+    ``business_kind`` selects which platform set to probe (W4.1); it defaults to
+    ``"product"``, so every existing consumer caller is unchanged.
+    """
     if not settings.SERPER_API_KEY:
         return ToolResult(False, "reviews", error="SERPER_API_KEY not set")
     platforms: dict[str, dict[str, Any]] = {}
-    for host in REVIEW_PLATFORMS:
+    for host in review_platforms_for(business_kind):
         result = serper_search(f'site:{host} "{brand}"', num=3)
         if not result.available:
             return ToolResult(False, "reviews", error=result.error)
@@ -295,4 +332,6 @@ def reviews_presence(brand: str) -> ToolResult:
             "present": bool(organic),
             "top_url": organic[0]["link"] if organic else None,
         }
-    return ToolResult(True, "reviews", {"brand": brand, "platforms": platforms})
+    return ToolResult(
+        True, "reviews", {"brand": brand, "business_kind": business_kind, "platforms": platforms}
+    )

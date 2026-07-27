@@ -41,6 +41,7 @@ __all__ = [
     "check_schema",
     "flatten_typed_nodes",
     "GOOGLE_REQUIREMENTS",
+    "category_expectations",
     "SCHEMA_REQUIREMENTS_VERSION",
 ]
 
@@ -339,6 +340,32 @@ _CATEGORY_EXPECTED: dict[str, set[str]] = {
     "comparison": {"Product"},
     "blog": {"Article"},
 }
+
+# A service-area business's homepage should carry LocalBusiness (which is a subtype of
+# Organization and adds the address/phone/hours a local answer is checked against),
+# and its service pages describe Services rather than Products.
+#
+# DELIBERATELY NOT a new scored gap. This feeds the existing `schema_valid` check,
+# which the rubric frames as HYGIENE at weight 1.5 — controlled studies show no
+# AI-citation lift from JSON-LD, since retrieval reads visible HTML. Elevating
+# "missing LocalBusiness schema" into its own roadmap item would fail the same
+# evidence bar that keeps `llms_txt` note-only (synthesize.py). The visible NAP block
+# on the page is what actually matters; the markup is tidy-up.
+_LOCAL_CATEGORY_EXPECTED: dict[str, set[str]] = {
+    "homepage": {"LocalBusiness"},
+    "pricing": {"Service", "Offer"},
+    "product": {"Service"},
+    "comparison": {"Service"},
+    "blog": {"Article"},
+}
+
+
+def category_expectations(business_kind: str = "product") -> dict[str, set[str]]:
+    """Expected schema types per page category, for one business kind.
+
+    Unknown kinds fall back to the consumer map — the pre-pivot behaviour.
+    """
+    return _LOCAL_CATEGORY_EXPECTED if business_kind == "local_service" else _CATEGORY_EXPECTED
 _ARTICLE_FAMILY = {"Article", "NewsArticle", "BlogPosting"}
 _ENTITY_TYPES = {"Organization", "Person", "Brand", "LocalBusiness"}
 _IDENTITY_PLATFORMS = (
@@ -356,9 +383,11 @@ _IDENTITY_PLATFORMS = (
 )
 
 
-def _should_have_types(page: PageRecord, types_found: set[str]) -> list[str]:
+def _should_have_types(
+    page: PageRecord, types_found: set[str], business_kind: str = "product"
+) -> list[str]:
     """Infer the rich-result types this page ought to expose, minus what's present."""
-    expected = set(_CATEGORY_EXPECTED.get(page.category.value, set()))
+    expected = set(category_expectations(business_kind).get(page.category.value, set()))
     url = page.url.lower()
     text = (page.extracted_text or "").lower()
     if "/faq" in url or "frequently asked question" in text:
@@ -393,11 +422,18 @@ def _sameas_analysis(nodes: list[dict[str, Any]]) -> dict[str, Any]:
 # --- top-level check ---------------------------------------------------------
 
 
-def check_schema(page: PageRecord) -> SchemaResult:
-    """Validate a crawled page's structured data (Cat 5)."""
+def check_schema(page: PageRecord, business_kind: str = "product") -> SchemaResult:
+    """Validate a crawled page's structured data (Cat 5).
+
+    ``business_kind`` selects which types a page category is expected to expose — a
+    local homepage wants ``LocalBusiness`` (address/phone/hours) where a product
+    homepage wants ``Organization``. Defaults to ``"product"``, so every existing
+    consumer caller is unchanged. This feeds the HYGIENE-framed ``schema_valid``
+    check; it never becomes a roadmap gap of its own (see _LOCAL_CATEGORY_EXPECTED).
+    """
     nodes = flatten_typed_nodes(page.json_ld)
     types_found = sorted({t for node in nodes for t in _types_of(node)})
-    expected_missing = _should_have_types(page, set(types_found))
+    expected_missing = _should_have_types(page, set(types_found), business_kind)
     same_as = _sameas_analysis(nodes)
 
     if not nodes:

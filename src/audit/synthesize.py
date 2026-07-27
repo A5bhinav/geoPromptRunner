@@ -153,25 +153,84 @@ def _checks_to_scores(subject: str, checks: list[SiteCheckRow]) -> list[RubricSc
     return scores
 
 
-def _offsite_to_scores(subject: str, findings: list[OffsiteFinding]) -> list[RubricScore]:
+def _offsite_to_scores(
+    subject: str, findings: list[OffsiteFinding], business_kind: str = "product"
+) -> list[RubricScore]:
     scores: list[RubricScore] = []
     for finding in findings:
-        mapped = _offsite_score(finding)
-        if mapped is None:
-            continue
-        check_name, status, weight = mapped
-        scores.append(
-            RubricScore(
-                subject=subject,
-                category=RubricCategory.OFFSITE_AUTHORITY.value,
-                check_name=check_name,
-                status=status,
-                weight=weight,
-                note=finding.title,
-                query_ids=[],
+        for check_name, status, weight in _offsite_scores(finding, business_kind):
+            scores.append(
+                RubricScore(
+                    subject=subject,
+                    category=RubricCategory.OFFSITE_AUTHORITY.value,
+                    check_name=check_name,
+                    status=status,
+                    weight=weight,
+                    note=finding.title,
+                    query_ids=[],
+                )
             )
-        )
     return scores
+
+
+def _local_review_scores(finding: OffsiteFinding) -> list[tuple[str, str, float]]:
+    """Local directory presence, split into TWO checks (W4.3).
+
+    Google Business Profile is pulled out and weighted separately because it is not
+    just another directory: Google's local pack — and the AI local answers built on
+    it — are generated FROM the GBP entity. A business with no profile is
+    structurally absent from the surface that matters most, the local equivalent of
+    failing SSR, so it carries the same 3.0 weight rather than being averaged away
+    inside a "3 of 8 directories" pass.
+
+    Both clear the evidence bar the `llms_txt` precedent sets: engines demonstrably
+    consume these sources (they are cited by name in local AI answers), unlike
+    llms.txt which no engine confirms reading.
+    """
+    platforms = finding.payload.get("platforms", {})
+    if not platforms:
+        return []
+
+    gbp = platforms.get("google.com/maps", {})
+    out: list[tuple[str, str, float]] = [
+        (
+            "Google Business Profile listing present",
+            "pass" if gbp.get("present") else "fail",
+            3.0,
+        )
+    ]
+
+    others = {host: info for host, info in platforms.items() if host != "google.com/maps"}
+    if others:
+        present = sum(1 for info in others.values() if info.get("present"))
+        total = len(others)
+        status = "pass" if present >= total / 2 else "partial" if present else "fail"
+        out.append(("listed on the local directories AI cites (Yelp, BBB, Angi)", status, 2.5))
+    return out
+
+
+def _offsite_scores(
+    finding: OffsiteFinding, business_kind: str = "product"
+) -> list[tuple[str, str, float]]:
+    """Map one finding to zero or more (check_name, status, weight) rows."""
+    if business_kind == "local_service" and finding.finding_type is FindingType.REVIEWS:
+        return _local_review_scores(finding)
+
+    if business_kind == "local_service" and finding.finding_type is FindingType.ENTITY_CONSISTENCY:
+        # For a local business this IS the NAP-consistency check, and it matters more
+        # than generic web entity consistency: a name/address/phone that disagrees
+        # across directories splits the entity, so no single listing accumulates
+        # enough authority to be cited at all.
+        return [
+            (
+                "name/address/phone consistent across directories (NAP)",
+                _confidence_status(finding.confidence),
+                2.5,
+            )
+        ]
+
+    mapped = _offsite_score(finding)
+    return [mapped] if mapped is not None else []
 
 
 def _offsite_score(finding: OffsiteFinding) -> tuple[str, str, float] | None:
@@ -241,14 +300,18 @@ def site_audit_to_rubric_scores(
     checks: list[SiteCheckRow],
     offsite: list[OffsiteFinding] | None = None,
     content_verdicts: list[CheckVerdict] | None = None,
+    business_kind: str = "product",
 ) -> list[RubricScore]:
     """Convert automated site-audit results into ``RubricScore`` rows for the roadmap.
 
     ``content_verdicts`` are included only when passed in — the Cat 3/4 judge stays
     out of the roadmap until it's calibrated (plan §7).
+
+    ``business_kind`` selects the Cat 6 offsite checks (W4.3); it defaults to
+    ``"product"``, so every existing consumer caller is unchanged.
     """
     scores = _checks_to_scores(subject, checks)
-    scores.extend(_offsite_to_scores(subject, offsite or []))
+    scores.extend(_offsite_to_scores(subject, offsite or [], business_kind))
     scores.extend(_content_to_scores(subject, content_verdicts or []))
     return scores
 
@@ -259,9 +322,10 @@ def build_site_audit_roadmap(
     offsite: list[OffsiteFinding] | None = None,
     content_verdicts: list[CheckVerdict] | None = None,
     query_weights: dict[str, float] | None = None,
+    business_kind: str = "product",
 ) -> list[RoadmapItem]:
     """Synthesize scores → the prioritized, sequenced :class:`RoadmapItem` list."""
-    scores = site_audit_to_rubric_scores(subject, checks, offsite, content_verdicts)
+    scores = site_audit_to_rubric_scores(subject, checks, offsite, content_verdicts, business_kind)
     return build_roadmap(scores, subject=subject, query_weights=query_weights)
 
 
@@ -271,7 +335,8 @@ def render_site_audit_roadmap(
     offsite: list[OffsiteFinding] | None = None,
     content_verdicts: list[CheckVerdict] | None = None,
     query_weights: dict[str, float] | None = None,
+    business_kind: str = "product",
 ) -> str:
     """Synthesize scores and render the §4 rollup + §5 prioritized roadmap markdown."""
-    scores = site_audit_to_rubric_scores(brand, checks, offsite, content_verdicts)
+    scores = site_audit_to_rubric_scores(brand, checks, offsite, content_verdicts, business_kind)
     return render_roadmap(scores, brand=brand, subject=brand, query_weights=query_weights)
