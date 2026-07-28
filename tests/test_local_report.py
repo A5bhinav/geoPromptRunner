@@ -57,7 +57,9 @@ def _judgment(
         run_index=run,
         assessed=True,
         brands=[
-            BrandJudgment(brand=CLIENT, present=client_present, prominence="absent", framing="neutral"),
+            BrandJudgment(
+                brand=CLIENT, present=client_present, prominence="absent", framing="neutral"
+            ),
             BrandJudgment(brand=rival, present=True, prominence=prominence, framing="positive"),
         ],
         accuracy_flags=flags or [],
@@ -113,7 +115,9 @@ def test_refuses_to_render_without_a_location() -> None:
 
 
 def test_the_location_appears_in_the_measurement_section() -> None:
-    out = render_local_report(_outcome([]), trade="plumbing", location=MARKET, run_date="2026-07-28")
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, run_date="2026-07-28"
+    )
     assert MARKET in out
     assert "## 6 · How this was measured" in out
 
@@ -124,7 +128,9 @@ def test_the_location_appears_in_the_measurement_section() -> None:
 def test_no_aggregate_appearance_ratio_anywhere() -> None:
     """'Appears in 4 of 11 queries' reads as a visibility rate and is not one — the
     denominator is a query set we chose."""
-    results = [_result("loc-01", "google_ai_mode", i, f"{RIVAL} is the top pick.") for i in range(3)]
+    results = [
+        _result("loc-01", "google_ai_mode", i, f"{RIVAL} is the top pick.") for i in range(3)
+    ]
     out = render_local_report(
         _outcome(results),
         trade="plumbing",
@@ -352,10 +358,19 @@ def test_the_trade_is_inferred_from_either_entry_point() -> None:
         pass
 
     for row, expected in (
-        ({"location": MARKET, "query_set_version": "local-plumbing-v1", "category": ""}, "plumbing"),
-        ({"location": MARKET, "query_set_version": "csv-2026-07-28", "category": "plumbing service"}, "plumbing"),
+        (
+            {"location": MARKET, "query_set_version": "local-plumbing-v1", "category": ""},
+            "plumbing",
+        ),
+        (
+            {"location": MARKET, "query_set_version": "csv-1", "category": "plumbing service"},
+            "plumbing",
+        ),
         # No template yet for this trade: fall back to the category, never "local".
-        ({"location": MARKET, "query_set_version": "csv-1", "category": "roofing contractor"}, "roofing contractor"),
+        (
+            {"location": MARKET, "query_set_version": "csv-1", "category": "roofing contractor"},
+            "roofing contractor",
+        ),
     ):
         import src.cli as cli
 
@@ -424,3 +439,103 @@ def test_the_directory_checklist_reads_real_offsite_status() -> None:
     assert "| bbb.org | 🔴 not found |" in out
     # A platform the agent never probed stays "not checked" — never "not found".
     assert "| nextdoor.com | ⚪ not checked |" in out
+
+
+def test_local_pack_presence_overrides_a_false_gbp_probe() -> None:
+    """GBP is weighted 3.0, and its probe produces false negatives.
+
+    The check is `site:google.com/maps "<brand>"`, a deterministic stand-in for the
+    Places API — and on a real run it reported "not found" for a business our own
+    capture shows ranking #1 in that city's pack with a Google business id. The pack is
+    generated FROM the GBP entity, so presence in it is strictly stronger evidence.
+
+    A false "you have no Google Business Profile" is the most alarming line in §3 and one
+    an owner can disprove in five seconds, which would discredit the whole report.
+    """
+    from src.api.reports import SiteAuditPayload, SiteFindingRow
+
+    site_audit: SiteAuditPayload = {
+        "present": True,
+        "domain": "albertnahmanplumbing.com",
+        "pages_crawled": 1,
+        "checks": [],
+        "summary": {},
+        "errors": 0,
+        "offsite": [
+            SiteFindingRow(
+                finding_type="reviews",
+                title="Review presence on 7/8 platforms",
+                url=None,
+                confidence="medium",
+                # The probe says the client has no Google Business Profile.
+                platforms={"google.com/maps": False, "yelp.com": True},
+            )
+        ],
+        "roadmap": [],
+    }
+    # ...but the capture ranks the client #1 in that city's pack.
+    out = render_local_report(
+        _outcome([]),
+        trade="plumbing",
+        location=MARKET,
+        local_pack=_pack([CLIENT, RIVAL]),
+        site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "**Google Business Profile — 🟢 listed**" in out
+
+    # And when the client is genuinely absent from the pack, the probe stands.
+    out_absent = render_local_report(
+        _outcome([]),
+        trade="plumbing",
+        location=MARKET,
+        local_pack=_pack([RIVAL, "Another Plumber"]),
+        site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "**Google Business Profile — 🔴 not found**" in out_absent
+
+
+def test_the_roadmap_renders_from_the_real_row_fields() -> None:
+    """RoadmapRow has category/check_name/status/impact_label/effort/phase — no prose
+    "title" or "why". Reading those absent keys rendered every item as "**** —" on a
+    real run, i.e. a numbered list of nothing where §5 tells the owner what to do."""
+    from src.api.reports import RoadmapRow, SiteAuditPayload
+
+    site_audit: SiteAuditPayload = {
+        "present": True,
+        "domain": "albertnahmanplumbing.com",
+        "pages_crawled": 1,
+        "checks": [],
+        "summary": {},
+        "errors": 0,
+        "offsite": [],
+        "roadmap": [
+            RoadmapRow(
+                category="technical_accessibility",
+                check_name="AI crawler UAs not blocked at the CDN/WAF",
+                status="fail",
+                impact_label="High",
+                effort="low",
+                phase=1,
+            ),
+            RoadmapRow(
+                category="structured_data",
+                check_name="schema.org markup valid",
+                status="partial",
+                impact_label="Medium",
+                effort="low",
+                phase=2,
+            ),
+        ],
+    }
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "AI crawler UAs not blocked at the CDN/WAF (missing)" in out
+    assert "schema.org markup valid (partial)" in out
+    assert "High impact" in out
+    # The synthesizer already sequences by phase; the report must not re-sort.
+    assert out.index("AI crawler UAs") < out.index("schema.org markup")
+    assert "****" not in out

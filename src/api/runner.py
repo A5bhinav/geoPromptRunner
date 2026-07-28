@@ -493,12 +493,19 @@ def _run_site_audit_phase(state: _RunState) -> None:
     try:
         from src.audit.site_audit import run_site_audit
 
+        # A stored location is what marks a run local, and it selects the Cat 6 fork:
+        # which directories get probed (Yelp/GBP/BBB/Angi vs Trustpilot/app stores) and
+        # which research brief the agent runs. Without it a plumber gets audited for its
+        # App Store presence.
+        location = (cfg.location or "").strip() or None
         state.site_audit = run_site_audit(
             state.run_id,
             domain,
             brand=cfg.client_name,
             competitors=cfg.competitors,
             persist=state.db_run_id is not None,
+            business_kind="local_service" if location else "product",
+            location=location,
         )
     except Exception as exc:  # phase is additive — its failure never fails the run
         logger.warning("Site audit failed for run %s: %s", state.run_id, type(exc).__name__)

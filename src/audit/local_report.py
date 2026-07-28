@@ -239,7 +239,9 @@ def _local_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
     return sorted(out, key=lambda f: _LOCAL_FLAG_ORDER.index(str(f.type)))
 
 
-def _directory_rows(site_audit: SiteAuditPayload | None) -> dict[str, str]:
+def _directory_rows(
+    site_audit: SiteAuditPayload | None, local_pack: LocalPackPayload | None = None
+) -> dict[str, str]:
     """platform -> 'present' | 'missing' | 'unknown', from the Cat 6 offsite findings.
 
     ``unknown`` is distinct from ``missing`` on purpose: the offsite agent needs a
@@ -248,13 +250,36 @@ def _directory_rows(site_audit: SiteAuditPayload | None) -> dict[str, str]:
     """
     status: dict[str, str] = dict.fromkeys(LOCAL_REVIEW_PLATFORMS, "unknown")
     if site_audit is None:
-        return status
+        return _apply_pack_evidence(status, local_pack)
     for finding in site_audit["offsite"]:
         # Only the reviews finding carries a per-platform breakdown; everything else
         # leaves the checklist alone rather than guessing from a title string.
         for host, present in (finding.get("platforms") or {}).items():
             if host in status:
                 status[host] = "present" if present else "missing"
+    return _apply_pack_evidence(status, local_pack)
+
+
+def _apply_pack_evidence(
+    status: dict[str, str], local_pack: LocalPackPayload | None
+) -> dict[str, str]:
+    """A client in the captured local pack HAS a Google Business Profile. Full stop.
+
+    The GBP probe is `site:google.com/maps "<brand>"`, a deterministic stand-in because
+    there is no Places API here — and it produces false negatives: it reported "not
+    found" for a business our own capture shows ranking #1 in that city's pack, with a
+    Google business id. Since the local pack is generated FROM the GBP entity, presence
+    in the pack is strictly stronger evidence than the probe, and it wins.
+
+    This matters more than one row: GBP is weighted 3.0 (matching SSR) precisely because
+    no profile means structurally absent, so a false "you have no Google Business
+    Profile" is both the most alarming line in §3 and one a shop owner can disprove in
+    five seconds — which would discredit everything else in the report.
+    """
+    if local_pack is None:
+        return status
+    if any(rank is not None for rank in local_pack["client_positions"].values()):
+        status[_GBP_PLATFORM] = "present"
     return status
 
 
@@ -352,7 +377,7 @@ def render_local_report(
     # --- 3 · Where AI looks --------------------------------------------------------
     lines.append(f"## 3 · Where AI looks for a {noun} in {city}")
     lines.append("")
-    status = _directory_rows(site_audit)
+    status = _directory_rows(site_audit, local_pack)
     lines.append(
         f"**Google Business Profile — {_light(status[_GBP_PLATFORM])}**  "
         "\n_The local pack, and the AI answers built on it, are generated from this "
@@ -406,8 +431,19 @@ def render_local_report(
     lines.append("")
     roadmap = list(site_audit["roadmap"]) if site_audit is not None else []
     if roadmap:
+        # RoadmapRow carries category/check_name/status/impact_label/effort/phase — there
+        # is no prose "title" or "why". Build the sentence from those fields rather than
+        # reading keys that do not exist (which rendered every item as an empty "**** —").
+        # Already sequenced by the synthesizer: phase 1 accessibility -> 2 content ->
+        # 3 off-site -> 4 measurement, so print it in order and don't re-sort.
+        lines.append("| # | Fix | Why it matters | Effort |")
+        lines.append("|---|---|---|---|")
         for i, item in enumerate(roadmap, 1):
-            lines.append(f"{i}. **{item.get('title', '')}** — {item.get('why', '')}")
+            gap = "missing" if item["status"] == "fail" else "partial"
+            lines.append(
+                f"| {i} | {item['check_name']} ({gap}) | {item['impact_label']} impact"
+                f" · {item['category']} | {item['effort']} |"
+            )
         lines.append("")
     else:
         lines.append("_No site audit was run for this client, so there is no roadmap yet._")

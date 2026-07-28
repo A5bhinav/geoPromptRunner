@@ -197,6 +197,8 @@ def run_site_audit(
     brand: str | None = None,
     competitors: list[str] | None = None,
     persist: bool = True,
+    business_kind: str = "product",
+    location: str | None = None,
 ) -> SiteAuditPayload:
     """Crawl ``domain``, run the on-site checks, and (if ``brand`` given) Cat 6 offsite.
 
@@ -205,6 +207,14 @@ def run_site_audit(
     already best-effort per page, so a single bad page never sinks the phase. The
     offsite research (Cat 6) runs only when ``brand`` is provided; per-competitor
     on-site comparison coverage runs when ``competitors`` are given.
+
+    ``business_kind`` and ``location`` select the Cat 6 fork (W4.1/W4.2) and default to
+    the consumer behaviour. Threading them matters more than it looks: without
+    ``business_kind`` the offsite agent probes Trustpilot and the app stores for a
+    plumber — which is why a real local run came back "review presence on 0/3
+    platforms" while never looking at Yelp, Google Maps, BBB or Angi. Without
+    ``location`` the agent has nothing to disambiguate a same-named business in another
+    metro, the most common local research error there is.
     """
     crawl = run_site_audit_blocking(run_id, domain)
 
@@ -253,9 +263,13 @@ def run_site_audit(
     offsite_rows: list[SiteFindingRow] = []
     offsite_findings: list[OffsiteFinding] = []
     if brand:
-        offsite_rows, offsite_findings = _run_offsite(run_id, brand, domain, persist)
+        offsite_rows, offsite_findings = _run_offsite(
+            run_id, brand, domain, persist, business_kind=business_kind, location=location
+        )
 
-    roadmap = _roadmap_rows(brand or domain, checks, offsite_findings, content_verdicts)
+    roadmap = _roadmap_rows(
+        brand or domain, checks, offsite_findings, content_verdicts, business_kind=business_kind
+    )
 
     return SiteAuditPayload(
         present=bool(crawl.pages or checks),
@@ -274,9 +288,18 @@ def _roadmap_rows(
     checks: list[SiteCheckRow],
     offsite: list[OffsiteFinding],
     content_verdicts: list[CheckVerdict] | None = None,
+    *,
+    business_kind: str = "product",
 ) -> list[RoadmapRow]:
-    """Synthesize the §5 prioritized roadmap from the audit results (plan §5.5)."""
-    items = build_site_audit_roadmap(subject, checks, offsite, content_verdicts)
+    """Synthesize the §5 prioritized roadmap from the audit results (plan §5.5).
+
+    ``business_kind`` reaches the rubric scorer, which forks the local weighting (W4.3):
+    GBP is scored separately at 3.0 and NAP consistency at 2.5, because an inconsistent
+    NAP splits the entity so no single listing accumulates enough authority to be cited.
+    """
+    items = build_site_audit_roadmap(
+        subject, checks, offsite, content_verdicts, business_kind=business_kind
+    )
     return [
         RoadmapRow(
             category=item.category,
@@ -321,7 +344,13 @@ def _finding_db_row(run_id: str, finding: OffsiteFinding) -> dict[str, Any]:
 
 
 def _run_offsite(
-    run_id: str, brand: str, domain: str, persist: bool
+    run_id: str,
+    brand: str,
+    domain: str,
+    persist: bool,
+    *,
+    business_kind: str = "product",
+    location: str | None = None,
 ) -> tuple[list[SiteFindingRow], list[OffsiteFinding]]:
     """Cat 6 offsite research (best-effort, never raises). Imported lazily.
 
@@ -331,7 +360,7 @@ def _run_offsite(
     try:
         from src.audit.offsite import run_offsite_research
 
-        result = run_offsite_research(brand, domain)
+        result = run_offsite_research(brand, domain, business_kind, location)
     except Exception as exc:  # phase is additive — never fail the audit
         logger.warning("offsite research failed for %s: %s", brand, type(exc).__name__)
         return [], []
