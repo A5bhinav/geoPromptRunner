@@ -13,6 +13,10 @@ __all__ = [
     "domain_of",
     "is_brand_citation",
     "CellVerdict",
+    "Coverage",
+    "coverage",
+    "coverage_by_bucket",
+    "coverage_by_engine",
     "brand_verdicts",
     "mention_rate",
     "mention_rate_by_bucket",
@@ -120,6 +124,74 @@ def _by_bucket(verdicts: list[CellVerdict]) -> dict[str, list[CellVerdict]]:
     for v in verdicts:
         buckets.setdefault(v.intent, []).append(v)
     return buckets
+
+
+# --- Coverage: how much was actually measured -----------------------------------
+#
+# `_rate` deliberately excludes unanswered cells from its denominator, which keeps
+# every rate honest but makes a rate of 0.0 ambiguous: it reads the same whether a
+# brand was absent from ten answers or whether no answer ever arrived. Coverage is
+# the missing companion — it reports the denominator itself, so a caller can tell
+# "absent" from "never measured" and render "—" instead of "0%".
+#
+# This exists because a real run (e186c524, 2026-07-28) had an engine whose model
+# was 404 for every call. Nothing in the rates was wrong; the report simply could
+# not say that one third of its cells had no data behind them.
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """How many cells returned an answer, out of how many were attempted."""
+
+    answered_cells: int
+    total_cells: int
+
+    @property
+    def is_measured(self) -> bool:
+        """True when at least one cell returned an answer.
+
+        A rate over ``is_measured is False`` carries no information and must not be
+        rendered as a number — a brand cannot be absent from an answer that never
+        existed.
+        """
+        return self.answered_cells > 0
+
+
+def coverage(verdicts: list[CellVerdict]) -> Coverage:
+    """Coverage across ``verdicts`` (a cell counts as answered if any run answered)."""
+    return Coverage(
+        answered_cells=sum(1 for v in verdicts if v.hit is not None),
+        total_cells=len(verdicts),
+    )
+
+
+def coverage_by_bucket(results: list[QueryResult], brand: str) -> dict[str, Coverage]:
+    """Coverage split by intent bucket, keyed to match ``mention_rate_by_bucket``.
+
+    Takes ``brand`` only to reuse the same cell aggregation the rates use; coverage
+    itself is brand-independent (whether a cell answered has nothing to do with who
+    was named in it).
+    """
+    return {
+        bucket: coverage(vs) for bucket, vs in _by_bucket(brand_verdicts(results, brand)).items()
+    }
+
+
+def coverage_by_engine(results: list[QueryResult]) -> dict[str, Coverage]:
+    """Coverage per engine, computed from stored rows.
+
+    The report-side twin of the live per-engine counter in ``src/api/runner.py``:
+    because it works from persisted results, a run rebuilt from storage after a
+    restart reports the same honesty as one watched live.
+    """
+    out: dict[str, tuple[int, int]] = {}
+    for (_query_id, engine_name), rows in _cells(results).items():
+        answered, total = out.get(engine_name, (0, 0))
+        out[engine_name] = (
+            answered + (1 if any(r["response"] is not None for r in rows) else 0),
+            total + 1,
+        )
+    return {name: Coverage(answered_cells=a, total_cells=t) for name, (a, t) in out.items()}
 
 
 def _mention_predicate(brand: str) -> Callable[[QueryResult], bool]:

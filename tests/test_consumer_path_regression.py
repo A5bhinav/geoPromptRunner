@@ -328,6 +328,35 @@ def test_local_platforms_were_forked_not_appended_to_the_consumer_tuple() -> Non
     assert not set(REVIEW_PLATFORMS) & set(LOCAL_REVIEW_PLATFORMS)
 
 
+def test_intent_routing_is_inert_on_every_consumer_bucket() -> None:
+    """Engine routing must never change what a consumer run measures.
+
+    Routing exists because ``google_ai_overviews`` captures nothing on ``local_intent``
+    queries. It is expressed as a DENYLIST naming only ``local_intent`` precisely so it
+    cannot reach the consumer path — consumer query sets contain no ``local_intent``,
+    so every consumer cell routes exactly as it did before routing existed.
+
+    A failure here means routing leaked onto the consumer ICP. Fix the routing table
+    (``ENGINE_POLICY``), never this assertion.
+    """
+    from src.api.engine_registry import ENGINE_SOURCES
+    from src.pipeline.engine_routing import routed_totals_by_name, should_run
+    from src.prompts.intent import CONSUMER_BUCKETS
+
+    names = [*ENGINE_SOURCES, "mock"]
+    for name in names:
+        for bucket in CONSUMER_BUCKETS:
+            assert should_run(name, bucket) is True, f"{name} was routed out of {bucket}"
+
+    # And the denominator is untouched: every consumer cell still runs.
+    consumer_queries = [
+        Query(query_id=f"q{i}", text=f"query {i}", intent=bucket)
+        for i, bucket in enumerate(CONSUMER_BUCKETS)
+    ]
+    totals = routed_totals_by_name(consumer_queries, names, 5)
+    assert set(totals.values()) == {len(CONSUMER_BUCKETS) * 5}
+
+
 def test_consumer_schema_expectations_unchanged() -> None:
     """W4.3 forks the per-page-category expected schema types. A consumer homepage
     still wants Organization, not LocalBusiness."""

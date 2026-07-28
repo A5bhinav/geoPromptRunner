@@ -62,7 +62,18 @@ export interface PipelineOptions {
 
 export const DEFAULT_OPTIONS: PipelineOptions = {
   // Engine names must match the platform's KNOWN_ENGINES (src/prompts/csv_loader.py).
-  engines: ["perplexity", "openai_search", "gemini_grounded"],
+  //
+  // Changed 2026-07-28, and kept BYTE-IDENTICAL to DEFAULT_ENGINES in
+  // web/app/teaser/page.tsx — the two entry points previously disagreed
+  // (openai_search+gemini_grounded here vs openai+google_ai_overviews there), so the
+  // same prospect cost ~2x more through the CLI than through the UI and was measured on
+  // different surfaces. Whichever door a teaser comes through, it must be the same
+  // instrument.
+  //
+  // openai_search is out: OpenAI's 6,000 TPM search-class cap against ~17,200 tokens per
+  // answer means it returns nothing (0 of 10 cells, measured twice). `openai` is the
+  // parametric surface (gpt-5.6-luna) at ~100% coverage for ~$0.0015/call.
+  engines: ["perplexity", "openai", "google_ai_mode"],
   // Repeat every query so a printed claim can be shown to REPRODUCE, not rest on
   // a single nondeterministic sample. Engine answers vary run-to-run; a prospect
   // who re-asks the query must see the same loss. Selection then prefers findings

@@ -229,11 +229,20 @@ export class MockPlatformClient implements PlatformClient {
         accuracy_flag_count: null,
       },
       leaderboard,
-      by_bucket: dedupeBuckets(input.queries).map((bucket) => ({
-        bucket,
-        mention_rate: bucket === "brand" ? 1 : 0,
-        citation_rate: 0,
-      })),
+      // The mock always answers, so every cell it reports is a measured one — the
+      // coverage fields are computed rather than stubbed so a fixture can never
+      // imply a bucket had data it didn't. Cells = queries in the bucket x engines.
+      by_bucket: dedupeBuckets(input.queries).map((bucket) => {
+        const cells =
+          input.queries.filter((q) => q.intent === bucket).length * Math.max(engines.length, 1);
+        return {
+          bucket,
+          mention_rate: bucket === "brand" ? 1 : 0,
+          citation_rate: 0,
+          answered_cells: cells,
+          total_cells: cells,
+        };
+      }),
       accuracy_flags: [],
       sources: SAMPLE_DOMAINS.map((domain, i) => ({ domain, count: 6 - i })),
       losing_queries: losing,

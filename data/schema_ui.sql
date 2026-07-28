@@ -57,6 +57,12 @@ alter table public.audit_runs add column if not exists judge boolean not null de
 -- this row on resume — without the column, the resumed half would run un-localized
 -- and quietly mix two different markets into one measurement.
 alter table public.audit_runs add column if not exists location text;
+-- What the engine liveness probe saw, per engine, before the fan-out
+-- (src/pipeline/preflight.py). Shape: {engine: {model_id, alive, chars, citations,
+-- needed_retry}}. Persisted so a report can say WHY a surface is absent from a run
+-- instead of silently omitting it — run e186c524 spent a whole audit on a surface
+-- whose model had been deprecated, and nothing in the record explained the gap.
+alter table public.audit_runs add column if not exists engine_probe jsonb not null default '{}'::jsonb;
 
 -- --- Per-(query, engine, run) answers ----------------------------------------
 create table if not exists public.query_results (
@@ -95,7 +101,37 @@ create table if not exists public.judgments (
     created_at timestamptz not null default now()
 );
 
+-- --- Google local pack (the surface that answers local-intent queries) -------
+-- Captured per local-intent query, once each — NOT runs_per_query, because a SERP
+-- listing has no LLM sampling noise to average out. Kept in its own table rather than
+-- in query_results on purpose: a local pack is a ranked entity list, not an answer, and
+-- feeding it through the answer path would hand it to the judge and to mention_rate as
+-- though it were one (see src/engines/local_pack.py).
+create table if not exists public.local_pack_entities (
+    id uuid primary key default gen_random_uuid(),
+    run_id uuid not null references public.audit_runs (id) on delete cascade,
+    query_id text not null,
+    prompt text not null,
+    position integer,
+    name text not null,
+    address text,
+    category text,
+    rating numeric,
+    reviews integer,
+    -- Google's stable business id. Serper returns it as `cid`, SearchApi as `ludocid`,
+    -- and they carry the same value — so this joins across vendors.
+    ludocid text,
+    phone text,
+    website text,
+    -- Which vendor produced the capture ('serper_places' | 'searchapi_local_results').
+    -- Recorded because the two return different depths (10 businesses vs 3), and a
+    -- vendor switch between cycles would otherwise read as real churn in the pack.
+    source text not null,
+    captured_at timestamptz not null default now()
+);
+
 create index if not exists idx_query_results_run_id on public.query_results (run_id);
+create index if not exists idx_local_pack_run_id on public.local_pack_entities (run_id);
 create index if not exists idx_query_results_run_intent on public.query_results (run_id, intent);
 create index if not exists idx_query_citations_run_id on public.query_citations (run_id);
 create index if not exists idx_judgments_run_id on public.judgments (run_id);
@@ -106,3 +142,4 @@ alter table public.audit_runs enable row level security;
 alter table public.query_results enable row level security;
 alter table public.query_citations enable row level security;
 alter table public.judgments enable row level security;
+alter table public.local_pack_entities enable row level security;

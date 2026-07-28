@@ -73,6 +73,11 @@ const ENGINE_CREDIBILITY: Record<string, number> = {
   perplexity: 5,
   ai_overviews: 5,
   google_ai_overviews: 5,
+  // Google's conversational answer surface. Rated with AI Overviews — it is the same
+  // "what Google's AI tells your customer" claim — and unlike AI Overviews it actually
+  // answers local-intent queries, so it is the Google surface most likely to supply the
+  // hero finding for a local prospect.
+  google_ai_mode: 5,
   openai: 3,
   openai_search: 4,
   gemini: 2,

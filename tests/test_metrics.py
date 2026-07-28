@@ -73,6 +73,58 @@ def test_mention_rate_by_bucket() -> None:
     assert by_bucket == {"category": 1.0, "brand": 0.0}
 
 
+def test_coverage_separates_absent_from_never_measured() -> None:
+    # The case that motivated Coverage: `mention_rate` is 0.0 for BOTH of these, so
+    # the rate alone cannot tell a real absence from a surface that never answered.
+    absent = [
+        _qr("q1", "openai", 0, "YNAB only."),
+        _qr("q2", "openai", 0, "Monarch only."),
+    ]
+    never_measured = [
+        _qr("q1", "openai", 0, None),
+        _qr("q2", "openai", 0, None),
+    ]
+    assert metrics.mention_rate(absent, "Acme") == 0.0
+    assert metrics.mention_rate(never_measured, "Acme") == 0.0
+
+    cov_absent = metrics.coverage(metrics.brand_verdicts(absent, "Acme"))
+    cov_none = metrics.coverage(metrics.brand_verdicts(never_measured, "Acme"))
+    assert (cov_absent.answered_cells, cov_absent.total_cells) == (2, 2)
+    assert cov_absent.is_measured is True
+    assert (cov_none.answered_cells, cov_none.total_cells) == (0, 2)
+    assert cov_none.is_measured is False
+
+
+def test_coverage_by_engine_flags_a_dead_engine() -> None:
+    # A 404'd model writes a row per attempted cell but answers nothing (run
+    # e186c524). Coverage must report it as unmeasured while leaving live engines
+    # untouched.
+    results = [
+        _qr("q1", "perplexity", 0, "Acme is great."),
+        _qr("q2", "perplexity", 0, "Acme again."),
+        _qr("q1", "openai_search", 0, None),
+        _qr("q2", "openai_search", 0, None),
+    ]
+    by_engine = metrics.coverage_by_engine(results)
+    assert by_engine["perplexity"].is_measured is True
+    assert by_engine["openai_search"].is_measured is False
+    assert by_engine["openai_search"].total_cells == 2
+
+
+def test_coverage_by_bucket_keys_match_mention_rate_by_bucket() -> None:
+    # The two must be joinable by bucket key, or the report can't pair a rate with
+    # the denominator behind it.
+    results = [
+        _qr("c1", "openai", 0, "Acme is here.", intent="category"),
+        _qr("b1", "openai", 0, None, intent="brand"),
+    ]
+    rates = metrics.mention_rate_by_bucket(results, "Acme")
+    cov = metrics.coverage_by_bucket(results, "Acme")
+    assert set(rates) == set(cov)
+    assert cov["category"].is_measured is True
+    assert cov["brand"].is_measured is False
+
+
 def test_citation_rate_and_domains() -> None:
     results = [
         _qr("q1", "openai", 0, "See Acme.", cites=["https://www.acme.com/budgeting"]),

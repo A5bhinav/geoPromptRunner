@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from src.engines.local_pack import LocalPackCapture
 from src.pipeline import judge_metrics, metrics
 from src.pipeline.orchestrator import AuditOutcome
 from src.storage.models import AccuracyFlag, AnswerJudgment
@@ -45,6 +46,13 @@ class BucketRow(TypedDict):
     bucket: str
     mention_rate: float
     citation_rate: float | None
+    # How many of this bucket's (query, engine) cells actually returned an answer.
+    # When answered_cells == 0 the rates above carry NO information and must render
+    # as "—", never "0%": `metrics._rate` returns 0.0 for an empty denominator, so a
+    # bucket nothing answered is otherwise indistinguishable from one the client is
+    # genuinely absent from.
+    answered_cells: int
+    total_cells: int
 
 
 class FlagRow(TypedDict):
@@ -106,6 +114,45 @@ class SiteAuditPayload(TypedDict):
     roadmap: list[RoadmapRow]  # §5 prioritized gaps synthesized from the audit
 
 
+class LocalPackRow(TypedDict):
+    """One business in one query's local pack."""
+
+    query_id: str
+    prompt: str
+    position: int | None
+    name: str
+    is_client: bool
+    address: str | None
+    rating: float | None
+    reviews: int | None
+    phone: str | None
+    website: str | None
+
+
+class LocalPackPayload(TypedDict):
+    """Google's local pack for this run's local-intent queries.
+
+    The surface that actually answers local queries (~93% of local-intent SERPs, vs
+    ~15% showing an AI Overview). Deliberately NOT folded into mention_rate /
+    share_of_model / the visibility grade: a ranked business list is not an AI answer,
+    and averaging the two would produce a number describing neither.
+
+    ``client_positions`` maps query_id → the client's rank in that pack, or None when
+    the client is absent from it. That — *does this shop appear in its own city's pack,
+    and where* — is the single most actionable local figure the platform produces, and
+    it was captured nowhere before this payload existed.
+    """
+
+    present: bool
+    location: str
+    # 'serper_places' | 'searchapi_local_results' — the two return different depths
+    # (10 businesses vs 3), so a vendor change between cycles must not read as churn.
+    sources: list[str]
+    queries_captured: int
+    entities: list[LocalPackRow]
+    client_positions: dict[str, int | None]
+
+
 class ScorecardPayload(TypedDict):
     visibility_grade: GradePayload | None
     share_of_model_client: float
@@ -116,6 +163,11 @@ class ScorecardPayload(TypedDict):
     citation_rate_client: float | None
     accuracy_assessed: bool
     accuracy_flag_count: int | None
+    # The denominator behind every rate above: cells that returned an answer, out of
+    # cells attempted. A scorecard whose answered_cells is a small fraction of
+    # attempted_cells is thin evidence regardless of how confident the rates look.
+    answered_cells: int
+    attempted_cells: int
 
 
 class ReportPayload(TypedDict):
@@ -123,7 +175,15 @@ class ReportPayload(TypedDict):
     run_date: str
     query_set_version: str
     runs_per_query: int
+    # Engines that returned at least one answer — i.e. that actually measured this
+    # client. Built from answer existence, NOT row existence: a 404'd model still
+    # writes a row per attempted cell, and listing it here told a client that a
+    # surface had been measured when it had produced nothing (run e186c524).
     engines: list[str]
+    # Engines that were run and returned nothing at all. Never silently dropped:
+    # a surface that failed is a fact about the run's coverage, and the report has
+    # to be able to say so.
+    dead_engines: list[str]
     competitors: list[str]
     client_domains: list[str]
     detection: str  # "judge" | "regex"
@@ -134,6 +194,9 @@ class ReportPayload(TypedDict):
     sources: list[SourceRow]
     losing_queries: list[LosingRow]
     site_audit: SiteAuditPayload | None  # on-site technique checks (Cat 1–5); None if not run
+    # Google local pack for local-intent queries; None on a consumer run (and on any
+    # local run with no pinned location, since an unpinned pack is the wrong market).
+    local_pack: LocalPackPayload | None
 
 
 def _grade_payload(grade: judge_metrics.VisibilityGrade) -> GradePayload:
@@ -160,12 +223,73 @@ def _shares(mention_by_brand: dict[str, float]) -> dict[str, float]:
     return {b: r / total for b, r in mention_by_brand.items()}
 
 
+def _is_same_business(pack_name: str, client: str) -> bool:
+    """Whether a local-pack listing is the client.
+
+    Substring containment either way, case-folded. A shop's Google listing is routinely
+    longer than the name on its own website ("Albert Nahman Plumbing, Heating, and
+    Cooling" vs "Albert Nahman Plumbing"), so exact equality would report a present
+    business as absent — the one error this figure must not make.
+
+    Deliberately NOT fuzzy: `detect_mention`'s job is reading prose, whereas these are
+    two business names, and a fuzzy match here would eventually claim a rival is the
+    client. When containment fails the answer is "absent", which is the honest,
+    checkable outcome.
+    """
+    a, b = pack_name.strip().casefold(), client.strip().casefold()
+    if not a or not b:
+        return False
+    return a in b or b in a
+
+
+def build_local_pack_payload(
+    captures: list[LocalPackCapture], client: str, location: str
+) -> LocalPackPayload | None:
+    """Shape captured local packs into the report block. Pure; None when nothing captured."""
+    if not captures:
+        return None
+    rows: list[LocalPackRow] = []
+    client_positions: dict[str, int | None] = {}
+    for capture in captures:
+        client_rank: int | None = None
+        for entity in capture["entities"]:
+            is_client = _is_same_business(entity["name"], client)
+            if is_client and client_rank is None:
+                client_rank = entity["position"]
+            rows.append(
+                LocalPackRow(
+                    query_id=capture["query_id"],
+                    prompt=capture["prompt"],
+                    position=entity["position"],
+                    name=entity["name"],
+                    is_client=is_client,
+                    address=entity["address"] or None,
+                    rating=entity["rating"],
+                    reviews=entity["reviews"],
+                    phone=entity["phone"],
+                    website=entity["website"],
+                )
+            )
+        # Recorded for EVERY captured query, including as None — "the client is not in
+        # its own city's pack for this query" is the finding, not missing data.
+        client_positions[capture["query_id"]] = client_rank
+    return LocalPackPayload(
+        present=True,
+        location=location,
+        sources=sorted({c["source"] for c in captures}),
+        queries_captured=len(captures),
+        entities=rows,
+        client_positions=client_positions,
+    )
+
+
 def build_report(
     outcome: AuditOutcome,
     judgments: list[AnswerJudgment] | None = None,
     fact_sheet_present: bool = False,
     run_date: str | None = None,
     site_audit: SiteAuditPayload | None = None,
+    local_pack: LocalPackPayload | None = None,
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -182,7 +306,11 @@ def build_report(
     brands = [client, *competitors]
     results = outcome.results
     domains = outcome.client_domains
-    engines = sorted({r["engine_name"] for r in results})
+    # Split the engines that measured something from the ones that produced nothing.
+    # Row existence is not evidence of measurement — see ReportPayload.engines.
+    engine_coverage = metrics.coverage_by_engine(results)
+    engines = sorted(name for name, c in engine_coverage.items() if c.is_measured)
+    dead_engines = sorted(name for name, c in engine_coverage.items() if not c.is_measured)
     run_date = run_date or datetime.now(UTC).date().isoformat()
     has_judge = bool(judgments) and any(j.assessed for j in (judgments or []))
 
@@ -232,11 +360,15 @@ def build_report(
     # --- By-bucket (results-based; valid in either mode) ---
     mention_buckets = metrics.mention_rate_by_bucket(results, client)
     citation_buckets = metrics.citation_rate_by_bucket(results, domains) if domains else {}
+    bucket_coverage = metrics.coverage_by_bucket(results, client)
+    _empty = metrics.Coverage(answered_cells=0, total_cells=0)
     by_bucket: list[BucketRow] = [
         BucketRow(
             bucket=bucket,
             mention_rate=rate,
             citation_rate=(citation_buckets.get(bucket) if domains else None),
+            answered_cells=bucket_coverage.get(bucket, _empty).answered_cells,
+            total_cells=bucket_coverage.get(bucket, _empty).total_cells,
         )
         for bucket, rate in sorted(mention_buckets.items())
     ]
@@ -313,6 +445,8 @@ def build_report(
         citation_rate_client=citation_rate_client,
         accuracy_assessed=accuracy_assessed,
         accuracy_flag_count=(len(accuracy_flags) if accuracy_assessed else None),
+        answered_cells=sum(c.answered_cells for c in engine_coverage.values()),
+        attempted_cells=sum(c.total_cells for c in engine_coverage.values()),
     )
 
     return ReportPayload(
@@ -321,6 +455,7 @@ def build_report(
         query_set_version=outcome.query_set_version,
         runs_per_query=outcome.runs_per_query,
         engines=engines,
+        dead_engines=dead_engines,
         competitors=competitors,
         client_domains=domains,
         detection="judge" if has_judge else "regex",
@@ -331,6 +466,7 @@ def build_report(
         sources=sources,
         losing_queries=losing_queries,
         site_audit=site_audit,
+        local_pack=local_pack,
     )
 
 

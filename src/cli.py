@@ -8,10 +8,11 @@ from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
 from src.audit.technical_audit import render_technical, run_competitive
 from src.config import settings
-from src.engines.ai_overviews_engine import AIOverviewsEngine
 from src.engines.anthropic_engine import AnthropicEngine
 from src.engines.anthropic_search_engine import AnthropicSearchEngine
 from src.engines.base import BaseEngine
+from src.engines.dataforseo_ai_mode import DataForSEOAIModeEngine
+from src.engines.dataforseo_ai_overviews import DataForSEOAIOverviewsEngine
 from src.engines.gemini_engine import GeminiEngine
 from src.engines.gemini_grounded_engine import GeminiGroundedEngine
 from src.engines.openai_engine import OpenAIEngine
@@ -42,12 +43,16 @@ logger = logging.getLogger(__name__)
 # surfaces (ChatGPT-with-search, Claude-with-search, Gemini grounding, Perplexity,
 # Google AI Overviews). They measure different channels — keep them distinct.
 _MEMORY_CLASSES = (OpenAIEngine, AnthropicEngine, GeminiEngine, PerplexityEngine)
+# NOTE: the CLI builds these with no location, so the two Google SERP surfaces measure
+# an unpinned locale — fine for a national product, NOT a local measurement. The local
+# path goes through the CSV/API route, which carries `location` (see engine_registry).
 _SEARCH_CLASSES = (
     OpenAISearchEngine,
     AnthropicSearchEngine,
     GeminiGroundedEngine,
     PerplexityEngine,
-    AIOverviewsEngine,
+    DataForSEOAIOverviewsEngine,
+    DataForSEOAIModeEngine,
 )
 
 

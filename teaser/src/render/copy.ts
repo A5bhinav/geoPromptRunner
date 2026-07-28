@@ -26,6 +26,7 @@ export function engineLabel(engine: string): string {
     perplexity: "Perplexity",
     ai_overviews: "AI Overviews",
     google_ai_overviews: "AI Overviews",
+    google_ai_mode: "Google AI Mode",
     openai: "ChatGPT",
     openai_search: "ChatGPT",
     gemini: "Gemini",
@@ -49,6 +50,7 @@ export function engineColor(engine: string): string {
     perplexity: "#20808D",
     ai_overviews: "#4285F4",
     google_ai_overviews: "#4285F4",
+    google_ai_mode: "#4285F4",
     gemini: "#8E75F0",
     gemini_grounded: "#8E75F0",
     anthropic: "#CC785C",
@@ -138,7 +140,40 @@ export function ctaLine(companyName: string): string {
  * every run the audit captured (≥2). Empty string otherwise, so a single-sample
  * audit makes no repeatability claim it can't back up.
  */
+/**
+ * Which kind of surface an engine is. Isolation plan, Layer 5: "report parametric and
+ * retrieval surfaces separately so their different variance profiles are visible."
+ *
+ * - `memory` — the model answering from training data. No live retrieval, so it reflects
+ *   what the model absorbed months ago, not what a buyer searching today would see.
+ * - `search` — the model answering with live retrieval.
+ * - `serp`   — a capture of an actual Google results page.
+ */
+export function engineSurface(engine: string): "memory" | "search" | "serp" {
+  if (engine === "openai" || engine === "gemini" || engine === "anthropic") return "memory";
+  if (
+    engine === "google_ai_overviews" ||
+    engine === "ai_overviews" ||
+    engine === "google_ai_mode" ||
+    engine === "google_local_pack"
+  ) {
+    return "serp";
+  }
+  return "search";
+}
+
+export function isParametric(engine: string): boolean {
+  return engineSurface(engine) === "memory";
+}
+
 export function reproNote(lead: Finding): string {
+  // A parametric surface must never carry the reproducibility claim. "Asked N times and
+  // it held" tells a prospect the result is stable and checkable — but a memory-only
+  // answer is the model reciting training data, so repeating the question mostly
+  // re-measures the same frozen snapshot rather than confirming anything about today.
+  // Layer 5 exists precisely because those two variance profiles are not comparable, and
+  // this is the one place the teaser would otherwise blur them in front of a customer.
+  if (isParametric(lead.engineName)) return "";
   if (lead.runsObserved >= 2 && lead.runsConfirming === lead.runsObserved) {
     return `Asked ${lead.runsObserved} separate times — ${lead.competitor} came up every time. This isn't a one-off.`;
   }

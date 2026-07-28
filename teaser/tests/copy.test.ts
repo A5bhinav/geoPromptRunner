@@ -3,7 +3,9 @@ import { test } from "node:test";
 import {
   competitorVerb,
   copyFor,
+  engineColor,
   engineLabel,
+  engineSurface,
   headline,
   leadSentence,
   localCtaLine,
@@ -11,6 +13,7 @@ import {
   localLeadSentence,
   localStakesLine,
   LOCAL_SOURCE_CHECKLIST,
+  isParametric,
   proofCaption,
   reproNote,
   stakesLine,
@@ -164,4 +167,37 @@ test("the local source checklist is the directories AI actually cites", () => {
   for (const consumerOnly of ["Trustpilot", "App Store", "Play Store"]) {
     assert.ok(!LOCAL_SOURCE_CHECKLIST.includes(consumerOnly));
   }
+});
+
+test("a parametric surface never carries the reproducibility claim", () => {
+  // Isolation plan Layer 5: parametric and retrieval surfaces have different variance
+  // profiles and must be reported separately. "Asked N times and it held" tells a
+  // prospect the result is stable and checkable — true of a live-retrieval surface,
+  // misleading for a model reciting training data, where re-asking mostly re-measures
+  // the same frozen snapshot. This is the one place the teaser would blur them in front
+  // of a customer.
+  const held = lead("recommended_first", { observed: 3, confirming: 3 });
+  assert.equal(reproNote({ ...held, engineName: "openai" }), "");
+  assert.equal(reproNote({ ...held, engineName: "gemini" }), "");
+  assert.match(reproNote({ ...held, engineName: "perplexity" }), /Asked 3 separate times/);
+  assert.match(reproNote({ ...held, engineName: "google_ai_mode" }), /Asked 3 separate times/);
+});
+
+test("engineSurface separates memory, search and SERP captures", () => {
+  assert.equal(engineSurface("openai"), "memory");
+  assert.equal(engineSurface("openai_search"), "search");
+  assert.equal(engineSurface("perplexity"), "search");
+  assert.equal(engineSurface("gemini"), "memory");
+  assert.equal(engineSurface("gemini_grounded"), "search");
+  assert.equal(engineSurface("google_ai_mode"), "serp");
+  assert.equal(engineSurface("google_ai_overviews"), "serp");
+  assert.equal(isParametric("openai"), true);
+  assert.equal(isParametric("perplexity"), false);
+});
+
+test("google_ai_mode has all three registry entries", () => {
+  // Without these it prints as "Google Ai Mode" in default black and scores as
+  // undefined credibility, which silently demotes it in hero selection.
+  assert.equal(engineLabel("google_ai_mode"), "Google AI Mode");
+  assert.notEqual(engineColor("google_ai_mode"), "#1b1a17");
 });

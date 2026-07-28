@@ -40,6 +40,7 @@ KNOWN_ENGINES: frozenset[str] = frozenset(
         "anthropic_search",
         "gemini_grounded",
         "google_ai_overviews",
+        "google_ai_mode",
         "mock",
     }
 )
@@ -68,7 +69,7 @@ class RunConfig:
     runs_per_query: int
     client_domains: list[str]
     judge: bool  # run the LLM judge after the audit (needs OPENAI_API_KEY)
-    # SearchApi canonical location NAME ("Berkeley,California,United States") for service-area
+    # Google's canonical location name ("Berkeley,California,United States") for service-area
     # businesses; only the google_ai_overviews engine consumes it (W1.3/W1.4). None
     # for nationally-marketed products — that is the pre-pivot behaviour and stays
     # the default, so a CSV with no `location` row parses exactly as before.
@@ -435,7 +436,7 @@ def parse_csv_files(files: list[tuple[str, str]]) -> ParseResult:
             client_domains=_split_list(merged_config.get("client_domains", "")),
             judge=merged_config.get("judge", "").strip().lower() in {"true", "1", "yes"},
             # Blank/whitespace collapses to None so an empty row can't be sent to
-            # SearchApi as a real (empty) locale.
+            # the SERP vendor as a real (empty) locale.
             location=(merged_config.get("location", "").strip() or None),
         )
         today = datetime.now(UTC).date().isoformat()

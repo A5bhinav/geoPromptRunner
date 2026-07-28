@@ -75,20 +75,21 @@ def test_ai_overviews_never_raises_on_non_json_200(monkeypatch: pytest.MonkeyPat
     import httpx
 
     from src.config import settings
-    from src.engines import ai_overviews_engine
+    from src.engines import dataforseo_ai_overviews
 
-    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "test-key")
+    monkeypatch.setattr(settings, "DATAFORSEO_LOGIN", "login")
+    monkeypatch.setattr(settings, "DATAFORSEO_PASSWORD", "password")
 
     class _FakeClient:
-        def get(self, *args: Any, **kwargs: Any) -> httpx.Response:
-            # 200 with an HTML body (a challenge page); request set so
-            # raise_for_status() passes and execution reaches the JSON parse.
-            req = httpx.Request("GET", "https://www.searchapi.io/api/v1/search")
+        def post(self, *args: Any, **kwargs: Any) -> httpx.Response:
+            # 200 with an HTML body (a challenge/interstitial page), so execution
+            # reaches the JSON parse rather than the status-code guard.
+            req = httpx.Request("POST", dataforseo_ai_overviews.DATAFORSEO_SERP_URL)
             return httpx.Response(
                 200, text="<html>Just a moment... (challenge)</html>", request=req
             )
 
-    engine = ai_overviews_engine.AIOverviewsEngine()
+    engine = dataforseo_ai_overviews.DataForSEOAIOverviewsEngine()
     engine._client = _FakeClient()  # type: ignore[assignment]
     assert engine.query_with_citations("best budgeting app") == (None, [])
     assert engine.query("best budgeting app") is None

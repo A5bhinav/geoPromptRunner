@@ -4,6 +4,414 @@ Append-only. Most recent chunk at the top. One entry per chunk, written only aft
 
 ---
 
+## DataForSEO verified live — both parsers were wrong — Completed 2026-07-28
+
+Account verified, both engines captured against real responses, both fixtures pinned.
+The verification step was not a formality: **both parsers, written from documentation,
+were wrong**, and every unit test passed while they were.
+
+### What the live capture found
+
+`ai_overview` carries the whole answer in top-level `markdown` **and repeats it** split
+across `items` (`ai_overview_element`, plus `ai_overview_table_element`). Both parsers
+walked every node and concatenated both copies:
+
+| | parsed | actual | error |
+|---|---|---|---|
+| AI Overviews | 5,601 chars | 2,665 | **2.1×** |
+| AI Mode | 8,778 chars | 2,835 | **3.1×** |
+
+An engine answer inflated 2–3× flows straight into mention detection, the judge, and
+every rate built on them. Fixed by taking the authoritative top-level `markdown` and
+assembling from `items` only when it is absent. Both now match byte-for-byte, with
+citations deduped across the overview-level and element-level `references` arrays.
+
+**AI Mode returns the same element shape** — its item is literally `"type":
+"ai_overview"` — so `parse_ai_mode` now delegates to `parse_ai_overview`. One verified
+parser, so the fix can only ever be made once.
+
+Also learned: AI Mode **requires `location_name`**. The same request with `location_code`
+returned zero tasks, and with no location it was rejected outright.
+
+### The swap is justified by measurement now, not argument
+
+AI Mode answered **5 of 5 local-intent queries** and named the client in 4 of them —
+the surface AI Overviews returned nothing on, twice (0 of 5, 0 of 5):
+
+```
+loc-01 best plumber in Berkeley            4237 chars   client named
+loc-02 who is the most reliable plumber…   9159 chars   client named
+loc-03 emergency plumber in Berkeley       3285 chars   client named
+loc-04 24 hour plumbing service Berkeley   2931 chars   client named
+loc-05 top rated drain cleaning…           4344 chars   absent
+```
+
+### End-to-end on the recommended stack
+
+Run `86b644f0`, `gemini_grounded · perplexity · google_ai_mode · openai`:
+
+```
+cells        : 40 / 40 answered      dead_engines: []
+local_intent : mention 20%   coverage 20/20
+brand        : mention 100%  coverage 12/12
+local pack   : serper_places  client ranks 1,1,3,2,2
+engine_models: openai=gpt-5.6-luna  perplexity=sonar  gemini_grounded=gemini-2.5-flash
+```
+
+**Every engine answered every cell.** The first run in this sequence (`e186c524`)
+answered 11 of 30 with one surface silently dead. Total DataForSEO spend to verify and
+run: well under $0.10 of the $1 signup credit.
+
+### One more fix the credentials exposed
+
+`/local-entities` asserted the AI Overviews engine was the SearchApi class. Once that
+surface gained a second vendor, the assert became a 500 the moment DataForSEO credentials
+existed — DataForSEO captures Overviews but has no local-pack method. The endpoint now
+goes through `local_pack.fetch_local_pack`, where it belonged since Phase 5: the two
+surfaces were never the same thing, and it gains Serper's richer data.
+
+Engines also now carry `BaseEngine.last_error`, so a provider's own explanation reaches
+the run record. The difference in what gets stored when an account is unverified:
+*"liveness probe returned no answer (model deprecated, key rejected, or provider down)"*
+— three guesses — versus *"HTTP 403 [40104] Please verify your account before using the
+API"*, which is an instruction.
+
+### Gate
+
+mypy clean (84 files) · ruff clean · pytest **378 passed, 1 skipped** · teaser 165 ·
+`tsc --noEmit` clean.
+
+---
+
+## Model repin + Google AI Mode + Isolation L5 labelling — Completed 2026-07-28
+
+Implements the recommendations in `geo-engine-cost-comparison.html` (28 Jul 2026) and the
+considerations listed in its §7. Two of them turned out to be wrong or incomplete once
+run against the live API — recorded below, because both change the decision.
+
+### The recommended models
+
+**`openai`: `gpt-4o-2024-08-06` → `gpt-5.6-luna`.** Sunsetting model, ~3.3× the price
+($0.0050 → $0.0015/call). Verified live before pinning.
+
+**`google_ai_mode` (new, `src/engines/dataforseo_ai_mode.py`).** The reason for the swap:
+AI Overviews is absent from ~85% of local-intent SERPs (0 of 5 measured), so
+`engine_routing` skips it there and the Google *answer* surface goes unmeasured at the
+buying moment. AI Mode answers every intent → no routing skip, ~100% coverage. The trade
+template is now `gemini_grounded;perplexity;google_ai_mode;openai` — 580 cells, ~$3.12
+engines-only at runs=5, and **no routed-out cells at all**.
+
+### Two things the cost document got wrong
+
+**1. `gpt-5.6-luna` cannot take `temperature`.** Not "prefers not to" — the API rejects
+it: *"Unsupported value: 'temperature' does not support 0 with this model. Only the
+default (1)."* Sending `ENGINE_TEMPERATURE` would 400 every call and silently zero the
+surface, which is exactly how run e186c524 lost an engine. The payload now omits it and
+`tests/test_isolation.py` asserts its **absence**, so a well-meaning "restore the
+determinism knob" edit fails in CI rather than in production.
+
+Measured what that costs (5 runs of one category query): gpt-4o at temperature 0 produced
+**5/5 distinct answers**; luna at its fixed temperature 1 produced **3/5**, and both named
+a stable brand set. **The temperature pin was not buying textual determinism in the first
+place.** The real noise control is RUNS_PER_QUERY plus the majority-vote collapse in
+`metrics._verdicts`, and that is untouched.
+
+**2. There is no drift control to switch to.** §7 says adopting a 5.6 model "means
+finding a different drift control — preflight.py and canary.py are the existing
+candidates." Neither works: the canary tests cross-call isolation, not model identity, and
+`preflight` records the same alias string across a model change. gpt-5.6-luna also returns
+`system_fingerprint: None`, so OpenAI's own backend-change signal is unavailable.
+**Drift on this surface is currently undetectable**, and that is written into the pin
+comment rather than glossed. Re-pin the moment OpenAI publishes a dated id.
+
+Rather than weaken the L3 guard, undated pins now need a reviewed entry in
+`src/engines/model_pins.py` carrying the reason and the loss. The test fails for any
+engine that is neither dated nor registered — which also made three pre-existing undated
+pins (gemini, gemini_grounded, perplexity) explicit for the first time.
+
+### Considerations from §7, addressed
+
+- **cost.py stale in three places** — all fixed: `openai` 0.01 → 0.0015 (~7× off);
+  `openai_search` 0.03 described a dead model; the judge comment said "Haiku-tier" when
+  `JUDGE_MODEL` is Sonnet 4.5 and deliberately so (43% vs 95% flag recall — that line
+  cannot be cheapened). Two tests that hardcoded prices now read them from
+  `ROUGH_COST_PER_CALL`, so a repricing can't break arithmetic tests again.
+- **Two teaser defaults disagreed** (`pipeline.ts` vs `teaser/page.tsx`) — a ~2× cost
+  spread and *different measured surfaces* depending on which door a prospect came
+  through. Both are now `perplexity · openai · google_ai_mode`, with a comment in each
+  pointing at the other.
+- **AI Mode's three registry entries** — `engineLabel`, `engineColor`,
+  `ENGINE_CREDIBILITY` (5, matching AI Overviews), pinned by a test. Without them it
+  printed as "Google Ai Mode" in black and scored as undefined.
+- **Isolation Layer 5, finally implemented.** `reproNote` promised a prospect "asked N
+  times, it held every time" for *any* surface. For a parametric engine that is
+  misleading — re-asking mostly re-measures a frozen training snapshot. Added
+  `engineSurface()` / `isParametric()` and gated the claim. Chose this over relabelling
+  `openai` → "ChatGPT (from memory)", which would have mangled the prose
+  ("Ask ChatGPT (from memory) …") while fixing less.
+
+### Not done, deliberately
+
+- **Neither DataForSEO engine is verified against a live response.** Both carry a loud
+  UNVERIFIED warning; the `ai_overview` / AI Mode element layouts are undocumented, so
+  both parsers walk defensively rather than asserting a schema nobody has seen. Blocked
+  on credentials. Until then `google_ai_mode` lands in `skipped_engines` — visible, not
+  silent.
+- **The audit template's missing judge row.** §7 calls it "possibly unintended". It costs
+  real money and changes what a run produces, so it is a decision to take, not a default
+  to flip quietly.
+
+### Gate
+
+mypy clean (84 files) · ruff clean · pytest **372 passed, 1 skipped** · teaser **165
+passed** · `tsc --noEmit` clean.
+
+---
+
+## Local-pack capture + Serper consolidation (Phases 4–5) — Completed 2026-07-28
+
+Completes the plan whose first half is in the entry below. Phase 3 stopped paying AI
+Overviews for local-intent queries; this measures them with the surface that actually
+answers them. `SERPER_API_KEY` is now set, which also unblocks Cat 6 —
+`configured_tools()` reports `serper: True`, so `reviews_presence()` and the local
+report's review-platform checklist can run for the first time.
+
+### Serper vs SearchApi, probed live before a line of parser was written
+
+The 2026-07-27 entry below is why: that bug came from writing a format from vendor docs
+and unit-testing our own wrong string. So both vendors were called first, same query,
+same market:
+
+| | Serper `/places` | SearchApi `local_results` |
+|---|---|---|
+| businesses returned | **10** | 3 |
+| street addresses | yes | mostly absent |
+| phone / website | **yes** | no |
+| stable id | `cid` | `ludocid` — **same value** |
+| closed flag | **none exposed** | `is_closed` |
+| price | ~$0.001/query (2,500 free) | ~$0.02, finite credits |
+
+Serper accepts the location string the repo already stores (`"Berkeley,California,United
+States"`, no spaces) **and** the spaced variant. Location binds hard: probing "plumber"
+across Berkeley / Oakland / Austin returned three disjoint business sets, so the
+wrong-metro failure the W4.2 brief warns about is caught by passing it.
+
+`cid == ludocid` for the same business, so entities join across vendors and the
+SearchApi fallback is a real substitute rather than a parallel universe. `LocalEntity`
+gained `phone`/`website` (None on the SearchApi path) — both are NAP inputs, and a
+listing whose phone disagrees with the fact sheet is a Cat 6 finding.
+
+**The one honest regression:** Serper exposes no closed-business field, so the
+`is_closed` guard cannot be enforced on Serper data — the field does not exist to check.
+Recorded in the module docstring as a known gap rather than papered over; recommending a
+shut-down business is the local twin of `DEFUNCT_BRANDS`.
+
+### What was built
+
+- `src/engines/local_pack.py` — `fetch_local_pack(query, location) -> (entities, source)`,
+  Serper first with SearchApi fallback. `None` from a vendor means *failed* (fall back);
+  `[]` means *answered, no pack* (don't). Confusing those would pay SearchApi for every
+  query that legitimately has no pack, so a test pins it.
+- `_run_local_pack_phase` in `src/api/runner.py`, a best-effort daemon thread beside the
+  site audit. `_join_site_audit` became variadic `_join_phases` so adding a phase can't
+  mean forgetting to join it at one of the three exit paths. Captures each local-intent
+  query **once**, not `runs_per_query` — a SERP listing has no sampling noise to average.
+- `local_pack_entities` table (applied) + `db.save_local_pack_entities` /
+  `get_local_pack_entities` through `_execute`. `on delete cascade` keeps the project
+  hard-delete path correct with no code change.
+- `LocalPackPayload` on the report, with `client_positions` — *does this shop appear in
+  its own city's pack, and where* — plus the TypeScript mirror.
+- **Explicit non-goal, tested:** the pack never touches `mention_rate`,
+  `share_of_model`, `by_bucket` or the grade. A ranked business list is not an answer;
+  feeding it through the answer path would have the judge scoring prominence on a SERP
+  listing. `test_the_local_pack_never_moves_a_visibility_metric` asserts every
+  visibility figure is byte-identical with and without the payload.
+- Client matching is substring containment either way, not exact equality: a Google
+  listing is routinely longer than the name on the shop's own site ("Albert Nahman
+  Plumbing, Heating, and Cooling" vs "Albert Nahman Plumbing"). Deliberately not fuzzy —
+  a fuzzy match would eventually call a rival the client.
+
+### openai_search is unusable on this account, and the numbers say so
+
+The repin in the entry below made the model work — a single call returns 4,107 chars /
+11 citations. A real run still lost **0 of 10** cells, twice. Measured cause:
+
+- OpenAI caps search-class models at **6,000 tokens/minute** on this account
+  (`x-ratelimit-limit-tokens`, read live).
+- One `openai_search` answer consumes **17,227 tokens** — 16,455 of them retrieved web
+  context. **One call is ~3x the entire minute budget.**
+- Sustainable rate: 0.3 calls/min. ~29 min for a 10-query set, **~7 h** for the plumbing
+  template at runs=5. `gpt-4o-search-preview` carries the same 6k cap, so this is
+  account tier, not model choice.
+
+Serializing the surface (`PROVIDER_CONCURRENCY_OVERRIDES`, added) prevents a 429
+stampede but cannot fix a token budget, and that comment says so rather than implying a
+fix. `openai_search` is therefore **out of the local template's default engines**, pinned
+by a test with the reasoning attached; `--surface search` still includes it for anyone on
+a higher tier. Raising the OpenAI tier is the real fix.
+
+Worth noting what this validates: the Phase-1 accounting turned a run that would have
+read `done 35/35` into `dead_engines: ["openai_search"]`, `21/35 cells answered`. The
+honest-accounting work paid for itself on its first real run.
+
+### Verified end-to-end
+
+Live run `9d436a20`, Berkeley plumbing, through `POST /audits`:
+
+```
+engines measured : ['gemini_grounded', 'google_ai_overviews', 'perplexity']
+dead_engines     : ['openai_search']
+cells            : 21 / 35
+local_pack       : serper_places, 5 queries, 50 businesses
+CLIENT RANK      : loc-01:1  loc-02:1  loc-03:2  loc-04:1  loc-05:6
+```
+
+50 rows persisted (50 with phone, 40 with website), and the report rebuilds byte-identically
+from storage alone in a fresh process. The interesting finding is the split itself: the
+client is **#1 in Berkeley's local pack** yet mentioned in **0%** of local-intent AI
+answers — it owns the map and is invisible in the answers built beside it. That is
+exactly the gap a shop owner is paying to be told, and no single number could express it.
+
+Note `google_ai_overviews` answered 1 of 5 even after routing — AIO is thin on this
+trade's hybrid/brand queries too. That is the follow-up measurement the routing table's
+rationale already flags (brand was 0 of 3 twice now, still n too small to encode).
+
+### Gate
+
+mypy clean (81 files) · ruff clean · pytest **359 passed, 1 skipped** · `tsc --noEmit`
+clean · teaser 162 green.
+
+### Up next
+
+Raise the OpenAI tier or leave `openai_search` out. Gather enough observations to decide
+AIO on `brand`. Render the new `local_pack` block in the local report template (§3's
+checklist can now be produced, since Serper is configured).
+
+---
+
+## Engine health + intent-scoped routing (Phases 0–3, 6) — Completed 2026-07-28
+
+Found by running a real local audit (run `e186c524`, Berkeley plumbing, 10 queries ×
+3 engines). It finished `done 30/30` and produced a report — while measuring almost
+nothing. Same failure class as the 2026-07-27 SearchApi entry below, which predicted
+exactly this: "the run would have completed with that surface simply empty."
+
+### The two findings
+
+**1. `openai_search` answered 0 of 10 cells.** Its pin,
+`gpt-4o-search-preview-2025-03-11`, is 404 deprecated. The engine honored its contract
+(`None`, never raised), so nothing crashed — and nothing warned. The run status read
+`openai_search 10/10`, ten empty rows persisted, and `reports.py` listed the surface
+among the engines that had measured the client, because that list was built from **row
+existence, not answer existence**. One third of the run's cells had no data behind
+them and the artifact could not say so.
+
+Two things worth carrying forward: `models.list` **still returns the dead id**, so no
+listing check could have caught this — only a real invocation; and the *undated*
+`gpt-4o-search-preview` alias is alive but was deliberately rejected, because
+`tests/test_isolation.py` requires a dated snapshot. Now pinned to
+`gpt-5-search-api-2025-10-14` (dated, live, same `annotations[].url_citation` shape,
+4107 chars / 11 citations on verification).
+
+**2. AI Overviews is the wrong instrument for `local_intent`.** AIO returned content
+for 1 of 10 queries — the single `informational` one. 0 of 5 `local_intent`, 0 of 3
+`brand`. Industry data agrees: local-intent SERPs show a Local Pack ~93% of the time
+and an AI Overview ~15% (~7% for "near me"), versus ~92% informational / ~97% hybrid.
+Google serves the local pack there, not an Overview.
+
+`src/prompts/intent.py` already documented those percentages on `HYBRID` and
+`INFORMATIONAL` — the query-set layer knew; the runner never acted on it. Meanwhile
+`LOCAL_BUCKET_ALLOCATION` gives `local_intent` the plurality (0.45), so most of a local
+audit's finite SearchApi credits were being spent where the surface structurally isn't.
+
+### What was built
+
+- **Phase 0** — repinned `openai_search`; comment records the 404, the `models.list`
+  trap, and why the undated alias was refused.
+- **Phase 1** — `metrics.Coverage` + `coverage`/`coverage_by_bucket`/`coverage_by_engine`
+  (additive; `_rate` and every existing rate function untouched). `reports.py` now
+  splits `engines` (answered ≥1) from `dead_engines`, and `BucketRow` carries
+  `answered_cells`/`total_cells` so a bucket nothing answered renders "—" not "0%" — a
+  brand cannot be absent from an answer that never existed. `runner.py` tracks
+  `engine_answered` beside `engine_completed`, marks a 0-answer surface `failed` with a
+  reason on a terminal run, and `_status_from_db` now derives per-engine counts from
+  stored rows instead of splitting totals evenly (an even split hid the failure on
+  restart).
+- **Phase 2** — `src/pipeline/preflight.py`: one real throwaway query per engine before
+  the fan-out, retried once so a transient 429 can't condemn a working surface; dead
+  engines move into `skipped_engines` and write no rows. Wired into both the API runner
+  and `orchestrator.run_audit` (the CLI path that produced `e186c524`), gated by
+  `ENGINE_PREFLIGHT` (off in tests). Persisted to a new `audit_runs.engine_probe` jsonb
+  column so a report can explain *why* a surface is absent.
+- **Phase 3** — `src/pipeline/engine_routing.py`: `ENGINE_POLICY` with exactly one
+  entry, `google_ai_overviews` skipping `LOCAL_INTENT`, carrying its evidence in a
+  `rationale` string. Policies are **denylists on purpose**: `BRAND` is shared between
+  both ICP families, so an allowlist of "informational + hybrid" would have stripped AIO
+  from consumer `CATEGORY`/`COMPARISON` queries while looking like a local-only change.
+  `prompt_runner` builds its work-list from `routed_cells`, and the cost estimate and
+  per-engine progress denominators come from the same function so they cannot disagree.
+- **Phase 6** — `cost.py`: fixed the `google_ai_overviews` comment naming the wrong
+  vendor (SerpApi → SearchApi), added `PREFLIGHT_COST_PER_ENGINE` and
+  `OFFSITE_RUN_COST_USD` (derived from `MAX_STEPS = 8` and the agent's tool quota, not
+  guessed). The Cat 6 agent always spent and the budget guard had never counted it.
+
+Effect on the real plumbing template at runs=5: 435 → 370 calls, $8.12 → $6.82, and
+**SearchApi credits 145 → 80**.
+
+### The preflight's own bug, caught the same way
+
+The first version defined liveness as "returned answer text" for every engine. Run
+against the real engine set it **dropped `google_ai_overviews`** — a healthy surface —
+because the probe query happened to have no AI Overview. Google shows none for most
+queries and always for local-intent ones, which is the entire premise of Phase 3: an
+empty capture there is *data*, not a failure.
+
+Fixed by adding `BaseEngine.probe(prompt) -> (alive, chars, citations)` to the engine
+contract. The default is unchanged behaviour for model engines; `AIOverviewsEngine`
+overrides it so liveness means **the SERP request succeeded** (a 401, an exhausted
+credit balance or an outage still fail). It now reads `alive=True, chars=0`.
+`tests/test_engine_liveness.py` pins both directions — success-with-no-Overview is
+alive, transport error is dead — because this is precisely the distinction that gets
+collapsed again by anyone "simplifying" the probe.
+
+Worth noting: the probe costs one SearchApi credit per run, since checking that the
+request works means making one.
+
+### Deliberately not done
+
+- **AIO on local `brand` queries.** Our run saw 0 of 3, which suggests skipping it. n=3
+  with no external corroboration, so it stays a measurement to make rather than a guess
+  to ship — same discipline as `SAMPLING_BANDS` shipping empty.
+- **A new `"degraded"` run state.** Degradation is surfaced additively instead; a new
+  terminal state would need the `web/lib/api.ts` union and the poller's terminal set,
+  and an unknown state polls forever.
+
+### Also fixed on the way past
+
+`ruff check src/` was failing on `main` (the `cf041f7` message claims otherwise). The
+Supabase CLI's gitignored `supabase/` directory (added in `078eda5`) makes ruff's isort
+classify the `supabase` *package* as first-party and demand the import move — so the
+gate passed or failed depending on whether someone had run the CLI locally. Fixed in
+config (`known-third-party = ["supabase"]`) rather than by moving the import, which
+would have oscillated.
+
+### Gate
+
+mypy clean (80 files) · ruff clean · pytest **348 passed, 1 skipped** (was 321) ·
+`tsc --noEmit` clean for `web/` and `teaser/` · teaser 162 tests green. Verified against
+the real run: `engines: ["google_ai_overviews", "perplexity"]`,
+`dead_engines: ["openai_search"]`, 11 of 30 cells answered.
+
+### Up next
+
+Phase 4 (capture the local pack as a measured surface — it is the 93% surface and
+`query_local_entities` still has no production caller) and Phase 5 (Serper as the
+local-pack vendor). Phase 5 needs `SERPER_API_KEY`, which is unset — that also leaves
+Cat 6 offsite degraded to its deterministic pre-pass, so the local report's
+review-platform checklist cannot currently be produced at all.
+
+---
+
 ## SMB pivot patch — SearchApi location format was wrong (caught by running it) — Completed 2026-07-27
 
 ### The bug

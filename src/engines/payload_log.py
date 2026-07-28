@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Keys that must never appear in a recorded payload. Engines only pass request
 # *bodies* (auth lives in headers/clients), but scrub defensively anyway —
-# SearchApi puts its key in query params, and a future engine might too.
+# A SERP vendor may put its key in query params rather than a header (SearchApi did),
+# and a future engine might too.
 _SECRET_KEYS = frozenset({"api_key", "apikey", "key", "token", "authorization"})
 
 

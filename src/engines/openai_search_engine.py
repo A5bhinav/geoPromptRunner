@@ -18,7 +18,19 @@ logger = logging.getLogger(__name__)
 # ChatGPT-with-search surface a consumer actually sees, not GPT's training memory.
 # Dated snapshot, not the floating alias (isolation plan, L3) — retrieval still
 # varies run to run (L5), but the model under it stays fixed across cycles.
-MODEL = "gpt-4o-search-preview-2025-03-11"
+#
+# Repinned 2026-07-28. The previous pin, `gpt-4o-search-preview-2025-03-11`, was
+# 404 "has been deprecated" on every call — a whole surface returned nothing for
+# an entire local audit run while the run still reported `done 10/10` (see the
+# 2026-07-28 build-log entry, and the 2026-07-27 SearchApi-location entry for the
+# same failure class). Two things worth remembering:
+#   - `models.list` STILL ADVERTISES the dead id, so a listing check cannot detect
+#     this. Only a real invocation can — which is why `src/pipeline/preflight.py`
+#     probes rather than lists.
+#   - The undated `gpt-4o-search-preview` alias is live and was deliberately NOT
+#     chosen: `tests/test_isolation.py` (DATED_MODEL) requires a dated snapshot so
+#     a provider's silent model swap shows up as a metadata diff, not a mystery.
+MODEL = "gpt-5-search-api-2025-10-14"
 
 
 class OpenAISearchEngine(BaseEngine):

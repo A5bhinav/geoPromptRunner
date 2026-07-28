@@ -18,8 +18,8 @@ SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
 
 # Google AI Overviews has no official API; capture it via a SERP provider
-# (SearchApi.io). Without this key the AI-Overviews surface is skipped.
-SEARCHAPI_API_KEY: str | None = os.getenv("SEARCHAPI_API_KEY")
+# (DataForSEO — see DATAFORSEO_LOGIN/PASSWORD below). SearchApi.io served this surface
+# until 2026-07-28 and was removed: same data, $40/month floor instead of pay-as-you-go.
 
 # --- Engine request tuning (shared by every engine adapter) ---
 # Centralized here so the bounded-run policy lives in one place instead of being
@@ -36,6 +36,12 @@ ENGINE_MAX_RETRIES: int = int(os.getenv("ENGINE_MAX_RETRIES", "2"))
 # ENGINE_CONCURRENCY=1 to restore fully-sequential behavior.
 ENGINE_CONCURRENCY: int = int(os.getenv("ENGINE_CONCURRENCY", "12"))
 ENGINE_PROVIDER_CONCURRENCY: int = int(os.getenv("ENGINE_PROVIDER_CONCURRENCY", "4"))
+# Send one real throwaway query per engine before the fan-out and drop any surface
+# that can't answer (src/pipeline/preflight.py). On by default because the failure it
+# catches is silent and expensive: a deprecated model returns 404 on every call while
+# the run still reports success. A provider listing cannot substitute — OpenAI's
+# models.list still advertises ids that 404 on use. Set 0 to skip (tests, teaser).
+ENGINE_PREFLIGHT: bool = os.getenv("ENGINE_PREFLIGHT", "1") not in ("0", "false", "False")
 # Pin sampling low so repeated runs of the same query are reproducible — the
 # methodology runs each query multiple times to average noise, not to amplify it.
 ENGINE_TEMPERATURE: float = float(os.getenv("ENGINE_TEMPERATURE", "0"))

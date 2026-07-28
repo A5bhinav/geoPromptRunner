@@ -303,7 +303,12 @@ def test_unknown_trade_fails_loudly() -> None:
 def test_trade_template_csv_carries_a_location_row_and_local_intents() -> None:
     csv_text = build_template_csv(trade="hvac")
     assert "config,location," in csv_text
-    assert "google_ai_overviews" in csv_text
+    # A location-aware Google surface must be present, or the location row has nothing
+    # to act on. This was `google_ai_overviews` until 2026-07-28; AI Mode replaced it
+    # because Overviews is absent from ~85% of local-intent SERPs. The engine LIST is
+    # pinned deliberately in tests/test_engine_routing.py — here we only need the
+    # location row to be meaningful.
+    assert "google_ai_mode" in csv_text
     assert "local_intent" in csv_text
     # And the consumer default is untouched by the existence of the trade path.
     assert "Oura" in build_template_csv()

@@ -1,0 +1,498 @@
+{
+ "version": "0.1.20260717",
+ "status_code": 20000,
+ "status_message": "Ok.",
+ "time": "14.8051 sec.",
+ "cost": 0.004,
+ "tasks_count": 1,
+ "tasks_error": 0,
+ "tasks": [
+  {
+   "id": "07290117-2179-0139-0000-2bc061670844",
+   "status_code": 20000,
+   "status_message": "Ok.",
+   "time": "14.6091 sec.",
+   "cost": 0.004,
+   "result_count": 1,
+   "path": [
+    "v3",
+    "serp",
+    "google",
+    "ai_mode",
+    "live",
+    "advanced"
+   ],
+   "data": {
+    "api": "serp",
+    "function": "live",
+    "se": "google",
+    "se_type": "ai_mode",
+    "keyword": "best plumber in Berkeley",
+    "language_code": "en",
+    "device": "desktop",
+    "location_name": "Berkeley,California,United States",
+    "os": "windows"
+   },
+   "result": [
+    {
+     "keyword": "best plumber in Berkeley",
+     "type": "ai_mode",
+     "se_domain": "google.com",
+     "location_code": 1013585,
+     "language_code": "en",
+     "check_url": "https://www.google.com/search?q=best%20plumber%20in%20Berkeley&hl=en&gl=US&udm=50&uule=w+CAIQIFISCdNJhTo2eYWAEZPpdaaVFeqU",
+     "datetime": "2026-07-28 22:17:20 +00:00",
+     "spell": null,
+     "refinement_chips": null,
+     "item_types": [
+      "ai_overview"
+     ],
+     "se_results_count": 0,
+     "items_count": 1,
+     "items": [
+      {
+       "type": "ai_overview",
+       "rank_group": 1,
+       "rank_absolute": 1,
+       "page": 1,
+       "position": "left",
+       "xpath": "/html[1]/body[1]/div[2]/div[1]/div[9]/div[1]/div[2]/div[1]/section[1]/div[1]/div[1]/div[3]/div[4]/div[1]/div[2]/div[1]/div[3]",
+       "markdown": "Based on 2026 [Google Maps](https://www.google.com/maps) ratings, review counts (minimum 25 reviews), and local standing, here are the top-rated plumbing services in Berkeley, CA.\n\nTop-Rated Berkeley Plumbers (Sorted by Rating/Reviews)\n\n| Plumber | Rating | Reviews | Key Specialties |\n|---|---|---|---|\n| LemonTree Plumbing | 5.0 | ~30 | Water heaters, pipes, faucet replacement |\n| Afterglow Heating & Plumbing | 5.0 | 86 | Radiant heat, boilers, water heaters |\n| Lifesaver Plumbing & Rooter | 5.0 | 148 | Drain cleaning, sewer replacement, pipe repair |\n| J J Rooter & Plumbing | 4.9 | 94 | Sewer clogs, drain cleaning, repiping |\n| L.J. Kruse Company | 4.9 | 305 | Residential/commercial heating & plumbing |\n| Albert Nahman Plumbing | 4.7 | 3377 | 24/7 service, tankless water heaters |\n\nTop 4-Point Evaluation Rubric\n\n- **Highest Quality (Afterglow & LemonTree):** 5-star ratings with consistent feedback highlighting expert, tailored service, particularly for complex installations.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo)\n- **Best for Complex/Large Projects (L.J. Kruse):** A long-standing family business (since 1916) trusted for major repairs and commercial work.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzMlgzRjNkQRgK)[[2]](https://www.facebook.com/L.J.KruseCo/)[[3]](https://ljkruse.com/areas-served/san-leandro/)[[4]](https://downtobid.com/contractors/hvac/oakland)[[5]](https://ljkruse.com/areas-served/walnut-creek/)\n- **Best Emergency/Quick Response (Albert Nahman):** Known for 24/7 availability and handling urgent leaks in older Berkeley homes.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK)[[2]](https://albertnahmanplumbing.com/commercial/plumbing/)\n- **Best for Sewer & Drain (J J Rooter & Pipe Spy):** Specialists in sewer lateral replacements and root removal.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo)\n\n**Important Notes:** \n\n- **License Check:** Always verify a plumber's license through the [CA CSLB](https://www.cslb.ca.gov/) to ensure they can legally pull permits in Berkeley.\n- **Verified Offer:** J J Rooter is currently offering 20% off for drain cleaning, as noted in the Google search results.[](https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/) [[1]](https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/)\n\nWould you prefer a **quick emergency repair** (24/7 service), a **specialist for older homes** (repiping/sewer), or a **water heater specialist** (tankless/boiler) so I can recommend the best option from the list?",
+       "items": [
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "Based on 2026 Google Maps ratings, review counts (minimum 25 reviews), and local standing, here are the top-rated plumbing services in Berkeley, CA.",
+         "markdown": "Based on 2026 [Google Maps](https://www.google.com/maps) ratings, review counts (minimum 25 reviews), and local standing, here are the top-rated plumbing services in Berkeley, CA.",
+         "links": [
+          {
+           "type": "link_element",
+           "title": "Google Maps",
+           "description": null,
+           "url": "https://www.google.com/maps",
+           "domain": "www.google.com"
+          }
+         ],
+         "images": null,
+         "references": null
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": "Top-Rated Berkeley Plumbers (Sorted by Rating/Reviews)",
+         "text": null,
+         "markdown": "Top-Rated Berkeley Plumbers (Sorted by Rating/Reviews)",
+         "links": null,
+         "images": null,
+         "references": null
+        },
+        {
+         "type": "ai_overview_table_element",
+         "position": "left",
+         "markdown": "| Plumber | Rating | Reviews | Key Specialties |\n|---|---|---|---|\n| LemonTree Plumbing | 5.0 | ~30 | Water heaters, pipes, faucet replacement |\n| Afterglow Heating & Plumbing | 5.0 | 86 | Radiant heat, boilers, water heaters |\n| Lifesaver Plumbing & Rooter | 5.0 | 148 | Drain cleaning, sewer replacement, pipe repair |\n| J J Rooter & Plumbing | 4.9 | 94 | Sewer clogs, drain cleaning, repiping |\n| L.J. Kruse Company | 4.9 | 305 | Residential/commercial heating & plumbing |\n| Albert Nahman Plumbing | 4.7 | 3377 | 24/7 service, tankless water heaters |",
+         "table": {
+          "table_header": [
+           "Plumber",
+           "Rating",
+           "Reviews",
+           "Key Specialties"
+          ],
+          "table_content": [
+           [
+            "LemonTree Plumbing",
+            "5.0",
+            "~30",
+            "Water heaters, pipes, faucet replacement"
+           ],
+           [
+            "Afterglow Heating & Plumbing",
+            "5.0",
+            "86",
+            "Radiant heat, boilers, water heaters"
+           ],
+           [
+            "Lifesaver Plumbing & Rooter",
+            "5.0",
+            "148",
+            "Drain cleaning, sewer replacement, pipe repair"
+           ],
+           [
+            "J J Rooter & Plumbing",
+            "4.9",
+            "94",
+            "Sewer clogs, drain cleaning, repiping"
+           ],
+           [
+            "L.J. Kruse Company",
+            "4.9",
+            "305",
+            "Residential/commercial heating & plumbing"
+           ],
+           [
+            "Albert Nahman Plumbing",
+            "4.7",
+            "3377",
+            "24/7 service, tankless water heaters"
+           ]
+          ]
+         }
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": "Top 4-Point Evaluation Rubric",
+         "text": "Highest Quality ( Afterglow & LemonTree ): 5-star ratings with consistent feedback highlighting expert, tailored service, particularly for complex installations. Best for Complex/Large Projects ( L.J. Kruse ): A long-standing family business (since 1916) trusted for major repairs and commercial work. Best Emergency/Quick Response ( Albert Nahman ): Known for 24/7 availability and handling urgent leaks in older Berkeley homes. Best for Sewer & Drain ( J J Rooter & Pipe Spy ): Specialists in sewer lateral replacements and root removal.",
+         "markdown": "- **Highest Quality (Afterglow & LemonTree):** 5-star ratings with consistent feedback highlighting expert, tailored service, particularly for complex installations.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo)\n- **Best for Complex/Large Projects (L.J. Kruse):** A long-standing family business (since 1916) trusted for major repairs and commercial work.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzMlgzRjNkQRgK)[[2]](https://www.facebook.com/L.J.KruseCo/)[[3]](https://ljkruse.com/areas-served/san-leandro/)[[4]](https://downtobid.com/contractors/hvac/oakland)[[5]](https://ljkruse.com/areas-served/walnut-creek/)\n- **Best Emergency/Quick Response (Albert Nahman):** Known for 24/7 availability and handling urgent leaks in older Berkeley homes.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK)[[2]](https://albertnahmanplumbing.com/commercial/plumbing/)\n- **Best for Sewer & Drain (J J Rooter & Pipe Spy):** Specialists in sewer lateral replacements and root removal.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo)",
+         "links": null,
+         "images": null,
+         "references": [
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Google",
+           "domain": "www.google.com",
+           "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo",
+           "title": "Afterglow Heating and Plumbing",
+           "text": "Afterglow Heating & Plumbing specializes in hydronic heating systems, radiant floor heating, and high-efficiency boilers for Bay A..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Google",
+           "domain": "www.google.com",
+           "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo",
+           "title": "LemonTree Plumbing",
+           "text": "Hi, I'm Chia \u201cRamon\u201d Lin of LemonTree Plumbing. With six years of experience, I founded my company to offer personalized, fair-pri..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Google",
+           "domain": "www.google.com",
+           "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzMlgzRjNkQRgK",
+           "title": "L.J. Kruse Company",
+           "text": "We are a family owned and operated plumbing and heating business committed to service since 1916"
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Facebook",
+           "domain": "www.facebook.com",
+           "url": "https://www.facebook.com/L.J.KruseCo/",
+           "title": "L.J. Kruse Plumbing, Heating and Cooling | Berkeley CA",
+           "text": "L.J. Kruse Company is a family-owned business celebrating a century of service in the Bay Area."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "LJ Kruse",
+           "domain": "ljkruse.com",
+           "url": "https://ljkruse.com/areas-served/san-leandro/",
+           "title": "HVAC & Plumbing Services in San Leandro, CA \u2502 LJ Kruse",
+           "text": "When your HVAC system in San Leandro requires professional attention, rely on the experts at LJ Kruse. We offer timely and effecti..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Downtobid",
+           "domain": "downtobid.com",
+           "url": "https://downtobid.com/contractors/hvac/oakland",
+           "title": "15 Best Commercial HVAC Contractors Oakland, CA",
+           "text": "The company is known for its ( L.J. Kruse Co. ) exceptional customer service, expertise in residential and commercial services, an..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "LJ Kruse",
+           "domain": "ljkruse.com",
+           "url": "https://ljkruse.com/areas-served/walnut-creek/",
+           "title": "Plumber & HVAC Service in Walnut Creek, CA",
+           "text": "Why Walnut Creek Trusts LJ Kruse More than 100 years in the Bay Area: We've served local families since 1916, and that experience ..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Google",
+           "domain": "www.google.com",
+           "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK",
+           "title": "Albert Nahman Plumbing, Heating, and Cooling",
+           "text": "Prompt furnace and air conditioner repair firm, specializing in tankless water heaters and plumbing services."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Albert Nahman",
+           "domain": "albertnahmanplumbing.com",
+           "url": "https://albertnahmanplumbing.com/commercial/plumbing/",
+           "title": "Commercial Plumbing in Hayward, CA | Albert Nahman",
+           "text": "That's why Albert Nahman Plumbing, Heating, and Cooling offers 24/7 emergency commercial plumbing services throughout Berkeley, Sa..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Google",
+           "domain": "www.google.com",
+           "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo",
+           "title": "J J Rooter & Plumbing",
+           "text": "J J Rooter & Plumbing. We are OPEN. To take care and responding to your emergency Sewer Clogs, Drain Cleaning and Plumbing needs T..."
+          }
+         ]
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "Important Notes:",
+         "markdown": "**Important Notes:**",
+         "links": null,
+         "images": null,
+         "references": null
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "License Check: Always verify a plumber's license through the CA CSLB to ensure they can legally pull permits in Berkeley. Verified Offer: J J Rooter is currently offering 20% off for drain cleaning, as noted in the Google search results. Roto-Rooter +1",
+         "markdown": "- **License Check:** Always verify a plumber's license through the [CA CSLB](https://www.cslb.ca.gov/) to ensure they can legally pull permits in Berkeley.\n- **Verified Offer:** J J Rooter is currently offering 20% off for drain cleaning, as noted in the Google search results.[](https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/) [[1]](https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/)",
+         "links": [
+          {
+           "type": "link_element",
+           "title": "CA CSLB",
+           "description": null,
+           "url": "https://www.cslb.ca.gov/",
+           "domain": "www.cslb.ca.gov"
+          }
+         ],
+         "images": null,
+         "references": [
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Roto-Rooter",
+           "domain": "www.rotorooter.com",
+           "url": "https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/",
+           "title": "How to Find a Good Plumber in Berkeley, CA - Roto-Rooter",
+           "text": "What Should Berkeley Residents Verify Before Hiring a Plumber? Berkeley property owners should confirm a plumber holds a valid Cal..."
+          }
+         ]
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "Would you prefer a quick emergency repair (24/7 service), a specialist for older homes (repiping/sewer), or a water heater specialist (tankless/boiler) so I can recommend the best option from the list?",
+         "markdown": "Would you prefer a **quick emergency repair** (24/7 service), a **specialist for older homes** (repiping/sewer), or a **water heater specialist** (tankless/boiler) so I can recommend the best option from the list?",
+         "links": null,
+         "images": null,
+         "references": null
+        }
+       ],
+       "references": [
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Yelp",
+         "domain": "m.yelp.com",
+         "url": "https://m.yelp.com/search?cflt=plumbing&find_loc=Berkeley%2C+CA",
+         "title": "THE BEST 10 PLUMBING IN BERKELEY, CA - Yelp",
+         "text": "Top 10 Best Plumbing Near Berkeley, California - With Real Reviews. Sponsored Results. Jazz Heating, Air Conditioning and Plumbing..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Roto-Rooter",
+         "domain": "www.rotorooter.com",
+         "url": "https://www.rotorooter.com/berkeleyca/resources/how-to-find-a-good-plumber-in-berkeley-ca/",
+         "title": "How to Find a Good Plumber in Berkeley, CA - Roto-Rooter",
+         "text": "What Should Berkeley Residents Verify Before Hiring a Plumber? Berkeley property owners should confirm a plumber holds a valid Cal..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK",
+         "title": "Albert Nahman Plumbing, Heating, and Cooling",
+         "text": "Prompt furnace and air conditioner repair firm, specializing in tankless water heaters and plumbing services."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo",
+         "title": "LemonTree Plumbing",
+         "text": "Hi, I'm Chia \u201cRamon\u201d Lin of LemonTree Plumbing. With six years of experience, I founded my company to offer personalized, fair-pri..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo",
+         "title": "J J Rooter & Plumbing",
+         "text": "J J Rooter & Plumbing. We are OPEN. To take care and responding to your emergency Sewer Clogs, Drain Cleaning and Plumbing needs T..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzMlgzRjNkQRgK",
+         "title": "L.J. Kruse Company",
+         "text": "We are a family owned and operated plumbing and heating business committed to service since 1916"
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo",
+         "title": "Afterglow Heating and Plumbing",
+         "text": "Afterglow Heating & Plumbing specializes in hydronic heating systems, radiant floor heating, and high-efficiency boilers for Bay A..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHBIaCgNwdnESE0Nnd3ZaeTh4Y0hBeWRIaHdOamMYCg",
+         "title": "Green Eagle Plumbing",
+         "text": "Kensington, CA 94708"
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhwck1XMTVkRjltGAo",
+         "title": "Bay Plumbing",
+         "text": "Bay Plumbing is a leading provider of expert plumbing services dedicated to the Berkeley community and its surrounding areas. With..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK",
+         "title": "Mr. Rooter Plumbing of The Oakland-Berkeley Area",
+         "text": "Well-regarded chain offering plumbing fixture installation, repair and replacement services."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVcxa1pqbHFjV1k1GAo",
+         "title": "Lifesaver Plumbing And Rooter",
+         "text": "Lifesaver Plumbing and Rooter is a trusted plumber serving Richmond, CA, and surrounding areas. With over 25 years of experience, ..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSc01YTnlNdxgK",
+         "title": "Pipe Spy",
+         "text": "Pipe Spy is a plumbing contractor specializing in private sewer lateral repair and replacement. Based in Oakland, California since..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZG5CbWFuSmZPQRgK",
+         "title": "One Step Plumbing",
+         "text": "One Step Plumbing tackles all your residential and commercial plumbing needs. From leaky faucets to complex sewer replacements, th..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEcxNGQzUnVjZxgK",
+         "title": "Honrath & Stacey Plumbing & Heating",
+         "text": "Plumbing and heating repair services at homes and rental properties."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhBM04yUnplWFJvGAo",
+         "title": "EO Plumbing Service",
+         "text": "Greetings from EO Plumbing Service! Family-owned and operated in Richmond, CA, we have 10 years of experience performing residenti..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdaMGJHWnNjQRgK",
+         "title": "ALFA PLUMBING",
+         "text": "930 Cerrito St, Albany, CA 94706"
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaM1pITTJhbkpxGAo",
+         "title": "Wally's Plumbing & Leak Detection",
+         "text": "Wally's Plumbing stands as a cornerstone in the plumbing and leak detection industry, bringing 18 years of expertise to the commun..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdOcmRtUm1OamhuGAo",
+         "title": "American Leak Detection of the East Bay - San Francisco",
+         "text": "The #1 Leak Detection and Plumbing Repair Service in the East Bay and San Francisco. American Leak Detection is the industry leade..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhGeGFtWmZjbWd4GAo",
+         "title": "Big Brothers Plumbing Inc",
+         "text": "Water-fixture repair shop whose technicians install and fix baths, heaters, sinks, toilets, and drains."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHBIaCgNwdnESE0Nnd3ZaeTh4YUdob2VXNW1jR1EYCg",
+         "title": "Big Blue Plumbing",
+         "text": "From minor pipe repairs to extensive projects such as water heater installation, this company does it all."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEhwNmRuRjJkZxgK",
+         "title": "Val Betti Plumbing",
+         "text": "Personalized plumbing service for homes and businesses, featuring honest and reliable plumbers, as well as friendly and courteous ..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Google",
+         "domain": "www.google.com",
+         "url": "https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMFltMDNYMmRvGAo",
+         "title": "Avalon Services",
+         "text": "Repair and installation services are offered, from sink drains to water heaters."
+        }
+       ],
+       "rectangle": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

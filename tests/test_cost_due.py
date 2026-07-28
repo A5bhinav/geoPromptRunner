@@ -22,10 +22,16 @@ class _Eng(BaseEngine):
 
 
 def test_estimate_cost_counts_and_sums() -> None:
-    engines = [_Eng("openai"), _Eng("openai_search")]  # 0.01 + 0.03 per query
+    # Priced off the table, not hardcoded: this test pins the count-and-sum ARITHMETIC,
+    # so a vendor repricing (or a model repin) must not break it. Only a change in how
+    # the estimate is computed should.
+    from src.pipeline.cost import ROUGH_COST_PER_CALL
+
+    engines = [_Eng("openai"), _Eng("openai_search")]
     estimated, calls = estimate_cost(10, engines, 3)
     assert calls == 60  # 10 x 2 x 3
-    assert round(estimated, 3) == round((0.01 + 0.03) * 10 * 3, 3)  # 1.2
+    per_query = ROUGH_COST_PER_CALL["openai"] + ROUGH_COST_PER_CALL["openai_search"]
+    assert round(estimated, 3) == round(per_query * 10 * 3, 3)
 
 
 def test_due_for_rerun() -> None:

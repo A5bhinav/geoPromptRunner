@@ -5,7 +5,9 @@ import logging
 
 from src.config import settings
 from src.engines.base import BaseEngine
-from src.pipeline.cost import CostBudgetExceeded, estimate_cost
+from src.pipeline import preflight
+from src.pipeline.cost import CostBudgetExceeded, estimate_cost_for_queries
+from src.pipeline.engine_routing import ENGINE_POLICY, routed_totals
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.intent import IntentBucket
 from src.prompts.query_set import Query, QuerySet
@@ -13,9 +15,23 @@ from src.storage import db
 from src.storage.db import StorageError
 from src.storage.models import QueryResult
 
-__all__ = ["AuditOutcome", "engine_models", "run_audit", "run_teaser"]
+__all__ = [
+    "AuditOutcome",
+    "EnginesUnavailable",
+    "engine_models",
+    "run_audit",
+    "run_teaser",
+]
 
 logger = logging.getLogger(__name__)
+
+
+class EnginesUnavailable(RuntimeError):
+    """No engine could answer a probe query, so there is nothing to measure with.
+
+    Raised instead of proceeding: a run against zero live surfaces produces a report
+    full of honest-looking zeros, which is worse than a loud stop.
+    """
 
 
 def engine_models(engines: list[BaseEngine]) -> dict[str, str]:
@@ -82,7 +98,27 @@ def run_audit(
     """
     client_domains = client_domains or []
     queries = query_set.queries
-    estimated, total_calls = estimate_cost(len(queries), engines, runs_per_query)
+
+    # Preflight before the estimate, so the printed cost reflects the surfaces that
+    # will actually run. This is the path that produced run e186c524 — a full audit
+    # against a surface whose model had been deprecated — so the CLI gets the same
+    # protection as the API rather than being the one door left unlocked.
+    if settings.ENGINE_PREFLIGHT and engines:
+        live, dead, _record = preflight.split_by_liveness(engines)
+        if dead and progress:
+            for name, reason in dead:
+                print(f"  (dropping {name}: {reason})")
+        engines = live
+        if not engines:
+            raise EnginesUnavailable(
+                "every engine failed its liveness probe — no surface could answer a test "
+                "query (check model pins and API keys)"
+            )
+
+    # Routing-aware: an engine skipped on some intents costs less than queries x
+    # engines x runs implies, and printing the un-routed number would overstate both
+    # the spend and what the run is about to measure.
+    estimated, total_calls = estimate_cost_for_queries(queries, engines, runs_per_query)
     if progress:
         engine_names = ", ".join(e.ENGINE_NAME for e in engines) or "none"
         print(
@@ -90,6 +126,12 @@ def run_audit(
             f"{len(queries)} queries x {len(engines)} engines [{engine_names}] "
             f"x {runs_per_query} runs = {total_calls} calls (~${estimated:.2f} est.)"
         )
+        for name, calls in sorted(routed_totals(queries, engines, runs_per_query).items()):
+            full = len(queries) * runs_per_query
+            if calls < full:
+                policy = ENGINE_POLICY.get(name)
+                skipped = ", ".join(sorted(i.value for i in policy.skip_intents)) if policy else ""
+                print(f"  ({name}: {calls} of {full} cells — not asked {skipped})")
     if max_cost is not None and estimated > max_cost:
         raise CostBudgetExceeded(
             f"estimated ~${estimated:.2f} exceeds budget ${max_cost:.2f} "

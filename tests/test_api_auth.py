@@ -77,13 +77,19 @@ def test_local_entities_requires_a_non_empty_query() -> None:
     assert exc.value.status_code == 422
 
 
-def test_local_entities_is_503_when_the_engine_cannot_be_built(
+def test_local_entities_is_503_when_no_vendor_is_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """No SEARCHAPI_API_KEY → build_engines skips the engine. That is a 503 (the
-    capability is unavailable), not a 200 with an empty list that reads as "this city
-    has no plumbers"."""
-    monkeypatch.setattr(settings, "SEARCHAPI_API_KEY", "")
+    """No local-pack vendor configured → 503 (the capability is unavailable), not a 200
+    with an empty list that reads as "this city has no plumbers".
+
+    Since 2026-07-28 this endpoint goes through ``local_pack.fetch_local_pack`` rather
+    than building the google_ai_overviews engine. That coupling broke the moment AI
+    Overviews changed vendor — DataForSEO captures Overviews but has no local-pack method
+    — and the two surfaces were never the same thing anyway.
+    """
+    monkeypatch.setattr(settings, "SERPER_API_KEY", "")
     with pytest.raises(HTTPException) as exc:
         api_app.local_entities(q="best plumber", location="Berkeley,California,United States")
     assert exc.value.status_code == 503
+    assert "no local-pack vendor is configured" in str(exc.value.detail)

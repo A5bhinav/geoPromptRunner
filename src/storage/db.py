@@ -9,6 +9,7 @@ from typing import Any, TypeVar
 from supabase import Client, create_client
 
 from src.config import settings
+from src.engines.local_pack import LocalPackCapture
 from src.pipeline.metrics import domain_of
 from src.storage.models import (
     AnswerJudgment,
@@ -23,6 +24,9 @@ __all__ = [
     "StorageError",
     "create_audit_run",
     "update_audit_run_progress",
+    "save_engine_probe",
+    "save_local_pack_entities",
+    "get_local_pack_entities",
     "save_query_results",
     "get_query_results",
     "list_audit_runs",
@@ -62,6 +66,7 @@ TABLE_AUDIT_RUNS = "audit_runs"
 TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_JUDGMENTS = "judgments"
+TABLE_LOCAL_PACK = "local_pack_entities"
 
 # Fixed namespaces for deriving deterministic (idempotent) row ids from a row's
 # natural key, so a retried save upserts the same row rather than duplicating it.
@@ -180,6 +185,7 @@ def create_audit_run(
     judge: bool = False,
     engine_models: dict[str, str] | None = None,
     location: str | None = None,
+    engine_probe: dict[str, Any] | None = None,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -215,6 +221,9 @@ def create_audit_run(
         # Persisted so an interrupted LOCAL run resumes with the same market (W1.4);
         # None for nationally-marketed products, the pre-pivot default.
         "location": location,
+        # What the liveness probe saw per engine, so a missing surface is explained
+        # rather than silently absent (src/pipeline/preflight.py).
+        "engine_probe": engine_probe or {},
         "engine_models": engine_models or {},
         "created_at": _now(),
         "updated_at": _now(),
@@ -245,6 +254,68 @@ def update_audit_run_progress(
     _execute(
         f"update_audit_run_progress for run {run_id}",
         lambda c: c.table(TABLE_AUDIT_RUNS).update(row).eq("id", run_id).execute(),
+    )
+
+
+def save_engine_probe(run_id: str, engine_probe: dict[str, Any]) -> None:
+    """Record the liveness-probe result for a run.
+
+    A separate update rather than a ``create_audit_run`` argument because the probe
+    runs inside the background run thread, after the row already exists — the row is
+    inserted first precisely so the UI has something to poll immediately. Best-effort
+    like the progress updates: the caller swallows ``StorageError``, since losing the
+    probe record must never sink a run that is otherwise fine.
+    """
+    _execute(
+        f"save_engine_probe for run {run_id}",
+        lambda c: c.table(TABLE_AUDIT_RUNS)
+        .update({"engine_probe": engine_probe, "updated_at": _now()})
+        .eq("id", run_id)
+        .execute(),
+    )
+
+
+def save_local_pack_entities(run_id: str, captures: list[LocalPackCapture]) -> None:
+    """Persist captured local-pack businesses for a run (create-only).
+
+    One row per (query, business). Stored separately from ``query_results`` because a
+    local pack is a ranked entity list, not an answer — see ``src/engines/local_pack.py``
+    for why routing it through the answer path would be a category error.
+    """
+    rows: list[dict[str, Any]] = []
+    for capture in captures:
+        for entity in capture["entities"]:
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "query_id": capture["query_id"],
+                    "prompt": capture["prompt"],
+                    "source": capture["source"],
+                    "position": entity["position"],
+                    "name": entity["name"],
+                    "address": entity["address"] or None,
+                    "category": entity["category"] or None,
+                    "rating": entity["rating"],
+                    "reviews": entity["reviews"],
+                    "ludocid": entity["ludocid"],
+                    "phone": entity["phone"],
+                    "website": entity["website"],
+                }
+            )
+    if not rows:
+        return
+    _execute(
+        f"save_local_pack_entities for run {run_id} ({len(rows)} rows)",
+        lambda c: c.table(TABLE_LOCAL_PACK).insert(rows).execute(),
+    )
+
+
+def get_local_pack_entities(run_id: str) -> list[dict[str, Any]]:
+    """Stored local-pack rows for a run, in capture order (query, then rank)."""
+    rows = _select_rows(TABLE_LOCAL_PACK, run_id)
+    return sorted(
+        (dict(r) for r in rows),
+        key=lambda r: (str(r.get("query_id") or ""), int(r.get("position") or 0)),
     )
 
 

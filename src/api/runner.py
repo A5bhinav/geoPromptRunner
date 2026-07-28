@@ -7,11 +7,20 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from src.api.engine_registry import build_engines
-from src.api.reports import ReportPayload, SiteAuditPayload, build_report
+from src.api.reports import (
+    LocalPackPayload,
+    ReportPayload,
+    SiteAuditPayload,
+    build_local_pack_payload,
+    build_report,
+)
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.engines.local_pack import LocalEntity, LocalPackCapture
+from src.pipeline import metrics, preflight
 from src.pipeline.answers_export import build_answers_markdown, build_results_csv
-from src.pipeline.cost import CostBudgetExceeded, estimate_total_cost
+from src.pipeline.cost import CostBudgetExceeded, estimate_total_cost_for_queries
+from src.pipeline.engine_routing import routed_totals_by_name
 from src.pipeline.orchestrator import AuditOutcome, engine_models
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.csv_loader import ParsedAudit, RunConfig
@@ -62,6 +71,18 @@ class _RunState:
     judgments: list[AnswerJudgment] = field(default_factory=list)
     site_audit: SiteAuditPayload | None = None
     engine_completed: dict[str, int] = field(default_factory=dict)
+    # Calls that came back with an actual answer, per engine. Tracked SEPARATELY from
+    # engine_completed because a failed call still completes: run e186c524 reported
+    # `openai_search 10/10` while that surface answered nothing at all (404 model).
+    # Attempts alone cannot distinguish a working engine from a dead one.
+    engine_answered: dict[str, int] = field(default_factory=dict)
+    # What the preflight probe saw, per engine — persisted so a report can explain
+    # WHY a surface is missing from the run rather than silently omitting it.
+    engine_probe: dict[str, object] = field(default_factory=dict)
+    # Google local-pack captures for the local-intent queries. Kept OUT of `results`
+    # deliberately: a ranked business list is not an answer, and mixing it in would
+    # feed it to the judge and to mention_rate (src/engines/local_pack.py).
+    local_pack: list[LocalPackCapture] = field(default_factory=list)
     active_engines: list[str] = field(default_factory=list)
     skipped_engines: list[tuple[str, str]] = field(default_factory=list)
     cancel_requested: bool = False
@@ -128,6 +149,10 @@ class EngineStatus:
     completed: int
     total: int
     detail: str | None = None
+    # Of `completed` calls, how many returned an answer. Defaulted so existing
+    # consumers (web/lib/api.ts) keep parsing. `completed > 0 and answered == 0` on a
+    # terminal run means the surface produced no measurement at all.
+    answered: int = 0
 
 
 @dataclass(frozen=True)
@@ -200,8 +225,17 @@ def start_run(audit: ParsedAudit) -> str:
     engines, skipped = build_engines(
         cfg.engines, cfg.client_name, cfg.competitors, location=cfg.location
     )
-    estimated, total_calls = estimate_total_cost(
-        len(audit.query_set.queries), engines, cfg.runs_per_query, cfg.judge
+    # Routing-aware, and it counts the liveness probe: both are real effects on what
+    # this run will spend, and the budget guard below refuses on this number.
+    estimated, total_calls = estimate_total_cost_for_queries(
+        audit.query_set.queries,
+        engines,
+        cfg.runs_per_query,
+        cfg.judge,
+        preflight=settings.ENGINE_PREFLIGHT,
+        # A client domain means the site audit runs, which means the Cat 6 offsite
+        # agent spends — previously invisible to the budget guard.
+        offsite=bool(cfg.client_domains),
     )
     # Refuse before spending anything if this would blow the per-audit or
     # cumulative budget (raises CostBudgetExceeded → 402 at the API layer).
@@ -276,6 +310,36 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         return
 
     state.state = "running"
+
+    # Preflight: prove each surface can answer before spending the fan-out on it. A
+    # dead engine is moved into skipped_engines, so it writes no rows at all and the
+    # run's coverage reflects only surfaces that were actually measurable. Runs here
+    # rather than in start_run so the probe never blocks the HTTP response.
+    if settings.ENGINE_PREFLIGHT:
+        live, dead, probe_record = preflight.split_by_liveness(engines)
+        state.engine_probe = probe_record
+        if state.db_run_id is not None:
+            try:
+                db.save_engine_probe(state.db_run_id, probe_record)
+            except db.StorageError as exc:
+                logger.info("Failed to persist the engine probe (continuing): %s", exc)
+        if dead:
+            dead_names = {name for name, _ in dead}
+            state.skipped_engines.extend(dead)
+            state.active_engines = [n for n in state.active_engines if n not in dead_names]
+            for name in dead_names:
+                state.engine_completed.pop(name, None)
+            engines = live
+        _persist_state(state)
+        if not engines:
+            state.state = "failed"
+            state.error = (
+                "every engine failed its liveness probe — no surface could answer a test query "
+                "(check model pins and API keys)"
+            )
+            _persist_state(state, state.error)
+            return
+
     qs = state.audit.query_set
 
     # Site audit (Cat 1–5 on-site checks) runs concurrently with the engine
@@ -292,6 +356,18 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
             daemon=True,
         )
         site_thread.start()
+
+    # Local-pack capture rides alongside for the same reason: it is a SERP read that
+    # doesn't need the engine answers. Only starts when a location is pinned.
+    local_thread: threading.Thread | None = None
+    if (cfg.location or "").strip():
+        local_thread = threading.Thread(
+            target=_run_local_pack_phase,
+            args=(state,),
+            name=f"localpack-{state.run_id[:8]}",
+            daemon=True,
+        )
+        local_thread.start()
 
     # Resume support: any cells already persisted for this run are reloaded and
     # skipped at (query_id, engine, run_index) granularity, so an interrupted
@@ -312,6 +388,12 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
                 state.engine_completed[r["engine_name"]] = (
                     state.engine_completed.get(r["engine_name"], 0) + 1
                 )
+                # Rebuild the answered count too, or a resumed run forgets which
+                # surfaces were producing and reports every prior cell as answered.
+                if r["response"] is not None:
+                    state.engine_answered[r["engine_name"]] = (
+                        state.engine_answered.get(r["engine_name"], 0) + 1
+                    )
 
     try:
         # The whole query set runs as one concurrent fan-out (every
@@ -344,6 +426,10 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
             state.engine_completed[r["engine_name"]] = (
                 state.engine_completed.get(r["engine_name"], 0) + 1
             )
+            if r["response"] is not None:
+                state.engine_answered[r["engine_name"]] = (
+                    state.engine_answered.get(r["engine_name"], 0) + 1
+                )
             pending.append(r)
             if len(pending) >= _PERSIST_BATCH:
                 flush()
@@ -359,7 +445,7 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         flush()  # persist whatever didn't fill a final batch
 
         if state.cancel_requested:
-            _join_site_audit(site_thread)
+            _join_phases(site_thread, local_thread)
             state.state = "cancelled"
             _persist_state(state)
             return
@@ -367,24 +453,31 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         if cfg.judge:
             _run_judge(state)
 
-        # Wait for the concurrent site audit so the report includes it.
-        _join_site_audit(site_thread)
+        # Wait for the concurrent phases so the report includes them.
+        _join_phases(site_thread, local_thread)
         state.state = "done"
         _persist_state(state)
     except Exception as exc:  # defensive: a run thread must never die silently
         # Log the real type server-side; surface only a generic message to the
         # client so internal details aren't disclosed.
         logger.warning("Run %s failed: %s", state.run_id, type(exc).__name__)
-        _join_site_audit(site_thread, timeout=30.0)
+        _join_phases(site_thread, local_thread, timeout=30.0)
         state.state = "failed"
         state.error = "run failed (see server logs)"
         _persist_state(state, state.error)
 
 
-def _join_site_audit(site_thread: threading.Thread | None, timeout: float | None = None) -> None:
-    """Join the concurrent site-audit thread (best-effort; never raises)."""
-    if site_thread is not None:
-        site_thread.join(timeout)
+def _join_phases(*threads: threading.Thread | None, timeout: float | None = None) -> None:
+    """Join the concurrent best-effort phases (site audit, local-pack capture).
+
+    Variadic so adding a phase means passing one more thread rather than remembering to
+    join it at each of the three exit paths (done / cancelled / failed). A phase that is
+    still running when the timeout expires is simply absent from the report — it is
+    additive by construction and never blocks the run's terminal state.
+    """
+    for thread in threads:
+        if thread is not None:
+            thread.join(timeout)
 
 
 def _run_site_audit_phase(state: _RunState) -> None:
@@ -409,6 +502,58 @@ def _run_site_audit_phase(state: _RunState) -> None:
         )
     except Exception as exc:  # phase is additive — its failure never fails the run
         logger.warning("Site audit failed for run %s: %s", state.run_id, type(exc).__name__)
+
+
+def _run_local_pack_phase(state: _RunState) -> None:
+    """Capture Google's local pack for this run's local-intent queries.
+
+    Runs concurrently with the engine fan-out and the site audit, and is best-effort in
+    exactly the same way: a failure here writes nothing and never touches the run's
+    terminal state.
+
+    Only fires when a location is pinned — ``fetch_local_pack`` refuses an unpinned
+    market, because a pack from the wrong metro is worse than no pack. Each query is
+    captured **once**, not ``runs_per_query`` times: a SERP listing has no LLM sampling
+    noise to average out, so repeats would just multiply the vendor bill.
+
+    This is the surface ``engine_routing`` stops asking AI Overviews about — Google shows
+    a local pack for ~93% of local-intent queries and an Overview for ~15% — so without
+    this phase those queries would be measured by nothing at all.
+    """
+    cfg = state.audit.config
+    location = (cfg.location or "").strip()
+    if not location:
+        return
+    local_queries = [
+        q for q in state.audit.query_set.queries if q.intent is IntentBucket.LOCAL_INTENT
+    ]
+    if not local_queries:
+        return
+    try:
+        from src.engines.local_pack import fetch_local_pack
+
+        captures: list[LocalPackCapture] = []
+        for query in local_queries:
+            if state.cancel_requested:
+                break
+            entities, source = fetch_local_pack(query.text, location)
+            if not entities:
+                continue
+            captures.append(
+                LocalPackCapture(
+                    query_id=query.query_id,
+                    prompt=query.text,
+                    source=source,
+                    entities=entities,
+                )
+            )
+        state.local_pack = captures
+        if captures and state.db_run_id is not None:
+            db.save_local_pack_entities(state.db_run_id, captures)
+    except Exception as exc:  # phase is additive — its failure never fails the run
+        logger.warning(
+            "Local-pack capture failed for run %s: %s", state.run_id, type(exc).__name__
+        )
 
 
 def _judge_answers(
@@ -598,8 +743,14 @@ def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> Aud
 
 def _status_from_db(run_id: str) -> RunStatus | None:
     """Rebuild a run's status from storage (a run not in this process's memory —
-    e.g. after a restart). Coarser than the live view: per-engine counts are
-    split evenly from the stored totals."""
+    e.g. after a restart).
+
+    Per-engine counts come from the stored result rows via ``metrics.coverage_by_engine``
+    rather than from an even split of the run totals: an even split would hand a dead
+    surface the same completed/answered profile as a working one, so a run read back
+    after a restart would hide exactly the failure the live view now catches. Falls
+    back to the even split only when the rows can't be read.
+    """
     try:
         row = db.get_audit_run(run_id)
     except db.StorageError:
@@ -612,10 +763,34 @@ def _status_from_db(run_id: str) -> RunStatus | None:
     status = str(row.get("status") or "done")
     n = len(engines) or 1
     eng_state = "done" if status in ("done", "cancelled") else status
-    per_engine = [
-        EngineStatus(name=e, state=eng_state, completed=completed // n, total=total // n)
-        for e in engines
-    ]
+    try:
+        cov = metrics.coverage_by_engine(db.get_query_results(run_id))
+    except db.StorageError:
+        cov = {}
+    per_engine: list[EngineStatus] = []
+    for e in engines:
+        c = cov.get(e)
+        if c is None:
+            per_engine.append(
+                EngineStatus(name=e, state=eng_state, completed=completed // n, total=total // n)
+            )
+            continue
+        e_state, detail = eng_state, None
+        if eng_state == "done" and c.total_cells > 0 and not c.is_measured:
+            e_state = "failed"
+            detail = (
+                f"0 of {c.total_cells} cells returned an answer — no measurement from this surface"
+            )
+        per_engine.append(
+            EngineStatus(
+                name=e,
+                state=e_state,
+                completed=c.total_cells,
+                total=c.total_cells,
+                detail=detail,
+                answered=c.answered_cells,
+            )
+        )
     return RunStatus(
         run_id=run_id,
         client_name=str(row.get("client_name", "")),
@@ -647,6 +822,48 @@ def _site_audit_from_db(run_id: str, domains: list[str], brand: str) -> SiteAudi
     )
 
 
+def _local_pack_from_db(run_id: str, client: str, location: str) -> LocalPackPayload | None:
+    """Rebuild the local-pack block from stored rows (best-effort).
+
+    Self-contained like ``_site_audit_from_db`` so a local-pack storage hiccup degrades
+    to "no local pack" instead of aborting the whole report rebuild.
+    """
+    if not location:
+        return None
+    try:
+        rows = db.get_local_pack_entities(run_id)
+    except db.StorageError:
+        return None
+    if not rows:
+        return None
+    by_query: dict[str, LocalPackCapture] = {}
+    for row in rows:
+        query_id = str(row.get("query_id") or "")
+        capture = by_query.get(query_id)
+        if capture is None:
+            capture = LocalPackCapture(
+                query_id=query_id,
+                prompt=str(row.get("prompt") or ""),
+                source=str(row.get("source") or ""),
+                entities=[],
+            )
+            by_query[query_id] = capture
+        capture["entities"].append(
+            LocalEntity(
+                name=str(row.get("name") or ""),
+                address=str(row.get("address") or ""),
+                category=str(row.get("category") or ""),
+                rating=(float(row["rating"]) if row.get("rating") is not None else None),
+                reviews=(int(row["reviews"]) if row.get("reviews") is not None else None),
+                ludocid=(str(row["ludocid"]) if row.get("ludocid") else None),
+                position=(int(row["position"]) if row.get("position") is not None else None),
+                phone=(str(row["phone"]) if row.get("phone") else None),
+                website=(str(row["website"]) if row.get("website") else None),
+            )
+        )
+    return build_local_pack_payload(list(by_query.values()), client, location)
+
+
 def _report_from_db(run_id: str) -> ReportPayload | None:
     """Rebuild the report from storage for a run not in this process's memory."""
     try:
@@ -658,6 +875,11 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         site_audit = _site_audit_from_db(
             run_id, _str_list(row.get("client_domains")), str(row.get("client_name", ""))
         )
+        local_pack = _local_pack_from_db(
+            run_id,
+            str(row.get("client_name", "")),
+            (str(row["location"]).strip() if row.get("location") else ""),
+        )
     except db.StorageError:
         return None
     outcome = _outcome_from_row(row, results)
@@ -667,6 +889,7 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         fact_sheet_present=bool(row.get("fact_sheet_present")),
         run_date=str(row.get("created_at", ""))[:10],
         site_audit=site_audit,
+        local_pack=local_pack,
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -679,18 +902,37 @@ def get_status(run_id: str) -> RunStatus | None:
     if state is None:
         return _status_from_db(run_id)
     cfg = state.audit.config
-    per_query_runs = len(state.audit.query_set.queries) * cfg.runs_per_query
+    # Each engine's denominator is its OWN routed cell count, not queries x runs: an
+    # engine skipped on some intents would otherwise sit at "9/145" forever.
+    engine_totals = routed_totals_by_name(
+        state.audit.query_set.queries, state.active_engines, cfg.runs_per_query
+    )
     per_engine: list[EngineStatus] = []
     for name in state.active_engines:
         completed = state.engine_completed.get(name, 0)
+        answered = state.engine_answered.get(name, 0)
+        detail: str | None = None
         if state.state in ("done", "cancelled"):
             eng_state = "done"
         elif state.state == "failed":
             eng_state = "failed"
         else:
             eng_state = "running"
+        # A surface that attempted calls and answered none produced no measurement.
+        # Reporting that as "done" is what let run e186c524 look healthy, so mark it
+        # failed once the run is terminal (mid-run it may simply not have landed yet).
+        if eng_state == "done" and completed > 0 and answered == 0:
+            eng_state = "failed"
+            detail = f"0 of {completed} calls returned an answer — no measurement from this surface"
         per_engine.append(
-            EngineStatus(name=name, state=eng_state, completed=completed, total=per_query_runs)
+            EngineStatus(
+                name=name,
+                state=eng_state,
+                completed=completed,
+                total=engine_totals.get(name, 0),
+                detail=detail,
+                answered=answered,
+            )
         )
     for name, reason in state.skipped_engines:
         per_engine.append(
@@ -735,6 +977,11 @@ def get_report(run_id: str) -> ReportPayload | None:
         fact_sheet_present=state.audit.fact_sheet is not None,
         run_date=state.created_at[:10],
         site_audit=state.site_audit,
+        local_pack=build_local_pack_payload(
+            state.local_pack,
+            state.audit.config.client_name,
+            (state.audit.config.location or "").strip(),
+        ),
     )
     if state.state == "done":
         with _REPORT_CACHE_LOCK:

@@ -147,6 +147,10 @@ export interface BucketRow {
   bucket: string;
   mention_rate: number;
   citation_rate: number | null;
+  /** Cells that returned an answer, out of cells attempted. 0 answered ⇒ render
+   * "—", not "0%" — the rates above are meaningless without a denominator. */
+  answered_cells?: number;
+  total_cells?: number;
 }
 
 export interface FlagRow {
@@ -222,7 +226,11 @@ export interface ReportPayload {
   run_date: string;
   query_set_version: string;
   runs_per_query: number;
+  /** Engines that returned at least one answer — built from answer existence, not
+   * row existence, so a 404'd surface is not credited with measuring anything. */
   engines: string[];
+  /** Engines that ran and returned nothing. Optional so older stored runs parse. */
+  dead_engines?: string[];
   competitors: string[];
   client_domains: string[];
   detection: "judge" | "regex";

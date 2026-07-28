@@ -14,9 +14,29 @@ __all__ = ["OpenAIEngine"]
 
 logger = logging.getLogger(__name__)
 
-# Dated snapshot, not the floating `gpt-4o` alias — a silent provider update
-# must not move the baseline between measurement cycles (isolation plan, L3).
-MODEL = "gpt-4o-2024-08-06"
+# Repinned 2026-07-28 from `gpt-4o-2024-08-06` (sunsetting, and ~3.3x the price:
+# $0.0050 vs $0.0015 per parametric call).
+#
+# This pin BREAKS the isolation plan's L3 rule of "dated snapshot, never a floating
+# alias", and that is a real cost, not a technicality:
+#
+#   1. OpenAI publishes NO dated snapshot for the 5.6 family (checked live: only
+#      gpt-5.6-luna / -sol / -terra exist). There is nothing dated to pin.
+#   2. The model returns `system_fingerprint: None`, so OpenAI's own backend-change
+#      signal is unavailable too.
+#   => Silent provider drift on this surface is currently UNDETECTABLE. `engine_models`
+#      will keep recording "gpt-5.6-luna" across a model change that moves the baseline.
+#      Do not paper over this; if a cycle-over-cycle comparison looks strange on the
+#      `openai` surface, an unannounced model update is a live hypothesis.
+#
+# It also cannot take `temperature` at all — "Unsupported value: 'temperature' does not
+# support 0 with this model. Only the default (1)". Measured consequence (5 runs of one
+# category query, 2026-07-28): gpt-4o at temperature 0 produced 5/5 *distinct* answers
+# while luna at its fixed temperature 1 produced 3/5, and both named a stable brand set.
+# So the temperature pin was not buying textual determinism in the first place — the
+# real noise control here is RUNS_PER_QUERY plus the majority-vote collapse in
+# `metrics._verdicts`, and that is untouched.
+MODEL = "gpt-5.6-luna"
 
 
 class OpenAIEngine(BaseEngine):
@@ -42,13 +62,17 @@ class OpenAIEngine(BaseEngine):
         )
 
     def query(self, prompt: str) -> str | None:
-        # One isolated call: exactly one user message, no history, no state
-        # params, fixed temperature, best-effort seed. The recorded payload is
-        # the same dict that is sent. See BaseEngine's statelessness rule.
+        # One isolated call: exactly one user message, no history, no state params,
+        # best-effort seed. The recorded payload is the same dict that is sent. See
+        # BaseEngine's statelessness rule.
+        #
+        # No `temperature`: gpt-5.6-luna rejects any value but its default (see the
+        # MODEL comment). Sending settings.ENGINE_TEMPERATURE would 400 every call and
+        # silently zero this surface's coverage — the exact failure that cost run
+        # e186c524 a whole engine. `seed` IS accepted and is kept.
         payload: dict[str, Any] = {
             "model": MODEL,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": settings.ENGINE_TEMPERATURE,
             "seed": settings.ENGINE_SEED,
         }
         record_payload(self.ENGINE_NAME, payload)

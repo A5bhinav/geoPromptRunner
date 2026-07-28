@@ -15,9 +15,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api import projects, runner
-from src.api.engine_registry import build_engines
 from src.config import settings
-from src.engines.ai_overviews_engine import AIOverviewsEngine
+from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
 from src.pipeline.cost import CostBudgetExceeded
 from src.prompts.csv_loader import (
     ParseResult,
@@ -233,11 +232,11 @@ def local_entities(q: str, location: str) -> dict[str, object]:
     """Businesses in Google's local pack for ``q`` at ``location`` (W1.6).
 
     The teaser's ONLY sanctioned source of local competitor candidates. Exposed here
-    rather than called from TypeScript because ``SEARCHAPI_API_KEY`` lives in
+    rather than called from TypeScript because the vendor credential lives in
     ``settings.py`` and nowhere else (hard invariant) — the teaser must not hold a
-    second SearchApi credential.
+    second copy of it.
 
-    ``location`` is required and must be a SearchApi canonical name
+    ``location`` is required and must be Google's canonical location name
     ("Berkeley,California,United States"). Without it Google answers from an unpinned locale and
     names businesses in the wrong metro — which, seeded into a teaser as "your
     competitors", is exactly the fabrication this endpoint exists to prevent. A
@@ -256,15 +255,28 @@ def local_entities(q: str, location: str) -> dict[str, object]:
             ),
         )
 
-    engines, skipped = build_engines(["google_ai_overviews"], location=canonical)
-    if not engines:
-        reason = skipped[0][1] if skipped else "engine unavailable"
-        raise HTTPException(status_code=503, detail=f"local-entity capture unavailable: {reason}")
-
-    engine = engines[0]
-    assert isinstance(engine, AIOverviewsEngine)  # build_engines was asked for exactly this one
-    entities = engine.query_local_entities(query)
-    return {"query": query, "location": canonical, "entities": entities}
+    # Goes through the local-pack resolver, NOT the google_ai_overviews engine.
+    #
+    # It used to build that engine and call query_local_entities on it, which coupled the
+    # local pack to whichever vendor happened to be serving AI Overviews. That broke the
+    # moment AI Overviews gained a second vendor: DataForSEO captures Overviews but has no
+    # local-pack method, so this endpoint would 500 on an isinstance assert as soon as
+    # DataForSEO credentials existed. The two surfaces were never the same thing.
+    #
+    # fetch_local_pack also prefers Serper /places, which returns ~10 businesses with
+    # street addresses, phone and website — the richest local-pack source available.
+    entities, source = fetch_local_pack(query, canonical)
+    if not entities and source == SOURCE_NONE:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "local-entity capture unavailable: no local-pack vendor is configured "
+                "(set SERPER_API_KEY)"
+            ),
+        )
+    # An empty list from a working vendor is a real answer — that query surfaced no local
+    # pack — and must not be reported as an outage.
+    return {"query": query, "location": canonical, "source": source, "entities": entities}
 
 
 @api.post("/audits/preview")

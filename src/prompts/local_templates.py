@@ -101,12 +101,44 @@ def build_trade_template_csv(trade: str, city: str = "{city}", brand: str = "{br
         ["config", "client_name", brand, "", ""],
         ["config", "category", template.category, "", ""],
         ["config", "competitors", "", "", ""],
-        # Google AI Overviews first: it is the highest-weight surface for local
-        # intent, and the only one that takes a location.
-        ["config", "engines", "google_ai_overviews;perplexity;openai_search", "", ""],
+        # Corrected 2026-07-28. The previous comment claimed AI Overviews was "the
+        # highest-weight surface for local intent" — measurement says the opposite: an
+        # Overview appears for ~15% of local-intent SERPs (0 of 5 in run e186c524)
+        # against ~93% for the local pack, so `engine_routing` no longer asks it those
+        # queries at all. It stays in the list because it dominates the informational
+        # (~92%) and hybrid (~97%) tiers, and the local pack is captured separately
+        # (src/engines/local_pack.py).
+        #
+        # gemini_grounded leads now: it is Google's own AI answer over Google Search,
+        # on the official API and an already-paid tier with a free monthly grounding
+        # quota, and it was the richest surface on a live probe (2660 chars / 6
+        # citations vs perplexity's 746 / 2). It was previously omitted entirely.
+        #
+        # openai_search is deliberately NOT here. It works, but OpenAI's search-class
+        # models are capped at 6,000 tokens/min on this account while one search answer
+        # consumes ~17,200 (mostly retrieved context) — so a real run loses every cell
+        # to 429s (verified twice: 0 of 10 answered). Sustainable rate is 0.3 calls/min,
+        # ~7 h for this template at runs=5. Add it back once the OpenAI tier is raised;
+        # `geo audit --surface search` still includes it for anyone who has.
+        # google_ai_mode REPLACES google_ai_overviews as the Google answer surface: AI
+        # Mode answers every intent, so it has no routing skip and covers the local-intent
+        # buying moment that AI Overviews structurally cannot (~15% of local SERPs, 0 of 5
+        # measured). Needs DATAFORSEO_LOGIN/PASSWORD; without them it is reported in the
+        # run's skipped_engines rather than silently dropped.
+        #
+        # openai is the parametric ChatGPT surface (gpt-5.6-luna, ~$0.0015/call). Included
+        # because ~100% coverage at that price beats a retrieval surface that answers
+        # nothing: openai_search stays out on the 6k TPM cap.
+        [
+            "config",
+            "engines",
+            "gemini_grounded;perplexity;google_ai_mode;openai",
+            "",
+            "",
+        ],
         ["config", "runs_per_query", "5", "", ""],
         ["config", "client_domains", "", "", ""],
-        # Canonical SearchApi location — "City,State,United States" (the country's
+        # Google's canonical location name — "City,State,United States" (the country's
         # FULL NAME; an ISO code is rejected). Without it a local run
         # measures an unpinned locale, i.e. the wrong market.
         ["config", "location", f"{city},<STATE>,United States", "", ""],

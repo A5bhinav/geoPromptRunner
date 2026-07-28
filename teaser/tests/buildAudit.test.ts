@@ -61,8 +61,8 @@ function baseReport(over: Partial<ReportPayload> = {}): ReportPayload {
       { brand: "Acme", is_client: true, visibility: 0.2, mention_rate: 0.2, share_of_model: 0.12 },
     ],
     by_bucket: [
-      { bucket: "category", mention_rate: 0.1, citation_rate: 0.0 },
-      { bucket: "comparison", mention_rate: 0.0, citation_rate: null },
+      { bucket: "category", mention_rate: 0.1, citation_rate: 0.0, answered_cells: 6, total_cells: 6 },
+      { bucket: "comparison", mention_rate: 0.0, citation_rate: null, answered_cells: 3, total_cells: 3 },
     ],
     accuracy_flags: [
       { type: "stale", severity: "low", claim: "Acme is iOS-only", reality: "Android shipped 2026" },

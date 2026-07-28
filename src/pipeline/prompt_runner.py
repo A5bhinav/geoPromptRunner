@@ -8,12 +8,31 @@ from datetime import UTC, datetime
 
 from src.config import settings
 from src.engines.base import BaseEngine
+from src.pipeline.engine_routing import routed_cells
 from src.prompts.query_set import Query
 from src.storage.models import PromptResult, QueryResult
 
 __all__ = ["run_prompts", "run_query_set"]
 
 logger = logging.getLogger(__name__)
+
+# Per-engine in-flight caps that override ENGINE_PROVIDER_CONCURRENCY.
+#
+# Measured, not guessed, and it protects against bursts rather than against a token
+# budget. Read live 2026-07-28: OpenAI's search-class models are capped at **6,000
+# tokens/minute** on this account (`x-ratelimit-limit-tokens`; the 100 req/min cap never
+# binds first), and one `openai_search` answer actually consumes **17,227 tokens** —
+# 16,455 of them retrieved web context. A single call is ~3x the whole minute budget.
+#
+# So serializing this surface does NOT rescue it: the sustainable rate is 0.3 calls/min,
+# i.e. ~29 min for a 10-query set and ~7 h for a 29-query set at runs=5. The cap here
+# stops it stampeding the provider with 429s; the actual fix is a higher OpenAI tier,
+# and until then `openai_search` is left out of the local template's default engines
+# (see src/prompts/local_templates.py). Both `gpt-5-search-api` and
+# `gpt-4o-search-preview` carry the same 6k cap, so this is tier, not model choice.
+PROVIDER_CONCURRENCY_OVERRIDES: dict[str, int] = {
+    "openai_search": 1,
+}
 
 
 class _ProviderGate:
@@ -27,7 +46,8 @@ class _ProviderGate:
 
     def __init__(self, limit: int, overrides: Mapping[str, int] | None = None) -> None:
         self._limit = max(1, limit)
-        self._overrides = dict(overrides or {})
+        # Measured per-engine caps apply unless a caller passes its own overrides.
+        self._overrides = dict(PROVIDER_CONCURRENCY_OVERRIDES if overrides is None else overrides)
         self._sems: dict[str, threading.Semaphore] = {}
         self._lock = threading.Lock()
 
@@ -115,13 +135,15 @@ def run_query_set(
     # Build the ordered work-list of cells to run (skipping already-done ones).
     # The index pins each cell's position so the output stays deterministic even
     # though the threads finish in arbitrary order.
-    cells: list[tuple[Query, BaseEngine, int]] = []
-    for query in queries:
-        for engine in engines:
-            for run_index in range(runs_per_query):
-                if (query.query_id, engine.ENGINE_NAME, run_index) in skip:
-                    continue
-                cells.append((query, engine, run_index))
+    # Routing decides which (query, engine) pairs are worth asking at all — an engine
+    # whose surface doesn't exist for an intent is skipped rather than charged for
+    # (see src/pipeline/engine_routing.py). Routed-out cells simply never enter the
+    # work-list, so ordering, `done_cells` and resume behaviour are unaffected.
+    cells: list[tuple[Query, BaseEngine, int]] = [
+        cell
+        for cell in routed_cells(queries, engines, runs_per_query)
+        if (cell[0].query_id, cell[1].ENGINE_NAME, cell[2]) not in skip
+    ]
 
     if not cells:
         return []

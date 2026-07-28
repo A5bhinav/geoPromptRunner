@@ -98,7 +98,7 @@ class PerplexityEngine(BaseEngine):
         except ValueError as exc:
             # A 200 with a non-JSON body (e.g. an edge/CF challenge page) makes
             # response.json() raise — catch it here so the engine never crashes
-            # the pipeline (mirrors ai_overviews_engine's guard).
+            # the pipeline (mirrors the SERP engines' guard).
             logger.warning("Perplexity returned a non-JSON 200 body: %s", exc)
             return None, []
         try:

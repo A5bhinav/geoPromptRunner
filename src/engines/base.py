@@ -53,6 +53,13 @@ class BaseEngine(ABC):
     # Empty for surfaces with no model parameter (e.g. SERP capture).
     MODEL_ID: str = ""
 
+    # The provider's own explanation of the most recent failure, when it gave one worth
+    # repeating ("Please verify your account", "insufficient balance"). Read by
+    # src/pipeline/preflight.py so a dropped engine is recorded on the run with the REAL
+    # reason instead of a generic guess. Engines that have nothing specific to say leave
+    # it None; nothing depends on it being set. Must never contain a credential.
+    last_error: str | None = None
+
     @abstractmethod
     def query(self, prompt: str) -> str | None:
         """Send ``prompt`` to the engine and return the response text.
@@ -73,3 +80,22 @@ class BaseEngine(ABC):
         Perplexity) override this. Like ``query``, it must never raise.
         """
         return self.query(prompt), []
+
+    def probe(self, prompt: str) -> tuple[bool, int, int]:
+        """Liveness check: can this engine still be reached? ``(alive, chars, citations)``.
+
+        Separate from ``query`` because for a **model** engine "answered with text"
+        and "is reachable" are the same question, but for a **SERP-capture** engine
+        they are not: Google legitimately shows no AI Overview for most queries, so
+        an empty capture is normal data, not a broken surface. Those engines override
+        this to check that the *request* succeeded instead.
+
+        Getting this wrong is not hypothetical — the first version of the preflight
+        used answer text for every engine and dropped a perfectly healthy
+        ``google_ai_overviews`` because the probe query happened to have no Overview.
+
+        Must never raise, like everything else on this contract.
+        """
+        text, citations = self.query_with_citations(prompt)
+        alive = text is not None and bool(text.strip())
+        return alive, len(text.strip()) if text else 0, len(citations)

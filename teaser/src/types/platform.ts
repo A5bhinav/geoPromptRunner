@@ -75,6 +75,13 @@ export interface BucketRow {
   bucket: string;
   mention_rate: number;
   citation_rate: number | null;
+  /**
+   * Cells in this bucket that returned an answer, out of cells attempted. When
+   * answered_cells is 0 the rates above carry no information — render "—", never
+   * "0%". A brand cannot be absent from an answer that never existed.
+   */
+  answered_cells: number;
+  total_cells: number;
 }
 
 export interface FlagRow {
@@ -157,12 +164,50 @@ export interface SiteAuditPayload {
   roadmap: RoadmapRow[];
 }
 
+export interface LocalPackRow {
+  query_id: string;
+  prompt: string;
+  position: number | null;
+  name: string;
+  is_client: boolean;
+  address: string | null;
+  rating: number | null;
+  reviews: number | null;
+  phone: string | null;
+  website: string | null;
+}
+
+/**
+ * Google's local pack for the run's local-intent queries — the surface that actually
+ * answers them (~93% of local-intent SERPs, vs ~15% showing an AI Overview).
+ *
+ * Deliberately NOT part of mention_rate / share_of_model / the visibility grade: a
+ * ranked business list is not an AI answer. `client_positions` maps query_id to the
+ * client's rank in that pack, or null when the client is absent from it — which is a
+ * finding, not missing data.
+ */
+export interface LocalPackPayload {
+  present: boolean;
+  location: string;
+  sources: string[];
+  queries_captured: number;
+  entities: LocalPackRow[];
+  client_positions: Record<string, number | null>;
+}
+
 export interface ReportPayload {
   client_name: string;
   run_date: string;
   query_set_version: string;
   runs_per_query: number;
+  /** Engines that returned at least one answer — i.e. that actually measured this
+   * client. Built from answer existence, not row existence, so a surface whose model
+   * 404'd is not listed here as having measured anything. */
   engines: string[];
+  /** Engines that ran and returned nothing at all. Surfaced rather than dropped: a
+   * failed surface is a fact about the run's coverage. Optional so a report rendered
+   * from an older stored run still parses. */
+  dead_engines?: string[];
   competitors: string[];
   client_domains: string[];
   detection: DetectionMode;
@@ -174,6 +219,9 @@ export interface ReportPayload {
   losing_queries: LosingRow[];
   /** On-site + off-site technique-checklist audit; null when the crawl didn't run. */
   site_audit?: SiteAuditPayload | null;
+  /** Google local pack for local-intent queries; null on a consumer run, or on a local
+   * run with no pinned location. Optional so older stored reports still parse. */
+  local_pack?: LocalPackPayload | null;
 }
 
 // --- Raw answers (for the proof card) ----------------------------------------

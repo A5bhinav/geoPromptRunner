@@ -22,8 +22,25 @@ ENGINE_SOURCES: dict[str, tuple[str, str]] = {
     "openai_search": ("src.engines.openai_search_engine", "OpenAISearchEngine"),
     "anthropic_search": ("src.engines.anthropic_search_engine", "AnthropicSearchEngine"),
     "gemini_grounded": ("src.engines.gemini_grounded_engine", "GeminiGroundedEngine"),
-    "google_ai_overviews": ("src.engines.ai_overviews_engine", "AIOverviewsEngine"),
+    # Both Google surfaces come from DataForSEO (pay-as-you-go, no monthly floor). The
+    # engine NAME is the surface, not the vendor — everything downstream (routing policy,
+    # cost table, teaser labels/colours/credibility, every stored run's engine_name) keys
+    # on these strings, and they survived the 2026-07-28 vendor change untouched.
+    "google_ai_overviews": (
+        "src.engines.dataforseo_ai_overviews",
+        "DataForSEOAIOverviewsEngine",
+    ),
+    # Google's conversational answer surface. Unlike AI Overviews it answers every
+    # intent, so it needs no routing skip and covers the local-intent buying moment
+    # that AI Overviews structurally cannot.
+    "google_ai_mode": ("src.engines.dataforseo_ai_mode", "DataForSEOAIModeEngine"),
 }
+
+
+#: Engines whose constructor takes a market. These are the SERP-capture surfaces — the
+#: model APIs have no locale knob, so a location is silently irrelevant to them rather
+#: than an error: a local run still wants those surfaces measured, just un-localized.
+_LOCATION_AWARE: frozenset[str] = frozenset({"google_ai_overviews", "google_ai_mode"})
 
 
 class MockEngine(BaseEngine):
@@ -100,12 +117,12 @@ def build_engines(
     or an SDK that isn't installed. Never raises: a bad engine is skipped, not
     fatal, so one unavailable provider can't sink the whole run.
 
-    ``location`` is a SearchApi canonical location NAME ("Berkeley,California,United States")
-    for service-area businesses (W1.4). Only ``google_ai_overviews`` consumes it —
-    it is the one surface with a location parameter. The others are model APIs with
-    no locale knob, so a location is silently irrelevant to them rather than an
-    error: a local run still wants those surfaces measured, just un-localized.
-    ``None`` (the default) reproduces the pre-pivot behaviour exactly.
+    ``location`` is Google's canonical location name ("Berkeley,California,United States")
+    for service-area businesses (W1.4). Only the SERP-capture surfaces consume it
+    (``_LOCATION_AWARE``); the others are model APIs with no locale knob, so a location is
+    silently irrelevant to them rather than an error — a local run still wants those
+    surfaces measured, just un-localized. ``None`` (the default) reproduces the pre-pivot
+    behaviour exactly.
     """
     engines: list[BaseEngine] = []
     skipped: list[tuple[str, str]] = []
@@ -118,8 +135,8 @@ def build_engines(
             skipped.append((name, "engine SDK not installed"))
             continue
         try:
-            if location and name == "google_ai_overviews":
-                engines.append(cls(location=location))  # type: ignore[call-arg]  # only AIOverviewsEngine takes it
+            if location and name in _LOCATION_AWARE:
+                engines.append(cls(location=location))  # type: ignore[call-arg]  # only the SERP engines take it
             else:
                 engines.append(cls())
         except ValueError as exc:

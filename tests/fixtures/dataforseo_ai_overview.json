@@ -1,0 +1,207 @@
+{
+ "version": "0.1.20260717",
+ "status_code": 20000,
+ "status_message": "Ok.",
+ "time": "5.4172 sec.",
+ "cost": 0.002,
+ "tasks_count": 1,
+ "tasks_error": 0,
+ "tasks": [
+  {
+   "id": "07290114-2179-0139-0000-2939c1141cb4",
+   "status_code": 20000,
+   "status_message": "Ok.",
+   "time": "5.0825 sec.",
+   "cost": 0.002,
+   "result_count": 1,
+   "path": [
+    "v3",
+    "serp",
+    "google",
+    "organic",
+    "live",
+    "advanced"
+   ],
+   "data": {
+    "api": "serp",
+    "function": "live",
+    "se": "google",
+    "se_type": "organic",
+    "keyword": "why is my water pressure suddenly low?",
+    "language_code": "en",
+    "device": "desktop",
+    "load_async_ai_overview": true,
+    "expand_ai_overview": true,
+    "location_name": "Berkeley,California,United States",
+    "os": "windows"
+   },
+   "result": [
+    {
+     "keyword": "why is my water pressure suddenly low?",
+     "type": "organic",
+     "se_domain": "google.com",
+     "location_code": 1013585,
+     "language_code": "en",
+     "check_url": "https://www.google.com/search?q=why%20is%20my%20water%20pressure%20suddenly%20low%3F&hl=en&gl=US&ie=UTF-8&uule=w+CAIQIFISCdNJhTo2eYWAEZPpdaaVFeqU",
+     "datetime": "2026-07-28 22:14:54 +00:00",
+     "spell": null,
+     "refinement_chips": null,
+     "item_types": [
+      "ai_overview",
+      "video",
+      "people_also_ask",
+      "organic",
+      "discussions_and_forums",
+      "perspectives",
+      "related_searches"
+     ],
+     "se_results_count": 153,
+     "pages_count": 1,
+     "items_count": 12,
+     "items": [
+      {
+       "type": "ai_overview",
+       "rank_group": 1,
+       "rank_absolute": 1,
+       "page": 1,
+       "position": "left",
+       "xpath": "/html[1]/body[1]/div[3]/div[1]/div[12]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]",
+       "asynchronous_ai_overview": false,
+       "markdown": "A sudden drop in water pressure is usually caused by a **partially closed main valve, a broken pressure regulator, or a hidden leak**.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)\n\nLocal and Municipal Issues\n\n- **City work or main breaks:** Your local water provider might be doing repair work or experiencing an unexpected main break in your neighborhood.\n- **Peak usage times:** High demand in your area during morning or evening hours can cause a temporary drop.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) \n\nHome Valve and Regulator Problems\n\n- **Main shutoff valve:** The main water valve to your home might have been bumped or accidentally turned to a partially closed position.\n- **Pressure-reducing valve (PRV):** If your home has a PRV and it fails, it can restrict water flow and cause low pressure everywhere.[](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/) [[1]](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/)\n\nLeaks and Blockages\n\n- **Hidden water leaks:** A major leak in your walls or underground main line can divert water away from your faucets.\n- **Clogged fixtures:** If only one sink or shower is affected, mineral buildup in the faucet aerator or showerhead is likely the culprit.\n- **Hot water only:** If only hot water has low pressure, sediment buildup in your water heater may be blocking the output pipe.[](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/) [[1]](https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low)[[2]](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66)\n\nFor tips on how to measure your home's water pressure with a test gauge to see if it falls below the normal range:![Related video thumbnail](https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTEg4ZHETqUP6NIB68zKwYLpK10HcXMrtgW-qcDSA3r-yKjrqWF)\n0:55[5 Reasons Why Is My Water Pressure Low And How To Fix It 5.4K views \u00a0\u00b7\u00a01 year ago![](https://api.dataforseo.com/cdn/i/07290114-2179-0139-0000-2939c1141cb4:2)\nYouTube\u00a0\u00b7\u00a0United HVAC, Plumbing & Electrical](https://www.youtube.com/watch?v=uxGtikQTgxo) If you can share:\n\n- Is the low pressure **all over the house** or **at just one faucet**?\n- Is it affecting **both hot and cold** water?\n\nI can help you narrow down the exact cause.",
+       "items": [
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "A sudden drop in water pressure is usually caused by a partially closed main valve, a broken pressure regulator, or a hidden leak. Facebook \u00b7 Plumbing Pals",
+         "markdown": "A sudden drop in water pressure is usually caused by a **partially closed main valve, a broken pressure regulator, or a hidden leak**.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)",
+         "links": null,
+         "images": null,
+         "references": [
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Facebook",
+           "domain": "www.facebook.com",
+           "url": "https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/",
+           "title": "Do You Have Low Water Pressure? Here are the Top 5 Reasons it ...",
+           "text": "Here are the Top 5 Reasons it happens \u2014 and what causes it \u2b07\ufe0f \u2e3b \u2753 Q: Why did my water pressure suddenly drop? A: A sudden drop is ..."
+          }
+         ]
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": "Local and Municipal Issues",
+         "text": "City work or main breaks: Your local water provider might be doing repair work or experiencing an unexpected main break in your neighborhood. Peak usage times: High demand in your area during morning or evening hours can cause a temporary drop. Facebook \u00b7 Plumbing Pals",
+         "markdown": "- **City work or main breaks:** Your local water provider might be doing repair work or experiencing an unexpected main break in your neighborhood.\n- **Peak usage times:** High demand in your area during morning or evening hours can cause a temporary drop.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)",
+         "links": null,
+         "images": null,
+         "references": null
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": "Home Valve and Regulator Problems",
+         "text": "Main shutoff valve: The main water valve to your home might have been bumped or accidentally turned to a partially closed position. Pressure-reducing valve (PRV): If your home has a PRV and it fails, it can restrict water flow and cause low pressure everywhere. www.berico.com +1",
+         "markdown": "- **Main shutoff valve:** The main water valve to your home might have been bumped or accidentally turned to a partially closed position.\n- **Pressure-reducing valve (PRV):** If your home has a PRV and it fails, it can restrict water flow and cause low pressure everywhere.[](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/) [[1]](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/)",
+         "links": null,
+         "images": null,
+         "references": [
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "www.berico.com",
+           "domain": "www.berico.com",
+           "url": "https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/",
+           "title": "Why Is My Water Pressure Suddenly Low Throughout the House? - Berico",
+           "text": "Have you recently noticed a significant drop in the water pressure in your home? Low water pressure throughout your house typicall..."
+          }
+         ]
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": "Leaks and Blockages",
+         "text": "Hidden water leaks: A major leak in your walls or underground main line can divert water away from your faucets. Clogged fixtures: If only one sink or shower is affected, mineral buildup in the faucet aerator or showerhead is likely the culprit. Hot water only: If only hot water has low pressure, sediment buildup in your water heater may be blocking the output pipe. www.berico.com +2",
+         "markdown": "- **Hidden water leaks:** A major leak in your walls or underground main line can divert water away from your faucets.\n- **Clogged fixtures:** If only one sink or shower is affected, mineral buildup in the faucet aerator or showerhead is likely the culprit.\n- **Hot water only:** If only hot water has low pressure, sediment buildup in your water heater may be blocking the output pipe.[](https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/) [[1]](https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low)[[2]](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66)",
+         "links": null,
+         "images": null,
+         "references": [
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "Parker & Sons",
+           "domain": "www.parkerandsons.com",
+           "url": "https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low",
+           "title": "Why Is My Shower Pressure Suddenly Low? - Parker & Sons",
+           "text": "Blocked showerheads, which can restrict water flow due to mineral deposits. Closed valves, which can significantly reduce water fl..."
+          },
+          {
+           "type": "ai_overview_reference",
+           "position": "left",
+           "source": "YouTube",
+           "domain": "www.youtube.com",
+           "url": "https://www.youtube.com/watch?v=bqwStAIZ4es&t=66",
+           "title": "Pat Sullivan's tips for water pressure issues",
+           "text": "and just put it over and zip tie it and that will will clean it out pretty good and uh and really improve the pressure. now if it'"
+          }
+         ]
+        },
+        {
+         "type": "ai_overview_element",
+         "position": "left",
+         "title": null,
+         "text": "For tips on how to measure your home's water pressure with a test gauge to see if it falls below the normal range: 0:55 5 Reasons Why Is My Water Pressure Low And How To Fix It 5.4K views \u00b7\u00a01 year ago YouTube\u00a0\u00b7\u00a0United HVAC, Plumbing & Electrical",
+         "markdown": "For tips on how to measure your home's water pressure with a test gauge to see if it falls below the normal range:![Related video thumbnail](https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTEg4ZHETqUP6NIB68zKwYLpK10HcXMrtgW-qcDSA3r-yKjrqWF)\n0:55[5 Reasons Why Is My Water Pressure Low And How To Fix It 5.4K views \u00a0\u00b7\u00a01 year ago![](https://api.dataforseo.com/cdn/i/07290114-2179-0139-0000-2939c1141cb4:1)\nYouTube\u00a0\u00b7\u00a0United HVAC, Plumbing & Electrical](https://www.youtube.com/watch?v=uxGtikQTgxo)",
+         "links": null,
+         "images": null,
+         "references": null
+        }
+       ],
+       "references": [
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "www.berico.com",
+         "domain": "www.berico.com",
+         "url": "https://www.berico.com/why-is-my-water-pressure-suddenly-low-throughout-the-house/",
+         "title": "Why Is My Water Pressure Suddenly Low Throughout the House? - Berico",
+         "text": "Have you recently noticed a significant drop in the water pressure in your home? Low water pressure throughout your house typicall..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "YouTube",
+         "domain": "www.youtube.com",
+         "url": "https://www.youtube.com/watch?v=bqwStAIZ4es&t=66",
+         "title": "Pat Sullivan's tips for water pressure issues",
+         "text": "and just put it over and zip tie it and that will will clean it out pretty good and uh and really improve the pressure. now if it'"
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Facebook",
+         "domain": "www.facebook.com",
+         "url": "https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/",
+         "title": "Do You Have Low Water Pressure? Here are the Top 5 Reasons it ...",
+         "text": "Here are the Top 5 Reasons it happens \u2014 and what causes it \u2b07\ufe0f \u2e3b \u2753 Q: Why did my water pressure suddenly drop? A: A sudden drop is ..."
+        },
+        {
+         "type": "ai_overview_reference",
+         "position": "right",
+         "source": "Parker & Sons",
+         "domain": "www.parkerandsons.com",
+         "url": "https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low",
+         "title": "Why Is My Shower Pressure Suddenly Low? - Parker & Sons",
+         "text": "Blocked showerheads, which can restrict water flow due to mineral deposits. Closed valves, which can significantly reduce water fl..."
+        }
+       ],
+       "rectangle": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

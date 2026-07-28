@@ -34,11 +34,16 @@ import {
 const ENGINE_OPTIONS = [
   { id: "perplexity", label: "Perplexity" },
   { id: "openai", label: "ChatGPT" },
+  { id: "google_ai_mode", label: "Google AI Mode" },
+  { id: "gemini_grounded", label: "Gemini" },
   { id: "google_ai_overviews", label: "AI Overviews" },
   { id: "anthropic", label: "Claude" },
   { id: "mock", label: "Mock (no keys)" },
 ];
-const DEFAULT_ENGINES = ["perplexity", "openai", "google_ai_overviews"];
+// Must stay byte-identical to DEFAULT_OPTIONS.engines in teaser/src/pipeline.ts — see
+// the comment there. The two entry points used to disagree, so a teaser cost ~2x more
+// and measured different surfaces depending on which door it came through.
+const DEFAULT_ENGINES = ["perplexity", "openai", "google_ai_mode"];
 
 // TeaserDraft / TeaserRecord etc. now live in lib/api.ts (shared with the API
 // client) rather than being redeclared here.
