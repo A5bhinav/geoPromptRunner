@@ -250,10 +250,11 @@ def _directory_rows(site_audit: SiteAuditPayload | None) -> dict[str, str]:
     if site_audit is None:
         return status
     for finding in site_audit["offsite"]:
-        detail = f"{finding.get('platform', '')} {finding.get('detail', '')}".lower()
-        for platform in LOCAL_REVIEW_PLATFORMS:
-            if platform.split("/")[0].split(".")[0] in detail:
-                status[platform] = "present" if finding.get("present") else "missing"
+        # Only the reviews finding carries a per-platform breakdown; everything else
+        # leaves the checklist alone rather than guessing from a title string.
+        for host, present in (finding.get("platforms") or {}).items():
+            if host in status:
+                status[host] = "present" if present else "missing"
     return status
 
 

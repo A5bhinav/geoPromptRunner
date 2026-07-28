@@ -291,11 +291,21 @@ def _roadmap_rows(
 
 
 def _finding_payload_row(finding: OffsiteFinding) -> SiteFindingRow:
+    # The reviews finding's payload carries {host: {"present": bool, "top_url": str}}.
+    # Lift just the booleans onto the row: the local report's §3 checklist needs
+    # per-directory status, and the flattened title ("Review presence on 3/8 platforms")
+    # cannot be parsed back into one.
+    raw = finding.payload.get("platforms") if isinstance(finding.payload, dict) else None
+    platforms: dict[str, bool] = {}
+    if isinstance(raw, dict):
+        for host, info in raw.items():
+            platforms[str(host)] = bool(info.get("present")) if isinstance(info, dict) else False
     return SiteFindingRow(
         finding_type=finding.finding_type.value,
         title=finding.title,
         url=finding.url,
         confidence=finding.confidence.value,
+        platforms=platforms,
     )
 
 

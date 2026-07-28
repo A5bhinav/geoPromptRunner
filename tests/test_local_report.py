@@ -383,3 +383,44 @@ def test_a_run_without_a_location_is_not_a_local_report() -> None:
         assert _local_report_args(argparse.Namespace(run_id="r1", trade=None)) is None
     finally:
         cli.db.get_audit_run = original  # type: ignore[assignment]
+
+
+def test_the_directory_checklist_reads_real_offsite_status() -> None:
+    """The §3 checklist must reflect what the offsite agent actually found.
+
+    It couldn't: `SiteFindingRow` was flattened to finding_type/title/url/confidence,
+    dropping the per-platform breakdown, while this renderer read `platform`/`present`
+    keys that never existed. §3 therefore reported "not checked" even after a full Cat 6
+    run. The row now carries `platforms`, and this pins the three states apart —
+    "not found" and "not checked" are different claims and only one of them is safe to
+    make when nobody looked.
+    """
+    from src.api.reports import SiteAuditPayload, SiteFindingRow
+
+    site_audit: SiteAuditPayload = {
+        "present": True,
+        "domain": "albertnahmanplumbing.com",
+        "pages_crawled": 2,
+        "checks": [],
+        "summary": {},
+        "errors": 0,
+        "offsite": [
+            SiteFindingRow(
+                finding_type="reviews",
+                title="Review presence on 2/8 platforms",
+                url=None,
+                confidence="medium",
+                platforms={"yelp.com": True, "google.com/maps": True, "bbb.org": False},
+            )
+        ],
+        "roadmap": [],
+    }
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "**Google Business Profile — 🟢 listed**" in out
+    assert "| yelp.com | 🟢 listed |" in out
+    assert "| bbb.org | 🔴 not found |" in out
+    # A platform the agent never probed stays "not checked" — never "not found".
+    assert "| nextdoor.com | ⚪ not checked |" in out

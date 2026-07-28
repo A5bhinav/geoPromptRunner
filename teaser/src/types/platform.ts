@@ -140,6 +140,9 @@ export interface SiteFindingRow {
   title: string;
   url: string | null;
   confidence: string; // high | medium | low
+  /** host -> found there. Only the `reviews` finding carries it. Optional so a report
+   * stored before 2026-07-28 still parses. */
+  platforms?: Record<string, boolean>;
 }
 
 /** One prioritized roadmap gap — the "why + fix" behind the visibility loss. */

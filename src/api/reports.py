@@ -92,6 +92,12 @@ class SiteFindingRow(TypedDict):
     title: str
     url: str | None
     confidence: str  # high | medium | low
+    # host -> was the brand found there. Present only on the `reviews` finding, which is
+    # the only one with a per-platform breakdown. Flattening this row used to drop it,
+    # so the local report's directory checklist could never populate — it reported
+    # "not checked" even after the offsite agent had checked. Empty dict, never None,
+    # so a consumer can iterate without a guard.
+    platforms: dict[str, bool]
 
 
 class RoadmapRow(TypedDict):
