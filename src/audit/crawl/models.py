@@ -31,6 +31,14 @@ class PageCategory(StrEnum):
     PRODUCT = "product"
     DOCS = "docs"
     BLOG = "blog"
+    # --- local-service page types (SMB pivot) ---
+    # A trade site has no /pricing or /features; it has "/drain-cleaning/",
+    # "/water-heater-repair/", "/areas-served/berkeley/". Without these, 91% of a
+    # plumber's discovered URLs classified as OTHER and were dropped before the page
+    # cap ever applied — measured across 8 Berkeley sites, 19 of 221 pages surviving.
+    # Cat 3/4 then judged a homepage and a blog index, which is not a site audit.
+    SERVICE = "service"  # the actual job pages: repair, installation, maintenance
+    SERVICE_AREA = "service_area"  # "areas we serve" / per-town landing pages
     OTHER = "other"
 
 

@@ -371,3 +371,44 @@ def test_consumer_schema_expectations_unchanged() -> None:
     local = category_expectations("local_service")
     assert local["homepage"] == {"LocalBusiness"}
     assert local != consumer
+
+
+def test_url_classification_is_unchanged_for_consumer_sites() -> None:
+    """W?.?: local page types were FORKED from the consumer patterns, not merged.
+
+    Merging would change which pages a CONSUMER audit crawls — the single thing §0.6
+    exists to prevent. The local set matches /services, /repair, /heating and friends;
+    a SaaS site with a /solutions or /resources path must not start classifying as a
+    plumber's service page.
+    """
+    from src.audit.crawl.models import PageCategory
+    from src.audit.crawl.page_select import CATEGORY_CAPS, CATEGORY_PATTERNS, classify_url
+
+    # The consumer pattern/cap tables are byte-identical to their pre-pivot values.
+    assert CATEGORY_PATTERNS == {
+        PageCategory.PRICING: (r"/pricing|/plans?|/cost", 10),
+        PageCategory.COMPARISON: (r"/(vs|versus|compare|alternatives?)", 9),
+        PageCategory.PRODUCT: (r"/products?|/features?|/solutions?|/platform", 8),
+        PageCategory.DOCS: (r"/docs?|/documentation|/guide|/api", 6),
+        PageCategory.BLOG: (r"/blog|/articles?|/resources|/news", 4),
+    }
+    assert CATEGORY_CAPS == {
+        PageCategory.PRICING: 3,
+        PageCategory.COMPARISON: 3,
+        PageCategory.PRODUCT: 5,
+        PageCategory.DOCS: 5,
+        PageCategory.BLOG: 5,
+    }
+
+    # And the default classification is untouched for the consumer URL shapes.
+    for url, expected in (
+        ("https://x.com/pricing", PageCategory.PRICING),
+        ("https://x.com/compare/ynab", PageCategory.COMPARISON),
+        ("https://x.com/features", PageCategory.PRODUCT),
+        ("https://x.com/docs/api", PageCategory.DOCS),
+        ("https://x.com/blog/post", PageCategory.BLOG),
+        # A trade-shaped path stays OTHER on the consumer path — the fork is opt-in.
+        ("https://x.com/drain-cleaning/", PageCategory.OTHER),
+    ):
+        assert classify_url(url) is expected
+        assert classify_url(url, "product") is expected

@@ -45,7 +45,7 @@ def _patch_crawl(monkeypatch: pytest.MonkeyPatch, *, save_raises: bool) -> None:
     monkeypatch.setattr(
         page_select,
         "select_pages",
-        lambda domain, sitemap_urls: [("https://x.com/", PageCategory.HOMEPAGE)],
+        lambda domain, sitemap_urls, **_: [("https://x.com/", PageCategory.HOMEPAGE)],
     )
     monkeypatch.setattr(page_select, "discover_sitemap_urls", lambda home: [])
     monkeypatch.setattr(fetcher, "PlaywrightRenderer", _DummyRenderer)

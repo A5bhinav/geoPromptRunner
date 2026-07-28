@@ -213,3 +213,91 @@ def test_select_pages_caps_and_filters() -> None:
     assert cats.count(PageCategory.BLOG) == 5  # capped
     assert all("other.com" not in u for u, _ in selected)  # cross-host dropped
     assert all("/tag/" not in u for u, _ in selected)  # taxonomy dropped
+
+
+# --- Local-service page selection (the SMB pivot fork) ----------------------------
+
+
+def test_local_patterns_keep_the_service_pages_the_consumer_set_drops() -> None:
+    """The measured failure this fork fixes.
+
+    Across 8 Berkeley plumber sites the consumer patterns classified 210 of 221
+    discovered URLs as OTHER and dropped them, leaving ~2 crawlable pages per site — so
+    Cat 3/4 judged a homepage and a blog index and called it a site audit. These are the
+    real URL shapes from albertnahmanplumbing.com.
+    """
+    from src.audit.crawl.models import PageCategory
+    from src.audit.crawl.page_select import classify_url
+
+    service_urls = [
+        "https://x.com/hvac/cooling/ac-repair-maintenance/",
+        "https://x.com/hvac/heating/furnace-installation-replacement/",
+        "https://x.com/plumbing/drain-cleaning/",
+        "https://x.com/services/water-heater-repair/",
+        "https://x.com/emergency-plumbing/",
+    ]
+    for url in service_urls:
+        # Dropped entirely on the consumer path...
+        assert classify_url(url) is PageCategory.OTHER
+        # ...and kept as a service page on the local one.
+        assert classify_url(url, "local_service") is PageCategory.SERVICE
+
+    assert classify_url("https://x.com/areas-served/berkeley/", "local_service") is (
+        PageCategory.SERVICE_AREA
+    )
+    assert classify_url("https://x.com/reviews/", "local_service") is PageCategory.COMPARISON
+
+
+def test_local_selection_fills_the_page_budget_with_service_pages() -> None:
+    """A trade site is mostly service pages, and they are what Cat 3/4 must read, so the
+    local caps skew toward them rather than spending the budget on a blog.
+
+    The caps set priority, not a ceiling on the total: leftover budget backfills, because
+    a real site whose pages are nearly all one category was otherwise getting 6 of 20
+    slots while 8 auditable pages sat unused.
+    """
+    from src.audit.crawl.models import PageCategory
+    from src.audit.crawl.page_select import select_pages
+
+    sitemap = (
+        [f"https://x.com/services/job-{i}/" for i in range(14)]
+        + [f"https://x.com/areas-served/town-{i}/" for i in range(6)]
+        + [f"https://x.com/blog/post-{i}/" for i in range(9)]
+    )
+    selected = select_pages("https://x.com/", sitemap_urls=sitemap, business_kind="local_service")
+    kinds = [cat for _url, cat in selected]
+
+    # Homepage always first, then service pages lead — the caps set PRIORITY.
+    assert kinds[0] is PageCategory.HOMEPAGE
+    assert kinds.count(PageCategory.SERVICE) >= 10  # LOCAL_CATEGORY_CAPS floor
+    assert kinds.count(PageCategory.SERVICE_AREA) >= 4
+    # Budget is spent, not left on the table: 29 candidates, cap of 20.
+    assert len(selected) == 20
+    # The same sitemap on the consumer path yields only the homepage + blog: every
+    # service and service-area URL is OTHER there.
+    consumer = select_pages("https://x.com/", sitemap_urls=sitemap)
+    assert {cat for _u, cat in consumer} == {PageCategory.HOMEPAGE, PageCategory.BLOG}
+
+
+def test_local_backfill_spends_leftover_budget_but_consumer_does_not() -> None:
+    """The regression that prompted the backfill, both halves.
+
+    A blog-heavy trade site (one service page, many articles) hit the local BLOG cap of
+    3 and stopped at 5 pages while 8 more were available. Backfill fills the budget in
+    priority order. The consumer path deliberately does NOT backfill: that would change
+    how many pages an existing consumer audit crawls, and therefore its cost.
+    """
+    from src.audit.crawl.models import PageCategory
+    from src.audit.crawl.page_select import select_pages
+
+    sitemap = ["https://x.com/services/plumbing/"] + [
+        f"https://x.com/blog/article-{i}/" for i in range(12)
+    ]
+    local = select_pages("https://x.com/", sitemap_urls=sitemap, business_kind="local_service")
+    # 1 homepage + 1 service + 12 blog = 14 candidates, all under the cap of 20.
+    assert len(local) == 14
+    assert sum(1 for _u, c in local if c is PageCategory.BLOG) == 12
+
+    # Consumer stays capped at BLOG=5 (+ homepage) — unchanged behaviour.
+    consumer = select_pages("https://x.com/", sitemap_urls=sitemap)
+    assert len(consumer) == 6

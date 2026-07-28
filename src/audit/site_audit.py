@@ -216,7 +216,7 @@ def run_site_audit(
     ``location`` the agent has nothing to disambiguate a same-named business in another
     metro, the most common local research error there is.
     """
-    crawl = run_site_audit_blocking(run_id, domain)
+    crawl = run_site_audit_blocking(run_id, domain, business_kind=business_kind)
 
     checks: list[SiteCheckRow] = []
     rows: list[dict[str, Any]] = []

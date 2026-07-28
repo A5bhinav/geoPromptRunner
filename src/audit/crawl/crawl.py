@@ -35,7 +35,12 @@ def _new_crawl_id() -> str:
     return str(uuid.uuid4())
 
 
-async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = None) -> CrawlResult:
+async def crawl_domain(
+    run_id: str,
+    domain: str,
+    config: FetchConfig | None = None,
+    business_kind: str = "product",
+) -> CrawlResult:
     """Crawl one domain's priority page set into a :class:`CrawlResult`.
 
     Selects pages (page_select), fetches each through the two-tier fetcher under a
@@ -64,7 +69,11 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
     result.sitemap_urls = discover_sitemap_urls(home)  # full set for orphan-vs-sitemap
     # Pass the discovered list (even when empty) so select_pages doesn't re-probe and
     # falls back to homepage nav-link discovery on a sitemap-less site (§7.5).
-    selected = select_pages(domain, sitemap_urls=result.sitemap_urls)
+    # business_kind selects which URL patterns count as auditable pages. Without it a
+    # trade site yields ~2 pages: its service URLs match none of the consumer patterns.
+    selected = select_pages(
+        domain, sitemap_urls=result.sitemap_urls, business_kind=business_kind
+    )
     pages = []
     for url, category in selected:
         if not policy.allowed(url):
@@ -122,7 +131,10 @@ async def crawl_domain(run_id: str, domain: str, config: FetchConfig | None = No
 
 
 def run_site_audit_blocking(
-    run_id: str, domain: str, config: FetchConfig | None = None
+    run_id: str,
+    domain: str,
+    config: FetchConfig | None = None,
+    business_kind: str = "product",
 ) -> CrawlResult:
     """Synchronous entrypoint for the threaded runner — wraps the async crawl.
 
@@ -133,7 +145,7 @@ def run_site_audit_blocking(
     """
     cfg = config or FetchConfig()
     logger.info("site-audit crawl starting: run_id=%s domain=%s", run_id, domain)
-    return asyncio.run(crawl_domain(run_id, domain, cfg))
+    return asyncio.run(crawl_domain(run_id, domain, cfg, business_kind))
 
 
 if __name__ == "__main__":

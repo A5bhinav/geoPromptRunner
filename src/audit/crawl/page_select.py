@@ -17,7 +17,9 @@ from src.audit.crawl.models import PageCategory
 
 __all__ = [
     "CATEGORY_PATTERNS",
+    "LOCAL_CATEGORY_PATTERNS",
     "CATEGORY_CAPS",
+    "LOCAL_CATEGORY_CAPS",
     "GLOBAL_PAGE_CAP",
     "classify_url",
     "select_pages",
@@ -37,6 +39,31 @@ CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
     PageCategory.BLOG: (r"/blog|/articles?|/resources|/news", 4),
 }
 
+# FORKED, not merged (pivot §0.6). A local trade site has no /pricing, /features or
+# /docs; it has service pages and per-town landing pages. Merging these patterns into the
+# consumer dict would change which pages a CONSUMER audit crawls — the one thing the
+# §0.6 rule exists to prevent — so the two sets stay separate and are selected by kind.
+#
+# Measured need: across 8 Berkeley plumber sites, 210 of 221 discovered URLs classified
+# as OTHER under the consumer patterns and were dropped, leaving ~2 pages per site to
+# audit. The service pages that got dropped ("/hvac/heating/furnace-repair-maintenance/")
+# are exactly what Cat 3 is supposed to judge.
+LOCAL_CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
+    # The job pages. Highest weight: this is where an owner's customers land, and where
+    # answer-first structure either exists or doesn't.
+    PageCategory.SERVICE: (
+        r"/services?|/repairs?|/installation|/replacement|/maintenance|/plumbing|/hvac"
+        r"|/heating|/cooling|/drain|/sewer|/water-heater|/furnace|/rooter|/emergency",
+        10,
+    ),
+    # Per-town landing pages — the local twin of a comparison page: they are how a
+    # service-area business signals WHERE it works, and Google's local pack leans on it.
+    PageCategory.SERVICE_AREA: (r"/areas?[-_]served|/service[-_]areas?|/locations?", 8),
+    # Trust surface: reviews/testimonials carry the E-E-A-T signal Cat 4 looks for.
+    PageCategory.COMPARISON: (r"/reviews?|/testimonials?", 6),
+    PageCategory.BLOG: (r"/blog|/articles?|/resources|/news|/tips", 4),
+}
+
 # Per-category hard caps (newest by lastmod when over). Pricing/comparison are
 # few-and-decisive; docs/blog can be large so cap tighter relative to their count.
 CATEGORY_CAPS: dict[PageCategory, int] = {
@@ -45,6 +72,15 @@ CATEGORY_CAPS: dict[PageCategory, int] = {
     PageCategory.PRODUCT: 5,
     PageCategory.DOCS: 5,
     PageCategory.BLOG: 5,
+}
+
+# Local caps skew toward service pages: a plumber's site is mostly service pages, and
+# they are the ones Cat 3/4 must read. Sums to the global cap with room for the homepage.
+LOCAL_CATEGORY_CAPS: dict[PageCategory, int] = {
+    PageCategory.SERVICE: 10,
+    PageCategory.SERVICE_AREA: 4,
+    PageCategory.COMPARISON: 2,
+    PageCategory.BLOG: 3,
 }
 
 # Homepage is always included; this bounds the total pages fetched per domain.
@@ -66,6 +102,19 @@ _COMPILED_PATTERNS: list[tuple[PageCategory, re.Pattern[str], int]] = sorted(
     reverse=True,
 )
 
+_COMPILED_LOCAL: list[tuple[PageCategory, re.Pattern[str], int]] = sorted(
+    [
+        (cat, re.compile(pat, re.IGNORECASE), weight)
+        for cat, (pat, weight) in LOCAL_CATEGORY_PATTERNS.items()
+    ],
+    key=lambda item: item[2],
+    reverse=True,
+)
+
+_LOCAL_CATEGORY_WEIGHT: dict[PageCategory, int] = {
+    cat: weight for cat, (_pat, weight) in LOCAL_CATEGORY_PATTERNS.items()
+}
+
 # Low-value/duplicate path segments dropped before scoring (pagination, taxonomy,
 # author archives, locale duplicates of the same content).
 _DROP_RE = re.compile(
@@ -82,14 +131,16 @@ def _homepage(domain: str) -> str:
     return f"https://{host}/"
 
 
-def classify_url(url: str) -> PageCategory:
+def classify_url(url: str, business_kind: str = "product") -> PageCategory:
     """Map a URL to its highest-weight matching :class:`PageCategory`.
 
-    Returns :attr:`PageCategory.OTHER` when nothing matches. Pure function of the
-    URL path — no network.
+    ``business_kind`` selects which pattern set applies; the default reproduces the
+    pre-pivot consumer behaviour exactly. Returns :attr:`PageCategory.OTHER` when
+    nothing matches. Pure function of the URL path — no network.
     """
     path = urlsplit(url).path or "/"
-    for category, pattern, _weight in _COMPILED_PATTERNS:
+    patterns = _COMPILED_LOCAL if business_kind == "local_service" else _COMPILED_PATTERNS
+    for category, pattern, _weight in patterns:
         if pattern.search(path):
             return category
     return PageCategory.OTHER
@@ -100,7 +151,9 @@ def _depth(url: str) -> int:
 
 
 def select_pages(
-    domain: str, sitemap_urls: list[str] | None = None
+    domain: str,
+    sitemap_urls: list[str] | None = None,
+    business_kind: str = "product",
 ) -> list[tuple[str, PageCategory]]:
     """Return the capped, prioritized ``(url, category)`` set to crawl for ``domain``.
 
@@ -110,7 +163,17 @@ def select_pages(
     a deep-crawl fallback). Applies :data:`CATEGORY_CAPS` then
     :data:`GLOBAL_PAGE_CAP`, preferring shallow paths and dropping
     pagination/tag/author/locale duplicates.
+
+    ``business_kind`` selects the pattern/cap set. The default is the pre-pivot consumer
+    behaviour, byte-for-byte. On ``local_service`` it uses
+    :data:`LOCAL_CATEGORY_PATTERNS` / :data:`LOCAL_CATEGORY_CAPS`, without which a trade
+    site yields ~2 crawlable pages: measured across 8 Berkeley plumbers, the consumer
+    patterns classified 210 of 221 discovered URLs as OTHER and dropped them, so Cat 3/4
+    were judging a homepage and a blog index.
     """
+    is_local = business_kind == "local_service"
+    caps = LOCAL_CATEGORY_CAPS if is_local else CATEGORY_CAPS
+    weights = _LOCAL_CATEGORY_WEIGHT if is_local else _CATEGORY_WEIGHT
     home = _homepage(domain)
     selected: list[tuple[str, PageCategory]] = [(home, PageCategory.HOMEPAGE)]
     home_host = urlsplit(home).hostname
@@ -131,7 +194,7 @@ def select_pages(
         if url in seen:
             continue
         seen.add(url)
-        category = classify_url(_strip_locale(url))
+        category = classify_url(_strip_locale(url), business_kind)
         if category is PageCategory.OTHER:
             continue
         by_category.setdefault(category, []).append(url)
@@ -140,13 +203,35 @@ def select_pages(
     # Iterate categories by priority WEIGHT, not sitemap-insertion order — otherwise
     # the global cap could be spent on whatever section happened to be listed first
     # (e.g. a big blog) and drop the few decisive pricing/comparison pages.
-    for category in sorted(by_category, key=lambda c: _CATEGORY_WEIGHT.get(c, 0), reverse=True):
+    for category in sorted(by_category, key=lambda c: weights.get(c, 0), reverse=True):
         urls = by_category[category]
-        cap = CATEGORY_CAPS.get(category, GLOBAL_PAGE_CAP)
+        cap = caps.get(category, GLOBAL_PAGE_CAP)
         ranked = sorted(urls, key=_depth)[:cap]
         selected.extend((url, category) for url in ranked)
         if len(selected) >= GLOBAL_PAGE_CAP:
             break
+
+    # LOCAL ONLY: spend leftover budget rather than waste it.
+    #
+    # The caps above shape PRIORITY — service pages before blog posts — but on a site
+    # whose pages are mostly one category they also leave the budget unfilled. A real
+    # Berkeley plumber with 21 discoverable URLs, nearly all "/articles-about-*", got 6
+    # of 20 slots while 8 more auditable pages sat unused, which is fewer pages for Cat
+    # 3/4 to read for no benefit. Backfill keeps the ordering and just stops throwing
+    # away room.
+    #
+    # NOT applied to the consumer path: that would change how many pages an existing
+    # consumer audit crawls (and therefore what it costs), which is a decision to take
+    # deliberately, not a side effect of a local fix. §0.6.
+    if is_local and len(selected) < GLOBAL_PAGE_CAP:
+        already = {url for url, _cat in selected}
+        for category in sorted(by_category, key=lambda c: weights.get(c, 0), reverse=True):
+            for url in sorted(by_category[category], key=_depth):
+                if len(selected) >= GLOBAL_PAGE_CAP:
+                    break
+                if url not in already:
+                    already.add(url)
+                    selected.append((url, category))
 
     return selected[:GLOBAL_PAGE_CAP]
 

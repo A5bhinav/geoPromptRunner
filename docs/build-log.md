@@ -1,3 +1,83 @@
+## Local URL classification — Cat 3/4 were auditing 9% of a trade site — Completed 2026-07-28
+
+Chasing "how do we fix Cat 3" found the answer was neither the feature flag nor the
+calibration gold set. It was the crawler.
+
+### The measurement
+
+Probed all 20 businesses captured from Berkeley's local pack. Access is NOT the problem:
+GPTBot gets a 200 from 18 of 20, and only 2 are hard-blocked. `albertnahmanplumbing.com`
+— which an earlier note recorded as edge-blocked — returns 200 and discovers **83 nav
+links**. That earlier reading came from a curl with a browser UA, not the crawler's.
+
+The real bottleneck was classification. Across 8 sites, **210 of 221 discovered URLs
+classified as OTHER and were dropped** before the page cap ever applied:
+
+```
+/hvac/cooling/ac-repair-maintenance/             -> other  (dropped)
+/hvac/heating/furnace-installation-replacement/  -> other  (dropped)
+/areas-served/berkeley/                          -> other  (dropped)
+```
+
+`CATEGORY_PATTERNS` is entirely B2C-SaaS-shaped — /pricing, /vs, /features, /docs, /blog.
+A trade site has none of those. So `GLOBAL_PAGE_CAP` is 20 and we were using 1-2 of it,
+and Cat 3/4 were judging a homepage and a blog index. **The dropped service pages are
+exactly what Cat 3 exists to read**: "is the lead answer-first on your water-heater-repair
+page?"
+
+### What was built
+
+`LOCAL_CATEGORY_PATTERNS` / `LOCAL_CATEGORY_CAPS`, FORKED from the consumer set rather
+than merged (§0.6) — merging would change which pages a CONSUMER audit crawls, which is
+the one thing that rule exists to prevent. New `PageCategory.SERVICE` and `SERVICE_AREA`;
+reviews/testimonials map to COMPARISON as the local trust surface. `business_kind` threads
+`run_site_audit -> run_site_audit_blocking -> crawl_domain -> select_pages -> classify_url`,
+defaulting to today's consumer behaviour everywhere.
+
+A consumer-path regression test asserts `CATEGORY_PATTERNS` and `CATEGORY_CAPS` are
+byte-identical and that a trade-shaped path still classifies as OTHER by default.
+
+### The fix's own regression, caught by re-measuring
+
+First cut made one site WORSE: Berkeley Plumbing 9 -> 6. Its site is nearly all
+`/articles-about-*`, so it hit the local BLOG cap of 3 and stopped at 5 pages while 8
+auditable ones sat unused. The caps were doing their job as priority but leaking budget.
+
+Added a local-only backfill: once the capped pass finishes under `GLOBAL_PAGE_CAP`,
+remaining candidates fill the rest in the same priority order. Deliberately NOT applied to
+the consumer path — that would change how many pages an existing consumer audit crawls,
+and therefore its cost, which is a decision to take rather than a side effect.
+
+### Result
+
+```
+site                   before   after
+Albert Nahman               2      20
+Afterglow                   1      15
+Plumbing Care               2      10
+Berkeley Plumbing           9       9   (regression fixed)
+EO Plumbing                 1       7
+Pipe Spy                    2       9
+TOTAL                      19      72   3.8x, no site worse than before
+```
+
+Green Eagle and J J Rooter stay at 1: their sites genuinely have 8-11 discoverable links
+and almost no service URLs. That is a real property of those sites, not a classifier gap.
+
+### Why this had to come first
+
+Turning on `RUN_CONTENT_JUDGE` or labeling the Cat 3 gold set would both have calibrated
+against a homepage and a blog index. The ordering is: fix coverage, then judge, then
+calibrate — otherwise the κ≥0.6 gate certifies a judge against a sample that is not
+representative of the sites it will score.
+
+### Gate
+
+mypy clean (84 files) · ruff clean · pytest **390 passed, 1 skipped** · teaser 168 ·
+`tsc --noEmit` clean.
+
+---
+
 ## Local report renderer + teaser local path wired — Completed 2026-07-28
 
 The two gaps between "everything measures correctly" and "there is something to sell".

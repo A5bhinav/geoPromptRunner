@@ -77,7 +77,7 @@ def test_edge_blocked_access_checks_downgrade_to_ungradeable(
     never a client-facing 'the site blocks crawlers' claim."""
     import src.audit.site_audit as site_audit
 
-    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d: _blocked_crawl())
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d, **_: _blocked_crawl())
     monkeypatch.setattr(
         site_audit,
         "_TECHNICAL_CHECKS",
@@ -100,7 +100,7 @@ def test_confirmed_block_with_baseline_stays_fail(monkeypatch: pytest.MonkeyPatc
     finding and must NOT be softened to inconclusive."""
     import src.audit.site_audit as site_audit
 
-    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d: _blocked_crawl())
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda r, d, **_: _blocked_crawl())
     # baseline established (no "can't assess") -> a genuine UA-specific block.
     monkeypatch.setattr(
         site_audit,
@@ -128,7 +128,7 @@ def test_run_site_audit_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     crawl = CrawlResult(
         run_id="rid", domain="acme.com", crawl_id="cid", started_at="t", pages=pages, errors=[]
     )
-    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda run_id, domain: crawl)
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda run_id, domain, **_: crawl)
 
     payload = site_audit.run_site_audit("rid", "acme.com", persist=False)
     assert payload["present"] is True
@@ -156,7 +156,7 @@ def test_build_report_merges_site_audit(monkeypatch: pytest.MonkeyPatch) -> None
         pages=[_page("https://acme.com/")],
         errors=[],
     )
-    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda run_id, domain: crawl)
+    monkeypatch.setattr(site_audit, "run_site_audit_blocking", lambda run_id, domain, **_: crawl)
     payload = site_audit.run_site_audit("rid", "acme.com", persist=False)
 
     report = build_report(_outcome(), site_audit=payload)
