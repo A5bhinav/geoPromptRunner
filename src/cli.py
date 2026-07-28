@@ -4,6 +4,8 @@ import argparse
 import logging
 from pathlib import Path
 
+from src.api.runner import _local_pack_from_db, _site_audit_from_db
+from src.audit.local_report import render_local_report
 from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
 from src.audit.technical_audit import render_technical, run_competitive
@@ -25,8 +27,10 @@ from src.pipeline.judge import Judge
 from src.pipeline.judge_cache import make_judge_cache
 from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
+from src.prompts.local_templates import TRADES
 from src.prompts.query_set import load_query_set
 from src.storage import db
+from src.storage.models import AnswerJudgment
 from src.verification.canary import render_canary_results, run_canaries
 from src.verification.determinism import (
     DEFAULT_QUERY,
@@ -254,6 +258,53 @@ def _cmd_calibrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _local_report_args(args: argparse.Namespace) -> tuple[str, str] | None:
+    """(trade, location) when this run should render as a local report, else None.
+
+    `--trade` overrides; otherwise the trade is inferred from the query-set version
+    (`local-plumbing-v1` -> `plumbing`), which is how a trade template stamps itself.
+    """
+    try:
+        row = db.get_audit_run(args.run_id)
+    except db.StorageError:
+        return None
+    if row is None:
+        return None
+    location = str(row.get("location") or "").strip()
+    if not location:
+        return None
+    trade = getattr(args, "trade", None)
+    if not trade:
+        # Two inference sources, because they cover different entry points: a run from
+        # a trade template stamps its version ("local-plumbing-v1"), while a run from an
+        # uploaded CSV carries only the category ("plumbing service").
+        haystack = f"{row.get('query_set_version') or ''} {row.get('category') or ''}".lower()
+        trade = next((known for known in TRADES if known in haystack), None)
+    # Falling back to the category keeps the heading readable for a trade with no
+    # template yet ("...looking for a roofing contractor in Berkeley"); "local" would
+    # be a non-word in front of a client.
+    return (trade or str(row.get("category") or "local").strip(), location)
+
+
+def _render_local(
+    args: argparse.Namespace, outcome: AuditOutcome, judgments: list[AnswerJudgment]
+) -> str:
+    pair = _local_report_args(args)
+    assert pair is not None  # caller checked
+    trade, location = pair
+    row = db.get_audit_run(args.run_id)
+    client = str((row or {}).get("client_name", ""))
+    return render_local_report(
+        outcome,
+        trade=trade,
+        location=location,
+        local_pack=_local_pack_from_db(args.run_id, client, location),
+        judgments=judgments or None,
+        site_audit=_site_audit_from_db(args.run_id, outcome.client_domains, client),
+        run_date=str((row or {}).get("created_at", ""))[:10] or None,
+    )
+
+
 def _cmd_report(args: argparse.Namespace) -> int:
     outcome = _outcome_from_run(args.run_id)
     if outcome is None:
@@ -264,6 +315,15 @@ def _cmd_report(args: argparse.Namespace) -> int:
         judgments = db.get_judgments(args.run_id)
     except db.StorageError:
         judgments = []
+
+    # A stored `location` is what makes a run local: it is set only for service-area
+    # businesses and is the one field the local surfaces are pinned to. So it selects
+    # the report shape — a local run rendered through the consumer template would print
+    # an aggregate appearance ratio and omit the market, both of which the local
+    # template forbids (docs/report-template-local.md, rules 1 and 6).
+    if _local_report_args(args) is not None:
+        print(_render_local(args, outcome, judgments))
+        return 0
 
     previous = None
     if args.previous:
@@ -442,6 +502,13 @@ def main(argv: list[str] | None = None) -> int:
     p_report.add_argument("run_id")
     p_report.add_argument(
         "--previous", default=None, help="prior run id to show the §3 trend column against"
+    )
+    p_report.add_argument(
+        "--trade",
+        help=(
+            "render as a local report for this trade (inferred from the query-set "
+            "version when omitted; only applies to runs with a stored location)"
+        ),
     )
     p_report.set_defaults(func=_cmd_report)
 

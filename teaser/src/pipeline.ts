@@ -12,6 +12,10 @@
 import type { PlatformClient } from "./platform/PlatformClient.ts";
 import { buildAuditCsv } from "./platform/csv.ts";
 import type { QuerySetGenerator } from "./queryset/QuerySetGenerator.ts";
+import {
+  attachLocalCompetitors,
+  businessKindOf,
+} from "./resolver/profileExtraction.ts";
 import type { Resolver } from "./resolver/Resolver.ts";
 import { selectFindings } from "./select/selectFindings.ts";
 import {
@@ -20,6 +24,7 @@ import {
   leadSentence,
   stakesLine,
 } from "./render/copy.ts";
+import { canonicalLocation } from "./types/domain.ts";
 import type { CompanyProfile, GeneratedQuerySet, TeaserDraft } from "./types/domain.ts";
 import type { AnswerRecord, ReportPayload, RunStatus } from "./types/platform.ts";
 
@@ -117,6 +122,33 @@ export async function runTeaserPipeline(
 
   // 1. Resolve URL -> company profile.
   let profile = await deps.resolver.resolve(url);
+
+  // 1a. LOCAL ONLY: source competitors from Google's local pack, never from model
+  //     recall. Claude does not reliably know the plumbers in a given city, so a
+  //     resolver-extracted "competitor" for a local business is typically a national
+  //     franchise or an invention — and a fabricated rival in a teaser emailed to a
+  //     real shop owner is the one failure that survives human review. This is why
+  //     attachLocalCompetitors throws rather than degrade when nothing was captured.
+  if (businessKindOf(profile) === "local_service") {
+    if (!profile.location) {
+      return {
+        ok: false,
+        stage: "resolve",
+        reason:
+          `${url} is a local service-area business but no location was read from the ` +
+          `site. Competitors must come from a location-pinned local pack; an unpinned ` +
+          `capture names businesses in the wrong metro.`,
+      };
+    }
+    const market = canonicalLocation(profile.location);
+    const entities = await deps.platform.getLocalEntities(
+      `best ${profile.category} in ${profile.location.city}`,
+      market,
+    );
+    // [] means the query genuinely surfaced no pack — distinct from a capture
+    // failure, which throws. Either way attachLocalCompetitors refuses to invent.
+    profile = attachLocalCompetitors(profile, entities);
+  }
 
   // 1b. Relationship guard: drop competitors corporately tied to the client
   //     (acquisitions/mergers the resolver LLM couldn't know) before they seed

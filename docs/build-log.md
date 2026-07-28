@@ -1,3 +1,83 @@
+## Local report renderer + teaser local path wired — Completed 2026-07-28
+
+The two gaps between "everything measures correctly" and "there is something to sell".
+
+### The local report exists as code now
+
+`docs/report-template-local.md` was a spec with no renderer — `reports.py` and
+`query_report.py` had no local variant at all, so the `local_pack` payload was captured,
+persisted and served while nothing displayed it. `src/audit/local_report.py` renders the
+template's six sections, and the six hard rules are enforced in code with a test each,
+because a comment is not enforcement:
+
+1. **No aggregate appearance ratio** — the module never computes one; a test asserts no
+   `%` appears anywhere in the output.
+2. **Never claim more than the judge measured** — `_competitor_verb` grades every verb
+   off judged prominence, mirroring `competitorVerb` in `copy.ts`. Parametrised over all
+   four prominence values, asserting "recommends" cannot appear below
+   `recommended_first`.
+3. **Never name an uncaptured competitor** — `_rival_is_captured` gates every rival name
+   against the local pack. Tested from both sides: a judged-but-uncaptured rival is
+   dropped, and a longer Google listing ("LemonTree Plumbing, Heating & Drain") still
+   matches the shorter name an engine said.
+4. **No accuracy FIGURE until W3.4** — the flags render with their verbatim evidence
+   (that is the point of §4) but no rate appears and the section says it is uncalibrated.
+5. **No reproducibility claim without the runs** — printed only when every observed run
+   confirms, and always beside `sampling_note(trade)`, which currently says the band is
+   not established.
+6. **Print the location, always** — `render_local_report` RAISES without one rather than
+   describing the wrong market.
+
+Selection is on the stored `location`, which is set only for service-area businesses.
+The consumer path is untouched and pinned by a test.
+
+### What it produces on the real Berkeley run
+
+```
+Asked "top rated drain cleaning in Berkeley", perplexity recommends
+J J Rooter & Plumbing — and does not mention Albert Nahman Plumbing.
+...
+- "top rated drain cleaning in Berkeley" — Albert Nahman Plumbing ranks #2
+```
+
+Second in the map pack for that query, absent from the AI answer built beside it. J J
+Rooter passed the rule-3 gate as a captured entity. That contrast is the product, and it
+is now one `geo report <run_id>` away.
+
+### The teaser's local path is wired
+
+`attachLocalCompetitors` and `getLocalEntities` were built, tested, and had **no
+production caller** — so `LOCAL_SERVICE_PATH_READY = true` advertised a capability that
+did not run, and a local business flowed down the consumer path where the resolver names
+rivals from model recall. For a local trade that yields national franchises or
+inventions, and a fabricated rival in a teaser emailed to a shop owner is the one failure
+that survives human review.
+
+`runTeaserPipeline` now sources local competitors from the captured pack before the
+relationship guard, so the human confirm gate reviews the real list. Three tests pin it:
+a captured business is the named rival; a local business with no readable location is
+refused at the resolve stage rather than captured un-pinned; an empty capture throws
+rather than falling back to recall.
+
+### Two things caught by running it
+
+The heading read "looking for a **plumbing** in Berkeley" (trade slug printed raw), and
+then "looking for a **local** in Berkeley" — trade inference only read the query-set
+version, which a CSV-uploaded run does not stamp. Both fixed: a display-noun map, and
+inference from version *or* category with the category as fallback.
+
+### Gate
+
+mypy clean (84 files) · ruff clean · pytest **383 passed, 1 skipped** · teaser **168
+passed** · `tsc --noEmit` clean.
+
+### Up next
+
+W3.4 calibration (unfreezes §4 figures) · populate SAMPLING_BANDS from determinism runs ·
+`docs/project-queue.md` is a pre-pivot snapshot and should be rewritten or retired.
+
+---
+
 # Build Log
 
 Append-only. Most recent chunk at the top. One entry per chunk, written only after every acceptance criterion passes.
