@@ -11,6 +11,15 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.isort]
+# `supabase` is a third-party package, but the Supabase CLI creates a local
+# `supabase/` directory for its link state (gitignored, see 078eda5). Without this
+# declaration ruff's isort sees that directory, classifies the import as
+# first-party, and demands it move — so `ruff check src/` fails or passes depending
+# on whether someone has run the CLI locally. Pinning it keeps the gate identical
+# on a fresh clone and on a linked machine.
+known-third-party = ["supabase"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
