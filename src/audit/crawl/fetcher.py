@@ -99,6 +99,23 @@ class FetchConfig:
     respect_robots: bool = True
     # Bound concurrent headless renders (RAM ~700MB–1GB/slot, §6.5 Layer 0).
     max_render_concurrency: int = 3
+    # Bound concurrent HTTP fetches. SEPARATE from max_render_concurrency, which is a
+    # memory bound for Chromium and was being reused as a request-rate bound — a category
+    # error that only surfaced once a crawl fetched more than a couple of pages.
+    #
+    # Serial by default, measured rather than guessed: a real client site (WP Engine
+    # behind Cloudflare) 429'd 14 of 20 pages at 3 concurrent, and still 14 of 20 at 2
+    # concurrent with 0.75s pauses (~2.7 req/s). The same URLs returned 200 every time at
+    # ~2s spacing, under BOTH the GPTBot and a browser UA — so it is a pure rate limit,
+    # not AI-crawler discrimination, and the fix is to go slower rather than to disguise
+    # ourselves. Small-business hosting is the norm in this niche; an audit crawl is ~20
+    # pages and has no reason to be fast.
+    fetch_concurrency: int = 1
+    # Pause between fetches when robots.txt specifies no Crawl-delay. 1.5s sits above the
+    # 1s that still tripped the limit on that site and below the 2s that reliably passed.
+    polite_delay_s: float = 1.5
+    # Minimum wait after a 429 that carries no Retry-After. See _retry_wait.
+    rate_limit_floor_s: float = 2.5
     # Per-render nav + wall-clock caps — Playwright can *hang* on OOM (§6.5 locked #2).
     render_nav_timeout_s: float = 20.0
     render_stabilize_cap_s: float = 5.0
@@ -195,13 +212,22 @@ def _backoff(attempt: int, config: FetchConfig) -> float:
 
 
 def _retry_wait(response: httpx.Response, attempt: int, config: FetchConfig) -> float:
-    """Honor ``Retry-After`` (seconds form) on 429/503, else exponential backoff."""
+    """Honor ``Retry-After`` (seconds form) on 429/503, else exponential backoff.
+
+    A 429 with no ``Retry-After`` gets a floor of ``rate_limit_floor_s`` rather than the
+    generic backoff: the generic curve starts at 0.5s, which on a rate-limited host is
+    another immediate 429 and burns a retry for nothing. Observed exactly that — two
+    retries at 0.5s and 1s both rejected, so the page was recorded as blocked when
+    waiting a little longer would have fetched it.
+    """
     retry_after = response.headers.get("retry-after")
     if retry_after:
         try:
             return min(float(int(retry_after)), config.retry_max_wait_s)
         except ValueError:
             pass  # HTTP-date form — fall back to backoff rather than parse a date
+    if response.status_code == 429:
+        return max(_backoff(attempt, config), config.rate_limit_floor_s)
     return _backoff(attempt, config)
 
 

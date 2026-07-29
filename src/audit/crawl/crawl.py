@@ -89,8 +89,11 @@ async def crawl_domain(
         crawl_id,
         delay,
     )
-    # A Crawl-delay means serialize and pause between fetches; otherwise fan out.
-    gate = asyncio.Semaphore(1 if delay else cfg.max_render_concurrency)
+    # A robots Crawl-delay means serialize; otherwise fan out at the FETCH bound (not
+    # the render bound, which is about Chromium RAM). Either way a pause applies between
+    # requests — see FetchConfig.polite_delay_s.
+    gate = asyncio.Semaphore(1 if delay else cfg.fetch_concurrency)
+    pause = delay if delay else cfg.polite_delay_s
 
     async def _crawl_one(url: str, category: PageCategory, renderer: object | None) -> None:
         async with gate:
@@ -101,8 +104,12 @@ async def crawl_domain(
                 result.errors.append(f"{url}: fetch {type(exc).__name__}: {exc}")
                 return
             finally:
-                if delay:
-                    await asyncio.sleep(delay)  # politeness pause, inside the gate
+                # Politeness pause inside the gate, so it throttles the request RATE
+                # rather than just spacing completions. Applies with or without a robots
+                # Crawl-delay: without it, a 20-page crawl 429'd two thirds of a real
+                # client's site.
+                if pause:
+                    await asyncio.sleep(pause)
             result.pages.append(page)
             try:
                 cache.save_page(run_id, crawl_id, page)
