@@ -1,3 +1,91 @@
+## Crawl politeness + Cat 3/4 judged checks finally produce verdicts — Completed 2026-07-28
+
+The follow-through on the classification fork: re-run the audit, turn on the content
+judge. The re-run immediately exposed a second bug the fork had been masking.
+
+### 2 pages -> 20 pages -> 14 of them ungradeable
+
+The classification fix worked (2 -> 20 pages, 21 -> 147 checks) and then 14 of the 20
+came back `ungradeable` on schema, headings, alt-text and fact-density. A site audit
+reporting nothing about two thirds of the site is not an improvement, so it got chased
+rather than written up as a win.
+
+Cause, at `crawl.py`:
+
+    gate = asyncio.Semaphore(1 if delay else cfg.max_render_concurrency)
+
+`max_render_concurrency` is a MEMORY bound for headless Chromium (~1GB/slot) and was
+being reused as the HTTP request-rate bound. No pause applied at all unless robots.txt
+specified a Crawl-delay, which this site does not. So a 20-page crawl hammered a small
+WP Engine host, it returned 429, and the 1.1 KB error body scored as "ungradeable".
+
+At 2 pages this never surfaced. The fork is what made the crawl big enough to trip it.
+
+### Measured before changing anything
+
+| configuration | pages HTTP 200 |
+|---|---|
+| 3 concurrent, no delay | 6/20 |
+| 2 concurrent, 0.75s pause (~2.7 req/s) | 6/20 |
+| serial at ~2s spacing (targeted probe) | 3/3 |
+
+Also checked whether it was AI-crawler discrimination — it is **not**. The same URLs
+behaved identically under a browser UA, so it is a pure rate limit and the fix is to go
+slower rather than to disguise ourselves.
+
+`fetch_concurrency` (default 1) split from `max_render_concurrency`; `polite_delay_s`
+(1.5s) applies with or without a robots Crawl-delay; `rate_limit_floor_s` (2.5s) so a 429
+with no Retry-After stops retrying on the generic 0.5s curve, which was an immediate
+second 429 that burned the retry for nothing.
+
+Verified on hosts NOT used for diagnosis: **Afterglow 15/15 pages with usable text (45s),
+Plumbing Care 10/10 (31s)**. `albertnahmanplumbing.com` still 429s, but that host absorbed
+100+ requests during diagnosis today, so its current state is not a clean read on the new
+defaults — recorded rather than glossed. The flip side is worth selling: a site that
+rate-limits this hard IS a Cat 1 accessibility finding, because GPTBot cannot read it in
+one pass either.
+
+Cost: an audit crawl goes from ~10s to ~45s. Correctness over speed for a bot that
+identifies itself as GPTBot.
+
+### Cat 3/4 judged checks, first real verdicts
+
+`RUN_CONTENT_JUDGE=1` against the clean 15-page crawl produced **90 verdicts**:
+
+| check | verdicts |
+|---|---|
+| `answer_first_lead` | 6 pass · 6 partial · 3 fail |
+| `self_contained_chunks` | 13 pass · 1 fail · 1 unknown |
+| `definition_first` | 12 fail · 3 pass |
+| `expert_commentary` | 10 fail · 5 partial |
+| `original_data` | 10 partial · 5 fail |
+| `external_citations` | 12 fail · 3 unknown |
+
+Cat 3's judged half (first three) and Cat 4's (last three) both populate for the first
+time. ~$1 on the API; the re-run cost $0 because the content-judge cache is
+content-addressed. The `/prejudge` subscription path remains available for iteration.
+
+**These numbers are internal-only.** The judge has still never passed the κ>=0.6 gate
+(`content_calibration.py` is built; no gold set is labeled), so the distributions are
+plausible but unvalidated. That is now the single remaining blocker on Cat 3, and it needs
+human labeling rather than code.
+
+`RUN_CONTENT_JUDGE` stays `False` by default — enabling it is a spend decision.
+
+### The ordering this validated
+
+Fix coverage -> judge -> calibrate. Had the judge been switched on before the
+classification fork, it would have scored a homepage and a blog index; had the gold set
+been labeled then, the κ gate would have certified the judge against a sample
+unrepresentative of the sites it scores.
+
+### Gate
+
+mypy clean (84 files) · ruff clean · pytest **390 passed, 1 skipped** · teaser 168 ·
+`tsc --noEmit` clean.
+
+---
+
 ## Local URL classification — Cat 3/4 were auditing 9% of a trade site — Completed 2026-07-28
 
 Chasing "how do we fix Cat 3" found the answer was neither the feature flag nor the
