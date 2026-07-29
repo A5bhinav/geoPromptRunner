@@ -612,6 +612,17 @@ class Judge:
         self._cache_model_id = cache_model_id
         self._prompt_fingerprint = base_fingerprint
 
+    @property
+    def identity(self) -> str:
+        """Which judge produced a verdict — the string worth recording on a run.
+
+        Not just ``JUDGE_MODEL``: cascade and verifier configurations change the verdict,
+        so they are part of who judged. This is the same id the cache keys on, which is
+        what makes it the honest answer to "what scored these answers?" — a report that
+        printed the bare model would describe a cascade run as a single-model one.
+        """
+        return self._cache_model_id
+
     def _single_judge_messages(
         self,
         query_text: str,

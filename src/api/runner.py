@@ -568,10 +568,12 @@ def _judge_answers(
     client: str,
     competitors: list[str],
     fact_sheet: str | None,
-) -> list[AnswerJudgment] | None:
+) -> tuple[list[AnswerJudgment], str] | None:
     """Judge a set of answers through the persistent verdict cache.
 
-    Returns the judgments, or ``None`` if the judge can't be built (no API key).
+    Returns ``(judgments, judge identity)``, or ``None`` if the judge can't be built
+    (no API key). The identity travels with the verdicts so the caller can record WHO
+    judged this run — see ``db.save_judgments``.
     Shared by the inline post-run judge and the on-demand re-judge. The cache
     means an answer already judged under these exact inputs (model, client,
     competitors, fact sheet, prompt) is reused, not re-judged — so a re-judge over
@@ -589,7 +591,10 @@ def _judge_answers(
         return None
     cache = make_judge_cache()
     try:
-        return judge.judge_results(results, client, competitors, fact_sheet, cache=cache)
+        return (
+            judge.judge_results(results, client, competitors, fact_sheet, cache=cache),
+            judge.identity,
+        )
     finally:
         cache.close()
 
@@ -600,15 +605,16 @@ def _run_judge(state: _RunState) -> None:
     Skipped (not fatal) if the judge can't be built (no API key).
     """
     cfg = state.audit.config
-    judgments = _judge_answers(
+    judged = _judge_answers(
         state.results, cfg.client_name, cfg.competitors, state.audit.fact_sheet
     )
-    if judgments is None:
+    if judged is None:
         return
+    judgments, judge_identity = judged
     state.judgments = judgments
     if state.db_run_id is not None:
         try:
-            db.save_judgments(state.db_run_id, state.judgments)
+            db.save_judgments(state.db_run_id, state.judgments, judge_identity)
         except db.StorageError as exc:
             logger.info("Failed to persist judgments (continuing): %s", exc)
 
@@ -715,12 +721,12 @@ def _rejudge_from_db(run_id: str) -> ReportPayload | None:
     # — use it so re-judge verdicts match (and hit) the pre-filled cache keys.
     stored_sheet = row.get("fact_sheet")
     fact_sheet = str(stored_sheet) if stored_sheet else None
-    judgments = _judge_answers(
+    judged = _judge_answers(
         results, str(row.get("client_name", "")), _str_list(row.get("competitors")), fact_sheet
     )
-    if judgments is not None:
+    if judged is not None:
         try:
-            db.save_judgments(run_id, judgments)
+            db.save_judgments(run_id, judged[0], judged[1])
         except db.StorageError as exc:
             logger.info("Failed to persist judgments (continuing): %s", exc)
     _invalidate_report_cache(run_id)

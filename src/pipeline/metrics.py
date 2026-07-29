@@ -17,6 +17,12 @@ __all__ = [
     "coverage",
     "coverage_by_bucket",
     "coverage_by_engine",
+    "MIN_RUNS_FOR_STABILITY",
+    "Stability",
+    "stability_from",
+    "cell_agreement",
+    "stability",
+    "stability_by_engine",
     "brand_verdicts",
     "mention_rate",
     "mention_rate_by_bucket",
@@ -192,6 +198,99 @@ def coverage_by_engine(results: list[QueryResult]) -> dict[str, Coverage]:
             total + 1,
         )
     return {name: Coverage(answered_cells=a, total_cells=t) for name, (a, t) in out.items()}
+
+
+# --- Stability: did the verdict reproduce across the cell's repeat runs? --------
+#
+# `_verdicts` already collapses a cell by majority and keeps `hit_runs`/`answered_runs`
+# — but every consumer reads only the collapsed `hit`, so a 3-of-5 coin flip and a 5-of-5
+# unanimous read render identically. That was survivable while every engine ran at
+# ENGINE_TEMPERATURE=0. It isn't now: `openai` is pinned to a model that rejects the
+# parameter outright and samples at its default temperature (see openai_engine.MODEL),
+# so one surface in every run is measurably noisier than the rest and nothing said so.
+#
+# Same lesson Coverage taught: a cell with a single answered run LOOKS unanimous while
+# carrying no reproducibility information at all. Such cells are excluded from the
+# denominator rather than counted as stable — `is_measured` is False, not 100%.
+
+#: Below this many answered runs, a cell says nothing about reproducibility.
+MIN_RUNS_FOR_STABILITY = 2
+
+
+@dataclass(frozen=True)
+class Stability:
+    """How reproducibly a set of cells returned the same verdict across their runs."""
+
+    repeated_cells: int  # cells with >= MIN_RUNS_FOR_STABILITY answered runs
+    split_cells: int  # of those, the ones whose runs disagreed
+    mean_agreement: float  # mean modal agreement across the repeated cells
+
+    @property
+    def is_measured(self) -> bool:
+        """True when at least one cell ran enough times to say anything.
+
+        False means *not measured* — never "perfectly stable". A cycle at
+        RUNS_PER_QUERY=1 produces no reproducibility evidence at all, and rendering
+        that as 100% agreement would invent confidence out of a missing measurement.
+        """
+        return self.repeated_cells > 0
+
+    @property
+    def split_rate(self) -> float:
+        """Share of repeated cells whose runs disagreed. 0.0 when nothing was repeated
+        — guard on ``is_measured`` before rendering this."""
+        return self.split_cells / self.repeated_cells if self.repeated_cells else 0.0
+
+
+def stability_from(runs: Iterable[tuple[int, int]]) -> Stability:
+    """Pure core: ``(modal_runs, answered_runs)`` pairs → a ``Stability``.
+
+    Each caller decides what "agreeing" means for its own verdict — the binary
+    mention read here, the (present, prominence, framing) label on the judge path —
+    and this rolls the pairs up identically for both, so the two paths can never
+    report stability on different scales.
+    """
+    agreements = [m / n for m, n in runs if n >= MIN_RUNS_FOR_STABILITY]
+    if not agreements:
+        return Stability(repeated_cells=0, split_cells=0, mean_agreement=0.0)
+    return Stability(
+        repeated_cells=len(agreements),
+        split_cells=sum(1 for a in agreements if a < 1.0),
+        mean_agreement=sum(agreements) / len(agreements),
+    )
+
+
+def cell_agreement(verdict: CellVerdict) -> float | None:
+    """Modal agreement of one cell's binary read, or None if it wasn't repeated.
+
+    Modal, not hit-share: a cell that read "absent" in all five runs is perfectly
+    stable at 5/5, even though ``hit_runs`` is 0.
+    """
+    if verdict.answered_runs < MIN_RUNS_FOR_STABILITY:
+        return None
+    return _modal_runs(verdict) / verdict.answered_runs
+
+
+def _modal_runs(verdict: CellVerdict) -> int:
+    return max(verdict.hit_runs, verdict.answered_runs - verdict.hit_runs)
+
+
+def stability(verdicts: list[CellVerdict]) -> Stability:
+    """Reproducibility of ``verdicts`` across their repeat runs."""
+    return stability_from((_modal_runs(v), v.answered_runs) for v in verdicts)
+
+
+def stability_by_engine(results: list[QueryResult], brand: str) -> dict[str, Stability]:
+    """Stability per engine — the split that motivates the metric.
+
+    Engines no longer share a sampling regime (one surface cannot take a temperature),
+    so a single run-wide agreement number would average a deterministic engine against
+    a sampling one and describe neither.
+    """
+    by_engine: dict[str, list[CellVerdict]] = {}
+    for v in brand_verdicts(results, brand):
+        by_engine.setdefault(v.engine_name, []).append(v)
+    return {name: stability(vs) for name, vs in by_engine.items()}
 
 
 def _mention_predicate(brand: str) -> Callable[[QueryResult], bool]:

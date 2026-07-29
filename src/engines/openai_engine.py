@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import openai
 from openai import OpenAI
@@ -49,6 +49,9 @@ class OpenAIEngine(BaseEngine):
 
     ENGINE_NAME: str = "openai"
     MODEL_ID: str = MODEL
+    # gpt-5.6-luna REJECTS temperature outright (see the MODEL comment), so this
+    # surface samples at the provider default while the temp-0 engines do not.
+    SAMPLING: Literal["pinned", "default", "none"] = "default"
 
     def __init__(self) -> None:
         if not settings.OPENAI_API_KEY:

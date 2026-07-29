@@ -73,6 +73,15 @@ MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
 # docs/isolation-determinism-plan.md) found the brand READ is 100% stable on
 # openai/anthropic but wobbles on gemini + perplexity (~60% worst-brand), and the
 # standard memory audit includes both — so K=5 is the data-driven default.
+#
+# RE-MEASURED 2026-07-28 after `openai` was repinned to a model that cannot take a
+# temperature (see openai_engine.MODEL), on the same probe (`scripts/run_determinism.py`,
+# k=5, one category query): label agreement openai min 60% / mean 80%, anthropic
+# min 60% / mean 92%. Both still suggest K=5, so this default holds — but the
+# "100% stable on openai/anthropic" line above is FALSIFIED for both. Note anthropic
+# is still at temperature 0 and shows the same 60% worst-brand floor, so the wobble is
+# not an artifact of the repin. One query is a probe, not a baseline: widen it across
+# the query set before quoting these numbers as the noise band.
 DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "5"))
 # Spend guard (rough estimated USD, engines + judge). A single audit estimated
 # above MAX_AUDIT_COST_USD is rejected; once the running total of accepted audits

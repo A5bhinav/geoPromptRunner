@@ -17,6 +17,7 @@ import {
   BarChart3,
   Globe,
   TrendingDown,
+  Repeat2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -478,6 +479,52 @@ export function ReportView({
           </Card>
         </div>
       </section>
+
+      {/* §3b How reproducible the verdicts were across repeat runs */}
+      {(report.stability?.length ?? 0) > 0 && (
+        <section className="space-y-3">
+          <SectionTitle icon={<Repeat2 className="h-3.5 w-3.5" />}>Verdict stability</SectionTitle>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Did the same answer come back twice?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Engine</TableHead>
+                    <TableHead>Repeated cells</TableHead>
+                    <TableHead>Split</TableHead>
+                    <TableHead>Agreement</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {report.stability?.map((row) => (
+                    <TableRow key={row.engine_name}>
+                      <TableCell className="font-medium">{row.engine_name}</TableCell>
+                      <TableCell className="tabular-nums">{row.repeated_cells}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {row.split_cells > 0 ? (
+                          <span className="text-destructive">{row.split_cells}</span>
+                        ) : (
+                          row.split_cells
+                        )}
+                      </TableCell>
+                      <TableCell className="tabular-nums">{pct(row.mean_agreement)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <p className="mt-3 text-sm text-muted-foreground">
+                A split cell read one way in some runs and the other way in the rest — its
+                verdict could flip on a re-run, so findings resting on it are weaker than the
+                headline rates suggest. Engines missing from this table were not repeated
+                enough times to say (that is unmeasured, not stable).
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* §4 Sources + losing queries */}
       <section className="space-y-3">

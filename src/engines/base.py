@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Literal
 
 __all__ = ["BaseEngine"]
 
@@ -52,6 +53,21 @@ class BaseEngine(ABC):
     # baseline between measurement cycles. Recorded in each run's metadata.
     # Empty for surfaces with no model parameter (e.g. SERP capture).
     MODEL_ID: str = ""
+
+    # How this surface's sampling is controlled — the fact a report's methodology
+    # section has to state, kept on the engine that owns it rather than retyped as prose
+    # somewhere downstream (which is exactly how docs/report.md came to claim
+    # "temperature pinned to 0" for a surface that cannot take one).
+    #
+    #   "pinned"  the request carries settings.ENGINE_TEMPERATURE
+    #   "default" no temperature is sent — the model samples at its own default, either
+    #             because the provider rejects the parameter or because this adapter
+    #             does not send it. Repeat runs of one query genuinely differ.
+    #   "none"    no LLM sampling to control at all (SERP capture surfaces)
+    #
+    # ``tests/test_isolation.py`` asserts this against each engine's real outgoing
+    # payload, so the label cannot drift from what is actually sent.
+    SAMPLING: Literal["pinned", "default", "none"] = "pinned"
 
     # The provider's own explanation of the most recent failure, when it gave one worth
     # repeating ("Please verify your account", "insufficient balance"). Read by

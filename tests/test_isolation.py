@@ -50,6 +50,23 @@ def _assert_isolated_chat_payload(payload: dict[str, Any], prompt: str) -> None:
     assert not forbidden, f"stateful params in outgoing payload: {forbidden}"
 
 
+def _assert_sampling_label_matches(
+    cls: Any, payload: dict[str, Any], key: str = "temperature"
+) -> None:
+    """``BaseEngine.SAMPLING`` must describe what the engine ACTUALLY sends.
+
+    The label feeds a report's methodology section, so a wrong one is a false claim to a
+    client — which is precisely how docs/report.md came to say "temperature pinned to 0"
+    about a surface that cannot take one. Asserting it against the captured payload means
+    the label can only ever be as wrong as the request itself.
+    """
+    pinned = key in payload
+    assert (cls.SAMPLING == "pinned") == pinned, (
+        f"{cls.ENGINE_NAME} declares SAMPLING={cls.SAMPLING!r} but "
+        f"{'sends' if pinned else 'does not send'} {key}"
+    )
+
+
 # --- OpenAI (parametric) ------------------------------------------------------
 
 
@@ -88,6 +105,7 @@ def test_openai_payload_is_one_isolated_user_message(openai_engine: Any) -> None
     # rather than in production.
     assert "temperature" not in payload
     assert payload["seed"] == settings.ENGINE_SEED
+    _assert_sampling_label_matches(type(openai_engine), payload)
 
 
 def test_engine_model_pins_are_dated_or_explicitly_excepted() -> None:
@@ -159,6 +177,7 @@ def test_openai_search_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> None
     (payload,) = _CapturingOpenAI.captured
     _assert_isolated_chat_payload(payload, "best budgeting app")
     assert DATED_MODEL.search(payload["model"])
+    _assert_sampling_label_matches(mod.OpenAISearchEngine, payload)
 
 
 # --- Anthropic (parametric) ----------------------------------------------------
@@ -190,6 +209,7 @@ def test_anthropic_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "system" not in payload, "measured engines must not carry a system prompt"
     assert payload["temperature"] == settings.ENGINE_TEMPERATURE
     assert DATED_MODEL.search(payload["model"])
+    _assert_sampling_label_matches(mod.AnthropicEngine, payload)
 
 
 # --- Anthropic search (retrieval) ----------------------------------------------
@@ -221,6 +241,7 @@ def test_anthropic_search_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> N
     assert "system" not in payload
     # The web-search server tool is the only extra — and it holds no state.
     assert [t["type"] for t in payload["tools"]] == ["web_search_20250305"]
+    _assert_sampling_label_matches(mod.AnthropicSearchEngine, payload)
 
 
 # --- Perplexity -----------------------------------------------------------------
@@ -258,6 +279,7 @@ def test_perplexity_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     (payload,) = fake.captured
     _assert_isolated_chat_payload(payload, "best smart ring")
     assert payload["temperature"] == settings.ENGINE_TEMPERATURE
+    _assert_sampling_label_matches(mod.PerplexityEngine, payload)
 
 
 # --- Gemini (parametric + grounded) ---------------------------------------------
@@ -296,6 +318,7 @@ def test_gemini_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     assert call["contents"] == "best smart ring"
     assert call["config"].temperature == settings.ENGINE_TEMPERATURE
     assert call["config"].seed == settings.ENGINE_SEED
+    _assert_sampling_label_matches(mod.GeminiEngine, vars(call["config"]))
     forbidden = FORBIDDEN_STATE_PARAMS & set(call)
     assert not forbidden
 
@@ -314,6 +337,7 @@ def test_gemini_grounded_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> No
     (call,) = _CapturingGenAIClient.captured
     assert call["contents"] == "best smart ring"
     assert call["config"].tools, "grounded engine must request the google_search tool"
+    _assert_sampling_label_matches(mod.GeminiGroundedEngine, vars(call["config"]))
     forbidden = FORBIDDEN_STATE_PARAMS & set(call)
     assert not forbidden
 

@@ -138,3 +138,102 @@ def test_domain_helpers() -> None:
     assert metrics.domain_of("https://WWW.Acme.com/path") == "acme.com"
     assert metrics.is_brand_citation("https://blog.acme.com/x", ["acme.com"]) is True
     assert metrics.is_brand_citation("https://acme.io/x", ["acme.com"]) is False
+
+
+# --- Stability (repeat-run reproducibility) ------------------------------------
+
+
+def test_stability_separates_a_split_cell_from_a_unanimous_one() -> None:
+    # q1: mentioned in 2 of 3 runs -> a split read that majority-vote hides.
+    # q2: absent from all 3 -> unanimous, even though hit_runs is 0.
+    results = [
+        _qr("q1", "openai", 0, "Acme is great."),
+        _qr("q1", "openai", 1, "Acme works well."),
+        _qr("q1", "openai", 2, "YNAB only."),
+        _qr("q2", "openai", 0, "YNAB only."),
+        _qr("q2", "openai", 1, "YNAB only."),
+        _qr("q2", "openai", 2, "YNAB only."),
+    ]
+    s = metrics.stability(metrics.brand_verdicts(results, "Acme"))
+    assert s.is_measured is True
+    assert s.repeated_cells == 2
+    assert s.split_cells == 1  # only q1
+    assert s.mean_agreement == (2 / 3 + 1.0) / 2
+
+
+def test_single_run_cells_are_not_measured_rather_than_perfectly_stable() -> None:
+    # One run per cell looks unanimous but compares nothing — the trap Coverage
+    # taught us. is_measured must be False, NOT 100% agreement.
+    results = [_qr("q1", "openai", 0, "Acme is great."), _qr("q2", "openai", 0, "YNAB only.")]
+    s = metrics.stability(metrics.brand_verdicts(results, "Acme"))
+    assert s.is_measured is False
+    assert s.repeated_cells == 0
+    assert s.mean_agreement == 0.0
+
+
+def test_unanswered_runs_are_excluded_from_the_stability_denominator() -> None:
+    # An engine failure is missing data, not a disagreement.
+    results = [
+        _qr("q1", "openai", 0, "Acme is great."),
+        _qr("q1", "openai", 1, "Acme works well."),
+        _qr("q1", "openai", 2, None),
+    ]
+    v = metrics.brand_verdicts(results, "Acme")[0]
+    assert v.answered_runs == 2
+    assert metrics.cell_agreement(v) == 1.0
+    assert metrics.stability([v]).split_cells == 0
+
+
+def test_stability_is_reported_per_engine() -> None:
+    results = [
+        # openai splits 1 of 2; anthropic agrees in both runs.
+        _qr("q1", "openai", 0, "Acme is great."),
+        _qr("q1", "openai", 1, "YNAB only."),
+        _qr("q1", "anthropic", 0, "Acme is great."),
+        _qr("q1", "anthropic", 1, "Acme works well."),
+    ]
+    by_engine = metrics.stability_by_engine(results, "Acme")
+    assert by_engine["openai"].split_cells == 1
+    assert by_engine["anthropic"].split_cells == 0
+    assert by_engine["anthropic"].mean_agreement == 1.0
+
+
+def test_build_report_surfaces_per_engine_stability() -> None:
+    from src.api.reports import build_report
+    from src.pipeline.orchestrator import AuditOutcome
+
+    outcome = AuditOutcome(
+        run_id=None,
+        client_name="Acme",
+        client_domains=["acme.com"],
+        competitors=["Rival"],
+        query_set_version="v1",
+        runs_per_query=2,
+        results=[
+            _qr("q1", "openai", 0, "Acme is great."),
+            _qr("q1", "openai", 1, "Rival only."),  # split
+            _qr("q1", "anthropic", 0, "Acme is great."),
+            _qr("q1", "anthropic", 1, "Acme works well."),  # agrees
+        ],
+    )
+    rows = {r["engine_name"]: r for r in build_report(outcome)["stability"]}
+    assert rows["openai"]["split_cells"] == 1
+    assert rows["anthropic"]["split_cells"] == 0
+    assert rows["anthropic"]["mean_agreement"] == 1.0
+
+
+def test_build_report_omits_stability_when_nothing_was_repeated() -> None:
+    from src.api.reports import build_report
+    from src.pipeline.orchestrator import AuditOutcome
+
+    outcome = AuditOutcome(
+        run_id=None,
+        client_name="Acme",
+        client_domains=["acme.com"],
+        competitors=["Rival"],
+        query_set_version="v1",
+        runs_per_query=1,
+        results=[_qr("q1", "openai", 0, "Acme is great.")],
+    )
+    # No row at all — an unrepeated engine must not render as 100% agreement.
+    assert build_report(outcome)["stability"] == []

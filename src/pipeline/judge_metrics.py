@@ -3,10 +3,12 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
+from src.pipeline import metrics
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, Framing, Prominence
 from src.storage.models import Severity
 
 __all__ = [
+    "BrandLabel",
     "BrandCell",
     "VisibilityGrade",
     "brand_cells_map",
@@ -14,6 +16,9 @@ __all__ = [
     "visibility_score",
     "leaderboard",
     "framing_breakdown",
+    "stability",
+    "stability_by_engine",
+    "split_cells",
     "collect_accuracy_flags",
     "grade_penalty_flags",
     "GradePolicy",
@@ -42,6 +47,10 @@ _PROM_SCORE: dict[str, float] = {
 }
 
 
+#: One run's read of one brand: (present, prominence, framing).
+BrandLabel = tuple[bool, str, str]
+
+
 @dataclass(frozen=True)
 class BrandCell:
     """One brand's aggregated verdict for one (query, engine) across its runs."""
@@ -53,19 +62,51 @@ class BrandCell:
     present: bool
     prominence: str
     framing: str
+    # How many runs backed this cell, and how many of them produced the modal label.
+    # The collapse above is lossy by design — these two keep the evidence behind it,
+    # so a 3-of-5 coin flip and a 5-of-5 unanimous read stay distinguishable (see the
+    # stability section below). Defaults describe an unrepeated cell, which
+    # `metrics.MIN_RUNS_FOR_STABILITY` correctly treats as carrying no evidence.
+    runs: int = 1
+    agree_runs: int = 1
 
 
 def _assessed(judgments: list[AnswerJudgment]) -> list[AnswerJudgment]:
     return [j for j in judgments if j.assessed]
 
 
-def _brand_cells(judgments: list[AnswerJudgment], brand: str) -> list[BrandCell]:
-    """Collapse a brand's per-run judgments into one verdict per (query, engine).
+def _collapse(rows: list[BrandLabel]) -> tuple[bool, str, str, int, int]:
+    """Collapse one cell's per-run labels to (present, prominence, framing, runs,
+    agree_runs).
 
-    present = majority of runs; prominence = best (most prominent) seen while
-    present; framing = modal. (With temp 0 the runs are usually identical.)
+    present = majority of runs; prominence = best (most prominent) seen while present;
+    framing = modal. ``agree_runs`` counts the runs matching the modal *whole* label,
+    which is the reproducibility question — a cell can agree on presence while its
+    prominence wobbles, and that is a split read, not a stable one.
+
+    Shared by ``_brand_cells`` and ``brand_cells_map`` so the one-brand and all-brands
+    paths cannot drift apart.
     """
-    raw: dict[tuple[str, str], list[tuple[bool, str, str]]] = {}
+    present = sum(1 for p, _, _ in rows if p) * 2 >= len(rows)
+    present_proms = [prom for p, prom, _ in rows if p]
+    prominence = (
+        min(present_proms, key=lambda p: _PROM_RANK.get(p, 4))
+        if present and present_proms
+        else Prominence.ABSENT.value
+    )
+    present_framings = [f for p, _, f in rows if p]
+    framing = (
+        Counter(present_framings).most_common(1)[0][0]
+        if present_framings
+        else Framing.NEUTRAL.value
+    )
+    agree_runs = Counter(rows).most_common(1)[0][1] if rows else 0
+    return present, prominence, framing, len(rows), agree_runs
+
+
+def _brand_cells(judgments: list[AnswerJudgment], brand: str) -> list[BrandCell]:
+    """Collapse a brand's per-run judgments into one verdict per (query, engine)."""
+    raw: dict[tuple[str, str], list[BrandLabel]] = {}
     intents: dict[tuple[str, str], str] = {}
     for j in _assessed(judgments):
         bj = next((b for b in j.brands if b.brand == brand), None)
@@ -77,20 +118,12 @@ def _brand_cells(judgments: list[AnswerJudgment], brand: str) -> list[BrandCell]
 
     cells: list[BrandCell] = []
     for key, rows in raw.items():
-        present = sum(1 for p, _, _ in rows if p) * 2 >= len(rows)
-        present_proms = [prom for p, prom, _ in rows if p]
-        prominence = (
-            min(present_proms, key=lambda p: _PROM_RANK.get(p, 4))
-            if present and present_proms
-            else Prominence.ABSENT.value
+        present, prominence, framing, runs, agree = _collapse(rows)
+        cells.append(
+            BrandCell(
+                key[0], key[1], intents[key], brand, present, prominence, framing, runs, agree
+            )
         )
-        present_framings = [f for p, _, f in rows if p]
-        framing = (
-            Counter(present_framings).most_common(1)[0][0]
-            if present_framings
-            else Framing.NEUTRAL.value
-        )
-        cells.append(BrandCell(key[0], key[1], intents[key], brand, present, prominence, framing))
     return cells
 
 
@@ -106,7 +139,7 @@ def brand_cells_map(
     them interchangeably.
     """
     wanted = set(brands)
-    raw: dict[tuple[str, str, str], list[tuple[bool, str, str]]] = {}
+    raw: dict[tuple[str, str, str], list[BrandLabel]] = {}
     intents: dict[tuple[str, str, str], str] = {}
     for j in _assessed(judgments):
         for bj in j.brands:
@@ -117,19 +150,7 @@ def brand_cells_map(
             intents[key] = j.intent
     out: dict[str, list[BrandCell]] = {b: [] for b in brands}
     for (brand, query_id, engine), rows in raw.items():
-        present = sum(1 for p, _, _ in rows if p) * 2 >= len(rows)
-        present_proms = [prom for p, prom, _ in rows if p]
-        prominence = (
-            min(present_proms, key=lambda p: _PROM_RANK.get(p, 4))
-            if present and present_proms
-            else Prominence.ABSENT.value
-        )
-        present_framings = [f for p, _, f in rows if p]
-        framing = (
-            Counter(present_framings).most_common(1)[0][0]
-            if present_framings
-            else Framing.NEUTRAL.value
-        )
+        present, prominence, framing, runs, agree = _collapse(rows)
         out[brand].append(
             BrandCell(
                 query_id,
@@ -139,6 +160,8 @@ def brand_cells_map(
                 present,
                 prominence,
                 framing,
+                runs,
+                agree,
             )
         )
     return out
@@ -195,6 +218,41 @@ def framing_breakdown(
     """Counts of positive/neutral/negative framing over the cells where present."""
     counts = Counter(c.framing for c in _cells_for(judgments, brand, cells) if c.present)
     return {f.value: counts.get(f.value, 0) for f in Framing}
+
+
+# --- Stability of the judge read across repeat runs -----------------------------
+#
+# The judge path is what the report actually renders, so the run-count evidence has to
+# live here too — `metrics.stability` covers only the regex fallback. Same rationale
+# and the same scale (both roll up through `metrics.stability_from`): with one engine
+# pinned to a model that cannot take a temperature, "the client is present here" needs
+# to be separable from "the client was present in three of five tries here".
+
+
+def stability(cells: list[BrandCell]) -> metrics.Stability:
+    """How reproducibly ``cells`` returned the same (present, prominence, framing)."""
+    return metrics.stability_from((c.agree_runs, c.runs) for c in cells)
+
+
+def stability_by_engine(cells: list[BrandCell]) -> dict[str, metrics.Stability]:
+    """Stability per engine — the split that motivates the metric, since the engines
+    no longer share a sampling regime."""
+    by_engine: dict[str, list[BrandCell]] = {}
+    for c in cells:
+        by_engine.setdefault(c.engine_name, []).append(c)
+    return {name: stability(cs) for name, cs in by_engine.items()}
+
+
+def split_cells(cells: list[BrandCell]) -> list[BrandCell]:
+    """The repeated cells whose runs disagreed, worst agreement first.
+
+    The drill-down behind the summary number: these are the cells whose verdict a
+    re-run could flip, so they are the ones a finding must not rest on alone.
+    """
+    unstable = [
+        c for c in cells if c.runs >= metrics.MIN_RUNS_FOR_STABILITY and c.agree_runs < c.runs
+    ]
+    return sorted(unstable, key=lambda c: (c.agree_runs / c.runs, c.query_id, c.engine_name))
 
 
 def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
@@ -409,6 +467,35 @@ def judge_sections(
         marker = " (client)" if brand == client else ""
         lines.append(f"| {brand}{marker} | {vis:.2f} | {_pct(mention)} |")
     lines.append("")
+
+    client_cells = cells_map.get(client) or []
+    per_engine = stability_by_engine(client_cells)
+    if any(s.is_measured for s in per_engine.values()):
+        lines.append("## Verdict Stability")
+        lines.append("")
+        lines.append("| Engine | Repeated cells | Split | Mean agreement |")
+        lines.append("| --- | --- | --- | --- |")
+        for engine, s in sorted(per_engine.items()):
+            if not s.is_measured:
+                continue
+            lines.append(
+                f"| {engine} | {s.repeated_cells} | {s.split_cells} | {_pct(s.mean_agreement)} |"
+            )
+        lines.append("")
+        splits = split_cells(client_cells)
+        if splits:
+            lines.append(
+                f"_{len(splits)} cell(s) disagreed across their runs — the verdict there "
+                "could flip on a re-run. Listed worst first:_"
+            )
+            lines.append("")
+            for c in splits[:10]:
+                lines.append(
+                    f"- {c.query_id} · {c.engine_name} — {c.agree_runs}/{c.runs} runs agreed"
+                )
+            if len(splits) > 10:
+                lines.append(f"- …and {len(splits) - 10} more")
+            lines.append("")
 
     fb = framing_breakdown(judgments, client, cells=cells_map.get(client))
     lines.append("## Client Framing")

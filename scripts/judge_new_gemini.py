@@ -47,6 +47,9 @@ def main(run_id: str, query_set_path: str, fact_sheet_path: str) -> int:
     new = judge.judge_results(to_judge, qs.client, qs.competitors, fact_sheet)
 
     combined = existing + new
+    # Deliberately no judge_model: this set is MIXED — the kept verdicts came from
+    # whatever judged them originally, and stamping this pass's identity onto all of
+    # them would be a false provenance claim. None leaves the run's existing value alone.
     db.save_judgments(run_id, combined)
     print(f"Saved {len(combined)} judgments ({len(existing)} kept + {len(new)} new).")
     return 0

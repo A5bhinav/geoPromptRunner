@@ -13,6 +13,7 @@ __all__ = [
     "ScorecardPayload",
     "LeaderRow",
     "BucketRow",
+    "StabilityRow",
     "FlagRow",
     "SourceRow",
     "LosingRow",
@@ -53,6 +54,27 @@ class BucketRow(TypedDict):
     # genuinely absent from.
     answered_cells: int
     total_cells: int
+
+
+class StabilityRow(TypedDict):
+    """How reproducibly one engine returned the same client verdict across repeat runs.
+
+    Per engine, not run-wide, because the engines no longer share a sampling regime:
+    `openai` is pinned to a model that rejects `temperature` and samples at its default,
+    while every other engine still runs at ENGINE_TEMPERATURE (see openai_engine.MODEL).
+    One averaged agreement figure would describe neither.
+    """
+
+    engine_name: str
+    # False when none of this engine's cells ran twice. The figures below then carry NO
+    # information and must render as "—", never as 100% — an unrepeated cell looks
+    # unanimous precisely because nothing was ever compared against it.
+    is_measured: bool
+    repeated_cells: int
+    # Cells whose runs disagreed: their verdict could flip on a re-run, so a finding
+    # resting on one of them is weaker than the binary hit/miss makes it look.
+    split_cells: int
+    mean_agreement: float
 
 
 class FlagRow(TypedDict):
@@ -196,6 +218,9 @@ class ReportPayload(TypedDict):
     scorecard: ScorecardPayload
     leaderboard: list[LeaderRow]
     by_bucket: list[BucketRow]
+    # Per-engine reproducibility of the client's verdict across repeat runs. Empty on a
+    # single-run cycle (nothing to compare), which is itself the honest answer.
+    stability: list[StabilityRow]
     accuracy_flags: list[FlagRow]
     sources: list[SourceRow]
     losing_queries: list[LosingRow]
@@ -379,6 +404,28 @@ def build_report(
         for bucket, rate in sorted(mention_buckets.items())
     ]
 
+    # --- Stability (repeat-run reproducibility of the client's verdict) ---
+    # Read off the same cells the rates above are computed from, so the two can't
+    # disagree: the judge's label on the judge path, the regex mention read otherwise.
+    stability_by_engine = (
+        judge_metrics.stability_by_engine(cells_map[client])
+        if has_judge
+        else metrics.stability_by_engine(results, client)
+    )
+    stability: list[StabilityRow] = [
+        StabilityRow(
+            engine_name=name,
+            is_measured=s.is_measured,
+            repeated_cells=s.repeated_cells,
+            split_cells=s.split_cells,
+            mean_agreement=s.mean_agreement,
+        )
+        for name, s in sorted(stability_by_engine.items())
+        # A single-run engine contributes nothing but a row of zeros that reads as a
+        # finding; leave it out and let the absent row mean "not repeated".
+        if s.is_measured
+    ]
+
     # --- Accuracy flags (judge only) ---
     accuracy_flags: list[FlagRow] = []
     if has_judge:
@@ -468,6 +515,7 @@ def build_report(
         scorecard=scorecard,
         leaderboard=leaderboard,
         by_bucket=by_bucket,
+        stability=stability,
         accuracy_flags=accuracy_flags,
         sources=sources,
         losing_queries=losing_queries,

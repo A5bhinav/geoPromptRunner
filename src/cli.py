@@ -142,7 +142,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
             )
             if outcome.run_id and not args.no_persist:
                 try:
-                    db.save_judgments(outcome.run_id, judgments)
+                    db.save_judgments(outcome.run_id, judgments, judge.identity)
                 except db.StorageError as exc:
                     print(f"(warning: could not persist judgments: {exc})")
         except ValueError as exc:
@@ -240,7 +240,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     )
     if not args.no_persist:
         try:
-            db.save_judgments(args.run_id, judgments)
+            db.save_judgments(args.run_id, judgments, judge.identity)
         except db.StorageError as exc:
             print(f"(warning: could not persist judgments: {exc})")
     print(render_audit_report(outcome, judgments=judgments))

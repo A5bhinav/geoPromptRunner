@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import openai
 from openai import OpenAI
@@ -43,6 +43,8 @@ class OpenAISearchEngine(BaseEngine):
 
     ENGINE_NAME: str = "openai_search"
     MODEL_ID: str = MODEL
+    # The search models reject sampling params — no temperature, no seed.
+    SAMPLING: Literal["pinned", "default", "none"] = "default"
 
     def __init__(self) -> None:
         if not settings.OPENAI_API_KEY:

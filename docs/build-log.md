@@ -1,3 +1,157 @@
+## Report provenance: the methodology section now describes the run — Completed 2026-07-28
+
+`scripts/render_report_md.py` hand-typed the two facts a client is most entitled to trust:
+
+    "every answer scored by one held-constant `gpt-4o` judge"
+    "Determinism. Temperature pinned to 0; 1 run per query this cycle"
+
+By 2026-07-28 all three claims were false. JUDGE_MODEL had been `claude-sonnet-4-5` for
+months; `openai` is pinned to a model that *rejects* `temperature`; and RUNS_PER_QUERY
+defaults to 5. Nothing calls that script today, so nothing had caught it — but it is the
+renderer for a client deliverable, and a wrong methodology section is worse than none.
+
+The fix is not a string swap. Every one of those facts now comes from the stored run.
+
+### Where each fact now lives
+
+**Sampling → the engine that owns it.** `BaseEngine.SAMPLING` is `"pinned"` (sends
+ENGINE_TEMPERATURE) / `"default"` (sends none — the provider rejects it, or this adapter
+never sent one) / `"none"` (SERP capture, no model to sample). `tests/test_isolation.py`
+asserts the declared label against each engine's **real captured payload**, so the label
+can only ever be as wrong as the request itself.
+
+Declaring it surfaced a fact nobody had written down: `anthropic_search` sends no
+temperature either. Not a repin casualty — that adapter never sent one. It was an
+unpinned surface with no written reason, and now it has one.
+
+**Judge → recorded when the verdicts are saved.** New `judge_model` column on
+`audit_runs`, written by `db.save_judgments` from `Judge.identity`. Three deliberate
+choices:
+
+- *Identity, not model.* Cascade and verifier configs change the verdict, so they are
+  part of who judged. It is the same id the cache keys on.
+- *At save time, not run creation.* A run is routinely judged later (`geo judge <run_id>`)
+  by a different model than was configured when it started.
+- *`None` never overwrites.* `scripts/judge_new_gemini.py` saves a MIXED set — verdicts
+  from two judges — so it passes nothing rather than stamping one identity over both.
+
+The write is the only place in `db.py` that degrades instead of raising: the verdicts are
+already committed, so failing there would report a successful save as a failure. It also
+fails cleanly on a database predating the column — losing provenance (recoverable) rather
+than the run (not).
+
+**Report → says "not recorded" when it doesn't know.** `build_detailed_report` emits a
+`provenance` block read off the run row; `render_report_md` renders it and never reads
+`settings`. Settings describe the machine now; a report describes one measurement then.
+
+The sharpest case is a repin. `sampling_for(engine, run_model)` returns None when the
+stored model differs from the adapter's current pin — the regime *then* cannot be
+asserted from the adapter *now*. Rendering the stored Oura run:
+
+```
+- `openai` — `gpt-4o-2024-08-06`; sampling regime not determinable — this engine has
+  been repinned since the run, so today's setting may not describe it
+- **Judge.** One held-constant judge (**model not recorded for this run** — JUDGE_MODEL
+  is configurable, so it cannot be inferred after the fact)
+```
+
+That is the correct output. Substituting today's config would have re-created the exact
+bug being fixed, one layer deeper and much harder to notice.
+
+Also fixed while in there: `**Engines:** ... (4)` hardcoded the count, and a
+`.capitalize()` was quietly lowercasing `JUDGE_MODEL` to `judge_model` mid-sentence
+(`sentence_case` now uppercases the first character only).
+
+### Requires one migration
+
+`data/schema_ui.sql` gained `alter table public.audit_runs add column if not exists
+judge_model text`. **It has not been applied** — the Supabase MCP is authed to a different
+account than this project's, and `.env` carries no direct Postgres credential, only the
+REST key (which cannot run DDL). Until someone runs that line, new runs log a warning
+naming it and every report reads "judge model not recorded". Nothing else breaks.
+
+### Gate
+
+mypy clean (84 files) · ruff clean (`src/`, `scripts/`) · pytest **418 passed, 1 skipped**
+(14 new) · `tsc --noEmit` clean.
+
+---
+
+## Verdict stability + a re-measured noise band — Completed 2026-07-28
+
+Follow-up to the model repin. `openai` is now pinned to a model that rejects
+`temperature` outright, so one surface in every run samples at its default while the
+rest hold ENGINE_TEMPERATURE=0. Two things needed checking: whether the K=5 default
+still holds, and whether the report can even tell a stable verdict from a coin flip.
+
+### The noise band was stale — and the measurement falsified half of it
+
+`settings.DEFAULT_RUNS_PER_QUERY` and `local_sampling`'s docstring both cited the
+2026-06-19 baseline: *"the brand READ is 100% stable on openai/anthropic"* — measured on
+gpt-4o at temperature 0, an engine no longer in the run. Re-measured with
+`scripts/run_determinism.py --k 5 --engines openai,anthropic` (one category query):
+
+```
+text-level    openai  unique=5/5  modal-agreement=20%   anthropic  unique=4/5  40%
+label-level   openai  min=60% mean=80%                  anthropic  min=60% mean=92%
+              -> both suggest runs_per_query=5
+```
+
+**K=5 survives.** But "100% stable" did not reproduce for *either* engine: both floor at
+60% worst-brand. Anthropic is still at temperature 0 and shows the same floor, so the
+wobble is **not** an artifact of the repin — the original figure was optimistic. The
+repin's measurable cost is the mean (80% vs 92%), not the floor.
+
+The text-level numbers are the reminder of why label agreement is the metric: the temp-0
+engine scored 40% and the temp-1 engine 20%, which would have "shown" a catastrophe where
+the brand read moved barely at all. `determinism.suggest_runs_per_query` already carries
+that warning in its docstring; this is the run that demonstrates it.
+
+Caveat written into the comment, not just here: one query at k=5 is a probe, not a
+baseline. Do not quote 60% as the noise band until it is run across the query set.
+
+### The report could not distinguish 5-of-5 from 3-of-5
+
+`metrics.CellVerdict` had carried `hit_runs` / `answered_runs` since the cell aggregation
+was written, and **nothing in `src/` ever read them** — every consumer took the collapsed
+majority `hit`. On the judge path it was worse: `BrandCell` discarded the run counts
+during the collapse, so the evidence did not survive at all. A cell the client won 3 times
+out of 5 rendered identically to one it won 5 times out of 5.
+
+Now: `metrics.stability_from` is the shared pure core, with `metrics.stability` /
+`stability_by_engine` on the regex path and `judge_metrics.stability` /
+`stability_by_engine` / `split_cells` on the judge path — same scale, so the two can
+never disagree. `BrandCell` gained `runs` / `agree_runs`, counting agreement on the whole
+(present, prominence, framing) label: a cell can agree on presence while its prominence
+wobbles, and the report shows prominence, so that is a split read.
+
+Surfaced in all three places a run is read: `ReportPayload.stability` (per engine), a
+"Verdict Stability" section in the judge markdown report listing the split cells worst
+first, and a card in the web report view.
+
+**Per engine, deliberately.** The engines no longer share a sampling regime, so one
+run-wide agreement figure would average a deterministic surface against a sampling one and
+describe neither.
+
+The Coverage lesson is re-applied throughout: a cell with one answered run *looks*
+unanimous while comparing nothing, so cells below `MIN_RUNS_FOR_STABILITY` are excluded
+from the denominator and `is_measured` goes False. An engine with no repeated cells emits
+no row at all rather than a row of zeros — absent means "not repeated", never "stable".
+Unanswered runs are excluded too: an engine failure is missing data, not disagreement.
+
+### Gate
+
+mypy clean (84 files) · ruff clean (`src/`) · pytest **404 passed, 1 skipped** (10 new) ·
+`tsc --noEmit` clean.
+
+Known-stale, not fixed here: `scripts/render_report_md.py` still hardcodes "one
+held-constant `gpt-4o` judge" (JUDGE_MODEL has been `claude-sonnet-4-5` for some time) and
+"Temperature pinned to 0", which is no longer true of `openai`. Nothing calls that script
+today, but both lines are client-facing methodology copy and should be read from the data
+blob rather than retyped.
+
+---
+
 ## Crawl politeness + Cat 3/4 judged checks finally produce verdicts — Completed 2026-07-28
 
 The follow-through on the classification fork: re-run the audit, turn on the content

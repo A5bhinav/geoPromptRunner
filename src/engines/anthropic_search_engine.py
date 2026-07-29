@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import anthropic
 from anthropic import Anthropic
@@ -33,6 +33,10 @@ class AnthropicSearchEngine(BaseEngine):
 
     ENGINE_NAME: str = "anthropic_search"
     MODEL_ID: str = MODEL
+    # This adapter sends no temperature (unlike the parametric AnthropicEngine), so
+    # the surface runs at the provider default. Recorded rather than assumed — a
+    # report must not claim a pinned temperature for a request that has none.
+    SAMPLING: Literal["pinned", "default", "none"] = "default"
 
     def __init__(self) -> None:
         if not settings.ANTHROPIC_API_KEY:

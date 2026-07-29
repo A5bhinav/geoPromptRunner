@@ -153,6 +153,20 @@ export interface BucketRow {
   total_cells?: number;
 }
 
+/** How reproducibly one engine returned the same client verdict across repeat runs.
+ * Per engine, because the engines no longer share a sampling regime — `openai` is
+ * pinned to a model that rejects `temperature` and samples at its default. Rows only
+ * appear for engines whose cells actually ran twice; an absent engine means
+ * "not repeated", never "perfectly stable". */
+export interface StabilityRow {
+  engine_name: string;
+  is_measured: boolean;
+  repeated_cells: number;
+  /** Cells whose runs disagreed — their verdict could flip on a re-run. */
+  split_cells: number;
+  mean_agreement: number;
+}
+
 export interface FlagRow {
   type: string;
   severity: string;
@@ -237,6 +251,9 @@ export interface ReportPayload {
   scorecard: ScorecardPayload;
   leaderboard: LeaderRow[];
   by_bucket: BucketRow[];
+  /** Per-engine reproducibility of the client's verdict across repeat runs. Optional
+   * so runs stored before it existed still parse; empty on a single-run cycle. */
+  stability?: StabilityRow[];
   accuracy_flags: FlagRow[];
   sources: SourceRow[];
   losing_queries: LosingRow[];

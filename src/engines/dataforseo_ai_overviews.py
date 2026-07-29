@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import base64
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 
@@ -162,6 +162,8 @@ class DataForSEOAIOverviewsEngine(BaseEngine):
     # No model parameter — this is a SERP capture, not a model call. Excluded
     # from run metadata by `orchestrator.engine_models`, which drops empty MODEL_IDs.
     MODEL_ID: str = ""
+    # SERP capture: Google's surface, not a model we sample — nothing to pin.
+    SAMPLING: Literal["pinned", "default", "none"] = "none"
 
     def __init__(self, location: str | None = None) -> None:
         """``location`` is a DataForSEO ``location_name`` — "Berkeley,California,United States".

@@ -3,10 +3,11 @@ from __future__ import annotations
 import hashlib
 import importlib
 import logging
+from typing import Literal
 
 from src.engines.base import BaseEngine
 
-__all__ = ["ENGINE_SOURCES", "MockEngine", "build_engines"]
+__all__ = ["ENGINE_SOURCES", "MockEngine", "build_engines", "engine_class", "sampling_for"]
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,8 @@ class MockEngine(BaseEngine):
     """
 
     ENGINE_NAME = "mock"
+    # Deterministic by construction (a hash of the prompt) — no sampling to control.
+    SAMPLING: Literal["pinned", "default", "none"] = "none"
 
     def __init__(self, client: str = "", competitors: list[str] | None = None) -> None:
         self._client = client
@@ -102,6 +105,33 @@ def _load_class(name: str) -> type[BaseEngine] | None:
         return None
     cls = getattr(module, class_name, None)
     return cls if isinstance(cls, type) and issubclass(cls, BaseEngine) else None
+
+
+def engine_class(name: str) -> type[BaseEngine] | None:
+    """The adapter class for an engine name, without constructing it.
+
+    Public because provenance readers (a report rendering a stored run) need an
+    engine's declared MODEL_ID / SAMPLING but have no API keys and must not spend a
+    call to find out.
+    """
+    return _load_class(name)
+
+
+def sampling_for(name: str, run_model: str | None = None) -> str | None:
+    """How ``name``'s sampling was controlled, or None when it cannot be asserted.
+
+    ``run_model`` is the model string the *stored run* recorded for this engine. When it
+    differs from the adapter's current pin, the engine has been repinned since — and a
+    repin can change the sampling regime (that is exactly what the 2026-07-28 openai
+    repin did). The honest answer then is None, "cannot be determined for that run",
+    rather than today's label applied retroactively to yesterday's measurement.
+    """
+    cls = engine_class(name)
+    if cls is None:
+        return None
+    if run_model and cls.MODEL_ID and run_model != cls.MODEL_ID:
+        return None
+    return cls.SAMPLING
 
 
 def build_engines(

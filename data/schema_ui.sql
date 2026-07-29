@@ -63,6 +63,17 @@ alter table public.audit_runs add column if not exists location text;
 -- instead of silently omitting it — run e186c524 spent a whole audit on a surface
 -- whose model had been deprecated, and nothing in the record explained the gap.
 alter table public.audit_runs add column if not exists engine_probe jsonb not null default '{}'::jsonb;
+-- Which judge produced this run's verdicts: the model plus any cascade/verifier
+-- configuration (src/pipeline/judge.py -> Judge.identity). The engine pins have been
+-- recorded per run since engine_models; the JUDGE had no provenance at all, even though
+-- JUDGE_MODEL is a deliberate, changeable choice — so a stored run's verdicts could not
+-- be attributed after the fact, and a rendered report could only guess (docs/report.md
+-- named `gpt-4o` months after the judge moved to Sonnet).
+-- NULL for every run judged before this column existed. NULL means "not recorded" and a
+-- report must say exactly that rather than substituting today's JUDGE_MODEL.
+-- Written when judgments are SAVED, not when the run is created: a run is routinely
+-- judged later, by a different model than was configured when it started.
+alter table public.audit_runs add column if not exists judge_model text;
 
 -- --- Per-(query, engine, run) answers ----------------------------------------
 create table if not exists public.query_results (

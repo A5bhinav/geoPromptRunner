@@ -4,11 +4,15 @@ from src.pipeline.calibration import compare
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, BrandJudgment
 from src.pipeline.judge_metrics import (
     DEFAULT_GRADE_POLICY,
+    brand_cells_map,
     collect_accuracy_flags,
     grade_penalty_flags,
     leaderboard,
     losing_cells,
     mention_rate,
+    split_cells,
+    stability,
+    stability_by_engine,
     visibility_grade,
     visibility_score,
 )
@@ -145,3 +149,68 @@ def test_calibration_compare_counts_matches() -> None:
     assert (pm, pt) == (2, 2)  # present matches both
     assert (rm, rt) == (2, 2)  # prominence matches both
     assert (fm, ft) == (1, 2)  # framing: YNAB matches, Centsible doesn't
+
+
+# --- Stability of the judge read across repeat runs ----------------------------
+
+
+def _run(qid: str, engine: str, run: int, brands: list[BrandJudgment]) -> AnswerJudgment:
+    return AnswerJudgment(
+        query_id=qid,
+        engine_name=engine,
+        intent="category",
+        run_index=run,
+        assessed=True,
+        brands=brands,
+        accuracy_flags=[],
+    )
+
+
+def test_stability_counts_a_prominence_wobble_as_a_split() -> None:
+    # Present in all 3 runs, but recommended_first twice and buried once. Presence is
+    # stable; the READ is not — and the report shows prominence, so this is a split.
+    js = [
+        _run("q1", "openai", 0, [_bj("Acme", True, "recommended_first")]),
+        _run("q1", "openai", 1, [_bj("Acme", True, "recommended_first")]),
+        _run("q1", "openai", 2, [_bj("Acme", True, "buried")]),
+    ]
+    cells = brand_cells_map(js, ["Acme"])["Acme"]
+    assert len(cells) == 1
+    assert cells[0].runs == 3
+    assert cells[0].agree_runs == 2
+    s = stability(cells)
+    assert s.split_cells == 1
+    assert s.mean_agreement == 2 / 3
+
+
+def test_stability_per_engine_and_split_listing() -> None:
+    js = [
+        # openai wobbles, anthropic reproduces exactly.
+        _run("q1", "openai", 0, [_bj("Acme", True, "recommended_first")]),
+        _run("q1", "openai", 1, [_bj("Acme", False, "absent")]),
+        _run("q1", "anthropic", 0, [_bj("Acme", True, "mid_pack")]),
+        _run("q1", "anthropic", 1, [_bj("Acme", True, "mid_pack")]),
+    ]
+    cells = brand_cells_map(js, ["Acme"])["Acme"]
+    per_engine = stability_by_engine(cells)
+    assert per_engine["openai"].split_cells == 1
+    assert per_engine["anthropic"].split_cells == 0
+    assert [c.engine_name for c in split_cells(cells)] == ["openai"]
+
+
+def test_unrepeated_cells_carry_no_stability_evidence() -> None:
+    cells = brand_cells_map(_judgments(), ["YNAB"])["YNAB"]
+    assert all(c.runs == 1 for c in cells)
+    assert stability(cells).is_measured is False
+    assert split_cells(cells) == []
+
+
+def test_collapsed_verdict_is_unchanged_by_the_run_counts() -> None:
+    # The added fields must be pure bookkeeping — presence/prominence/framing and the
+    # rates built on them stay exactly what they were.
+    js = _judgments()
+    assert mention_rate(js, "YNAB") == 1.0
+    assert mention_rate(js, "Centsible") == 0.5
+    cells = {c.query_id: c for c in brand_cells_map(js, ["YNAB"])["YNAB"]}
+    assert cells["q1"].prominence == "recommended_first"
+    assert cells["q2"].prominence == "mid_pack"

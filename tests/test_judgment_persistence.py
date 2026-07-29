@@ -71,3 +71,103 @@ def test_row_to_judgment_tolerates_missing_fields() -> None:
     assert j.brands == []
     assert j.accuracy_flags == []
     assert j.assessed is False
+
+
+# --- Judge provenance on the run row --------------------------------------------
+#
+# JUDGE_MODEL is a choice that has changed and will change again, so verdicts without a
+# recorded judge cannot be attributed after the fact — which is how a rendered report
+# came to name a judge that had not been in use for months.
+
+
+class _FakeTable:
+    def __init__(self, name: str, log: list[tuple[str, str, object]]) -> None:
+        self._name = name
+        self._log = log
+
+    def delete(self) -> _FakeTable:
+        self._log.append((self._name, "delete", None))
+        return self
+
+    def insert(self, rows: object) -> _FakeTable:
+        self._log.append((self._name, "insert", rows))
+        return self
+
+    def update(self, values: object) -> _FakeTable:
+        self._log.append((self._name, "update", values))
+        return self
+
+    def eq(self, *_args: object) -> _FakeTable:
+        return self
+
+    def execute(self) -> None:
+        return None
+
+
+class _FakeClient:
+    def __init__(self) -> None:
+        self.log: list[tuple[str, str, object]] = []
+
+    def table(self, name: str) -> _FakeTable:
+        return _FakeTable(name, self.log)
+
+
+def _one_judgment() -> AnswerJudgment:
+    return AnswerJudgment(
+        query_id="q1",
+        engine_name="openai",
+        intent="category",
+        run_index=0,
+        assessed=True,
+        brands=[BrandJudgment("Acme", True, "mid_pack", "neutral")],
+        accuracy_flags=[],
+    )
+
+
+def _updates(log: list[tuple[str, str, object]]) -> list[object]:
+    return [values for table, op, values in log if op == "update" and table == "audit_runs"]
+
+
+def test_saving_judgments_records_which_judge_produced_them(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from src.storage import db
+
+    fake = _FakeClient()
+    monkeypatch.setattr(db, "_client", lambda: fake)
+    db.save_judgments("run-1", [_one_judgment()], "claude-sonnet-4-5-20250929+verify:x")
+    (values,) = _updates(fake.log)
+    assert isinstance(values, dict)
+    assert values["judge_model"] == "claude-sonnet-4-5-20250929+verify:x"
+
+
+def test_an_unknown_judge_leaves_the_recorded_one_alone(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # A caller that cannot honestly name the judge (e.g. a mixed re-judge of an
+    # already-judged run) must not overwrite good provenance with a guess or a blank.
+    from src.storage import db
+
+    fake = _FakeClient()
+    monkeypatch.setattr(db, "_client", lambda: fake)
+    db.save_judgments("run-1", [_one_judgment()])
+    assert _updates(fake.log) == []
+    # The verdicts themselves are still written.
+    assert any(op == "insert" and table == "judgments" for table, op, _ in fake.log)
+
+
+def test_failing_to_record_the_judge_does_not_fail_the_save(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # A database predating the judge_model column must lose the provenance, not the
+    # verdicts — and must not report a successful save as a failure.
+    from src.storage import db
+
+    class _RejectingUpdate(_FakeClient):
+        def table(self, name: str) -> _FakeTable:
+            table = super().table(name)
+            if name == "audit_runs":
+                def _boom(_values: object) -> _FakeTable:
+                    raise RuntimeError("column audit_runs.judge_model does not exist")
+
+                table.update = _boom  # type: ignore[method-assign]
+            return table
+
+    fake = _RejectingUpdate()
+    monkeypatch.setattr(db, "_client", lambda: fake)
+    db.save_judgments("run-1", [_one_judgment()], "claude-sonnet-4-5-20250929")
+    assert any(op == "insert" and table == "judgments" for table, op, _ in fake.log)

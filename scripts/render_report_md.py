@@ -35,6 +35,86 @@ def pct(x: float) -> str:
     return f"{x * 100:.0f}%"
 
 
+# --- Methodology provenance -----------------------------------------------------
+#
+# These read `meta.provenance` (built by build_detailed_report from the stored run) and
+# NEVER from src.config.settings. The distinction is the whole point: settings describe
+# the machine as configured now, while a report describes one measurement taken at one
+# time — and this file previously typed the two facts as prose, which is how it came to
+# claim a `gpt-4o` judge months after JUDGE_MODEL moved to Sonnet, and "temperature
+# pinned to 0" for a run containing a surface that cannot accept a temperature.
+#
+# Where the run doesn't record something, these say so. A methodology section that
+# admits "not recorded" is worth more than one that confidently states the wrong thing.
+
+_SAMPLING_PHRASE = {
+    # Deliberately no number: the run records which engines pinned a temperature, not
+    # what ENGINE_TEMPERATURE was set to at the time. "Pinned to 0" is the very kind of
+    # unrecorded specific this rewrite exists to stop asserting.
+    "pinned": "temperature pinned (ENGINE_TEMPERATURE; value not recorded on the run)",
+    "default": "no temperature sent — samples at the provider default",
+    "none": "SERP capture — no model sampling to control",
+}
+
+
+def _provenance(m: dict) -> dict:
+    prov = m.get("provenance")
+    return prov if isinstance(prov, dict) else {}
+
+
+def sentence_case(text: str) -> str:
+    """Uppercase the first character only. NOT ``str.capitalize``, which lowercases
+    everything after it — that mangles the model ids and setting names these phrases
+    carry (``JUDGE_MODEL`` -> ``judge_model``)."""
+    return text[:1].upper() + text[1:]
+
+
+def judge_phrase(m: dict) -> str:
+    """How to describe the judge behind these verdicts."""
+    model = _provenance(m).get("judge_model")
+    if not model:
+        return (
+            "one held-constant judge (**model not recorded for this run** — "
+            "JUDGE_MODEL is configurable, so it cannot be inferred after the fact)"
+        )
+    return f"one held-constant `{model}` judge"
+
+
+def runs_phrase(m: dict) -> str:
+    """How many times each query was repeated — read from the run, not assumed.
+
+    The old text said "1 run per query this cycle" as a constant, which silently became
+    false the moment RUNS_PER_QUERY changed.
+    """
+    runs = _provenance(m).get("runs_per_query")
+    if not isinstance(runs, int):
+        return "Repeats per query not recorded for this run."
+    return f"{runs} run{'s' if runs != 1 else ''} per query."
+
+
+def sampling_lines(m: dict) -> list[str]:
+    """One line per engine: its model pin for this run and how it was sampled."""
+    prov = _provenance(m)
+    sampling = prov.get("sampling") or {}
+    models = prov.get("engine_models") or {}
+    lines: list[str] = []
+    for engine in m["engines"]:
+        model = models.get(engine)
+        regime = sampling.get(engine)
+        if regime is None:
+            how = (
+                "sampling regime not determinable — this engine has been repinned "
+                "since the run, so today's setting may not describe it"
+                if model
+                else "sampling regime not recorded"
+            )
+        else:
+            how = _SAMPLING_PHRASE[regime]
+        pin = f"`{model}`" if model else "model not recorded"
+        lines.append(f"  - `{engine}` — {pin}; {how}")
+    return lines
+
+
 def main(data_path: str, out_path: str) -> int:
     d = json.load(open(data_path))
     m = d["meta"]
@@ -50,11 +130,10 @@ def main(data_path: str, out_path: str) -> int:
         "no live retrieval) — Perplexity additionally returns live citations  ",
         f"**Query set:** `{m['query_set_version']}` · {m['n_queries']} queries, "
         f"locked {m['locked_at']}  ",
-        f"**Engines:** {', '.join(m['engines'])} (4)  ",
+        f"**Engines:** {', '.join(m['engines'])} ({len(m['engines'])})  ",
         f"**Competitors benchmarked:** {', '.join(m['competitors'])}  ",
         f"**Coverage:** {m['n_results']} answers · {m['n_judgments']} judge verdicts "
-        "(every answer scored by one held-constant `gpt-4o` judge against the Oura "
-        "fact sheet)  ",
+        f"(every answer scored by {judge_phrase(m)} against the Oura fact sheet)  ",
         "**Detection:** LLM judge (prominence / framing / typed accuracy flags); "
         "regex fallback unused here.",
         "",
@@ -474,9 +553,13 @@ def main(data_path: str, out_path: str) -> int:
         "Perplexity returns live citations. A separate `--surface search` run measures "
         "the live-retrieval surfaces (ChatGPT-search, Claude-search, Gemini grounding, "
         "Google AI Overviews) and is recommended as a companion.",
-        "- **Determinism.** Temperature pinned to 0; 1 run per query this cycle "
-        "(repeat-run averaging is supported via `--runs`).",
-        "- **Judge.** One held-constant `gpt-4o` judge, forced-JSON, no outside "
+        f"- **Sampling.** {runs_phrase(m)} Per engine, as recorded on this run:",
+        *sampling_lines(m),
+        "  Engines differ here by necessity, not oversight: some providers reject a "
+        "temperature outright, so a single run can mix a pinned surface with a sampling "
+        "one. Repeat-run averaging (`--runs`) plus the majority-vote collapse is what "
+        "controls that noise — see the per-engine verdict stability figures.",
+        f"- **Judge.** {sentence_case(judge_phrase(m))}, forced-JSON, no outside "
         "knowledge — accuracy is checked **only** against the supplied Oura fact sheet "
         "(`docs/fact-sheet-example-oura.md`). Accuracy flags are **client-only** by "
         "design; competitors get presence/prominence/framing.",

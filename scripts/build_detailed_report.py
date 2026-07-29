@@ -27,6 +27,7 @@ import json
 import sys
 from collections import Counter, defaultdict
 
+from src.api.engine_registry import sampling_for
 from src.pipeline import judge_metrics as jm
 from src.pipeline.metrics import domain_of
 from src.prompts.query_set import load_query_set
@@ -34,6 +35,34 @@ from src.storage import db
 from src.storage.models import AnswerJudgment, QueryResult
 
 PROM_ORDER = ["recommended_first", "mid_pack", "buried", "also_ran", "absent"]
+
+
+def _provenance(run_row: dict[str, object], engines: list[str]) -> dict[str, object]:
+    """What actually produced this run's numbers — read from the run, never assumed.
+
+    Exists because the methodology section of a report is the part a client is most
+    entitled to trust, and it used to be hand-typed prose: docs/report.md asserted a
+    `gpt-4o` judge and "temperature pinned to 0" long after JUDGE_MODEL had moved to
+    Sonnet and after one engine stopped accepting a temperature at all.
+
+    Every field here is either read off the stored run or explicitly None. None means
+    *not recorded*, and the renderer must say so rather than substituting today's
+    config — a stored run can predate any number of repins, and the current settings
+    describe the machine now, not the measurement then.
+    """
+    engine_models = run_row.get("engine_models") or {}
+    if not isinstance(engine_models, dict):
+        engine_models = {}
+    runs_per_query = run_row.get("runs_per_query")
+    return {
+        # None until the run row records it (older runs have no judge provenance at all).
+        "judge_model": run_row.get("judge_model") or None,
+        "runs_per_query": runs_per_query if isinstance(runs_per_query, int) else None,
+        "engine_models": {e: engine_models.get(e) for e in engines},
+        # engine -> "pinned" | "default" | "none" | None (None = repinned since, so the
+        # regime at run time can't be asserted).
+        "sampling": {e: sampling_for(e, engine_models.get(e)) for e in engines},
+    }
 
 
 def main(run_id: str, query_set_path: str) -> int:
@@ -44,6 +73,7 @@ def main(run_id: str, query_set_path: str) -> int:
 
     results: list[QueryResult] = db.get_query_results(run_id)
     judgments: list[AnswerJudgment] = db.get_judgments(run_id)
+    run_row = db.get_audit_run(run_id) or {}
 
     engines = sorted({r["engine_name"] for r in results})
     intents = ["problem_aware", "category", "comparison", "brand", "adjacent_authority"]
@@ -61,6 +91,7 @@ def main(run_id: str, query_set_path: str) -> int:
         "n_results": len(results),
         "n_judgments": len(judgments),
         "intent_counts": dict(Counter(q.intent.value for q in qs.queries)),
+        "provenance": _provenance(run_row, engines),
     }
 
     # ---- §1 scorecard ----

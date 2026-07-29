@@ -743,7 +743,9 @@ def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
     )
 
 
-def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
+def save_judgments(
+    run_id: str, judgments: list[AnswerJudgment], judge_model: str | None = None
+) -> None:
     """Persist LLM-judge output for a run (one row per judged answer).
 
     Replaces the run's existing judgments (delete-then-insert) so re-judging the
@@ -755,6 +757,16 @@ def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
     a re-judge that yields nothing is almost always a failed/empty pass, and
     wiping the prior verdicts in that case would lose good data. To truly clear a
     run's judgments, delete the run.
+
+    ``judge_model`` is the identity of the judge that produced these verdicts
+    (``Judge.identity`` — model plus any cascade/verifier configuration). Recorded on
+    the run because JUDGE_MODEL is a *choice* that has changed and will change again,
+    and without it a stored run's verdicts have no provenance: a report rendering that
+    run can only guess, and guessing is how docs/report.md came to name a judge model
+    that had not been in use for months. Written here rather than at run creation
+    because a run is routinely judged later, by a different model than was configured
+    when it was created. ``None`` leaves any existing value alone — an unknown judge
+    must not erase a known one.
     """
     rows = [_judgment_to_row(run_id, j) for j in judgments]
     if not rows:
@@ -767,6 +779,31 @@ def save_judgments(run_id: str, judgments: list[AnswerJudgment]) -> None:
         f"save_judgments for run {run_id}",
         lambda c: c.table(TABLE_JUDGMENTS).insert(rows).execute(),
     )
+    if judge_model:
+        # Deliberately non-fatal, and the only place in this module that degrades rather
+        # than raising: the verdicts are already committed above, so failing here would
+        # report "could not persist judgments" about a save that succeeded. It also
+        # fails cleanly on a database that predates the `judge_model` column
+        # (data/schema_ui.sql) — losing the provenance of a saved run, which is
+        # recoverable, instead of the run itself, which is not. Logged loudly because a
+        # silent loss of provenance is exactly the failure this column exists to end.
+        try:
+            _execute(
+                f"record judge_model for run {run_id}",
+                lambda c: c.table(TABLE_AUDIT_RUNS)
+                .update({"judge_model": judge_model, "updated_at": _now()})
+                .eq("id", run_id)
+                .execute(),
+            )
+        except StorageError:
+            logger.warning(
+                "Judgments saved for run %s but the judge model was NOT recorded. If this "
+                "database predates the judge_model column, apply the `alter table "
+                "public.audit_runs add column if not exists judge_model text` in "
+                "data/schema_ui.sql — until then every report will read 'judge model not "
+                "recorded' for new runs.",
+                run_id,
+            )
 
 
 def get_judgments(run_id: str) -> list[AnswerJudgment]:

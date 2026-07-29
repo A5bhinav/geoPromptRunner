@@ -4,7 +4,10 @@ How many times must a local query be repeated before its result means anything?
 
 The consumer default (``RUNS_PER_QUERY=5``) was set from a real measurement: the
 2026-06-19 determinism baseline found the brand READ is 100% stable on openai/anthropic
-but wobbles to ~60% worst-brand on gemini/perplexity. Local is noisier still — SE
+but wobbles to ~60% worst-brand on gemini/perplexity. (Re-measured 2026-07-28 on one
+category query: openai and anthropic both floor at 60% worst-brand too — the "100%
+stable" half of that finding did not reproduce. K=5 is unchanged; see
+``settings.DEFAULT_RUNS_PER_QUERY``.) Local is noisier still — SE
 Ranking measured roughly 80% of URLs and >60% of domains swapping between repeat runs
 of "near me" queries — and the noise is not uniform across trades or intents.
 
