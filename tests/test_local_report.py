@@ -539,3 +539,122 @@ def test_the_roadmap_renders_from_the_real_row_fields() -> None:
     # The synthesizer already sequences by phase; the report must not re-sort.
     assert out.index("AI crawler UAs") < out.index("schema.org markup")
     assert "****" not in out
+
+
+def test_judged_roadmap_items_are_marked_uncalibrated() -> None:
+    """A shop owner must be able to tell a measurement from a model's opinion.
+
+    Deterministic checks (robots, schema, sitemap) are measured. The Cat 3/4 content
+    checks are an LLM reading the page, and that judge has never passed the κ≥0.6 gate —
+    no gold set is labelled. Both land in the same §5 table, so the judged ones carry a
+    marker and a footnote. Unmarked rows must stay unmarked.
+    """
+    from src.api.reports import RoadmapRow, SiteAuditPayload
+
+    site_audit: SiteAuditPayload = {
+        "present": True,
+        "domain": "x.com",
+        "pages_crawled": 15,
+        "checks": [],
+        "summary": {},
+        "errors": 0,
+        "offsite": [],
+        "roadmap": [
+            RoadmapRow(
+                category="technical_accessibility",
+                check_name="AI crawler UAs not blocked at the CDN/WAF",
+                status="fail",
+                impact_label="High",
+                effort="low",
+                phase=1,
+            ),
+            RoadmapRow(
+                category="content_structure",
+                check_name="definition first",
+                status="fail",
+                impact_label="Medium",
+                effort="medium",
+                phase=2,
+            ),
+        ],
+    }
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "definition first † (missing)" in out
+    assert "AI crawler UAs not blocked at the CDN/WAF (missing)" in out
+    assert "AI crawler UAs not blocked at the CDN/WAF † " not in out
+    assert "has not yet been calibrated" in out
+
+
+def test_no_footnote_when_no_judged_item_is_in_the_roadmap() -> None:
+    """The caveat must not appear on a report that has nothing to caveat."""
+    from src.api.reports import RoadmapRow, SiteAuditPayload
+
+    site_audit: SiteAuditPayload = {
+        "present": True, "domain": "x.com", "pages_crawled": 2, "checks": [],
+        "summary": {}, "errors": 0, "offsite": [],
+        "roadmap": [
+            RoadmapRow(
+                category="technical_accessibility", check_name="XML sitemap present",
+                status="partial", impact_label="Medium", effort="low", phase=1,
+            )
+        ],
+    }
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    assert "†" not in out
+    assert "has not yet been calibrated" not in out
+
+
+def test_judged_check_names_cannot_drift_from_the_judge() -> None:
+    """`_JUDGED_CHECK_NAMES` is hardcoded to keep this module free of the judge's
+    Anthropic import. This is what stops the two silently diverging: add a content check
+    and forget the marker, and an uncalibrated line would render as a measured one."""
+    from src.audit.checks.content_judge import CONTENT_CHECKS
+    from src.audit.local_report import _JUDGED_CHECK_NAMES
+
+    derived = {c.check_id.replace("_", " ") for c in CONTENT_CHECKS}
+    assert _JUDGED_CHECK_NAMES == derived
+
+
+def test_the_roadmap_collapses_per_page_rows_into_one_fix_each() -> None:
+    """The roadmap is built per page, which was invisible at 2 pages and unusable at 20.
+
+    A real audit produced 75 items with "original data" repeating 12 times. Nobody can
+    act on that. Grouping keeps the synthesizer's ordering and turns the repetition into
+    the useful part: how much of the site is affected.
+    """
+    from src.api.reports import RoadmapRow, SiteAuditPayload
+
+    def row(name: str, status: str) -> RoadmapRow:
+        return RoadmapRow(
+            category="content_substance", check_name=name, status=status,
+            impact_label="Low", effort="high", phase=2,
+        )
+
+    site_audit: SiteAuditPayload = {
+        "present": True, "domain": "x.com", "pages_crawled": 15, "checks": [],
+        "summary": {}, "errors": 0, "offsite": [],
+        "roadmap": [
+            row("robots.txt allows AI crawlers", "fail"),
+            *[row("original data", "partial")] * 12,
+            *[row("external citations", "fail")] * 3,
+        ],
+    }
+    out = render_local_report(
+        _outcome([]), trade="plumbing", location=MARKET, site_audit=site_audit,
+        run_date="2026-07-28",
+    )
+    # 16 input rows -> 3 distinct fixes.
+    assert out.count("| original data") == 1
+    assert "original data † (partial on 12 pages)" in out
+    assert "external citations † (missing on 3 pages)" in out
+    # A single-occurrence fix keeps its plain wording — no "on 1 pages".
+    assert "robots.txt allows AI crawlers (fail" not in out
+    assert "on 1 pages" not in out
+    # Ordering is the synthesizer's; first occurrence wins.
+    assert out.index("robots.txt allows") < out.index("original data")

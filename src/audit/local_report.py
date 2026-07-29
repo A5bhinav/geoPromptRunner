@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from src.api.reports import LocalPackPayload, SiteAuditPayload
+from src.api.reports import LocalPackPayload, RoadmapRow, SiteAuditPayload
 from src.audit.offsite.tools import LOCAL_REVIEW_PLATFORMS
 from src.pipeline.local_sampling import sampling_note
 from src.pipeline.orchestrator import AuditOutcome
@@ -71,6 +71,29 @@ _TRADE_NOUN: dict[str, str] = {
 
 def _trade_noun(trade: str) -> str:
     return _TRADE_NOUN.get(trade.strip().lower(), trade.strip())
+
+
+#: Roadmap rows that came from the LLM content judge rather than a deterministic check.
+#: `synthesize._content_to_scores` sets `check_name = check_id.replace("_", " ")`, so
+#: these are the space-separated forms of `content_judge.CONTENT_CHECKS`.
+#:
+#: They are marked in §5 because that judge has **not** passed the κ≥0.6 calibration gate
+#: (`content_calibration.py` is built; no gold set is labeled). The verdicts are useful —
+#: they are the only signal for "does this page actually answer the question" — but a
+#: shop owner reading a roadmap deserves to know which lines are measured and which are
+#: an uncalibrated model's opinion. Hardcoded rather than imported so this module stays
+#: free of the judge's Anthropic import; `tests/test_local_report.py` asserts the two
+#: cannot drift apart.
+_JUDGED_CHECK_NAMES: frozenset[str] = frozenset(
+    {
+        "answer first lead",
+        "self contained chunks",
+        "definition first",
+        "expert commentary",
+        "original data",
+        "external citations",
+    }
+)
 
 
 _FLAG_LABELS: dict[str, str] = {
@@ -436,15 +459,47 @@ def render_local_report(
         # reading keys that do not exist (which rendered every item as an empty "**** —").
         # Already sequenced by the synthesizer: phase 1 accessibility -> 2 content ->
         # 3 off-site -> 4 measurement, so print it in order and don't re-sort.
+        # Collapse per-page rows into one line per distinct fix.
+        #
+        # The roadmap is built per page, which was invisible while a crawl returned 2
+        # pages and became unusable at 20: a real audit produced 75 items, "original
+        # data" repeating 12 times. An owner cannot act on that, and a list that long
+        # reads as noise rather than a plan. Grouping keeps the synthesizer's phase
+        # ordering (first occurrence wins) and turns the repetition into the useful part
+        # — how much of the site is affected.
+        #
+        # Deliberately local-only: `build_roadmap` has the same latent behaviour on the
+        # consumer path, but changing it there alters an existing deliverable.
+        grouped: dict[tuple[str, str], tuple[RoadmapRow, int]] = {}
+        for item in roadmap:
+            key = (item["check_name"], item["status"])
+            existing = grouped.get(key)
+            grouped[key] = (item, 1) if existing is None else (existing[0], existing[1] + 1)
+
         lines.append("| # | Fix | Why it matters | Effort |")
         lines.append("|---|---|---|---|")
-        for i, item in enumerate(roadmap, 1):
+        judged_present = False
+        for i, (item, pages) in enumerate(grouped.values(), 1):
             gap = "missing" if item["status"] == "fail" else "partial"
+            if pages > 1:
+                gap += f" on {pages} pages"
+            name = str(item["check_name"])
+            if name in _JUDGED_CHECK_NAMES:
+                name = f"{name} †"
+                judged_present = True
             lines.append(
-                f"| {i} | {item['check_name']} ({gap}) | {item['impact_label']} impact"
+                f"| {i} | {name} ({gap}) | {item['impact_label']} impact"
                 f" · {item['category']} | {item['effort']} |"
             )
         lines.append("")
+        if judged_present:
+            lines.append(
+                "† Judged by a language model reading the page, not a deterministic "
+                "check. That judge has not yet been calibrated against a hand-labelled "
+                "set, so treat these as a strong steer rather than a measurement — "
+                "unlike every unmarked row above."
+            )
+            lines.append("")
     else:
         lines.append("_No site audit was run for this client, so there is no roadmap yet._")
         lines.append("")
