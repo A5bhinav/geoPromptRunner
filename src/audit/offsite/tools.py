@@ -13,11 +13,10 @@ import base64
 import logging
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urlsplit
 
 import httpx
-import tldextract
 
+from src.audit.domains import registered_domain
 from src.config import settings
 
 __all__ = [
@@ -37,7 +36,6 @@ logger = logging.getLogger(__name__)
 
 _TIMEOUT = httpx.Timeout(connect=8.0, read=15.0, write=15.0, pool=8.0)
 _UA = "geo-audit/0.1 (offsite research; +https://fort.cx)"
-_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
 
 # Wikidata "instance of" (P31) values that discriminate a real org/brand entity.
 _ORG_QIDS = frozenset(
@@ -94,10 +92,6 @@ class ToolResult:
     error: str | None = None
 
 
-def _registered_domain(url_or_host: str) -> str:
-    host = urlsplit(url_or_host).hostname or url_or_host
-    return _EXTRACT(host).top_domain_under_public_suffix.lower()
-
 
 def configured_tools() -> dict[str, bool]:
     """Which offsite tools have their credentials set (Wikidata needs none)."""
@@ -121,7 +115,7 @@ def wikidata_entity(brand: str, domain: str) -> ToolResult:
     (official website) matching the audited domain, or P31 (instance-of) in the
     org/brand set — so a coincidental name match doesn't count (§5.3).
     """
-    site_domain = _registered_domain(domain if "://" in domain else f"https://{domain}")
+    site_domain = registered_domain(domain if "://" in domain else f"https://{domain}")
     try:
         with httpx.Client(timeout=_TIMEOUT, headers={"User-Agent": _UA}) as client:
             search = client.get(
@@ -179,7 +173,7 @@ def _wikidata_match(entity: dict[str, Any], site_domain: str) -> str | None:
     claims = entity.get("claims", {})
     for snak in claims.get("P856", []):  # official website
         url = _claim_string(snak)
-        if url and _registered_domain(url) == site_domain:
+        if url and registered_domain(url) == site_domain:
             return "P856"
     for snak in claims.get("P31", []):  # instance of
         qid = _claim_entity_id(snak)
@@ -282,7 +276,7 @@ def dataforseo_backlinks(domain: str) -> ToolResult:
     """One-call backlinks headline numbers (referring domains + rank) via DataForSEO."""
     if not (settings.DATAFORSEO_LOGIN and settings.DATAFORSEO_PASSWORD):
         return ToolResult(False, "dataforseo", error="DataForSEO credentials not set")
-    target = _registered_domain(domain if "://" in domain else f"https://{domain}")
+    target = registered_domain(domain if "://" in domain else f"https://{domain}")
     auth = base64.b64encode(
         f"{settings.DATAFORSEO_LOGIN}:{settings.DATAFORSEO_PASSWORD}".encode()
     ).decode()

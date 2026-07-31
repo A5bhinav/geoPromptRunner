@@ -25,7 +25,12 @@ import {
   stakesLine,
 } from "./render/copy.ts";
 import { canonicalLocation } from "./types/domain.ts";
-import type { CompanyProfile, GeneratedQuerySet, TeaserDraft } from "./types/domain.ts";
+import type {
+  CompanyProfile,
+  FactClaimRow,
+  GeneratedQuerySet,
+  TeaserDraft,
+} from "./types/domain.ts";
 import type { AnswerRecord, ReportPayload, RunStatus } from "./types/platform.ts";
 
 export interface PipelineDeps {
@@ -188,6 +193,10 @@ export async function runTeaserPipeline(
   }
 
   // 3. Submit the audit to the platform.
+  //    The CSV is the ONLY transport for the fact sheet — AuditInput's other fields
+  //    are the parsed essentials the mock re-synthesizes from, and the real client
+  //    ignores them. Since the rows ride on the profile, anything the confirm gate
+  //    edits (or drops) reaches the platform exactly as the human left it.
   const csv = buildAuditCsv(profile, querySet, {
     engines: opts.engines,
     runsPerQuery: opts.runsPerQuery,
@@ -261,6 +270,10 @@ export function assembleDraft(
     competitorAliases: Object.fromEntries(
       profile.competitors.map((c) => [c.name, c.aliases]),
     ),
+    // Persist the sheet this run was measured against (C8). Spread rather than
+    // `?? []` so "no sheet" stays distinguishable from "an empty sheet" — the two
+    // produce the same CSV, but only the first means nobody has extracted one yet.
+    ...(profile.factClaims ? { factClaims: profile.factClaims } : {}),
     // Fresh runs are drafts; regeneration preserves the saved status so a
     // re-render of an already-approved teaser stays clean (no draft banner).
     status: opts.status ?? "draft",
@@ -271,9 +284,10 @@ export function assembleDraft(
 /**
  * Reconstruct the minimal CompanyProfile that selection/assembly needs, from a
  * stored run's report (+ the draft's category/url). No crawl. Client/competitor
- * aliases are rehydrated from the saved draft when present (T3) — the stored
- * ReportPayload itself carries only names, so a draft saved before aliases were
- * persisted (or a report with none) falls back to name-only matching.
+ * aliases and the fact sheet are rehydrated from the saved draft when present (T3,
+ * C8) — the stored ReportPayload itself carries only names and the flags the sheet
+ * produced, so a draft saved before those fields were persisted (or a run that had
+ * neither) falls back to name-only matching and no sheet.
  */
 export function profileFromStored(
   report: ReportPayload,
@@ -282,6 +296,7 @@ export function profileFromStored(
     category: string;
     clientAliases?: string[];
     competitorAliases?: Record<string, string[]>;
+    factClaims?: FactClaimRow[];
   },
 ): CompanyProfile {
   const competitorAliases = opts.competitorAliases ?? {};
@@ -297,6 +312,10 @@ export function profileFromStored(
     })),
     clientDomains: report.client_domains,
     productClaims: [],
+    // productClaims stay empty (the report never carried them), but the fact sheet
+    // rides back on so a regenerated teaser measures against the same reference the
+    // stored flags were graded from.
+    ...(opts.factClaims ? { factClaims: opts.factClaims } : {}),
     resolvedAt: "",
     resolverModel: "regenerated-from-storage",
   };
@@ -321,6 +340,7 @@ export function regenerateFromDraft(saved: TeaserDraft): PipelineResult {
     category: saved.category,
     clientAliases: saved.clientAliases,
     competitorAliases: saved.competitorAliases,
+    factClaims: saved.factClaims,
   });
   return assembleDraft(profile, saved.report, saved.answers, saved.prospectUrl, {
     status: saved.status,

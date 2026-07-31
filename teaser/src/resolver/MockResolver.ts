@@ -7,7 +7,7 @@
  * key are available. See BUILD_PLAN.md §4b.
  */
 
-import type { CompanyProfile, Competitor } from "../types/domain.ts";
+import type { CompanyProfile, Competitor, FactClaimRow } from "../types/domain.ts";
 import type { Resolver } from "./Resolver.ts";
 
 function hostnameOf(url: string): string {
@@ -43,6 +43,20 @@ export class MockResolver implements Resolver {
       { name: "Vantage", aliases: [], confirmed: false },
     ];
 
+    // A placeholder fact sheet, on the same footing as the competitors above:
+    // fabricated, and only ever safe because this resolver is the offline path. It
+    // exists so the `fact` block in buildAuditCsv is exercised end-to-end without a
+    // crawl — including the quoting path, since the first value contains a comma.
+    // Keys carry their section (plan §2) and none is empty (§2.1). Nothing here
+    // contains the substring "location": the W1.4 regression lock checks the WHOLE
+    // CSV for it, so a mock fact row saying "location" would trip a guard that is
+    // about the config block.
+    const factClaims: FactClaimRow[] = [
+      { key: "pricing", value: `${name} has a free tier; Pro is $8 per month, billed annually.` },
+      { key: "platforms", value: `${name} is available on iOS and Android.` },
+      { key: "account_required", value: "An account is required to sync across devices." },
+    ];
+
     return {
       url,
       name,
@@ -50,6 +64,7 @@ export class MockResolver implements Resolver {
       competitors,
       clientDomains: [host],
       productClaims: [],
+      factClaims,
       resolvedAt: new Date(0).toISOString(), // fixed epoch -> deterministic in mock
       resolverModel: "mock",
     };

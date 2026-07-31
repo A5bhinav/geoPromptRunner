@@ -55,6 +55,23 @@ export function buildAuditCsv(
     lines.push(row("config", "location", canonicalLocation(profile.location)));
   }
 
+  // --- fact block ---
+  // Emitted only when the profile actually carries a sheet, so a run without one is
+  // byte-identical to the pre-F2 CSV — the consumer path (and its regression lock)
+  // never sees a new row, and blank stays the safe default (plan §4.2).
+  //
+  // Between config and query because that is csv_loader's _BLOCKS order and how a
+  // human reads an audit CSV; the parser itself routes on the block column, so
+  // position is presentation, not contract.
+  //
+  // Keys go out verbatim. §2.1 forbids a keyless row (the platform would fall back
+  // to the bare value and lose the section signal), but the guarantee belongs to the
+  // generator that builds the sheet — dropping one here would hide that bug rather
+  // than surface it.
+  for (const fact of profile.factClaims ?? []) {
+    lines.push(row("fact", fact.key, fact.value));
+  }
+
   // --- query block ---
   for (const q of querySet.queries) {
     lines.push(row("query", q.query_id, q.text, q.intent, q.persona ?? ""));

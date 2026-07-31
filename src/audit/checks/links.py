@@ -25,11 +25,11 @@ from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 import networkx as nx
-import tldextract
 from selectolax.parser import HTMLParser
 
 from src.audit.crawl.models import PageRecord
 from src.audit.crawl.urls import normalize_url
+from src.audit.domains import registered_domain
 
 __all__ = [
     "LinkGraphClass",
@@ -40,9 +40,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-# Offline eTLD+1 resolver (bundled public-suffix snapshot, no network fetch).
-_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
 
 _BOILERPLATE_TAGS = {"nav", "header", "footer", "aside"}
 _BOILERPLATE_ROLES = {"navigation", "banner", "contentinfo"}
@@ -127,10 +124,6 @@ def _effective_html(page: PageRecord) -> str:
     return page.rendered_html or page.raw_html or ""
 
 
-def _registered_domain(url_or_host: str) -> str:
-    host = urlsplit(url_or_host).hostname or url_or_host
-    return _EXTRACT(host).top_domain_under_public_suffix.lower()
-
 
 def _is_dom_boilerplate(node: Any) -> bool:
     parent = node.parent
@@ -184,7 +177,7 @@ def _extract_links(page: PageRecord, site_domain: str) -> list[_RawLink]:
         absolute = urljoin(page.url, href)
         if urlsplit(absolute).scheme not in ("http", "https"):
             continue
-        if _registered_domain(absolute) != site_domain:
+        if registered_domain(absolute) != site_domain:
             continue  # external link — not part of the internal graph
         target = normalize_url(absolute)
         if target == source:
@@ -259,7 +252,7 @@ def analyze_link_graph(
             {"n_pages": len(nodes)},
         )
 
-    site_domain = _registered_domain(domain if "://" in domain else f"https://{domain}")
+    site_domain = registered_domain(domain if "://" in domain else f"https://{domain}")
     all_links = [link for page in gradable for link in _extract_links(page, site_domain)]
 
     # Cross-page repetition: how many distinct source pages carry each target.
@@ -326,7 +319,7 @@ def analyze_link_graph(
 
     if sitemap_urls:
         sitemap_norm = {
-            normalize_url(u) for u in sitemap_urls if _registered_domain(u) == site_domain
+            normalize_url(u) for u in sitemap_urls if registered_domain(u) == site_domain
         }
         not_linked = sorted(sitemap_norm - in_content_targets - {home})
         evidence["sitemap_size"] = len(sitemap_norm)
