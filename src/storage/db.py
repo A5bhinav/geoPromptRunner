@@ -4,10 +4,23 @@ import logging
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, TypeVar
 
 from supabase import Client, create_client
 
+from src.audit.factsheet import (
+    BusinessKind,
+    Confidence,
+    FactClaim,
+    FactSheet,
+    Polarity,
+    SheetSection,
+    SourceKind,
+    Verification,
+    assigned_claims,
+    to_markdown,
+)
 from src.config import settings
 from src.engines.local_pack import LocalPackCapture
 from src.pipeline.metrics import domain_of
@@ -55,6 +68,21 @@ __all__ = [
     "get_audit_deliverable",
     "list_audit_deliverables",
     "update_audit_status",
+    "FactSheetState",
+    "FactSheetJobState",
+    "factsheet_source_prefix",
+    "save_fact_sheet",
+    "load_fact_sheet",
+    "get_fact_sheet",
+    "activate_fact_sheet",
+    "reject_fact_sheet",
+    "list_fact_sheets",
+    "delete_fact_sheets",
+    "delete_factsheet_sources_for_sheets",
+    "enqueue_factsheet_job",
+    "claim_factsheet_job",
+    "finish_factsheet_job",
+    "factsheet_spend_today",
 ]
 
 logger = logging.getLogger(__name__)
@@ -88,12 +116,29 @@ TABLE_SITE_AUDIT_OFFSITE = "site_audit_offsite_finding"
 # Private Storage bucket for gzipped raw/rendered HTML blobs (large, not row data).
 BUCKET_SITE_AUDIT_HTML = "site-audit-html"
 
+# The page snapshots backing each fact claim's verbatim quote
+# (data/schema_factsheets.sql §Sources). Deliberately the same object shape as the
+# bucket above — gzipped HTML at a content-addressed path — which is why the two
+# helpers below take a bucket instead of being duplicated per bucket.
+BUCKET_FACTSHEET_SOURCES = "factsheet-sources"
+
 # Teaser one-pagers + their review lifecycle (see data/schema_teasers.sql).
 TABLE_TEASERS = "teasers"
 
 # Audit deliverables (the paid AI Visibility Audit) + review lifecycle
 # (see data/schema_audits.sql).
 TABLE_AUDIT_DELIVERABLES = "audit_deliverables"
+
+# Fact sheets, their claims, and the generation queue where the spend limiter
+# lives (see data/schema_factsheets.sql).
+TABLE_FACT_SHEETS = "fact_sheets"
+TABLE_FACT_CLAIMS = "fact_claims"
+TABLE_FACTSHEET_JOBS = "factsheet_jobs"
+VIEW_FACTSHEET_SPEND_TODAY = "factsheet_spend_today"
+
+# Postgres SQLSTATE for a unique violation. Named because two fact-sheet writes
+# treat it as an ordinary outcome rather than an error (see _is_duplicate_key).
+_UNIQUE_VIOLATION = "23505"
 
 
 class StorageError(Exception):
@@ -186,6 +231,8 @@ def create_audit_run(
     engine_models: dict[str, str] | None = None,
     location: str | None = None,
     engine_probe: dict[str, Any] | None = None,
+    fact_sheet_id: str | None = None,
+    fact_sheet_version: int | None = None,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -198,6 +245,12 @@ def create_audit_run(
     ``engine_models`` records the exact model string each engine sent (e.g.
     ``{"openai": "gpt-4o-2024-08-06"}``) so two cycles are comparable — a
     provider's silent model update shows up as a metadata diff, not a mystery.
+
+    ``fact_sheet`` stays the frozen snapshot of what this run was judged against.
+    ``fact_sheet_id``/``fact_sheet_version`` are the pointer BACK to the living
+    row in ``fact_sheets``, which the text alone cannot give you: without them
+    nothing can answer "which version was this, and what changed since"
+    (docs/factsheet-autogen-plan.md §6). They are written separately — see below.
     """
     run_id = run_id or str(uuid.uuid4())
     row: dict[str, Any] = {
@@ -233,6 +286,36 @@ def create_audit_run(
         f"create_audit_run for client {client_name}",
         lambda c: c.table(TABLE_AUDIT_RUNS).insert(row).execute(),
     )
+    if fact_sheet_id is not None:
+        # Deliberately NOT part of the insert above. These two columns arrive with
+        # data/schema_run_provenance.sql, and a database that predates it rejects the
+        # whole INSERT — trading the run, which is unrecoverable, for its provenance,
+        # which is not. Same degrade-don't-raise trade as judge_model in
+        # save_judgments, and the same loud log. Skipped entirely when there is no
+        # sheet, so an ordinary run still costs exactly one write.
+        try:
+            _execute(
+                f"record fact-sheet provenance for run {run_id}",
+                lambda c: c.table(TABLE_AUDIT_RUNS)
+                .update(
+                    {
+                        "fact_sheet_id": fact_sheet_id,
+                        "fact_sheet_version": fact_sheet_version,
+                        "updated_at": _now(),
+                    }
+                )
+                .eq("id", run_id)
+                .execute(),
+            )
+        except StorageError:
+            logger.warning(
+                "Run %s was judged against fact sheet %s but the pointer was NOT "
+                "recorded. If this database predates the fact_sheet_id / "
+                "fact_sheet_version columns, apply data/schema_run_provenance.sql — "
+                "until then no stored run can be traced to the sheet version it used.",
+                run_id,
+                fact_sheet_id,
+            )
     return run_id
 
 
@@ -533,16 +616,24 @@ def get_site_audit_pages(run_id: str) -> list[dict[str, object]]:
     return _select_rows(TABLE_SITE_AUDIT_PAGE, run_id)
 
 
-def upload_site_audit_html(path: str, data: bytes) -> None:
-    """Upload a gzipped HTML blob to the private site-audit bucket (upsert).
+def upload_site_audit_html(
+    path: str, data: bytes, *, bucket: str = BUCKET_SITE_AUDIT_HTML
+) -> None:
+    """Upload a gzipped HTML blob to a private bucket (upsert).
 
     Large HTML lives in object storage, not table rows (§1.6); the
     ``site_audit_page`` row keeps only the ``storage_path`` pointer. ``upsert`` is
     on so a re-crawl overwrites the same content-addressed object.
+
+    ``bucket`` is keyword-only and defaults to the site-audit bucket, so every
+    existing call site is unchanged. The fact-sheet source snapshots
+    (``BUCKET_FACTSHEET_SOURCES``) are the same object — gzipped HTML, one
+    content-addressed path — so they pass a bucket rather than getting a second
+    near-identical pair of functions that would then have to be kept in step.
     """
     _execute(
-        f"upload_site_audit_html {path}",
-        lambda c: c.storage.from_(BUCKET_SITE_AUDIT_HTML).upload(
+        f"upload gzipped html to {bucket}/{path}",
+        lambda c: c.storage.from_(bucket).upload(
             path=path,
             file=data,
             file_options={"content-type": "application/gzip", "upsert": "true"},
@@ -550,11 +641,11 @@ def upload_site_audit_html(path: str, data: bytes) -> None:
     )
 
 
-def download_site_audit_html(path: str) -> bytes:
-    """Download a gzipped HTML blob from the private site-audit bucket."""
+def download_site_audit_html(path: str, *, bucket: str = BUCKET_SITE_AUDIT_HTML) -> bytes:
+    """Download a gzipped HTML blob from a private bucket (site-audit by default)."""
     return _execute(
-        f"download_site_audit_html {path}",
-        lambda c: c.storage.from_(BUCKET_SITE_AUDIT_HTML).download(path),
+        f"download gzipped html from {bucket}/{path}",
+        lambda c: c.storage.from_(bucket).download(path),
     )
 
 
@@ -1031,6 +1122,630 @@ def update_audit_status(
         lambda c: c.table(TABLE_AUDIT_DELIVERABLES).update(row).eq("id", deliverable_id).execute(),
     )
     return get_audit_deliverable(deliverable_id)
+
+
+# --- Fact sheets: the living record behind the judge's reference -------------
+#
+# data/schema_factsheets.sql. Two closed sets below live in the DATABASE and not
+# in src/audit/factsheet/models.py, because they describe a ROW's place in the
+# store rather than the document's own lifecycle: which of a domain's versions a
+# run may use, and how far a generation job got. ``FactSheet.sheet_status``
+# (draft/client_reviewed/signed) is the orthogonal per-document axis and has no
+# column here yet — see the note on _fact_sheet_to_row.
+
+
+class FactSheetState(StrEnum):
+    """Which row of a domain's version history a run is allowed to read.
+
+    Only one ``ACTIVE`` row per domain may exist: ``uq_fact_sheets_active_domain``
+    is a partial unique index, so promoting a sheet REQUIRES demoting the
+    incumbent in the same operation (:func:`activate_fact_sheet`). Older versions
+    are kept as ``SUPERSEDED`` on purpose — a sheet is a measurement reference,
+    and plan §6 needs two versions present to diff what a regeneration changed.
+    """
+
+    DRAFT = "draft"
+    ACTIVE = "active"
+    SUPERSEDED = "superseded"
+    # A reviewer looked and said no. A REVIEWED state, not a deleted one: it
+    # records that the extractor produced something plausible-but-false on this
+    # domain, which is the signal that tunes L1 (F4).
+    REJECTED = "rejected"
+
+
+class FactSheetJobState(StrEnum):
+    """How far a generation job got, including the ways it deliberately did not run.
+
+    The three ``SKIPPED_*`` members are most of the reason the table exists: a job
+    that is not run is RECORDED, never dropped. The lead-alert work established
+    that a silent failure is worse than no channel, because you stop checking.
+    """
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+    SKIPPED_DUPLICATE = "skipped_duplicate"
+    SKIPPED_CAP = "skipped_cap"
+    SKIPPED_UNUSABLE = "skipped_unusable"
+
+
+# Deterministic claim-row ids from (sheet, claim_id), so a caller retrying a
+# half-written save upserts the same claims instead of duplicating them.
+_FACT_CLAIM_NS = uuid.uuid5(uuid.NAMESPACE_URL, "geo:fact_claim")
+
+# The queue screen lists sheets; it must not drag every sheet's full markdown
+# across the wire to do it. ``questions`` stays in — it is the column the queue
+# exists to surface (schema_factsheets.sql calls it the most valuable one here).
+_FACT_SHEET_LIST_COLUMNS = (
+    "id, domain, business_name, business_kind, version, state, verification_tier, "
+    "lead_ref, questions, reject_reason, source_snapshot_prefix, generated_at, "
+    "created_at, updated_at"
+)
+
+# How many queued jobs one claim attempt will fight over before giving up. Each
+# lost race costs one round trip, and losing twenty in a row means the queue is
+# hot enough that returning empty and letting the worker loop is the cheaper move.
+_JOB_CLAIM_SCAN = 20
+
+
+def _is_duplicate_key(exc: StorageError) -> bool:
+    """True when a wrapped storage failure was a unique-constraint violation.
+
+    ``_execute`` throws the driver's error away on purpose — a Postgres message
+    echoes row values — so the SQLSTATE has to be read back off the chained
+    cause. Callers that treat a duplicate as an ordinary outcome (a second lead
+    for a domain already in flight) need to tell it apart from a real failure,
+    and the alternative — checking before writing — is exactly the race the
+    constraint exists to win. Older clients surface the code only in the message,
+    so both are checked.
+    """
+    cause = exc.__cause__
+    if getattr(cause, "code", None) == _UNIQUE_VIOLATION:
+        return True
+    return _UNIQUE_VIOLATION in str(cause)
+
+
+def factsheet_source_prefix(domain: str, version: int) -> str:
+    """Storage prefix for one sheet version's page snapshots: ``<domain>/v<version>``.
+
+    Defined once because two copies drift: the snapshot writer builds object paths
+    under it, :func:`save_fact_sheet` records it on the row, and
+    :func:`delete_factsheet_sources_for_sheets` lists it to clean up. The shape is
+    fixed by data/schema_factsheets.sql §Sources.
+    """
+    return f"{domain}/v{version}"
+
+
+def _fact_sheet_to_row(
+    sheet: FactSheet,
+    sheet_id: str,
+    *,
+    state: FactSheetState,
+    source_snapshot_prefix: str,
+) -> dict[str, Any]:
+    """Build the ``fact_sheets`` row for a sheet.
+
+    ``rendered_md`` stores renderer 2's output. Renderer 1 (the CSV fact rows) is
+    deliberately NOT stored and is derived from ``fact_claims`` at build time —
+    two stored representations of the same facts is how they drift.
+
+    ``verification_tier`` is denormalized from the claims so the column can be
+    queried ("which sheets are still public_source_only"); it is recomputed, not
+    read back, on load. ``FactSheet.sheet_status`` has nowhere to go: the table
+    has ``state`` (this row's place in the version history) and nothing for the
+    document's draft/client_reviewed/signed axis, which plan §11.5 still owes a
+    reconciliation.
+    """
+    return {
+        "id": sheet_id,
+        # Already the registrable domain, normalized by the caller. The column's
+        # CHECK only catches a careless writer (lowercase, no scheme, no path) —
+        # proper PSL normalization needs Python and does not live here.
+        "domain": sheet.domain,
+        "business_name": sheet.business_name,
+        "business_kind": sheet.business_kind.value,
+        "lead_ref": sheet.lead_ref,
+        "version": sheet.version,
+        "rendered_md": to_markdown(sheet),
+        "verification_tier": sheet.verification_tier.value,
+        "state": state.value,
+        "questions": list(sheet.questions),
+        "source_snapshot_prefix": source_snapshot_prefix,
+        "generated_at": sheet.generated_at,
+        "created_at": _now(),
+        "updated_at": _now(),
+    }
+
+
+def _fact_claim_to_row(sheet_id: str, claim: FactClaim) -> dict[str, Any]:
+    return {
+        "id": str(uuid.uuid5(_FACT_CLAIM_NS, f"{sheet_id}:{claim.claim_id}")),
+        "fact_sheet_id": sheet_id,
+        "claim_id": claim.claim_id,
+        "section": claim.section.value,
+        "key": claim.key,
+        "value": claim.value,
+        "polarity": claim.polarity.value,
+        "verbatim_quote": claim.verbatim_quote,
+        "source_url": claim.source_url,
+        "source_kind": claim.source_kind.value,
+        "as_of": claim.as_of,
+        "verification": claim.verification.value,
+        "confidence": claim.confidence.value,
+    }
+
+
+def _row_to_fact_claim(row: dict[str, object]) -> FactClaim:
+    """Rehydrate one claim.
+
+    The enum constructors are strict rather than tolerant, unlike
+    ``_row_to_judgment``: every one of these columns is CHECK-constrained to
+    exactly its enum's values, so an unrecognized one means the database moved
+    ahead of the code. A claim silently coerced to a wrong section or a wrong
+    verification tier is the false-accusation failure the whole sheet exists to
+    avoid, and refusing to load it is the conservative answer.
+    """
+    return FactClaim(
+        claim_id=str(row.get("claim_id", "")),
+        section=SheetSection(str(row.get("section", ""))),
+        key=str(row.get("key", "")),
+        value=str(row.get("value", "")),
+        polarity=Polarity(str(row.get("polarity", ""))),
+        verbatim_quote=str(row.get("verbatim_quote", "")),
+        source_url=str(row.get("source_url", "")),
+        source_kind=SourceKind(str(row.get("source_kind", ""))),
+        as_of=str(row.get("as_of", "")),
+        verification=Verification(str(row.get("verification", ""))),
+        confidence=Confidence(str(row.get("confidence", ""))),
+    )
+
+
+def _row_to_fact_sheet(row: dict[str, object], claim_rows: list[dict[str, object]]) -> FactSheet:
+    """Rehydrate a sheet from its row plus its claim rows.
+
+    ``sheet_status`` is not restored — there is no column for it — so a loaded
+    sheet reports ``DRAFT``. Anything gating on a signature must read the store's
+    own ``state``, not the rehydrated document.
+    """
+    return FactSheet(
+        domain=str(row.get("domain", "")),
+        business_name=str(row.get("business_name") or ""),
+        business_kind=BusinessKind(str(row.get("business_kind") or BusinessKind.LOCAL_SERVICE)),
+        claims=[_row_to_fact_claim(c) for c in claim_rows],
+        questions=_as_str_list(row.get("questions")),
+        version=int(str(row.get("version") or 1)),
+        generated_at=str(row.get("generated_at") or ""),
+        lead_ref=None if row.get("lead_ref") is None else str(row.get("lead_ref")),
+    )
+
+
+def _fact_sheet_row(sheet_id: str) -> dict[str, object] | None:
+    rows = _select_rows(TABLE_FACT_SHEETS, sheet_id, key="id")
+    return rows[0] if rows else None
+
+
+def _fact_claim_rows(sheet_id: str) -> list[dict[str, object]]:
+    """A sheet's claim rows in claim-ID order, so a round trip is order-stable."""
+    rows = _select_rows(TABLE_FACT_CLAIMS, sheet_id, key="fact_sheet_id")
+    return sorted(rows, key=lambda r: str(r.get("claim_id", "")))
+
+
+def save_fact_sheet(
+    sheet: FactSheet,
+    *,
+    sheet_id: str | None = None,
+    source_snapshot_prefix: str | None = None,
+) -> str:
+    """Write a fact sheet and its claims, returning the sheet id.
+
+    The sheet lands in ``FactSheetState.DRAFT``. **Writing is not activating**, and
+    that is the point: generation is cheap and unreviewed, while
+    ``uq_fact_sheets_active_domain`` allows exactly one active row per domain — so
+    a generator that wrote ``active`` would either clobber a reviewed incumbent or
+    fail outright. The promotion is the human gate (plan F4) and goes through
+    :func:`activate_fact_sheet`.
+
+    ``unique (domain, version)`` is what stops one business being stored twice: a
+    regeneration must bump ``sheet.version``, and a second save at the same version
+    raises rather than silently forking the history.
+
+    Claim ids are stamped here via ``assigned_claims`` (pure — the caller's sheet is
+    not mutated), and claim rows carry deterministic ids keyed on
+    ``(sheet_id, claim_id)``, so a caller retrying a half-written save with the same
+    ``sheet_id`` upserts the same claims. The sheet row itself is a plain insert:
+    upserting it on ``id`` would quietly reset an already-activated sheet to draft.
+    """
+    sheet_id = sheet_id or str(uuid.uuid4())
+    claims = assigned_claims(sheet.claims)
+    prefix = source_snapshot_prefix or factsheet_source_prefix(sheet.domain, sheet.version)
+    row = _fact_sheet_to_row(
+        sheet, sheet_id, state=FactSheetState.DRAFT, source_snapshot_prefix=prefix
+    )
+    _execute(
+        f"save_fact_sheet for {sheet.domain} v{sheet.version}",
+        lambda c: c.table(TABLE_FACT_SHEETS).insert(row).execute(),
+    )
+    claim_rows = [_fact_claim_to_row(sheet_id, claim) for claim in claims]
+    if claim_rows:
+        _execute(
+            f"save_fact_claims for {sheet.domain} v{sheet.version} ({len(claim_rows)} rows)",
+            lambda c: (
+                c.table(TABLE_FACT_CLAIMS)
+                .upsert(claim_rows, on_conflict="fact_sheet_id,claim_id")
+                .execute()
+            ),
+        )
+    return sheet_id
+
+
+def get_fact_sheet(sheet_id: str) -> FactSheet | None:
+    """Fetch one sheet by row id, claims attached, or None if absent."""
+    row = _fact_sheet_row(sheet_id)
+    return None if row is None else _row_to_fact_sheet(row, _fact_claim_rows(sheet_id))
+
+
+def load_fact_sheet(
+    domain: str, *, state: FactSheetState = FactSheetState.ACTIVE
+) -> FactSheet | None:
+    """The highest-version sheet for ``domain`` in ``state``, claims attached.
+
+    ``domain`` is the registrable domain, already normalized — see the note in
+    :func:`_fact_sheet_to_row` about why the column's CHECK is not the normalizer.
+
+    Ordering by version is what makes the non-default states usable: ``ACTIVE`` is
+    unique per domain by index, but a domain accumulates drafts and superseded
+    versions, and the one a caller means is the newest.
+    """
+    response = _execute(
+        f"load_fact_sheet for {domain} ({state.value})",
+        lambda c: (
+            c.table(TABLE_FACT_SHEETS)
+            .select("*")
+            .eq("domain", domain)
+            .eq("state", state.value)
+            .order("version", desc=True)
+            .limit(1)
+            .execute()
+        ),
+    )
+    rows = list(getattr(response, "data", None) or [])
+    if not rows:
+        return None
+    return _row_to_fact_sheet(rows[0], _fact_claim_rows(str(rows[0].get("id", ""))))
+
+
+def activate_fact_sheet(sheet_id: str) -> None:
+    """Promote one sheet to ``ACTIVE``, demoting the domain's incumbent first.
+
+    Not two independent updates that happen to be adjacent.
+    ``uq_fact_sheets_active_domain`` is a partial unique index, so promoting before
+    demoting is rejected by Postgres, and PostgREST offers no transaction to do
+    both at once. Demote-then-promote leaves a window in which the domain has NO
+    active sheet, and that is the safe way to fail: a run that finds nothing uses
+    no fact sheet and makes no accuracy claim, whereas a run that finds two has no
+    defined reference at all.
+
+    Re-activating the current active sheet is a no-op rather than a self-demotion —
+    hence the ``neq`` on the demote.
+    """
+    row = _fact_sheet_row(sheet_id)
+    if row is None:
+        raise StorageError(f"activate_fact_sheet: no fact sheet {sheet_id}")
+    domain = str(row.get("domain", ""))
+    _execute(
+        f"demote active fact sheet for {domain}",
+        lambda c: (
+            c.table(TABLE_FACT_SHEETS)
+            .update({"state": FactSheetState.SUPERSEDED.value, "updated_at": _now()})
+            .eq("domain", domain)
+            .eq("state", FactSheetState.ACTIVE.value)
+            .neq("id", sheet_id)
+            .execute()
+        ),
+    )
+    _execute(
+        f"activate_fact_sheet {sheet_id} for {domain}",
+        lambda c: (
+            c.table(TABLE_FACT_SHEETS)
+            .update({"state": FactSheetState.ACTIVE.value, "updated_at": _now()})
+            .eq("id", sheet_id)
+            .execute()
+        ),
+    )
+
+
+def reject_fact_sheet(sheet_id: str, reason: str | None = None) -> None:
+    """Mark a reviewed sheet ``REJECTED``. The row stays; the verdict is recorded.
+
+    Deliberately not a delete. A reviewer saying "these claims are wrong" is the
+    most valuable signal the extractor gets — it means L1 produced something
+    plausible-but-false on this domain — and a deleted row teaches nothing and
+    lets the next regeneration repeat the mistake unobserved.
+
+    Only a sheet nobody is relying on may be rejected: an ``ACTIVE`` sheet is the
+    reference live runs judge against, and silently pulling it would leave those
+    runs making accuracy claims against a document that no longer exists. Demote
+    it by activating its replacement instead.
+    """
+    row = _fact_sheet_row(sheet_id)
+    if row is None:
+        raise StorageError(f"reject_fact_sheet: no fact sheet {sheet_id}")
+    if str(row.get("state")) == FactSheetState.ACTIVE.value:
+        raise StorageError(
+            f"reject_fact_sheet: {sheet_id} is ACTIVE — activate a replacement instead "
+            "of rejecting the sheet live runs are judged against"
+        )
+    # NULL, not "", for a rejection with no note: "rejected without a reason" must
+    # stay distinguishable from "the reason failed to persist" (/teasers convention).
+    update: dict[str, Any] = {
+        "state": FactSheetState.REJECTED.value,
+        "reject_reason": (reason or "").strip() or None,
+        "updated_at": _now(),
+    }
+    _execute(
+        f"reject_fact_sheet {sheet_id}",
+        lambda c: c.table(TABLE_FACT_SHEETS).update(update).eq("id", sheet_id).execute(),
+    )
+
+
+def list_fact_sheets(
+    state: FactSheetState | None = None,
+    domain: str | None = None,
+    limit: int = 100,
+) -> list[dict[str, object]]:
+    """Fact-sheet rows, newest first — the basis for the F4 review queue.
+
+    Raw rows rather than :class:`FactSheet`s, like ``list_teasers``: the list view
+    needs a projection (no ``rendered_md``) and a claim count it does not have to
+    join for, and rehydrating a document per row to show a domain and a state
+    would fetch every claim of every sheet. The detail view loads one sheet via
+    :func:`load_fact_sheet`.
+    """
+
+    def _query(client: Client) -> Any:
+        q = client.table(TABLE_FACT_SHEETS).select(_FACT_SHEET_LIST_COLUMNS)
+        if state is not None:
+            q = q.eq("state", state.value)
+        if domain is not None:
+            q = q.eq("domain", domain)
+        return q.order("created_at", desc=True).limit(limit).execute()
+
+    response = _execute("list_fact_sheets", _query)
+    data = getattr(response, "data", None) or []
+    return list(data)
+
+
+def _snapshot_paths(prefix: str) -> list[str]:
+    """Object paths under one sheet's snapshot prefix.
+
+    ``prefix`` is a parameter (not a loop var), so the lambda closes over it
+    cleanly. Storage ``list`` returns names relative to the prefix.
+    """
+    entries = _execute(
+        f"list factsheet sources under {prefix}",
+        lambda c: c.storage.from_(BUCKET_FACTSHEET_SOURCES).list(prefix),
+    )
+    return [f"{prefix}/{e['name']}" for e in entries or [] if isinstance(e, dict) and e.get("name")]
+
+
+def delete_factsheet_sources_for_sheets(sheet_ids: list[str]) -> int:
+    """Remove the gzipped page snapshots these sheets left in the sources bucket.
+
+    The second orphan surface the plan warned about (§12.2). Deleting a
+    ``fact_sheets`` row cascades to ``fact_claims`` but never to Storage, and the
+    row is the only thing that knows the prefix — so collect the prefixes and
+    remove the objects FIRST, exactly as ``delete_site_audit_html_for_runs`` does
+    for ``site-audit-html``, then delete the rows.
+
+    Best-effort throughout: any failure returns what it managed and never blocks
+    the row deletes, because an orphaned blob is recoverable by listing the bucket
+    and a half-deleted project is not.
+    """
+    if not sheet_ids:
+        return 0
+    paths: list[str] = []
+    for sid in sheet_ids:
+        try:
+            row = _fact_sheet_row(sid)
+            if row is None:
+                continue
+            prefix = row.get("source_snapshot_prefix")
+            # A sheet written before the column was populated still has its blobs
+            # at the conventional prefix, so rebuild it rather than leak them.
+            if not prefix:
+                prefix = factsheet_source_prefix(
+                    str(row.get("domain", "")), int(str(row.get("version") or 1))
+                )
+            paths.extend(_snapshot_paths(str(prefix)))
+        except StorageError:
+            continue
+    if not paths:
+        return 0
+    try:
+        _execute(
+            f"delete factsheet sources ({len(paths)} blob(s))",
+            lambda c: c.storage.from_(BUCKET_FACTSHEET_SOURCES).remove(paths),
+        )
+    except StorageError:
+        return 0
+    return len(paths)
+
+
+def delete_fact_sheets(sheet_ids: list[str]) -> int:
+    """Hard-delete fact-sheet rows by id, returning how many rows were removed.
+
+    ``fact_claims`` references ``fact_sheets(id) ON DELETE CASCADE``, so the claims
+    go with the sheet; ``factsheet_jobs.fact_sheet_id`` is ``ON DELETE SET NULL``,
+    so the record of what was spent producing it survives on purpose. Snapshots in
+    the ``factsheet-sources`` bucket are *not* cascaded — delete those first via
+    :func:`delete_factsheet_sources_for_sheets`, while the rows that point at them
+    still exist.
+    """
+    if not sheet_ids:
+        return 0
+    response = _execute(
+        f"delete_fact_sheets ({len(sheet_ids)} sheet(s))",
+        lambda c: c.table(TABLE_FACT_SHEETS).delete().in_("id", sheet_ids).execute(),
+    )
+    return _deleted_count(response)
+
+
+# --- The generation queue, and where the spend limiter sits ------------------
+
+
+def enqueue_factsheet_job(domain: str, lead_ref: str | None = None, tier: int = 1) -> str | None:
+    """Queue a generation job for ``domain``; ``None`` if one is already in flight.
+
+    ``uq_factsheet_jobs_inflight`` (partial unique on ``domain`` where the state is
+    queued or running) is the dedup, and this deliberately does NOT look for an
+    existing job first. Two leads from the same business in the same minute is the
+    ordinary case — an owner submits twice — and a read-then-write check loses that
+    race by construction, because only Postgres sees both writers. So: attempt the
+    insert, and read the unique violation as the answer.
+
+    ``None`` is a normal outcome, not an error. The caller records it as a
+    ``skipped_duplicate`` against the existing job rather than dropping the lead.
+    """
+    job_id = str(uuid.uuid4())
+    row: dict[str, Any] = {
+        "id": job_id,
+        "domain": domain,
+        # The leads row id and nothing else — no email, no phone crosses projects
+        # (data/schema_factsheets.sql, "NO PROSPECT PII CROSSES OVER").
+        "lead_ref": lead_ref,
+        "tier": tier,
+        "state": FactSheetJobState.QUEUED.value,
+        "attempts": 0,
+        "cost_usd": 0,
+        "created_at": _now(),
+    }
+    try:
+        _execute(
+            f"enqueue_factsheet_job for {domain} (tier {tier})",
+            lambda c: c.table(TABLE_FACTSHEET_JOBS).insert(row).execute(),
+        )
+    except StorageError as exc:
+        if _is_duplicate_key(exc):
+            return None
+        raise
+    return job_id
+
+
+def _claim_one_job(job_id: str, attempts: int) -> dict[str, object] | None:
+    """Compare-and-set one queued job to running; None if another worker won it.
+
+    The update is filtered on ``state = 'queued'`` as well as the id, so of two
+    workers that read the same row exactly one gets rows back. PostgREST has no
+    ``select ... for update skip locked``; this is the same guarantee at the cost
+    of one wasted round trip per lost race. ``job_id``/``attempts`` are parameters
+    rather than loop variables so the lambda closes over them cleanly.
+    """
+    response = _execute(
+        f"claim_factsheet_job {job_id}",
+        lambda c: (
+            c.table(TABLE_FACTSHEET_JOBS)
+            .update(
+                {
+                    "state": FactSheetJobState.RUNNING.value,
+                    "attempts": attempts + 1,
+                    "claimed_at": _now(),
+                }
+            )
+            .eq("id", job_id)
+            .eq("state", FactSheetJobState.QUEUED.value)
+            .execute()
+        ),
+    )
+    rows = list(getattr(response, "data", None) or [])
+    return rows[0] if rows else None
+
+
+def claim_factsheet_job(tier: int | None = None) -> dict[str, object] | None:
+    """Take the oldest queued job, marked running, or None if the queue is empty.
+
+    Oldest-first because a lead that has waited longest is the one whose owner is
+    still expecting something. ``attempts`` is incremented at claim time rather
+    than on failure: a job that kills its worker mid-run must still count against
+    its retries, since the failure that costs money is the one that never gets to
+    write its own epitaph.
+
+    Returns the claimed row (not a typed object) — a job is a queue record, not a
+    domain value; the sheet it produces is the typed thing.
+    """
+
+    def _queued(client: Client) -> Any:
+        q = (
+            client.table(TABLE_FACTSHEET_JOBS)
+            .select("*")
+            .eq("state", FactSheetJobState.QUEUED.value)
+        )
+        if tier is not None:
+            q = q.eq("tier", tier)
+        return q.order("created_at").limit(_JOB_CLAIM_SCAN).execute()
+
+    response = _execute("claim_factsheet_job (scan)", _queued)
+    for row in list(getattr(response, "data", None) or []):
+        claimed = _claim_one_job(str(row.get("id", "")), int(str(row.get("attempts") or 0)))
+        if claimed is not None:
+            return claimed
+    return None
+
+
+def finish_factsheet_job(
+    job_id: str,
+    state: FactSheetJobState,
+    fact_sheet_id: str | None = None,
+    cost_usd: float | None = None,
+    error: str | None = None,
+) -> None:
+    """Record a job's terminal state, what it produced, and what it cost.
+
+    Every terminal state goes through here, the ``SKIPPED_*`` ones included: the
+    rolling tier-2 cap is computed off these rows (:func:`factsheet_spend_today`),
+    so a skip that is not written is a spend decision nobody can audit afterwards.
+
+    Writing a terminal state is also what releases the domain — the in-flight index
+    only covers ``queued``/``running``, so until this lands no second job for that
+    business can be queued at all.
+    """
+    row: dict[str, Any] = {"state": state.value, "finished_at": _now()}
+    if fact_sheet_id is not None:
+        row["fact_sheet_id"] = fact_sheet_id
+    if cost_usd is not None:
+        row["cost_usd"] = cost_usd
+    if error is not None:
+        row["error"] = error
+    _execute(
+        f"finish_factsheet_job {job_id} ({state.value})",
+        lambda c: c.table(TABLE_FACTSHEET_JOBS).update(row).eq("id", job_id).execute(),
+    )
+
+
+def factsheet_spend_today() -> dict[str, float]:
+    """Rolling 24-hour tier-2 run count and dollar spend — the limiter's input.
+
+    Read from the ``factsheet_spend_today`` view so the window is defined once, in
+    SQL, beside the table it aggregates. Unlike the hourly lead-alert cap, the run
+    count excludes the ``skipped_*`` rows the limiter itself writes, so a tripped
+    cap unwinds as the window slides instead of holding itself down with its own
+    bookkeeping. Note the two figures do not have the same filter: the view sums
+    ``cost_usd`` over every row in the window while counting only tier-2 rows in
+    ``running``/``done``, so a *failed* tier-2 job's spend is charged but not
+    counted. Read the dollars, not the count, when the question is money.
+    """
+    response = _execute(
+        "factsheet_spend_today",
+        lambda c: c.table(VIEW_FACTSHEET_SPEND_TODAY).select("*").limit(1).execute(),
+    )
+    rows = list(getattr(response, "data", None) or [])
+    row = rows[0] if rows else {}
+    return {
+        # A count, not a dollar figure — but sharing one dict with the spend keeps
+        # the cap check a single read of a single row.
+        "tier2_runs": int(str(row.get("tier2_runs") or 0)),
+        "spend_usd": float(str(row.get("spend_usd") or 0)),
+    }
 
 
 if __name__ == "__main__":

@@ -45,3 +45,9 @@ rapidfuzz>=3.6          # fuzzy schema-vs-visible-content matching (Cat 5)
 networkx>=3.2           # internal link graph: orphans, pagerank, click-depth (Cat 2)
 # NOTE: advertools (richer sitemap parsing) is deferred — it pulls pandas, and
 # trafilatura's built-in sitemap_search() covers the MVP. Add later if needed.
+# NOTE: psycopg is an OPTIONAL extra, not listed as a hard dependency. Two things
+# need it and neither is on the audit path: `scripts/apply_schema.py` (applies
+# data/*.sql — SUPABASE_KEY is a REST key and PostgREST cannot run `alter table`)
+# and the fact-sheet worker (reads the leads project over the leads_reader role).
+# Both fail with an install hint rather than an ImportError. Add with:
+#   pip install 'psycopg[binary]'

@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 
+from src.api.engine_registry import LOCATION_AWARE
 from src.api.runner import _local_pack_from_db, _site_audit_from_db
+from src.audit.factsheet import BusinessKind
 from src.audit.local_report import render_local_report
 from src.audit.query_report import render_audit_report
 from src.audit.rubric import load_rubric_scores, render_roadmap
@@ -47,9 +50,6 @@ logger = logging.getLogger(__name__)
 # surfaces (ChatGPT-with-search, Claude-with-search, Gemini grounding, Perplexity,
 # Google AI Overviews). They measure different channels — keep them distinct.
 _MEMORY_CLASSES = (OpenAIEngine, AnthropicEngine, GeminiEngine, PerplexityEngine)
-# NOTE: the CLI builds these with no location, so the two Google SERP surfaces measure
-# an unpinned locale — fine for a national product, NOT a local measurement. The local
-# path goes through the CSV/API route, which carries `location` (see engine_registry).
 _SEARCH_CLASSES = (
     OpenAISearchEngine,
     AnthropicSearchEngine,
@@ -59,16 +59,38 @@ _SEARCH_CLASSES = (
     DataForSEOAIModeEngine,
 )
 
+# The two Google SERP surfaces are dead without a market: DataForSEO rejects a task with
+# no `location_name` (verified 2026-07-30, see DataForSEOAIOverviewsEngine.__init__), and
+# the never-raise contract turns that into a silently empty surface rather than an error.
+# The CLI used to build them with no location at all, so `--surface search` measured four
+# engines and two blanks. Defaulting to the country keeps a national run working out of
+# the box; `--location` overrides it. A local audit still belongs on the CSV/API route,
+# which carries the full "City,State,United States" hierarchy (see engine_registry).
+DEFAULT_LOCATION = "United States"
 
-def _load_engines(surface: str = "memory") -> list[BaseEngine]:
-    """Instantiate every engine whose API key is configured; skip the rest."""
+
+def _load_engines(
+    surface: str = "memory", location: str | None = DEFAULT_LOCATION
+) -> list[BaseEngine]:
+    """Instantiate every engine whose API key is configured; skip the rest.
+
+    ``location`` is passed only to the SERP-capture engines (``LOCATION_AWARE``); the
+    model APIs have no locale knob and take no such argument.
+    """
     classes = _SEARCH_CLASSES if surface == "search" else _MEMORY_CLASSES
     engines: list[BaseEngine] = []
     for cls in classes:
         try:
-            engines.append(cls())
+            if location and cls.ENGINE_NAME in LOCATION_AWARE:
+                engines.append(cls(location=location))  # type: ignore[call-arg]  # only the SERP engines take it
+            else:
+                engines.append(cls())
         except ValueError as exc:
             print(f"  (skipping {cls.__name__}: {exc})")
+    located = [e.ENGINE_NAME for e in engines if e.ENGINE_NAME in LOCATION_AWARE]
+    if located:
+        market = location or "UNSET — these will return nothing"
+        print(f"  (market for {', '.join(located)}: {market})")
     return engines
 
 
@@ -96,7 +118,7 @@ def _outcome_from_run(run_id: str) -> AuditOutcome | None:
 
 def _cmd_audit(args: argparse.Namespace) -> int:
     qs = load_query_set(args.query_set)
-    engines = _load_engines(args.surface)
+    engines = _load_engines(args.surface, args.location)
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
@@ -170,13 +192,104 @@ def _cmd_audit(args: argparse.Namespace) -> int:
 
 def _cmd_teaser(args: argparse.Namespace) -> int:
     qs = load_query_set(args.query_set)
-    engines = _load_engines(args.surface)
+    engines = _load_engines(args.surface, args.location)
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
     outcome = run_teaser(qs, engines, client_domains=_split(args.domains), max_queries=args.max)
     print()
     print(render_audit_report(outcome))
+    return 0
+
+
+def _cmd_factsheet(args: argparse.Namespace) -> int:
+    """Generate a draft fact sheet from a site crawl (plan F1: L0 + L1).
+
+    Deterministic and free: no model is called, and every line that survives
+    traces to JSON-LD or a ``tel:``/NAP block through the §4.1 quote gate. The
+    output is a DRAFT — `docs/factsheet-autogen-plan.md` §8 is explicit that a
+    sheet is the reference the judge measures answers against, so a wrong line
+    is a false accusation in a document we send a stranger. It goes to a human
+    before it goes to a run.
+    """
+    import uuid
+
+    from src.audit.crawl import run_site_audit_blocking
+    from src.audit.factsheet import BusinessKind, ThinTextError, build_sheet, to_csv, to_markdown
+
+    kind = BusinessKind(args.kind)
+    print(f"Crawling {args.website} …")
+    # Not persisted: there is no audit_runs row to hang these pages off, and the
+    # sheet needs the pages in memory, not in the cache.
+    crawl = run_site_audit_blocking(
+        run_id=str(uuid.uuid4()),
+        domain=args.website,
+        business_kind=kind.value,
+        persist=False,
+    )
+    usable = [p for p in crawl.pages if not p.fetch_meta.blocked]
+    print(
+        f"  {len(crawl.pages)} page(s) fetched, {len(usable)} usable, {len(crawl.errors)} error(s)"
+    )
+    if crawl.errors:
+        for err in crawl.errors[:5]:
+            print(f"    - {err}")
+
+    try:
+        sheet = build_sheet(
+            business=args.business,
+            website=args.website,
+            pages=crawl.pages,
+            generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
+            area=args.area,
+            description=args.description,
+            business_kind=kind,
+        )
+    except ThinTextError as exc:
+        # Refusing is the feature (§4.6): a sheet built from a Cloudflare
+        # interstitial or an unhydrated SPA shell asserts things no page said.
+        print(f"\nRefused: {exc}")
+        return 1
+
+    print(
+        f"\n{len(sheet.claims)} claim(s), {len(sheet.questions)} open question(s), "
+        f"weakest verification: {sheet.verification_tier.value}"
+    )
+    if args.out:
+        Path(args.out).write_text(to_markdown(sheet))
+        print(f"  markdown -> {args.out}")
+    if args.csv:
+        Path(args.csv).write_text(to_csv(sheet))
+        print(f"  fact rows -> {args.csv}")
+    if not args.out and not args.csv:
+        print()
+        print(to_markdown(sheet))
+    if sheet.claims:
+        print("\nDRAFT — every claim is public-source-only until a human confirms it.")
+    return 0
+
+
+def _cmd_factsheet_worker(args: argparse.Namespace) -> int:
+    """One pass of the cross-project Tier-1 fact-sheet worker (plan §12.3).
+
+    Reads the WEBSITE project's leads over the SELECT-only ``leads_reader`` role,
+    queues a Tier-1 job per lead, then drains the queue: crawl → extract → store a
+    DRAFT sheet. No model is called and no engine budget is spent, which is what
+    the 2026-07-31 amendment to `geoWebsite/CLAUDE.md` permits — and Tier 2 is
+    deliberately out of this worker's authority.
+
+    One pass per invocation, so scheduling stays outside the process (cron, or a
+    `while` loop in a terminal). A daemon that owns its own clock is harder to
+    stop, and this reads a queue of real prospects.
+    """
+    from src.audit.factsheet.worker import run_once
+
+    try:
+        result = run_once(limit=args.limit, max_jobs=args.max_jobs)
+    except RuntimeError as exc:  # unset LEADS_DB_URL / missing psycopg
+        print(f"Cannot run: {exc}")
+        return 1
+    print(result.summary())
     return 0
 
 
@@ -409,10 +522,16 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     if args.probe == "canary":
         # Both surfaces, deduped (Perplexity appears in each list) — the canary
         # is cheap (2 calls/engine) and the guarantee should hold everywhere.
-        by_name = {e.ENGINE_NAME: e for e in [*_load_engines("memory"), *_load_engines("search")]}
+        by_name = {
+            e.ENGINE_NAME: e
+            for e in [
+                *_load_engines("memory", args.location),
+                *_load_engines("search", args.location),
+            ]
+        }
         engines = list(by_name.values())
     else:
-        engines = _load_engines(args.surface)
+        engines = _load_engines(args.surface, args.location)
     if not engines:
         print("No engines configured (set API keys in .env).")
         return 1
@@ -466,6 +585,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_audit.add_argument("--surface", choices=("memory", "search"), default="memory")
     p_audit.add_argument(
+        "--location",
+        default=DEFAULT_LOCATION,
+        help=(
+            "Market for the Google SERP surfaces, as Google's canonical name "
+            "('United States', 'Berkeley,California,United States'). Required by "
+            "DataForSEO — without it those engines return nothing."
+        ),
+    )
+    p_audit.add_argument(
         "--max-cost", type=float, default=None, help="abort if est. $ exceeds this"
     )
     p_audit.add_argument("--resume", default=None, help="resume an interrupted run by id")
@@ -492,7 +620,49 @@ def main(argv: list[str] | None = None) -> int:
     p_teaser.add_argument("--domains")
     p_teaser.add_argument("--max", type=int, default=5)
     p_teaser.add_argument("--surface", choices=("memory", "search"), default="memory")
+    p_teaser.add_argument(
+        "--location",
+        default=DEFAULT_LOCATION,
+        help=(
+            "Market for the Google SERP surfaces, as Google's canonical name "
+            "('United States', 'Berkeley,California,United States'). Required by "
+            "DataForSEO — without it those engines return nothing."
+        ),
+    )
     p_teaser.set_defaults(func=_cmd_teaser)
+
+    p_factsheet = sub.add_parser(
+        "factsheet", help="generate a DRAFT fact sheet from a site crawl (no LLM, no spend)"
+    )
+    p_factsheet.add_argument("website", help="domain or URL, e.g. fort.cx")
+    p_factsheet.add_argument(
+        "--business", required=True, help="business name as the owner writes it"
+    )
+    p_factsheet.add_argument("--area", default=None, help="service area, for a local business")
+    p_factsheet.add_argument(
+        "--description", default=None, help="one-line description from the lead form (L0)"
+    )
+    p_factsheet.add_argument(
+        "--kind",
+        choices=tuple(k.value for k in BusinessKind),
+        default=BusinessKind.LOCAL_SERVICE.value,
+        help="which sheet template to render against",
+    )
+    p_factsheet.add_argument("--out", default=None, help="write the markdown sheet here")
+    p_factsheet.add_argument("--csv", default=None, help="write the fact rows (platform CSV) here")
+    p_factsheet.set_defaults(func=_cmd_factsheet)
+
+    p_fsworker = sub.add_parser(
+        "factsheet-worker",
+        help="one pass: poll leads, generate DRAFT Tier-1 fact sheets (no LLM, no spend)",
+    )
+    p_fsworker.add_argument(
+        "--limit", type=int, default=50, help="how many recent leads to read per pass"
+    )
+    p_fsworker.add_argument(
+        "--max-jobs", type=int, default=10, help="cap jobs drained per pass (bounds a backlog)"
+    )
+    p_fsworker.set_defaults(func=_cmd_factsheet_worker)
 
     p_discover = sub.add_parser("discover", help="find competitors mentioned in a stored run")
     p_discover.add_argument("run_id")
@@ -569,6 +739,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_verify.add_argument("probe", choices=("canary", "determinism", "shuffle"))
     p_verify.add_argument("--surface", choices=("memory", "search"), default="memory")
+    p_verify.add_argument(
+        "--location",
+        default=DEFAULT_LOCATION,
+        help=(
+            "Market for the Google SERP surfaces, as Google's canonical name "
+            "('United States', 'Berkeley,California,United States'). Required by "
+            "DataForSEO — without it those engines return nothing."
+        ),
+    )
     p_verify.add_argument("--query", default=DEFAULT_QUERY, help="query for the determinism probe")
     p_verify.add_argument("--k", type=int, default=10, help="repeats for the determinism probe")
     p_verify.add_argument("--query-set", help="query set JSON for the shuffle probe")

@@ -23,6 +23,20 @@ SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
 # Like every other secret here it is read once, in this module, and never logged.
 SUPABASE_DB_URL: str | None = os.getenv("SUPABASE_DB_URL")
 
+# The WEBSITE's Supabase project (leads), which is a DIFFERENT database from the
+# platform one above — see docs/factsheet-autogen-plan.md §12.1. Read by the
+# fact-sheet worker only, and read-only: it polls `leads` for businesses that need
+# a Tier-1 sheet.
+#
+# Use the `leads_reader` role from geoWebsite/scripts/leads-visibility.sql, never
+# the postgres superuser and never the service_role key. That role is SELECT-only
+# and RLS-scoped, which is what makes an automated reader of a prospect queue
+# defensible. Unset simply means the worker does not run.
+#
+# The worker carries `leads.id` across as `lead_ref` and NOTHING else — no email,
+# no phone (data/schema_factsheets.sql, "NO PROSPECT PII CROSSES OVER").
+LEADS_DB_URL: str | None = os.getenv("LEADS_DB_URL")
+
 # Google AI Overviews has no official API; capture it via a SERP provider
 # (DataForSEO — see DATAFORSEO_LOGIN/PASSWORD below). SearchApi.io served this surface
 # until 2026-07-28 and was removed: same data, $40/month floor instead of pay-as-you-go.
@@ -133,7 +147,17 @@ JUDGE_ACCURACY_MODEL: str = os.getenv("JUDGE_ACCURACY_MODEL", JUDGE_MODEL)
 # raises precision without lowering recall. Verification is a narrow judgment, so
 # Haiku handles it well (unlike open-ended flag detection). Enable with `--verify`
 # or JUDGE_VERIFY=1.
-JUDGE_VERIFY: bool = os.getenv("JUDGE_VERIFY", "0").strip().lower() in ("1", "true", "yes")
+# DEFAULT ON since 2026-07-31. It was "0", and the only reason the accurate
+# path shipped was a line in .env -- so any environment without that file
+# (a fresh clone, CI, a container) silently produced the low-precision
+# verdicts, and produced them looking exactly like the good ones. Failing
+# toward the expensive-but-correct path is the right default for something
+# whose output accuses a client of an error. Cost is one focused call per
+# PROPOSED FLAG, so a clean answer pays nothing.
+# Note: the `prejudge` skill refuses to dump while this is set -- pass
+# JUDGE_VERIFY=0 explicitly for that step. A loud refusal beats the silent
+# wrong default it replaces.
+JUDGE_VERIFY: bool = os.getenv("JUDGE_VERIFY", "1").strip().lower() in ("1", "true", "yes")
 # Verifier defaults to the accurate model: a Haiku verifier over-drops real flags
 # (76% recall on gold — same gun-shy bias Action A found), so it would trade the
 # protected recall for precision. Sonnet keeps the real contradictions.

@@ -40,6 +40,7 @@ async def crawl_domain(
     domain: str,
     config: FetchConfig | None = None,
     business_kind: str = "product",
+    persist: bool = True,
 ) -> CrawlResult:
     """Crawl one domain's priority page set into a :class:`CrawlResult`.
 
@@ -49,6 +50,13 @@ async def crawl_domain(
     page never sinks the phase. The browser is launched and closed within this
     coroutine only; a launch failure degrades to a raw-only crawl rather than
     aborting.
+
+    ``persist=False`` skips the cache write for callers with no parent
+    ``audit_runs`` row — the standalone fact-sheet generator (``geo factsheet``)
+    is one. Without it every page fails its foreign key, lands in
+    ``save_errors`` and logs a warning, which reads like a broken crawl when it
+    is a crawl that was never meant to be stored. The pages are returned either
+    way; only the write is skipped.
     """
     from contextlib import AsyncExitStack
 
@@ -111,6 +119,8 @@ async def crawl_domain(
                 if pause:
                     await asyncio.sleep(pause)
             result.pages.append(page)
+            if not persist:
+                return
             try:
                 cache.save_page(run_id, crawl_id, page)
             except Exception as exc:  # persistence best-effort — keep page in memory
@@ -142,6 +152,7 @@ def run_site_audit_blocking(
     domain: str,
     config: FetchConfig | None = None,
     business_kind: str = "product",
+    persist: bool = True,
 ) -> CrawlResult:
     """Synchronous entrypoint for the threaded runner — wraps the async crawl.
 
@@ -149,10 +160,12 @@ def run_site_audit_blocking(
     the uvicorn request coroutine, §1.3). Creates a fresh loop via ``asyncio.run``,
     runs :func:`crawl_domain`, and tears it down — so all Chromium memory is
     reclaimed when the call returns.
+
+    ``persist`` is forwarded to :func:`crawl_domain`; see its docstring.
     """
     cfg = config or FetchConfig()
     logger.info("site-audit crawl starting: run_id=%s domain=%s", run_id, domain)
-    return asyncio.run(crawl_domain(run_id, domain, cfg, business_kind))
+    return asyncio.run(crawl_domain(run_id, domain, cfg, business_kind, persist))
 
 
 if __name__ == "__main__":
