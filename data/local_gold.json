@@ -1,5 +1,5 @@
 {
-  "_comment": "BLIND gold skeleton from run 86b644f0-11cc-4155-a7f7-2eb387d3cd7e (40 items). Hand-label every item (judge verdicts intentionally omitted). Then split into tune/held-out and run: python -m src.pipeline.calibration",
+  "_comment": "LOCAL gold set — Albert Nahman Plumbing, 25 items sampled from the 40 answers of run 86b644f0. SAMPLING IS DELIBERATELY BIASED: all 19 answers that name the client or a competitor are kept, plus 6 of the 21 that name nobody, chosen to rebalance engines (lowest source index first, no randomness). CONSEQUENCE: agreement measured on this set is CONSERVATIVE, not representative — it over-weights the hard cases on purpose, because a set of mostly-absent answers measures almost nothing and cannot power flag precision at all (see the 2026-07-31 consumer re-run, where 3 gold flags made precision swing 29%->43% between identical runs). Never quote a figure from this set as a population estimate of how often the judge agrees across a real run. `_source_index` maps each item back to the 40-item scaffold, which is reproducible via scripts.scaffold_gold from the same run.",
   "items": [
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -32,7 +32,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 0,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -65,7 +67,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 1,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -98,7 +102,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 2,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -131,7 +137,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 3,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -164,7 +172,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 4,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -197,7 +207,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 5,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -230,7 +242,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 6,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -263,7 +277,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 7,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -296,7 +312,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 8,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -329,7 +347,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 9,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -362,7 +382,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 10,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -395,7 +417,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 11,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -428,7 +452,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 12,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -461,7 +487,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 13,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -494,7 +522,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 14,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -527,73 +557,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "inf-01",
-      "query": "why is my water pressure suddenly low?",
-      "engine": "gemini_grounded",
-      "category": "plumbing service",
-      "answer": "A sudden drop in water pressure can be a frustrating issue, and its cause can range from simple, localized problems to more complex system-wide concerns. Identifying whether the low pressure affects a single fixture, only hot water, or your entire home is the first step in pinpointing the problem.\n\nHere are the most common reasons for sudden low water pressure:\n\n**1. Issues Affecting Your Entire Home's Water Pressure:**\n*   **Partially Closed Main Water Shut-Off Valve:** The main shut-off valve controls all water entering your home. If it's not fully open, it restricts the overall water flow and pressure to all fixtures. This can happen accidentally after a repair or if the valve mechanism drifts over time. For a ball valve, the handle should be parallel to the pipe when fully open; for a gate valve (round handle), turn it counterclockwise until it stops, then back it off a quarter turn.\n*   **Faulty Pressure Regulator (PRV):** Many homes have a pressure-reducing valve (PRV) that lowers the high water pressure coming from the municipal supply to a safer level for your home's plumbing. If this regulator malfunctions, it can cause a sudden drop or fluctuation in water pressure throughout the house.\n*   **Hidden Plumbing Leaks:** Even small leaks in your plumbing system can significantly reduce water pressure by diverting water before it reaches your fixtures. Look for signs like damp spots on walls or ceilings, mold growth, or an unusually high water bill. You can check for a leak by turning off all water-using appliances and taps, then checking your water meter. If the meter dial changes, you likely have a leak.\n*   **Corroded or Clogged Pipes:** Over time, mineral deposits, rust, and debris can build up inside pipes, especially in older homes with galvanized steel pipes, restricting water flow and causing low pressure.\n*   **Municipal Water Supply Issues:** Problems with your city's water supply, such as a water main break, maintenance work, or unusually high demand in your area (e.g., during hot, dry summer months), can lead to a temporary drop in water pressure for multiple homes. Checking with neighbors can help determine if this is the cause.\n*   **Water Meter Valve Partially Closed:** Similar to your main shut-off valve, the valve at your water meter can also be partially closed, restricting water flow into your home. However, it's generally not recommended to partially close this valve as it can cause damage.\n\n**2. Issues Affecting Only Hot Water Pressure:**\nIf only your hot water has low pressure, the problem is likely related to your water heater or the hot water plumbing.\n*   **Sediment Buildup in Water Heater:** Minerals in hard water can settle at the bottom of your water heater tank and accumulate in the outlet pipes, restricting hot water flow and reducing pressure.\n*   **Partially Closed Shut-Off Valve at Water Heater:** A shut-off valve near your water heater that is not fully open can restrict the hot water supply.\n*   **Corroded Hot Water Pipes:** Similar to general pipe corrosion, specific hot water lines can corrode and restrict flow.\n*   **Faulty Mixing Valve or Water Heater Components:** A malfunctioning mixing valve (also called a tempering valve) or other internal water heater components can restrict hot water flow.\n\n**3. Issues Affecting a Single Faucet or Fixture:**\nIf only one faucet or shower has low pressure, the problem is usually with that specific fixture.\n*   **Clogged Faucet Aerator or Showerhead:** Mineral deposits, dirt, and debris can build up in the aerator (the screen at the end of a faucet) or showerhead, restricting water flow. Cleaning or replacing the aerator is often an easy and inexpensive fix.\n*   **Clogged Faucet Cartridge:** The internal cartridge in a faucet can also become clogged.\n\n**4. Issues Specific to Well Water Systems:**\nIf your home uses a well, low water pressure can be caused by:\n*   **Pressure Switch Problems:** The pressure switch tells your well pump when to turn on and off. If it's set too low or is failing, it can lead to low pressure.\n*   **Waterlogged Pressure Tank:** A pressure tank that has lost its air charge can cause inconsistent water flow and pressure fluctuations.\n*   **Clogged Sediment Filter:** A dirty whole-house sediment filter can restrict water flow from the well.\n*   **Worn Well Pump:** An aging or failing well pump may not be able to generate enough pressure.\n*   **Low Water Level in Well:** If the water level in your well is too low, the pump may pull air, reducing effective pressure.\n\nTo diagnose the problem, it's recommended to first determine if the low pressure is isolated to one fixture, only hot water, or the entire house. If the issue affects your whole home or you suspect a more serious plumbing problem, contacting a professional plumber is advisable.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "inf-01",
-      "query": "why is my water pressure suddenly low?",
-      "engine": "google_ai_mode",
-      "category": "plumbing service",
-      "answer": "A sudden drop in water pressure is usually caused by a **hidden leak** , a **partially closed main valve** , a **failing pressure regulator (PRV)** , or **issues with the municipal water supply**.[](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/) [[1]](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/)[[2]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)\n\nHere is a breakdown of why this happens and how to narrow it down based on the search results:\n\n1. Check for \"Whole House\" vs. \"Single Fixture\" Issues\n\n- **If all faucets are slow:** The issue is likely the main water supply, the main shutoff valve, or a malfunctioning Pressure Reducing Valve (PRV).[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system)\n- **If only one faucet/shower is slow:** It is likely a clogged faucet aerator or showerhead, or a faulty, partially closed valve under the sink.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/)[[2]](https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low)\n\n2. Common Causes of Sudden Low Pressure\n\n- **Partially Closed Valves:** Check your main shutoff valve (often in the basement, garage, or near the water meter) to ensure it is fully open.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://lorenzphac.com/blog/low-water-pressure-in-house/)[[2]](https://fclwd.com/blog-low-water-pressure-causes-and-fixes/)[[3]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[4]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)\n- **Failing Pressure Regulator (PRV):** If your home has a PRV (usually located near the main shutoff), it may have failed, leading to a sudden drop in pressure.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://totalmechanicalcare.com/blog/5-reasons-your-water-pressure-changed-suddenly-and-what-to-do)\n- **Hidden Leaks:** A broken pipe (especially underground) can drastically reduce pressure. Look for water stains on walls, wet spots in the yard, or a rapidly ticking water meter.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://jayceeplumbing.com.au/is-your-weak-water-pressure-driving-you-crazy/)[[2]](https://www.patioandpizza.com/blogs/resources/how-to-fix-water-pressure-problems-in-your-outdoor-kitchen?srsltid=AfmBOoo-1_Ix-_sL2cj-jQgN8q19CLa5LEFSVyIZZ75DIjFDV4lWJ_JE)[[3]](https://www.leadingplumbingservices.com/when-every-faucet-feels-weak-at-the-same-time-its-not-a-coincidence)\n- **Water Main Break/Municipal Demand:** If your neighbors are experiencing the same issue, it is likely a municipal issue, such as a water main break or high demand.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) \n- **Water Softener/Filter Clogs:** A malfunctioning water softener or clogged sediment filter can block water flow.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://dscwater.com/articles/low-water-pressure-on-well-water-7-common-causes-and-what-actually-fixes-them/)\n\n3. If Only Hot Water is Low\n\nIf cold water pressure is fine, but hot water is low, the issue is typically:[[1]](https://www.tnstandard.com/causes-drops-water-pressure/)\n\n- **Sediment Buildup in the Water Heater:** Minerals (calcium) can settle in the tank, clogging the hot water outlet.\n- **A Closed Heater Valve:** Ensure the valves feeding the water heater are fully open.[](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66) [[1]](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66)[[2]](https://www.tnstandard.com/causes-drops-water-pressure/)\n\n4. What to Do\n\n1. **Ask neighbors** if they have low pressure to rule out municipal issues.\n2. **Check your main shutoff valve** to ensure it hasn't been accidentally turned.\n3. **Check your water meter** while all fixtures are off to check for leaks.\n4. **Clean your faucet aerators** by soaking them in vinegar to remove mineral buildup.[](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/) [[1]](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/)[[2]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[3]](https://www.coolwichita.com/blog/low-water-pressure-repair)\n\nIf all fixtures are affected and your main valve is open, you likely need a professional plumber to inspect the pressure regulator or look for a major leak.[](https://www.tnstandard.com/causes-drops-water-pressure/) [[1]](https://stevebennettplumbing.com.au/blog/plumber/information/what-causes-low-water-pressure/)[[2]](https://www.sobieskiinc.com/blog/common-water-pressure-problems-and-how-solve-them/)\n\nTo help narrow down the cause, could you tell me:\n\n- Is the low pressure affecting the **whole house** or just one area/floor?\n- Is it only the **hot water** , or both?\n- Do you have a **well or city water**?\n\nI can give you more specific troubleshooting steps based on these details.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 15,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -626,7 +592,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 18,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -659,7 +627,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 19,
+      "_kind": "none"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -692,7 +662,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 20,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -725,73 +697,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-01",
-      "query": "best plumber in Berkeley",
-      "engine": "openai",
-      "category": "plumbing service",
-      "answer": "If you mean **Berkeley, California**, the “best” plumber depends on the job and urgency. I’d compare highly rated local companies on **Google Maps and Yelp**, then verify:\n\n- **California C-36 plumbing license** through the CSLB  \n- Proof of insurance and written estimate  \n- Emergency/after-hours fees  \n- Warranty on labor and parts  \n- Recent reviews mentioning your specific issue\n\nFor a **sewer line, repipe, gas line, or major remodel**, get at least **2–3 written bids**. For a small leak or clogged drain, choose a well-reviewed local plumber with a clear service-call fee rather than the cheapest ad.\n\nIf you share your **Berkeley ZIP code, plumbing problem, and whether it’s urgent**, I can help narrow down the best options.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-01",
-      "query": "best plumber in Berkeley",
-      "engine": "perplexity",
-      "category": "plumbing service",
-      "answer": "If you want the **best plumber in Berkeley** based on the search results, **Pat O’Neill Plumbing** is the strongest candidate because it has a dedicated Berkeley profile, a local Berkeley address, and a clear business phone number.[2]\n\nA few other notable options from the results are:\n\n- **Prime Time Plumbing** — shows a **5.0 rating** on Yelp with 6 reviews, which is a strong signal of customer satisfaction, though the review count is still small.[5]\n- **One Step Plumbing** — appears in Expertise’s curated list of top Berkeley plumbers and has a Berkeley address, which suggests local presence and recognition.[1]\n- **Fito Plumbers** — lists Berkeley as a service location and is presented as a trusted plumbing option.[3]\n- **AquaSaver Water Heaters** — advertises 24/7 availability and quick response times, which may be useful if you need emergency service.[4]\n\nIf you want, I can also narrow this down by **emergency availability, sewer/water heater work, or best-reviewed option**.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 21,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -824,7 +732,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 24,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -857,106 +767,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-02",
-      "query": "who is the most reliable plumber in Berkeley?",
-      "engine": "openai",
-      "category": "plumbing service",
-      "answer": "Assuming you mean **Berkeley, California**, there isn’t one objectively “most reliable” plumber—and availability and reviews change. For a dependable choice, I’d shortlist **well-established, licensed local contractors** such as:\n\n- **Ongaro & Sons** — serves Berkeley and the broader East Bay; larger company with 24/7 service.\n- **Mr. Rooter Plumbing of the East Bay** — useful for emergency or drain work; confirm the specific technician and pricing.\n- **A highly rated Berkeley-area independent plumber** found through the **California Contractors State License Board** and recent Google reviews.\n\nBefore hiring, verify:\n\n1. **California contractor license** at [cslb.ca.gov](https://www.cslb.ca.gov) — for plumbing work over $500, look for a **C-36 plumbing license**.\n2. Recent reviews mentioning **fair pricing, punctuality, and no surprise charges**.\n3. A written **diagnosis and estimate before work begins**.\n4. Whether the plumber is insured and offers a workmanship warranty.\n\nFor a burst pipe or sewage backup, call the first licensed company with a clear emergency rate. For a non-emergency job, get **two or three written estimates**—that’s usually the best way to identify the reliable option.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-02",
-      "query": "who is the most reliable plumber in Berkeley?",
-      "engine": "perplexity",
-      "category": "plumbing service",
-      "answer": "There isn’t enough reliable evidence in the results to name a single **most reliable plumber** in Berkeley with confidence. The strongest signals in the search results point to **Pelican Plumbers** and **Berkeley Plumbing and Heating**, while **Diamond Certified** is the best source here for an aggregated reliability-style rating across Berkeley plumbers.[6][4][1]\n\nIf you want the safest short list, I’d prioritize these:\n- **Diamond Certified Berkeley plumbers** for the broadest third-party rating data, with an average of **4.4/5 stars** across **4,622 reviews** of **116** rated plumbers.[1]\n- **Pelican Plumbers** for strong public review volume and a **4.8 rating from 247 reviews** on Yelp.[6]\n- **Berkeley Plumbing and Heating** because it explicitly presents itself as a trusted local Berkeley provider, though the result shown does not include independent review counts.[4]\n\nIf you want, I can narrow this to the **best choice for a specific job** like a leak, water heater, sewer line, or emergency service.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-03",
-      "query": "emergency plumber in Berkeley",
-      "engine": "gemini_grounded",
-      "category": "plumbing service",
-      "answer": "If you're in Berkeley, CA, and need an emergency plumber, several companies offer 24/7 services to address urgent plumbing issues:\n\n*   **PRO Plumbers of Berkeley** provides 24/7 emergency repairs for leaks, clogs, water heaters, and more. You can reach them at (510) 686-6437. They serve Berkeley and Alameda County.\n*   **Roto-Rooter** operates 24 hours a day, 7 days a week, 365 days a year in Berkeley for plumbing emergencies like burst pipes, sewage backups, and major water leaks. You can call them at 510-542-5250.\n*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers emergency plumbing services nights, weekends, and holidays. They are a fourth-generation plumbing company and can be contacted for quick service.\n*   **Z and Z Plumbing** offers 24/7 emergency work across Berkeley and the East Bay. They typically reach Berkeley within 30 to 60 minutes for standard calls, with emergency response available every day of the year. You can call them at (510) 708-4237 for emergencies.\n*   **Big Blue Plumbing** provides 24-hour support for plumbing needs in Berkeley. You can contact them at (510) 939-7870.\n*   **Fito Plumbers** offers 24/7 emergency plumbing support in Berkeley for issues like burst pipes, sewer backups, or unexpected leaks.\n*   **Plumbers 911 Berkeley** connects homeowners and businesses to skilled plumbing technicians throughout Berkeley, IL, with an emergency line open 24/7.\n*   **Plumbing Patrol** offers 24/7 emergency plumbing and drain repairs and replacements for residential and commercial customers.\n*   **Green Eagle Plumbing** provides emergency plumbing services for urgent leaks, bursts, and floods.\n*   **Hilltown Plumbing** offers emergency plumbing, sewer and drain repair, water heater services, and repiping in Berkeley, CA. You can call them at (510) 559-0150.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 25,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -989,106 +802,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-03",
-      "query": "emergency plumber in Berkeley",
-      "engine": "openai",
-      "category": "plumbing service",
-      "answer": "If you mean **Berkeley, California**, take these steps now:\n\n1. **Shut off the water**\n   - Turn the fixture’s valve clockwise, or use your home’s main shutoff.\n   - If water is near outlets or appliances, shut off electricity to that area if safe.\n2. **Call a 24/7 emergency plumber**\n   - Search: **“24 hour emergency plumber Berkeley CA”** on Google Maps.\n   - Confirm the plumber is licensed, offers emergency service, and provides an upfront dispatch/diagnostic fee.\n3. **For a street or meter leak**, contact **East Bay MUD emergency service: 1-866-403-2683**.\n4. **Call 911** if there is dangerous flooding, sewage exposure, gas odor, or electrical danger. For a gas smell, leave immediately and call **PG&E at 1-800-743-5000** from outside.\n\nTell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell, or flooding—and I can help you decide the fastest next step.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-03",
-      "query": "emergency plumber in Berkeley",
-      "engine": "perplexity",
-      "category": "plumbing service",
-      "answer": "For an **emergency plumber in Berkeley, CA**, these companies advertise **24/7 or same-day emergency service**:\n\n- **Roto-Rooter Berkeley** — **510-542-5250**; says it operates **24/7, 365 days a year** in Berkeley and can typically send a technician within hours.[1]\n- **Alvin’s Plumbing** — **888-565-9676**; advertises **24/7 emergency plumbing** in Berkeley for burst pipes, sewage backups, leaks, and flooding.[2]\n- **AquaSaver Water Heaters / WaterHeaterBerkeley.com** — **(510) 345-2489**; says it is available **24/7** with quick response and live phone support.[3]\n- **Emergency Plumbing Squad** — **(855) 812-2311**; lists a Berkeley address at **1935 Addison St Suite A, Berkeley, CA 94704**.[10]\n- **Rooter Hero Plumbing & Air** — **510-768-7140**; says it offers **24-hour emergency service** in Berkeley and can dispatch a plumber within the hour.[11]\n- **Plumbing Patrol** — **510-857-5815**; lists emergency plumbing and drain repair services for Berkeley.[5]\n- **Lacayo-Colt Plumbing and Heating** — **(415) 726-8549**; says it handles emergency plumbing in Oakland, Berkeley, and nearby areas.[7]\n\nIf this is an urgent leak or burst pipe, the fastest first steps are to **shut off the main water supply** and move valuables away from standing water; if you smell gas, evacuate and contact PG&E from outside.[1]",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-04",
-      "query": "24 hour plumbing service Berkeley",
-      "engine": "gemini_grounded",
-      "category": "plumbing service",
-      "answer": "If you're in Berkeley and need a 24-hour plumbing service, several companies offer emergency assistance around the clock:\n\n*   **Roto-Rooter** provides 24/7 plumbing, drain cleaning, and water cleanup services in Berkeley. They are fully licensed and insured, and their technicians are equipped to handle emergencies like burst pipes, sewage backups, and major water leaks. You can reach them at 510-542-5250.\n*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers 24/7 emergency plumbing services, including nights, weekends, and holidays. They are a locally owned, fourth-generation plumbing company.\n*   **On Call Plumbers** offers fast 24/7 emergency plumbing services for homes and businesses in Berkeley. You can call them at (510) 370-0881 for immediate assistance with issues like broken pipes or overflowing sewer systems.\n*   **Berkeley Plumbing, Drain, and Rooter Pros** provides 24-hour emergency services. Their team is licensed, bonded, and insured, and they offer a range of services including frozen and broken pipe repairs, sewer and drain cleaning, and water heater installation and repair. You can contact them at (510) 605-4820.\n*   **Plumbing Patrol** offers 24/7 emergency plumbing, drain repairs, and replacements for residential and commercial customers in Berkeley.\n*   **Fito Plumbers** provides 24/7 emergency plumbing support in Berkeley for issues such as burst pipes, sewer backups, or unexpected leaks.\n*   **Big Blue Plumbing** offers 24-hour support for plumbing needs in Berkeley, handling everything from clogged drains to water heater issues. You can contact them at (510) 939-7870.\n*   **PRO Plumbers of Berkeley** has local, licensed plumbers available 24 hours a day for plumbing repair, installation, and maintenance needs across Berkeley and Alameda County.\n*   **Hilltown Plumbing** also provides emergency plumbing services in Berkeley, addressing urgent issues like leaks, sewer backups, and pressure problems.\n*   **Green Eagle Plumbing** offers emergency plumbing services, including rapid response for urgent leaks, bursts, and floods.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 29,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -1121,172 +837,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-04",
-      "query": "24 hour plumbing service Berkeley",
-      "engine": "openai",
-      "category": "plumbing service",
-      "answer": "If you mean **Berkeley, California**, for an emergency plumber:\n\n- Search Google Maps for **“24-hour emergency plumber Berkeley CA”** and confirm the business is currently open.\n- Nearby services may also dispatch from **Oakland, Emeryville, or San Francisco**, so expand the search area.\n- Before authorizing work, ask for the **dispatch fee, hourly rate, after-hours surcharge, license number, and estimated total**.\n- Verify California licensing through the **CSLB**: https://www.cslb.ca.gov\n\nFor immediate emergencies:\n1. Shut off your home’s main water valve.\n2. For a gas smell, leave immediately and call **911 or PG&E at 1-800-743-5000**—don’t use switches or flames.\n3. For a burst pipe, turn off electricity to the affected area if it’s safe.\n\nIf you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/country and I can narrow it down.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-04",
-      "query": "24 hour plumbing service Berkeley",
-      "engine": "perplexity",
-      "category": "plumbing service",
-      "answer": "If you need a **24-hour plumber in Berkeley**, several local companies advertise **around-the-clock emergency service**, including **Roto-Rooter** (510-542-5250), **Alvin’s Plumbing** (888-565-9676), **Rooter Hero** (510-768-7140), and **Capelli Plumbing** (510-677-3856).[1][2][3][14]\n\nA few other Berkeley-area options also list **24/7 emergency plumbing**:\n- **Plumbing Patrol** — 510-857-5815.[4]\n- **AquaSaver Water Heaters / Water Heater Berkeley** — (510) 345-2489.[5]\n- **Big Blue Plumbing** — (510) 939-7870.[13]\n- **Fito Plumbers** — 925-230-4286.[12]\n- **On Call Plumbers** — available 24 hours a day for emergency plumbing in Berkeley.[7]\n\nIf you want, I can also help you narrow this down by **best-reviewed**, **fastest-response**, or **closest to a specific Berkeley neighborhood**.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-05",
-      "query": "top rated drain cleaning in Berkeley",
-      "engine": "gemini_grounded",
-      "category": "plumbing service",
-      "answer": "When seeking top-rated drain cleaning services in Berkeley, CA, several companies consistently receive high marks for their expertise, customer service, and effective solutions. These include Capelli Plumbing, Mr. Rooter Plumbing of The Oakland-Berkeley Area, LJ Kruse, and Roto-Rooter.\n\n**Capelli Plumbing** is highly rated in Berkeley, CA, offering drain cleaning solutions at competitive rates. They utilize the latest technology to clear drains of debris, grease, roots, and rust build-up, aiming to rehabilitate existing drains and save customers money. With over 25 years of experience, owner James Capelli and his team are known for their honesty, professionalism, and efficient service, handling everything from garbage disposal installations to comprehensive plumbing needs.\n\n**Mr. Rooter Plumbing of The Oakland-Berkeley Area** is trusted by Berkeley homeowners for inspecting and cleaning drain lines to clear blockages and debris. They offer a complete process, from drainage assessment to ensuring seamless flow, and provide upfront pricing and emergency plumbing services 24 hours a day.\n\n**LJ Kruse** has been in business for over 100 years, proving their capability in solving plumbing problems, including stubborn clogged drains. They use the latest technology for pipe clearing, including sewer line cleaning, and are highly recommended for their responsive, knowledgeable, professional, and thorough technicians.\n\n**Roto-Rooter** in Berkeley, CA, offers top-notch plumbing and drain-cleaning services to both residents and businesses. With over 85 years of experience, their licensed and insured plumbers are available 24/7 for emergency services at no extra cost. They are highly rated on Google and are known for their powerful drain cleaning to clear clogs and restore flow.\n\nOther services mentioned for their positive reputation in the Berkeley area include:\n\n*   **PRO Plumbers of Berkeley** connects clients with skilled drain technicians who provide clear explanations, upfront estimates, and reliable workmanship, focusing on identifying the cause of blockages to prevent future issues.\n*   On platforms like HomeGuide and Thumbtack, services such as **VSA Construction**, **All Plumbing And Sewer**, **DC Construction**, **Norcal Installations**, **Tri-Valley Plumbing**, **New Century Marble & Granite**, **RP Construction**, and **Benjamin Franklin Plumbing Concord** are also listed among the top drain cleaning services, with homeowners praising their knowledge, experience, and communication. **Tidy Plumbing Inc.** also receives high praise for responsiveness, clear communication, competitive pricing, and professionalism.\n\nWhen choosing a drain cleaning service, it's recommended to review customer feedback on platforms like HomeGuide and Google, and to get quotes from a few local plumbers to ensure the best price and quality of service.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-05",
-      "query": "top rated drain cleaning in Berkeley",
-      "engine": "google_ai_mode",
-      "category": "plumbing service",
-      "answer": "Top-rated drain cleaning services in Berkeley, CA, for 2026, based on customer reviews and service reputation, include local specialists and highly-rated plumbing companies known for handling stubborn clogs and sewer line issues.[[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)\n\nTop-Rated Drain Cleaning Companies\n\n[Oakland Rooter Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHBIaCgNwdnESE0Nnd3ZaeTh4YUdNek1HNXlaM2cYCg) \r\n\r\n**Oakland Rooter & Plumbing** (4.9/5 stars, 1.6k+ reviews): Known for fast response times and comprehensive residential, commercial, and emergency drain cleaning.\n\n[Mr. Rooter Plumbing of The Oakland-Berkeley Area](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK) \r\n\r\n**Mr. Rooter Plumbing of The Oakland-Berkeley Area** (4.9/5 stars, 1.3k+ reviews): Highly rated for reliable service in the local area.\n\n[Wally&#39;s Plumbing &amp; Leak Detection](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaM1pITTJhbkpxGAo) \r\n\r\n**Wally’s Plumbing** (5.0/5 stars): Specializes in plumbing and leak detection, offering 18 years of experience.\n\n[Lifesaver Plumbing And Rooter](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVcxa1pqbHFjV1k1GAo) \r\n\r\n**Lifesaver Plumbing And Rooter** (5.0/5 stars): Highly rated for both water heater repairs and general rooter services.\n\nPro Drain Cleaning Of Berkeley Provides 24/7 emergency services, including rapid diagnosis and on-the-spot repairs for clogged drains.\n\n[Capelli Plumbing](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzeU16UjZjURgK) \r\n\r\nKnown for specialized services like hydro jetting, pipe descaling, and 24/7 emergency support.\n\n[Pipe Arts Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdvME9UVTVjbTR6GAo) \r\n\r\n**Pipe Arts Plumbing** (Recommended by parents network): Noted for being efficient, friendly, and specializing in older fixtures.[](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA) [[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[2]](https://www.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[3]](https://www.mrrooter.com/request-job-estimate/?utm_source=gmb&utm_medium=organic&utm_campaign=google_reserve&location=9386)[[4]](https://www.thumbtack.com/ca/berkeley/sewer-drain-cleaning)[[5]](https://www.thumbtack.com/ca/berkeley/drain-cleaning/wallys-plumbing/service/509067740351193089?utm_medium=partnership&utm_source=cma-google-ai)[[6]](https://m.yelp.com/search?find_desc=Sewer+Drain+Cleaning&find_loc=Berkeley%2C+CA)[[7]](https://prodraincleaningberkeley.com/)[[8]](https://www.capelliplumbing.com/plumbing-services/berkeley-ca)[[9]](https://www.capelliplumbing.com/hydro-jetting/berkeley-ca)[[10]](https://www.berkeleyparentsnetwork.org/recommend/home/plumber)\n\nCommon Services Offered\n\n- **Hydro Jetting:** High-pressure water cleaning to clear grease, roots, and debris.\n- **Rooter Services:** Clearing sewer line blockages from tree roots, common in the Berkeley Hills.\n- **Video Inspection:** Diagnosing complex, deep-set clogs.\n- **24/7 Emergency Response:** Available for severe backups and flooding.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://grayplumbing.com/berkeley-plumber/)[[2]](https://www.rotorooter.com/berkeleyca/)[[3]](https://homeguide.com/ca/berkeley/drain-cleaning/)[[4]](https://tuckerhillaz.com/plumbing/drain-cleaning-repair/)\n\nEstimated Costs (2026)\n\n- **Standard Drain Snake:** $100 - $300.\n- **General Drain Cleaning:** $150 - $450.\n- **Complex/Heavy Duty:** Higher rates for services like hydro jetting.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://johnnyrooter.com/blog/how-much-does-it-cost-to-snake-a-drain/)[[2]](https://modernize.com/plumbing/best-plumbing-companies/roto-rooter)[[3]](https://idahodrainpros.com/locations/drain-cleaning-in-genesee)[[4]](https://www.josesplumbingrooter.com/hydro-jetting---complex-drain-cleaning)\n\nFor urgent needs, Pro Drain Cleaning of Berkeley offers 24-hour service.[](https://prodraincleaningberkeley.com/) \n\nWould you like recommendations for **preventative sewer maintenance** (like root maintenance) or do you need **emergency service for an active clog** right now?",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
-    },
-    {
-      "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
-      "query_id": "loc-05",
-      "query": "top rated drain cleaning in Berkeley",
-      "engine": "openai",
-      "category": "plumbing service",
-      "answer": "Assuming you mean **Berkeley, California**, these are commonly well-reviewed options to check for drain cleaning:\n\n- **Ace Plumbing & Rooter** — local plumbing and sewer/drain service  \n- **All Service Plumbing** — drain cleaning and plumbing repairs in the East Bay  \n- **Mr. Rooter Plumbing of the East Bay** — established chain with upfront estimates  \n- **Roto-Rooter (Oakland/East Bay)** — 24/7 availability; often useful for emergencies  \n- **Berkeley Home Repair / local licensed plumbers** — good for smaller residential drain issues\n\nBefore booking, verify current **Google/Yelp ratings**, California contractor license status, trip fees, and whether the quote includes a **camera inspection**. For recurring clogs, ask for **hydro-jetting** or sewer-line inspection rather than repeated snaking.\n\nIf you share your **ZIP code and whether it’s an emergency**, I can narrow this to the best nearby choices.",
-      "client": "Albert Nahman Plumbing",
-      "competitors": [
-        "LemonTree Plumbing",
-        "J J Rooter & Plumbing"
-      ],
-      "fact_sheet": "# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing\n\n> **Meta**\n> - Domain: albertnahmanplumbing.com\n> - Business kind: local_service · Status: draft · Version: 1\n> - Generated: 2026-07-31T20:00:00+00:00 · Weakest verification: public_source_only\n> - Claims: 10 · Open questions: 3\n\n**10 of 10 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).\n\n---\n\n## A · Identity & basics\n\n- **identity_name:** Albert Nahman Plumbing, Heating, and Cooling. — **UNCONFIRMED** — one public source [`FS-01`]\n- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]\n\n## B · Contact & location → `wrong_contact`\n\n- **contact_phone:** The published phone number is (510) 408-7879. — **UNCONFIRMED** — one public source [`FS-03`]\n- **contact_address_berkeley:** The Berkeley office is at 3333 Martin Luther King Jr. Way, Berkeley, CA 94703. — **UNCONFIRMED** — one public source [`FS-04`]\n- **contact_address_hayward:** A second office is at 2616 Barrington Court, Hayward, CA 94545, which is also the mailing address. — **UNCONFIRMED** — one public source [`FS-05`]\n- **contact_offices:** There are two offices: Berkeley and Hayward. No other location is claimed. — **UNCONFIRMED** — one public source [`FS-06`]\n\n## C · Hours & availability → `wrong_hours`\n\n- **hours_answering:** The site advertises 24/7 live phone answering. This is ANSWERING, not a claim that technicians are dispatched or that an office is open 24 hours. — **UNCONFIRMED** — one public source [`FS-07`]\n\n## D · Service area → `wrong_service_area`\n\n- **service_area_primary:** Berkeley, California. — **UNCONFIRMED** — one public source [`FS-08`]\n\n## E · Licensing, insurance & credentials → `licensing`\n\n- **licensing_number:** California contractor license #1083634, as published on the site. — **UNCONFIRMED** — one public source [`FS-09`]\n- **licensing_ownership:** Locally owned and operated. — **UNCONFIRMED** — one public source [`FS-10`]\n\n---\n\n## Open questions\n\n*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*\n\n1. OPENING HOURS ARE NOT PUBLISHED ANYWHERE ON THE SITE. The site advertises '24/7 Live Answering' (answering, not dispatch) and no day/time table exists. Ask the owner for real service hours and whether 24/7 dispatch is genuinely offered — until then NO hours claim may be added, and an answer stating specific opening hours is unverifiable rather than wrong.\n2. A second phone number, (510) 295-0534, appears on some service pages while the homepage, the contact page and the footer all publish (510) 408-7879. Is 295-0534 a live line, a call-tracking number, or stale? (plan §4.3 — recorded, not chosen)\n3. The service-area page lists many towns beyond Berkeley and Hayward. Confirm the real dispatch radius before any wrong_service_area flag can be graded.\n\n---\n\n## Provenance appendix\n\n*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*\n\n| claim_id | quote | source_url | as_of | verification |\n|---|---|---|---|---|\n| FS-01 | Albert Nahman Plumbing, Heating, and Cooling | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-03 | (510) 408-7879 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-04 | 3333 Martin Luther King Jr. Way Berkeley, CA 94703 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-05 | 2616 Barrington Court Hayward, CA 94545 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-06 | With 2 offices around the region | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-07 | 24/7 Live Answering | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-08 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-09 | License: #1083634 | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n| FS-10 | Locally Owned & Operated | https://albertnahmanplumbing.com/contact/ | 2026-07-31 | public_source_only (UNCONFIRMED) |\n",
-      "labels": {
-        "Albert Nahman Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "LemonTree Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        },
-        "J J Rooter & Plumbing": {
-          "present": false,
-          "prominence": "absent",
-          "framing": "neutral"
-        }
-      },
-      "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 33,
+      "_kind": "mention"
     },
     {
       "_todo": "LABEL ME: set present/prominence/framing per brand; list real client errors in expected_flags; note uncovered claims in fact_sheet_candidates.",
@@ -1319,7 +872,9 @@
         }
       },
       "expected_flags": [],
-      "fact_sheet_candidates": []
+      "fact_sheet_candidates": [],
+      "_source_index": 39,
+      "_kind": "mention"
     }
   ]
 }

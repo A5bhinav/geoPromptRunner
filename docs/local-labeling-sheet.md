@@ -1,6 +1,6 @@
 # Albert Nahman Plumbing — Gold-Set Labeling Sheet
 
-40 answers to label. Work down the file; items are **grouped by question**, so you read all four engines' answers to one query together and judge them consistently.
+25 answers to label. Work down the file; items are **grouped by question**, so you read all four engines' answers to one query together and judge them consistently.
 
 Edit only the cells inside the `<!-- LABELS -->` markers — leave the markers alone, they are how the sheet is read back. Pipe alignment does not matter; `|Acme|yes|mid_pack|positive|` parses fine.
 
@@ -108,12 +108,12 @@ A flag needs a line in the fact sheet below that the answer **contradicts**. If 
 | Albert Nahman Plumbing reviews and complaints | 4, 5, 6, 7 | gemini_grounded, google_ai_mode, openai, perplexity |
 | is Albert Nahman Plumbing licensed and insured? | 8, 9, 10, 11 | gemini_grounded, google_ai_mode, openai, perplexity |
 | how much does a plumber cost in Berkeley? | 12, 13, 14, 15 | gemini_grounded, google_ai_mode, openai, perplexity |
-| why is my water pressure suddenly low? | 16, 17, 18, 19 | gemini_grounded, google_ai_mode, openai, perplexity |
-| best plumber in Berkeley | 20, 21, 22, 23 | gemini_grounded, google_ai_mode, openai, perplexity |
-| who is the most reliable plumber in Berkeley? | 24, 25, 26, 27 | gemini_grounded, google_ai_mode, openai, perplexity |
-| emergency plumber in Berkeley | 28, 29, 30, 31 | gemini_grounded, google_ai_mode, openai, perplexity |
-| 24 hour plumbing service Berkeley | 32, 33, 34, 35 | gemini_grounded, google_ai_mode, openai, perplexity |
-| top rated drain cleaning in Berkeley | 36, 37, 38, 39 | gemini_grounded, google_ai_mode, openai, perplexity |
+| why is my water pressure suddenly low? | 16, 17 | openai, perplexity |
+| best plumber in Berkeley | 18, 19 | gemini_grounded, google_ai_mode |
+| who is the most reliable plumber in Berkeley? | 20, 21 | gemini_grounded, google_ai_mode |
+| emergency plumber in Berkeley | 22 | google_ai_mode |
+| 24 hour plumbing service Berkeley | 23 | google_ai_mode |
+| top rated drain cleaning in Berkeley | 24 | perplexity |
 
 ---
 
@@ -1093,176 +1093,11 @@ If you want, I can also estimate the cost for a **specific plumbing job** in Ber
 
 # Question: why is my water pressure suddenly low?
 
-## Item 16 · `gemini_grounded`
+## Item 16 · `openai`
 
 > why is my water pressure suddenly low?
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-A sudden drop in water pressure can be a frustrating issue, and its cause can range from simple, localized problems to more complex system-wide concerns. Identifying whether the low pressure affects a single fixture, only hot water, or your entire home is the first step in pinpointing the problem.
-
-Here are the most common reasons for sudden low water pressure:
-
-**1. Issues Affecting Your Entire Home's Water Pressure:**
-*   **Partially Closed Main Water Shut-Off Valve:** The main shut-off valve controls all water entering your home. If it's not fully open, it restricts the overall water flow and pressure to all fixtures. This can happen accidentally after a repair or if the valve mechanism drifts over time. For a ball valve, the handle should be parallel to the pipe when fully open; for a gate valve (round handle), turn it counterclockwise until it stops, then back it off a quarter turn.
-*   **Faulty Pressure Regulator (PRV):** Many homes have a pressure-reducing valve (PRV) that lowers the high water pressure coming from the municipal supply to a safer level for your home's plumbing. If this regulator malfunctions, it can cause a sudden drop or fluctuation in water pressure throughout the house.
-*   **Hidden Plumbing Leaks:** Even small leaks in your plumbing system can significantly reduce water pressure by diverting water before it reaches your fixtures. Look for signs like damp spots on walls or ceilings, mold growth, or an unusually high water bill. You can check for a leak by turning off all water-using appliances and taps, then checking your water meter. If the meter dial changes, you likely have a leak.
-*   **Corroded or Clogged Pipes:** Over time, mineral deposits, rust, and debris can build up inside pipes, especially in older homes with galvanized steel pipes, restricting water flow and causing low pressure.
-*   **Municipal Water Supply Issues:** Problems with your city's water supply, such as a water main break, maintenance work, or unusually high demand in your area (e.g., during hot, dry summer months), can lead to a temporary drop in water pressure for multiple homes. Checking with neighbors can help determine if this is the cause.
-*   **Water Meter Valve Partially Closed:** Similar to your main shut-off valve, the valve at your water meter can also be partially closed, restricting water flow into your home. However, it's generally not recommended to partially close this valve as it can cause damage.
-
-**2. Issues Affecting Only Hot Water Pressure:**
-If only your hot water has low pressure, the problem is likely related to your water heater or the hot water plumbing.
-*   **Sediment Buildup in Water Heater:** Minerals in hard water can settle at the bottom of your water heater tank and accumulate in the outlet pipes, restricting hot water flow and reducing pressure.
-*   **Partially Closed Shut-Off Valve at Water Heater:** A shut-off valve near your water heater that is not fully open can restrict the hot water supply.
-*   **Corroded Hot Water Pipes:** Similar to general pipe corrosion, specific hot water lines can corrode and restrict flow.
-*   **Faulty Mixing Valve or Water Heater Components:** A malfunctioning mixing valve (also called a tempering valve) or other internal water heater components can restrict hot water flow.
-
-**3. Issues Affecting a Single Faucet or Fixture:**
-If only one faucet or shower has low pressure, the problem is usually with that specific fixture.
-*   **Clogged Faucet Aerator or Showerhead:** Mineral deposits, dirt, and debris can build up in the aerator (the screen at the end of a faucet) or showerhead, restricting water flow. Cleaning or replacing the aerator is often an easy and inexpensive fix.
-*   **Clogged Faucet Cartridge:** The internal cartridge in a faucet can also become clogged.
-
-**4. Issues Specific to Well Water Systems:**
-If your home uses a well, low water pressure can be caused by:
-*   **Pressure Switch Problems:** The pressure switch tells your well pump when to turn on and off. If it's set too low or is failing, it can lead to low pressure.
-*   **Waterlogged Pressure Tank:** A pressure tank that has lost its air charge can cause inconsistent water flow and pressure fluctuations.
-*   **Clogged Sediment Filter:** A dirty whole-house sediment filter can restrict water flow from the well.
-*   **Worn Well Pump:** An aging or failing well pump may not be able to generate enough pressure.
-*   **Low Water Level in Well:** If the water level in your well is too low, the pump may pull air, reducing effective pressure.
-
-To diagnose the problem, it's recommended to first determine if the low pressure is isolated to one fixture, only hot water, or the entire house. If the issue affects your whole home or you suspect a more serious plumbing problem, contacting a professional plumber is advisable.
-```
-
-</details>
-
-<!-- LABELS item=16 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=16 -->
-
----
-
-## Item 17 · `google_ai_mode`
-
-> why is my water pressure suddenly low?
-
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-A sudden drop in water pressure is usually caused by a **hidden leak** , a **partially closed main valve** , a **failing pressure regulator (PRV)** , or **issues with the municipal water supply**.[](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/) [[1]](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/)[[2]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)
-
-Here is a breakdown of why this happens and how to narrow it down based on the search results:
-
-1. Check for "Whole House" vs. "Single Fixture" Issues
-
-- **If all faucets are slow:** The issue is likely the main water supply, the main shutoff valve, or a malfunctioning Pressure Reducing Valve (PRV).[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system)
-- **If only one faucet/shower is slow:** It is likely a clogged faucet aerator or showerhead, or a faulty, partially closed valve under the sink.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/)[[2]](https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low)
-
-2. Common Causes of Sudden Low Pressure
-
-- **Partially Closed Valves:** Check your main shutoff valve (often in the basement, garage, or near the water meter) to ensure it is fully open.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://lorenzphac.com/blog/low-water-pressure-in-house/)[[2]](https://fclwd.com/blog-low-water-pressure-causes-and-fixes/)[[3]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[4]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)
-- **Failing Pressure Regulator (PRV):** If your home has a PRV (usually located near the main shutoff), it may have failed, leading to a sudden drop in pressure.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://totalmechanicalcare.com/blog/5-reasons-your-water-pressure-changed-suddenly-and-what-to-do)
-- **Hidden Leaks:** A broken pipe (especially underground) can drastically reduce pressure. Look for water stains on walls, wet spots in the yard, or a rapidly ticking water meter.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://jayceeplumbing.com.au/is-your-weak-water-pressure-driving-you-crazy/)[[2]](https://www.patioandpizza.com/blogs/resources/how-to-fix-water-pressure-problems-in-your-outdoor-kitchen?srsltid=AfmBOoo-1_Ix-_sL2cj-jQgN8q19CLa5LEFSVyIZZ75DIjFDV4lWJ_JE)[[3]](https://www.leadingplumbingservices.com/when-every-faucet-feels-weak-at-the-same-time-its-not-a-coincidence)
-- **Water Main Break/Municipal Demand:** If your neighbors are experiencing the same issue, it is likely a municipal issue, such as a water main break or high demand.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) 
-- **Water Softener/Filter Clogs:** A malfunctioning water softener or clogged sediment filter can block water flow.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://dscwater.com/articles/low-water-pressure-on-well-water-7-common-causes-and-what-actually-fixes-them/)
-
-3. If Only Hot Water is Low
-
-If cold water pressure is fine, but hot water is low, the issue is typically:[[1]](https://www.tnstandard.com/causes-drops-water-pressure/)
-
-- **Sediment Buildup in the Water Heater:** Minerals (calcium) can settle in the tank, clogging the hot water outlet.
-- **A Closed Heater Valve:** Ensure the valves feeding the water heater are fully open.[](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66) [[1]](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66)[[2]](https://www.tnstandard.com/causes-drops-water-pressure/)
-
-4. What to Do
-
-1. **Ask neighbors** if they have low pressure to rule out municipal issues.
-2. **Check your main shutoff valve** to ensure it hasn't been accidentally turned.
-3. **Check your water meter** while all fixtures are off to check for leaks.
-4. **Clean your faucet aerators** by soaking them in vinegar to remove mineral buildup.[](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/) [[1]](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/)[[2]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[3]](https://www.coolwichita.com/blog/low-water-pressure-repair)
-
-If all fixtures are affected and your main valve is open, you likely need a professional plumber to inspect the pressure regulator or look for a major leak.[](https://www.tnstandard.com/causes-drops-water-pressure/) [[1]](https://stevebennettplumbing.com.au/blog/plumber/information/what-causes-low-water-pressure/)[[2]](https://www.sobieskiinc.com/blog/common-water-pressure-problems-and-how-solve-them/)
-
-To help narrow down the cause, could you tell me:
-
-- Is the low pressure affecting the **whole house** or just one area/floor?
-- Is it only the **hot water** , or both?
-- Do you have a **well or city water**?
-
-I can give you more specific troubleshooting steps based on these details.
-```
-
-</details>
-
-<!-- LABELS item=17 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=17 -->
-
----
-
-## Item 18 · `openai`
-
-> why is my water pressure suddenly low?
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1302,7 +1137,7 @@ If you rent, contact the landlord. Otherwise, check your water utility’s outag
 
 </details>
 
-<!-- LABELS item=18 -->
+<!-- LABELS item=16 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1324,15 +1159,15 @@ If you rent, contact the landlord. Otherwise, check your water utility’s outag
 
 ```
 
-<!-- /LABELS item=18 -->
+<!-- /LABELS item=16 -->
 
 ---
 
-## Item 19 · `perplexity`
+## Item 17 · `perplexity`
 
 > why is my water pressure suddenly low?
 
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 2 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1367,7 +1202,7 @@ If you want, I can walk you through a quick **5-minute troubleshooting checklist
 
 </details>
 
-<!-- LABELS item=19 -->
+<!-- LABELS item=17 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1389,17 +1224,17 @@ If you want, I can walk you through a quick **5-minute troubleshooting checklist
 
 ```
 
-<!-- /LABELS item=19 -->
+<!-- /LABELS item=17 -->
 
 ---
 
 # Question: best plumber in Berkeley
 
-## Item 20 · `gemini_grounded`
+## Item 18 · `gemini_grounded`
 
 > best plumber in Berkeley
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1430,7 +1265,7 @@ When choosing a plumber, it's always advisable to consider the specific nature o
 
 </details>
 
-<!-- LABELS item=20 -->
+<!-- LABELS item=18 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1452,15 +1287,15 @@ When choosing a plumber, it's always advisable to consider the specific nature o
 
 ```
 
-<!-- /LABELS item=20 -->
+<!-- /LABELS item=18 -->
 
 ---
 
-## Item 21 · `google_ai_mode`
+## Item 19 · `google_ai_mode`
 
 > best plumber in Berkeley
 
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 2 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1521,7 +1356,7 @@ Are you dealing with an **emergency** , such as a **burst pipe** or **major clog
 
 </details>
 
-<!-- LABELS item=21 -->
+<!-- LABELS item=19 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1543,130 +1378,17 @@ Are you dealing with an **emergency** , such as a **burst pipe** or **major clog
 
 ```
 
-<!-- /LABELS item=21 -->
-
----
-
-## Item 22 · `openai`
-
-> best plumber in Berkeley
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you mean **Berkeley, California**, the “best” plumber depends on the job and urgency. I’d compare highly rated local companies on **Google Maps and Yelp**, then verify:
-
-- **California C-36 plumbing license** through the CSLB  
-- Proof of insurance and written estimate  
-- Emergency/after-hours fees  
-- Warranty on labor and parts  
-- Recent reviews mentioning your specific issue
-
-For a **sewer line, repipe, gas line, or major remodel**, get at least **2–3 written bids**. For a small leak or clogged drain, choose a well-reviewed local plumber with a clear service-call fee rather than the cheapest ad.
-
-If you share your **Berkeley ZIP code, plumbing problem, and whether it’s urgent**, I can help narrow down the best options.
-```
-
-</details>
-
-<!-- LABELS item=22 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=22 -->
-
----
-
-## Item 23 · `perplexity`
-
-> best plumber in Berkeley
-
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you want the **best plumber in Berkeley** based on the search results, **Pat O’Neill Plumbing** is the strongest candidate because it has a dedicated Berkeley profile, a local Berkeley address, and a clear business phone number.[2]
-
-A few other notable options from the results are:
-
-- **Prime Time Plumbing** — shows a **5.0 rating** on Yelp with 6 reviews, which is a strong signal of customer satisfaction, though the review count is still small.[5]
-- **One Step Plumbing** — appears in Expertise’s curated list of top Berkeley plumbers and has a Berkeley address, which suggests local presence and recognition.[1]
-- **Fito Plumbers** — lists Berkeley as a service location and is presented as a trusted plumbing option.[3]
-- **AquaSaver Water Heaters** — advertises 24/7 availability and quick response times, which may be useful if you need emergency service.[4]
-
-If you want, I can also narrow this down by **emergency availability, sewer/water heater work, or best-reviewed option**.
-```
-
-</details>
-
-<!-- LABELS item=23 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=23 -->
+<!-- /LABELS item=19 -->
 
 ---
 
 # Question: who is the most reliable plumber in Berkeley?
 
-## Item 24 · `gemini_grounded`
+## Item 20 · `gemini_grounded`
 
 > who is the most reliable plumber in Berkeley?
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1702,7 +1424,7 @@ When choosing a plumber, it's advisable to consider factors such as their respon
 
 </details>
 
-<!-- LABELS item=24 -->
+<!-- LABELS item=20 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1724,15 +1446,15 @@ When choosing a plumber, it's advisable to consider factors such as their respon
 
 ```
 
-<!-- /LABELS item=24 -->
+<!-- /LABELS item=20 -->
 
 ---
 
-## Item 25 · `google_ai_mode`
+## Item 21 · `google_ai_mode`
 
 > who is the most reliable plumber in Berkeley?
 
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 2 of 2 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -1829,7 +1551,7 @@ Let me know, and I can narrow down the best option for you.
 
 </details>
 
-<!-- LABELS item=25 -->
+<!-- LABELS item=21 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -1851,189 +1573,17 @@ Let me know, and I can narrow down the best option for you.
 
 ```
 
-<!-- /LABELS item=25 -->
-
----
-
-## Item 26 · `openai`
-
-> who is the most reliable plumber in Berkeley?
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-Assuming you mean **Berkeley, California**, there isn’t one objectively “most reliable” plumber—and availability and reviews change. For a dependable choice, I’d shortlist **well-established, licensed local contractors** such as:
-
-- **Ongaro & Sons** — serves Berkeley and the broader East Bay; larger company with 24/7 service.
-- **Mr. Rooter Plumbing of the East Bay** — useful for emergency or drain work; confirm the specific technician and pricing.
-- **A highly rated Berkeley-area independent plumber** found through the **California Contractors State License Board** and recent Google reviews.
-
-Before hiring, verify:
-
-1. **California contractor license** at [cslb.ca.gov](https://www.cslb.ca.gov) — for plumbing work over $500, look for a **C-36 plumbing license**.
-2. Recent reviews mentioning **fair pricing, punctuality, and no surprise charges**.
-3. A written **diagnosis and estimate before work begins**.
-4. Whether the plumber is insured and offers a workmanship warranty.
-
-For a burst pipe or sewage backup, call the first licensed company with a clear emergency rate. For a non-emergency job, get **two or three written estimates**—that’s usually the best way to identify the reliable option.
-```
-
-</details>
-
-<!-- LABELS item=26 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=26 -->
-
----
-
-## Item 27 · `perplexity`
-
-> who is the most reliable plumber in Berkeley?
-
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-There isn’t enough reliable evidence in the results to name a single **most reliable plumber** in Berkeley with confidence. The strongest signals in the search results point to **Pelican Plumbers** and **Berkeley Plumbing and Heating**, while **Diamond Certified** is the best source here for an aggregated reliability-style rating across Berkeley plumbers.[6][4][1]
-
-If you want the safest short list, I’d prioritize these:
-- **Diamond Certified Berkeley plumbers** for the broadest third-party rating data, with an average of **4.4/5 stars** across **4,622 reviews** of **116** rated plumbers.[1]
-- **Pelican Plumbers** for strong public review volume and a **4.8 rating from 247 reviews** on Yelp.[6]
-- **Berkeley Plumbing and Heating** because it explicitly presents itself as a trusted local Berkeley provider, though the result shown does not include independent review counts.[4]
-
-If you want, I can narrow this to the **best choice for a specific job** like a leak, water heater, sewer line, or emergency service.
-```
-
-</details>
-
-<!-- LABELS item=27 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=27 -->
+<!-- /LABELS item=21 -->
 
 ---
 
 # Question: emergency plumber in Berkeley
 
-## Item 28 · `gemini_grounded`
+## Item 22 · `google_ai_mode`
 
 > emergency plumber in Berkeley
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you're in Berkeley, CA, and need an emergency plumber, several companies offer 24/7 services to address urgent plumbing issues:
-
-*   **PRO Plumbers of Berkeley** provides 24/7 emergency repairs for leaks, clogs, water heaters, and more. You can reach them at (510) 686-6437. They serve Berkeley and Alameda County.
-*   **Roto-Rooter** operates 24 hours a day, 7 days a week, 365 days a year in Berkeley for plumbing emergencies like burst pipes, sewage backups, and major water leaks. You can call them at 510-542-5250.
-*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers emergency plumbing services nights, weekends, and holidays. They are a fourth-generation plumbing company and can be contacted for quick service.
-*   **Z and Z Plumbing** offers 24/7 emergency work across Berkeley and the East Bay. They typically reach Berkeley within 30 to 60 minutes for standard calls, with emergency response available every day of the year. You can call them at (510) 708-4237 for emergencies.
-*   **Big Blue Plumbing** provides 24-hour support for plumbing needs in Berkeley. You can contact them at (510) 939-7870.
-*   **Fito Plumbers** offers 24/7 emergency plumbing support in Berkeley for issues like burst pipes, sewer backups, or unexpected leaks.
-*   **Plumbers 911 Berkeley** connects homeowners and businesses to skilled plumbing technicians throughout Berkeley, IL, with an emergency line open 24/7.
-*   **Plumbing Patrol** offers 24/7 emergency plumbing and drain repairs and replacements for residential and commercial customers.
-*   **Green Eagle Plumbing** provides emergency plumbing services for urgent leaks, bursts, and floods.
-*   **Hilltown Plumbing** offers emergency plumbing, sewer and drain repair, water heater services, and repiping in Berkeley, CA. You can call them at (510) 559-0150.
-```
-
-</details>
-
-<!-- LABELS item=28 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=28 -->
-
----
-
-## Item 29 · `google_ai_mode`
-
-> emergency plumber in Berkeley
-
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 1 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -2096,7 +1646,7 @@ Would you like to see **customer reviews** for a specific company, or are you lo
 
 </details>
 
-<!-- LABELS item=29 -->
+<!-- LABELS item=22 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -2118,190 +1668,17 @@ Would you like to see **customer reviews** for a specific company, or are you lo
 
 ```
 
-<!-- /LABELS item=29 -->
-
----
-
-## Item 30 · `openai`
-
-> emergency plumber in Berkeley
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you mean **Berkeley, California**, take these steps now:
-
-1. **Shut off the water**
-   - Turn the fixture’s valve clockwise, or use your home’s main shutoff.
-   - If water is near outlets or appliances, shut off electricity to that area if safe.
-2. **Call a 24/7 emergency plumber**
-   - Search: **“24 hour emergency plumber Berkeley CA”** on Google Maps.
-   - Confirm the plumber is licensed, offers emergency service, and provides an upfront dispatch/diagnostic fee.
-3. **For a street or meter leak**, contact **East Bay MUD emergency service: 1-866-403-2683**.
-4. **Call 911** if there is dangerous flooding, sewage exposure, gas odor, or electrical danger. For a gas smell, leave immediately and call **PG&E at 1-800-743-5000** from outside.
-
-Tell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell, or flooding—and I can help you decide the fastest next step.
-```
-
-</details>
-
-<!-- LABELS item=30 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=30 -->
-
----
-
-## Item 31 · `perplexity`
-
-> emergency plumber in Berkeley
-
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-For an **emergency plumber in Berkeley, CA**, these companies advertise **24/7 or same-day emergency service**:
-
-- **Roto-Rooter Berkeley** — **510-542-5250**; says it operates **24/7, 365 days a year** in Berkeley and can typically send a technician within hours.[1]
-- **Alvin’s Plumbing** — **888-565-9676**; advertises **24/7 emergency plumbing** in Berkeley for burst pipes, sewage backups, leaks, and flooding.[2]
-- **AquaSaver Water Heaters / WaterHeaterBerkeley.com** — **(510) 345-2489**; says it is available **24/7** with quick response and live phone support.[3]
-- **Emergency Plumbing Squad** — **(855) 812-2311**; lists a Berkeley address at **1935 Addison St Suite A, Berkeley, CA 94704**.[10]
-- **Rooter Hero Plumbing & Air** — **510-768-7140**; says it offers **24-hour emergency service** in Berkeley and can dispatch a plumber within the hour.[11]
-- **Plumbing Patrol** — **510-857-5815**; lists emergency plumbing and drain repair services for Berkeley.[5]
-- **Lacayo-Colt Plumbing and Heating** — **(415) 726-8549**; says it handles emergency plumbing in Oakland, Berkeley, and nearby areas.[7]
-
-If this is an urgent leak or burst pipe, the fastest first steps are to **shut off the main water supply** and move valuables away from standing water; if you smell gas, evacuate and contact PG&E from outside.[1]
-```
-
-</details>
-
-<!-- LABELS item=31 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=31 -->
+<!-- /LABELS item=22 -->
 
 ---
 
 # Question: 24 hour plumbing service Berkeley
 
-## Item 32 · `gemini_grounded`
+## Item 23 · `google_ai_mode`
 
 > 24 hour plumbing service Berkeley
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you're in Berkeley and need a 24-hour plumbing service, several companies offer emergency assistance around the clock:
-
-*   **Roto-Rooter** provides 24/7 plumbing, drain cleaning, and water cleanup services in Berkeley. They are fully licensed and insured, and their technicians are equipped to handle emergencies like burst pipes, sewage backups, and major water leaks. You can reach them at 510-542-5250.
-*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers 24/7 emergency plumbing services, including nights, weekends, and holidays. They are a locally owned, fourth-generation plumbing company.
-*   **On Call Plumbers** offers fast 24/7 emergency plumbing services for homes and businesses in Berkeley. You can call them at (510) 370-0881 for immediate assistance with issues like broken pipes or overflowing sewer systems.
-*   **Berkeley Plumbing, Drain, and Rooter Pros** provides 24-hour emergency services. Their team is licensed, bonded, and insured, and they offer a range of services including frozen and broken pipe repairs, sewer and drain cleaning, and water heater installation and repair. You can contact them at (510) 605-4820.
-*   **Plumbing Patrol** offers 24/7 emergency plumbing, drain repairs, and replacements for residential and commercial customers in Berkeley.
-*   **Fito Plumbers** provides 24/7 emergency plumbing support in Berkeley for issues such as burst pipes, sewer backups, or unexpected leaks.
-*   **Big Blue Plumbing** offers 24-hour support for plumbing needs in Berkeley, handling everything from clogged drains to water heater issues. You can contact them at (510) 939-7870.
-*   **PRO Plumbers of Berkeley** has local, licensed plumbers available 24 hours a day for plumbing repair, installation, and maintenance needs across Berkeley and Alameda County.
-*   **Hilltown Plumbing** also provides emergency plumbing services in Berkeley, addressing urgent issues like leaks, sewer backups, and pressure problems.
-*   **Green Eagle Plumbing** offers emergency plumbing services, including rapid response for urgent leaks, bursts, and floods.
-```
-
-</details>
-
-<!-- LABELS item=32 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=32 -->
-
----
-
-## Item 33 · `google_ai_mode`
-
-> 24 hour plumbing service Berkeley
-
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 1 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -2341,7 +1718,7 @@ To help you get the **fastest service** , are you experiencing a **specific emer
 
 </details>
 
-<!-- LABELS item=33 -->
+<!-- LABELS item=23 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -2363,343 +1740,17 @@ To help you get the **fastest service** , are you experiencing a **specific emer
 
 ```
 
-<!-- /LABELS item=33 -->
-
----
-
-## Item 34 · `openai`
-
-> 24 hour plumbing service Berkeley
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you mean **Berkeley, California**, for an emergency plumber:
-
-- Search Google Maps for **“24-hour emergency plumber Berkeley CA”** and confirm the business is currently open.
-- Nearby services may also dispatch from **Oakland, Emeryville, or San Francisco**, so expand the search area.
-- Before authorizing work, ask for the **dispatch fee, hourly rate, after-hours surcharge, license number, and estimated total**.
-- Verify California licensing through the **CSLB**: https://www.cslb.ca.gov
-
-For immediate emergencies:
-1. Shut off your home’s main water valve.
-2. For a gas smell, leave immediately and call **911 or PG&E at 1-800-743-5000**—don’t use switches or flames.
-3. For a burst pipe, turn off electricity to the affected area if it’s safe.
-
-If you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/country and I can narrow it down.
-```
-
-</details>
-
-<!-- LABELS item=34 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=34 -->
-
----
-
-## Item 35 · `perplexity`
-
-> 24 hour plumbing service Berkeley
-
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-If you need a **24-hour plumber in Berkeley**, several local companies advertise **around-the-clock emergency service**, including **Roto-Rooter** (510-542-5250), **Alvin’s Plumbing** (888-565-9676), **Rooter Hero** (510-768-7140), and **Capelli Plumbing** (510-677-3856).[1][2][3][14]
-
-A few other Berkeley-area options also list **24/7 emergency plumbing**:
-- **Plumbing Patrol** — 510-857-5815.[4]
-- **AquaSaver Water Heaters / Water Heater Berkeley** — (510) 345-2489.[5]
-- **Big Blue Plumbing** — (510) 939-7870.[13]
-- **Fito Plumbers** — 925-230-4286.[12]
-- **On Call Plumbers** — available 24 hours a day for emergency plumbing in Berkeley.[7]
-
-If you want, I can also help you narrow this down by **best-reviewed**, **fastest-response**, or **closest to a specific Berkeley neighborhood**.
-```
-
-</details>
-
-<!-- LABELS item=35 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=35 -->
+<!-- /LABELS item=23 -->
 
 ---
 
 # Question: top rated drain cleaning in Berkeley
 
-## Item 36 · `gemini_grounded`
+## Item 24 · `perplexity`
 
 > top rated drain cleaning in Berkeley
 
-*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-When seeking top-rated drain cleaning services in Berkeley, CA, several companies consistently receive high marks for their expertise, customer service, and effective solutions. These include Capelli Plumbing, Mr. Rooter Plumbing of The Oakland-Berkeley Area, LJ Kruse, and Roto-Rooter.
-
-**Capelli Plumbing** is highly rated in Berkeley, CA, offering drain cleaning solutions at competitive rates. They utilize the latest technology to clear drains of debris, grease, roots, and rust build-up, aiming to rehabilitate existing drains and save customers money. With over 25 years of experience, owner James Capelli and his team are known for their honesty, professionalism, and efficient service, handling everything from garbage disposal installations to comprehensive plumbing needs.
-
-**Mr. Rooter Plumbing of The Oakland-Berkeley Area** is trusted by Berkeley homeowners for inspecting and cleaning drain lines to clear blockages and debris. They offer a complete process, from drainage assessment to ensuring seamless flow, and provide upfront pricing and emergency plumbing services 24 hours a day.
-
-**LJ Kruse** has been in business for over 100 years, proving their capability in solving plumbing problems, including stubborn clogged drains. They use the latest technology for pipe clearing, including sewer line cleaning, and are highly recommended for their responsive, knowledgeable, professional, and thorough technicians.
-
-**Roto-Rooter** in Berkeley, CA, offers top-notch plumbing and drain-cleaning services to both residents and businesses. With over 85 years of experience, their licensed and insured plumbers are available 24/7 for emergency services at no extra cost. They are highly rated on Google and are known for their powerful drain cleaning to clear clogs and restore flow.
-
-Other services mentioned for their positive reputation in the Berkeley area include:
-
-*   **PRO Plumbers of Berkeley** connects clients with skilled drain technicians who provide clear explanations, upfront estimates, and reliable workmanship, focusing on identifying the cause of blockages to prevent future issues.
-*   On platforms like HomeGuide and Thumbtack, services such as **VSA Construction**, **All Plumbing And Sewer**, **DC Construction**, **Norcal Installations**, **Tri-Valley Plumbing**, **New Century Marble & Granite**, **RP Construction**, and **Benjamin Franklin Plumbing Concord** are also listed among the top drain cleaning services, with homeowners praising their knowledge, experience, and communication. **Tidy Plumbing Inc.** also receives high praise for responsiveness, clear communication, competitive pricing, and professionalism.
-
-When choosing a drain cleaning service, it's recommended to review customer feedback on platforms like HomeGuide and Google, and to get quotes from a few local plumbers to ensure the best price and quality of service.
-```
-
-</details>
-
-<!-- LABELS item=36 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=36 -->
-
----
-
-## Item 37 · `google_ai_mode`
-
-> top rated drain cleaning in Berkeley
-
-*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-Top-rated drain cleaning services in Berkeley, CA, for 2026, based on customer reviews and service reputation, include local specialists and highly-rated plumbing companies known for handling stubborn clogs and sewer line issues.[[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)
-
-Top-Rated Drain Cleaning Companies
-
-[Oakland Rooter Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHBIaCgNwdnESE0Nnd3ZaeTh4YUdNek1HNXlaM2cYCg) 
-
-**Oakland Rooter & Plumbing** (4.9/5 stars, 1.6k+ reviews): Known for fast response times and comprehensive residential, commercial, and emergency drain cleaning.
-
-[Mr. Rooter Plumbing of The Oakland-Berkeley Area](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK) 
-
-**Mr. Rooter Plumbing of The Oakland-Berkeley Area** (4.9/5 stars, 1.3k+ reviews): Highly rated for reliable service in the local area.
-
-[Wally&#39;s Plumbing &amp; Leak Detection](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaM1pITTJhbkpxGAo) 
-
-**Wally’s Plumbing** (5.0/5 stars): Specializes in plumbing and leak detection, offering 18 years of experience.
-
-[Lifesaver Plumbing And Rooter](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVcxa1pqbHFjV1k1GAo) 
-
-**Lifesaver Plumbing And Rooter** (5.0/5 stars): Highly rated for both water heater repairs and general rooter services.
-
-Pro Drain Cleaning Of Berkeley Provides 24/7 emergency services, including rapid diagnosis and on-the-spot repairs for clogged drains.
-
-[Capelli Plumbing](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzeU16UjZjURgK) 
-
-Known for specialized services like hydro jetting, pipe descaling, and 24/7 emergency support.
-
-[Pipe Arts Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdvME9UVTVjbTR6GAo) 
-
-**Pipe Arts Plumbing** (Recommended by parents network): Noted for being efficient, friendly, and specializing in older fixtures.[](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA) [[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[2]](https://www.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[3]](https://www.mrrooter.com/request-job-estimate/?utm_source=gmb&utm_medium=organic&utm_campaign=google_reserve&location=9386)[[4]](https://www.thumbtack.com/ca/berkeley/sewer-drain-cleaning)[[5]](https://www.thumbtack.com/ca/berkeley/drain-cleaning/wallys-plumbing/service/509067740351193089?utm_medium=partnership&utm_source=cma-google-ai)[[6]](https://m.yelp.com/search?find_desc=Sewer+Drain+Cleaning&find_loc=Berkeley%2C+CA)[[7]](https://prodraincleaningberkeley.com/)[[8]](https://www.capelliplumbing.com/plumbing-services/berkeley-ca)[[9]](https://www.capelliplumbing.com/hydro-jetting/berkeley-ca)[[10]](https://www.berkeleyparentsnetwork.org/recommend/home/plumber)
-
-Common Services Offered
-
-- **Hydro Jetting:** High-pressure water cleaning to clear grease, roots, and debris.
-- **Rooter Services:** Clearing sewer line blockages from tree roots, common in the Berkeley Hills.
-- **Video Inspection:** Diagnosing complex, deep-set clogs.
-- **24/7 Emergency Response:** Available for severe backups and flooding.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://grayplumbing.com/berkeley-plumber/)[[2]](https://www.rotorooter.com/berkeleyca/)[[3]](https://homeguide.com/ca/berkeley/drain-cleaning/)[[4]](https://tuckerhillaz.com/plumbing/drain-cleaning-repair/)
-
-Estimated Costs (2026)
-
-- **Standard Drain Snake:** $100 - $300.
-- **General Drain Cleaning:** $150 - $450.
-- **Complex/Heavy Duty:** Higher rates for services like hydro jetting.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://johnnyrooter.com/blog/how-much-does-it-cost-to-snake-a-drain/)[[2]](https://modernize.com/plumbing/best-plumbing-companies/roto-rooter)[[3]](https://idahodrainpros.com/locations/drain-cleaning-in-genesee)[[4]](https://www.josesplumbingrooter.com/hydro-jetting---complex-drain-cleaning)
-
-For urgent needs, Pro Drain Cleaning of Berkeley offers 24-hour service.[](https://prodraincleaningberkeley.com/) 
-
-Would you like recommendations for **preventative sewer maintenance** (like root maintenance) or do you need **emergency service for an active clog** right now?
-```
-
-</details>
-
-<!-- LABELS item=37 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=37 -->
-
----
-
-## Item 38 · `openai`
-
-> top rated drain cleaning in Berkeley
-
-*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
-
-**Where each name appears** — literal text match, so you do not have to scan for it.
-This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
-
-- `Albert Nahman Plumbing` — **not found**
-- `LemonTree Plumbing` — **not found**
-- `J J Rooter & Plumbing` — **not found**
-
-<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
-
-```text
-Assuming you mean **Berkeley, California**, these are commonly well-reviewed options to check for drain cleaning:
-
-- **Ace Plumbing & Rooter** — local plumbing and sewer/drain service  
-- **All Service Plumbing** — drain cleaning and plumbing repairs in the East Bay  
-- **Mr. Rooter Plumbing of the East Bay** — established chain with upfront estimates  
-- **Roto-Rooter (Oakland/East Bay)** — 24/7 availability; often useful for emergencies  
-- **Berkeley Home Repair / local licensed plumbers** — good for smaller residential drain issues
-
-Before booking, verify current **Google/Yelp ratings**, California contractor license status, trip fees, and whether the quote includes a **camera inspection**. For recurring clogs, ask for **hydro-jetting** or sewer-line inspection rather than repeated snaking.
-
-If you share your **ZIP code and whether it’s an emergency**, I can narrow this to the best nearby choices.
-```
-
-</details>
-
-<!-- LABELS item=38 -->
-
-`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
-
-| brand | present | prominence | framing |
-| --- | --- | --- | --- |
-| Albert Nahman Plumbing | no | absent | neutral |
-| LemonTree Plumbing | no | absent | neutral |
-| J J Rooter & Plumbing | no | absent | neutral |
-
-**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
-
-```flags
-
-```
-
-**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
-
-```candidates
-
-```
-
-<!-- /LABELS item=38 -->
-
----
-
-## Item 39 · `perplexity`
-
-> top rated drain cleaning in Berkeley
-
-*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+*answer 1 of 1 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
 
 **Where each name appears** — literal text match, so you do not have to scan for it.
 This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
@@ -2728,7 +1779,7 @@ If you want, I can also help you narrow this to:
 
 </details>
 
-<!-- LABELS item=39 -->
+<!-- LABELS item=24 -->
 
 `present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
@@ -2750,8 +1801,8 @@ If you want, I can also help you narrow this to:
 
 ```
 
-<!-- /LABELS item=39 -->
+<!-- /LABELS item=24 -->
 
 ---
 
-_Generated from `local_gold.json` — 40 items to label._
+_Generated from `local_gold.json` — 25 items to label._
