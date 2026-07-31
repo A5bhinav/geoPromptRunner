@@ -226,7 +226,11 @@ def run_one_job(job: dict[str, Any], leads: list[LeadRow]) -> db.FactSheetJobSta
         )
         return db.FactSheetJobState.SKIPPED_UNUSABLE
 
+    # Allocate the next version BEFORE saving: `unique (domain, version)` plus a
+    # generator that always emits version 1 meant the second sheet for a known
+    # domain died on a duplicate key and was filed as a crawler FAILURE.
     try:
+        sheet.version = db.next_fact_sheet_version(sheet.domain)
         sheet_id = db.save_fact_sheet(sheet)
     except db.StorageError as exc:
         logger.warning("fact-sheet job %s could not store: %s", job_id, type(exc).__name__)

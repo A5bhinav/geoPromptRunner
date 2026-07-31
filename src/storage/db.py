@@ -76,6 +76,7 @@ __all__ = [
     "get_fact_sheet",
     "activate_fact_sheet",
     "reject_fact_sheet",
+    "next_fact_sheet_version",
     "list_fact_sheets",
     "delete_fact_sheets",
     "delete_factsheet_sources_for_sheets",
@@ -1432,6 +1433,16 @@ def activate_fact_sheet(sheet_id: str) -> None:
     row = _fact_sheet_row(sheet_id)
     if row is None:
         raise StorageError(f"activate_fact_sheet: no fact sheet {sheet_id}")
+    state = str(row.get("state") or "")
+    if state == FactSheetState.REJECTED.value:
+        # A reviewer already read this and said no. Promoting it would let one
+        # mis-click undo the only human judgment in the pipeline, and the queue UI
+        # renders an Approve button on the rejected tab — so the guard belongs
+        # here, next to the write, not only in the screen.
+        raise StorageError(
+            f"activate_fact_sheet: {sheet_id} was REJECTED — regenerate the sheet "
+            "rather than promoting one a reviewer already turned down"
+        )
     domain = str(row.get("domain", ""))
     _execute(
         f"demote active fact sheet for {domain}",
@@ -1453,6 +1464,40 @@ def activate_fact_sheet(sheet_id: str) -> None:
             .execute()
         ),
     )
+
+
+def next_fact_sheet_version(domain: str) -> int:
+    """The next free version for ``domain`` — 1 when it has no sheets yet.
+
+    ``fact_sheets`` carries ``unique (domain, version)`` and ``FactSheet.version``
+    defaults to 1, so without this every regeneration of a known domain collided
+    on the second save. The generator had no version allocator at all, which meant
+    the failure surfaced as ``FactSheetJobState.FAILED`` with error
+    ``"StorageError"`` — a duplicate key reported as a crawler fault, on the exact
+    path that runs unattended against real prospects.
+
+    Read-then-write, so two workers racing the same domain can still collide. That
+    is acceptable and deliberate: the in-flight unique index
+    (``uq_factsheet_jobs_inflight``) already permits only one job per domain, so
+    the race needs two workers defeating that first, and losing it is a retryable
+    insert rather than a wrong sheet.
+    """
+
+    def _query(client: Client) -> Any:
+        return (
+            client.table(TABLE_FACT_SHEETS)
+            .select("version")
+            .eq("domain", domain)
+            .order("version", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+    response = _execute(f"next_fact_sheet_version for {domain}", _query)
+    rows = list(getattr(response, "data", None) or [])
+    if not rows:
+        return 1
+    return int(str(rows[0].get("version") or 0)) + 1
 
 
 def reject_fact_sheet(sheet_id: str, reason: str | None = None) -> None:

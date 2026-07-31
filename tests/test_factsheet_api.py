@@ -170,3 +170,20 @@ def test_reject_without_a_reason_still_works(
     monkeypatch.setattr(db, "get_fact_sheet", lambda sid: _sheet())
     monkeypatch.setattr(db, "reject_fact_sheet", lambda sheet_id, reason=None: None)
     assert client.post("/fact-sheets/sheet-1/reject", json={}).status_code == 200
+
+
+def test_approving_a_rejected_sheet_is_409(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reviewer already said no; one mis-click must not undo the only human
+    judgment in the pipeline. The queue renders an Approve button on the rejected
+    tab, so the guard lives next to the write, not only in the screen."""
+    monkeypatch.setattr(db, "get_fact_sheet", lambda sid: _sheet())
+
+    def _refuse(sheet_id: str) -> None:
+        raise db.StorageError(f"activate_fact_sheet: {sheet_id} was REJECTED — regenerate")
+
+    monkeypatch.setattr(db, "activate_fact_sheet", _refuse)
+    res = client.post("/fact-sheets/sheet-1/approve")
+    assert res.status_code == 409
+    assert "REJECTED" in res.json()["detail"]
