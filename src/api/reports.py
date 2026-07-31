@@ -82,6 +82,14 @@ class FlagRow(TypedDict):
     severity: str
     claim: str
     reality: str
+    # Provenance: which cell produced this flag (P0-T1). Empty strings when the
+    # flag predates the stamping — legacy stored judgments. Anything that RENDERS
+    # a flag to a client needs these: a finding without engine + verbatim prompt
+    # is not shippable.
+    query_id: str
+    engine_name: str
+    intent: str
+    run_index: int
 
 
 class SourceRow(TypedDict):
@@ -222,6 +230,14 @@ class ReportPayload(TypedDict):
     # single-run cycle (nothing to compare), which is itself the honest answer.
     stability: list[StabilityRow]
     accuracy_flags: list[FlagRow]
+    # The WEAKEST verification across the fact sheet this run was judged against
+    # (a `Verification` value), or None when no sheet was used. Consumers that
+    # SEND a flag — the teaser one-pager above all — must gate on it via
+    # `factsheet.gate.may_send_flag`; §8 lets an unconfirmed sheet produce only
+    # low/med. It is on the payload rather than joined at render time because the
+    # flag itself cannot carry a tier: the judge is handed the sheet as flat
+    # "key: value" text and never sees one (see factsheet/gate.py).
+    fact_sheet_verification: str | None
     sources: list[SourceRow]
     losing_queries: list[LosingRow]
     site_audit: SiteAuditPayload | None  # on-site technique checks (Cat 1–5); None if not run
@@ -321,6 +337,7 @@ def build_report(
     run_date: str | None = None,
     site_audit: SiteAuditPayload | None = None,
     local_pack: LocalPackPayload | None = None,
+    fact_sheet_verification: str | None = None,
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -431,7 +448,16 @@ def build_report(
     if has_judge:
         for f in judge_flags:
             accuracy_flags.append(
-                FlagRow(type=f.type, severity=f.severity, claim=f.claim, reality=f.reality)
+                FlagRow(
+                    type=f.type,
+                    severity=f.severity,
+                    claim=f.claim,
+                    reality=f.reality,
+                    query_id=f.query_id,
+                    engine_name=f.engine_name,
+                    intent=f.intent,
+                    run_index=f.run_index,
+                )
             )
 
     # --- Sources ---
@@ -517,6 +543,7 @@ def build_report(
         by_bucket=by_bucket,
         stability=stability,
         accuracy_flags=accuracy_flags,
+        fact_sheet_verification=fact_sheet_verification,
         sources=sources,
         losing_queries=losing_queries,
         site_audit=site_audit,

@@ -173,12 +173,45 @@ class BrandJudgment:
 
 @dataclass(frozen=True)
 class AccuracyFlag:
-    """A client claim the answer got wrong, checked against the fact sheet."""
+    """A client claim the answer got wrong, checked against the fact sheet.
+
+    The four leading fields are the judge's verdict. The four trailing ones are
+    PROVENANCE — which cell produced it — and they are derived in Python from the
+    parent :class:`AnswerJudgment`, never asked of the judge model
+    (``docs/audit-packaging-spec.md`` P0-T1). That distinction is what keeps them
+    free: asking the model would mean a tool-schema change, which bumps
+    ``_PROMPT_LAYOUT`` and invalidates every cached verdict.
+
+    **They are stamped per cell, not per verdict.** ``judge_results`` dedups
+    verdicts by ``(prompt, answer)``, so one flag object is shared by every cell
+    whose answer text matched. Provenance therefore belongs to the join in
+    ``judge_results``, and the defaults here are what an un-stamped flag looks
+    like — which is also what comes back from the judge cache, since the cache is
+    keyed per ANSWER and cannot know which cell will read it.
+
+    A flag with empty provenance must never be rendered to a client: the
+    audit-packaging rule is that a finding without engine + timestamp + verbatim
+    prompt is not shippable.
+    """
 
     type: str  # AccuracyFlagType value
     claim: str  # what the answer said
     reality: str  # what the fact sheet says
     severity: str  # Severity value
+    # --- provenance (derived, not judged) ---
+    query_id: str = ""
+    engine_name: str = ""
+    intent: str = ""
+    run_index: int = 0
+
+    @property
+    def has_provenance(self) -> bool:
+        """Whether this flag can name the cell it came from.
+
+        False for anything read straight off the judge cache, and for legacy rows
+        stored before P0-T1. Gate rendering on it rather than assuming.
+        """
+        return bool(self.query_id and self.engine_name)
 
 
 @dataclass(frozen=True)
@@ -219,13 +252,40 @@ def brand_from_dict(d: dict[str, object]) -> BrandJudgment:
 
 
 def flag_to_dict(f: AccuracyFlag) -> dict[str, object]:
+    """The VERDICT only — deliberately without provenance.
+
+    Shared by the judge cache and the judgments table, and the cache is what
+    forces the omission: it is keyed per (prompt, answer), so a cell's
+    ``query_id``/``engine_name`` written into it would be served back to a
+    different cell that happened to produce identical answer text. Storing per-cell
+    data in a per-answer cache is a wrong answer waiting to be read.
+
+    Provenance is re-derived at the join in ``judge_results`` on every path,
+    cache hit or miss, so nothing is lost by leaving it out. Keeping the payload
+    at four keys also means existing cached entries stay byte-identical.
+    """
     return {"type": f.type, "claim": f.claim, "reality": f.reality, "severity": f.severity}
 
 
 def flag_from_dict(d: dict[str, object]) -> AccuracyFlag:
+    """Read a flag back, tolerating both the 4-key cache shape and a stored row.
+
+    Provenance defaults to empty rather than failing: every cached verdict
+    predates it by construction (see :func:`flag_to_dict`), and a legacy
+    judgments row has no such keys. ``run_index`` coerces defensively because a
+    stored JSON number may arrive as a string.
+    """
+    try:
+        run_index = int(str(d.get("run_index", 0)))
+    except ValueError:
+        run_index = 0
     return AccuracyFlag(
         type=str(d.get("type", "")),
         claim=str(d.get("claim", "")),
         reality=str(d.get("reality", "")),
         severity=str(d.get("severity", "")),
+        query_id=str(d.get("query_id", "")),
+        engine_name=str(d.get("engine_name", "")),
+        intent=str(d.get("intent", "")),
+        run_index=run_index,
     )

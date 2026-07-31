@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from enum import StrEnum
 
 import anthropic
@@ -958,6 +959,11 @@ class Judge:
             if answer is None:
                 continue
             brands, flags, assessed = verdicts[(r["prompt"], answer)]
+            # Stamp provenance HERE, not in the verdict (P0-T1). `verdicts` is
+            # keyed by (prompt, answer), so `flags` is the same list object for
+            # every cell whose answer text matched — mutating it, or stamping it
+            # upstream, would give all of them the first cell's engine. `replace`
+            # on a frozen dataclass gives each cell its own copy.
             judgments.append(
                 AnswerJudgment(
                     query_id=r["query_id"],
@@ -966,7 +972,16 @@ class Judge:
                     run_index=r["run_index"],
                     assessed=assessed,
                     brands=brands,
-                    accuracy_flags=flags,
+                    accuracy_flags=[
+                        replace(
+                            f,
+                            query_id=r["query_id"],
+                            engine_name=r["engine_name"],
+                            intent=r["intent"],
+                            run_index=r["run_index"],
+                        )
+                        for f in flags
+                    ],
                 )
             )
         return judgments
