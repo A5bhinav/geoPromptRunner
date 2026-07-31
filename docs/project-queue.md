@@ -1,14 +1,34 @@
 # Project Queue & Status
 
-> ⚠️ **STALE — read the banner before quoting anything here (added 2026-07-31).**
+> ⚠️ **STALE — read the banner before quoting anything here.**
 > Every calibration figure below (agreement 96/88/93, flag recall 95%, the
 > 80%-with-verifier / ~42%-without precision pair) was measured **2026-06-28
-> against the pre-bump judge prompt**. The Phase 3 `_PROMPT_LAYOUT` bump
-> (2026-07-27) changed the prompt fingerprint and W3.4's re-run has not
-> happened — `data/oura_gold.json` and `data/fort_gold.json` are untouched
-> since 2026-06-19. `src/pipeline/judge.py:245-249` states the standing gate:
-> **quote no accuracy or agreement figure for either ICP until W3.4 passes.**
-> Mention, prominence and framing are exempt.
+> against the pre-bump judge prompt**. Superseded by the re-run below; do not
+> quote the numbers in this document.
+>
+> **W3.4 consumer re-run — DONE 2026-07-31** (held-constant Sonnet 4.5,
+> `JUDGE_VERIFY=1`, `isolated_cache()`, 40 items each). Report:
+> `docs/calibration/fort-2026-07-31.md`.
+>
+> | | present | prominence | framing |
+> |---|---|---|---|
+> | Fort | 94% | 86% | 93% |
+> | Oura | 99% | 90% | 94% |
+>
+> **Structural agreement is re-measured and holds** at roughly the old level, so
+> mention / prominence / framing are quotable again for the consumer ICP.
+>
+> **The accuracy-flag freeze STAYS, for a new reason.** It is no longer
+> "unmeasured" — it is *unmeasurable at this sample size*. Fort carries 3 gold
+> flags; two identical runs returned precision 29% then 43%, recall 67% then
+> 100%, on the same inputs with the same settings. One flag moves the metric by
+> 14 points. Oura is better powered (18 gold flags: precision 65%, recall 94%)
+> but its **severity agreement is poor — 18% exact, 59% within one**, which is
+> its own finding and worse than the detection it grades.
+>
+> So: quote no flag precision, recall or severity figure for either ICP. The fix
+> is not a better judge, it is a gold set with enough flag-bearing items to
+> measure one — build the local set (`data/local_gold.json`) accordingly.
 
 > **Also superseded in scope (2026-07-31).** This snapshot predates the entire
 > SMB pivot (Phases 0–5, all completed 2026-07-27/28). It contains no local
