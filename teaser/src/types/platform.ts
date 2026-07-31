@@ -49,6 +49,42 @@ export type AccuracyFlagType =
 
 export type Severity = "high" | "med" | "low";
 
+/**
+ * How well corroborated a fact sheet is — the minimum across its claims.
+ * Mirrors `Verification` in `src/audit/factsheet/models.py`; weakest first.
+ */
+export type Verification = "public_source_only" | "cross_confirmed" | "client_confirmed";
+
+/**
+ * §8's send-permission table, mirroring `SENDABLE_SEVERITIES` in
+ * `src/audit/factsheet/gate.py`. HIGH is absent from the unconfirmed tier
+ * deliberately, and such a flag is SUPPRESSED rather than downgraded — a
+ * softer label in front of a stranger is worse than silence.
+ */
+const SENDABLE_SEVERITIES: Record<Verification, readonly Severity[]> = {
+  public_source_only: ["low", "med"],
+  cross_confirmed: ["low", "med", "high"],
+  client_confirmed: ["low", "med", "high"],
+};
+
+/**
+ * Whether a flag may appear in something we SEND, given the sheet's weakest tier.
+ *
+ * A missing tier means no sheet (or a payload predating the field) and refuses
+ * everything: a flag with no provenance is exactly the one not to mail a
+ * stranger. An unrecognised severity is refused rather than coerced, so the
+ * CRITICAL tier the audit-packaging spec adds cannot slip through as
+ * "not in the deny list".
+ */
+export function maySendFlag(
+  tier: Verification | null | undefined,
+  severity: string,
+): boolean {
+  if (!tier) return false;
+  const allowed = SENDABLE_SEVERITIES[tier];
+  return allowed !== undefined && (allowed as readonly string[]).includes(severity);
+}
+
 /** Which detection path produced the report. "regex" lacks grade/accuracy. */
 export type DetectionMode = "judge" | "regex";
 
@@ -89,6 +125,20 @@ export interface FlagRow {
   severity: Severity;
   claim: string;
   reality: string;
+  /**
+   * Provenance — which (query, engine, run) cell produced this flag. Derived in
+   * Python from the parent judgment, never asked of the judge model, so it costs
+   * no cache invalidation (audit-packaging-spec P0-T1).
+   *
+   * Empty strings on a legacy payload stored before the stamping existed.
+   * Anything that RENDERS a flag must treat empty as unshippable: a finding
+   * without engine + verbatim prompt cannot be attributed, and an unattributed
+   * accusation is the one thing this report may not print.
+   */
+  query_id: string;
+  engine_name: string;
+  intent: IntentBucket;
+  run_index: number;
 }
 
 export interface SourceRow {
@@ -218,6 +268,18 @@ export interface ReportPayload {
   leaderboard: LeaderRow[];
   by_bucket: BucketRow[];
   accuracy_flags: FlagRow[];
+  /**
+   * The WEAKEST verification tier across the fact sheet this run was judged
+   * against; null when no sheet was used.
+   *
+   * Anything that SENDS a flag must gate on this. `FlagRow` deliberately cannot
+   * carry a per-claim tier: the judge is handed the sheet as flat `"key: value"`
+   * text and never sees one, and adding it would change the judge prompt or the
+   * sheet — both inside the judge cache key. So permission is a property of the
+   * document, not the claim (`src/audit/factsheet/gate.py`, plan §8). An
+   * `public_source_only` sheet may send low/med severity only.
+   */
+  fact_sheet_verification?: Verification | null;
   sources: SourceRow[];
   losing_queries: LosingRow[];
   /** On-site + off-site technique-checklist audit; null when the crawl didn't run. */

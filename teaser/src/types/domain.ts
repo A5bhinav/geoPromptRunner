@@ -64,6 +64,25 @@ export function canonicalLocation(loc: BusinessLocation): string {
     .join(",");
 }
 
+/**
+ * One row of the platform's `fact` block (`fact,<key>,<value>,,`) — the flat pair
+ * `src/prompts/csv_loader.py` renders as a `"{key}: {value}"` fact-sheet line.
+ *
+ * Flat by construction, which is WHY the key carries the section (`hours_sunday`,
+ * `service_area_excluded`): `_build_fact_sheet` joins the rows into one block, so
+ * the markdown sheet's headings do not survive and the key is the only structure
+ * the judge ever sees (docs/factsheet-autogen-plan.md §2). The key is never empty
+ * — a keyless row falls back to the bare value and silently degrades the sheet
+ * (§2.1) — but enforcing that belongs to the generator, not to this carrier.
+ *
+ * The teaser never produces these. Extraction lives platform-side (§9.1); two
+ * extraction prompts is the drift the fact-sheet plan exists to avoid.
+ */
+export interface FactClaimRow {
+  key: string;
+  value: string;
+}
+
 /** Resolver output: URL → company profile. */
 export interface CompanyProfile {
   url: string;
@@ -95,6 +114,20 @@ export interface CompanyProfile {
   clientDomains: string[];
   /** Optional claims that could seed a fact sheet (wrong-claim branch; manual). */
   productClaims: { claim: string; sourceUrl: string }[];
+  /**
+   * The fact sheet this audit measures answers against, as `fact` rows (F2).
+   *
+   * Optional by design so every existing call site compiles untouched — productClaims
+   * above is required despite its comment, and a second required field would break
+   * every profile literal and seven test files (plan §9.2.3) — and absent is
+   * MEANINGFUL, not a placeholder: a dimension the sheet is blank on is one the judge
+   * does not check and therefore cannot mis-flag. Coverage is not the metric here;
+   * a false accusation in a document we send a stranger is the failure to avoid (§4.2).
+   *
+   * NOT derived from productClaims: those carry no key and no verbatim quote, so they
+   * cannot pass the §4.1 gate that turns "the model said so" into "the page says so".
+   */
+  factClaims?: FactClaimRow[];
   resolvedAt: string;
   resolverModel: string;
 }
@@ -142,6 +175,27 @@ export interface Finding {
    */
   runsObserved: number;
   runsConfirming: number;
+  /**
+   * The accuracy flag behind this finding. Present iff `source ===
+   * "accuracy_flag"`, null otherwise.
+   *
+   * A losing-query finding says "a competitor got recommended instead"; an
+   * accuracy finding says "the model stated something your own site
+   * contradicts", and needs the contradicted pair to be printable at all.
+   * `competitor` is "" and `prominence` null on these — there is no rival, the
+   * subject is the client's own facts.
+   */
+  flag?: FindingFlag | null;
+}
+
+/** The judged contradiction behind an `accuracy_flag` finding. */
+export interface FindingFlag {
+  type: string; // AccuracyFlagType value
+  severity: string; // Severity value
+  /** What the answer stated. */
+  claim: string;
+  /** The verbatim fact-sheet line it contradicts. */
+  reality: string;
 }
 
 /** The "appears in X of N / competitor in Y of N" headline metric. */
@@ -189,5 +243,15 @@ export interface TeaserDraft {
    */
   businessKind?: BusinessKind;
   location?: BusinessLocation;
+  /**
+   * The fact sheet the run was submitted with, captured at generation time for the
+   * SAME reason as clientAliases (T3, and C8 in the fact-sheet plan §13.3): a teaser
+   * REGENERATED from storage rebuilds its profile from the stored ReportPayload,
+   * which carries the accuracy flags but not the sheet those flags were graded
+   * against. Without this the sheet is silently dropped and the regenerated teaser
+   * cites a reference nothing still holds. Optional: legacy drafts, and runs that had
+   * no sheet, fall back to absent — which stays distinct from an empty sheet.
+   */
+  factClaims?: FactClaimRow[];
   status: "draft" | "approved" | "rejected" | "exported";
 }

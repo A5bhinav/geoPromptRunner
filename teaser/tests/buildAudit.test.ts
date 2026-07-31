@@ -65,8 +65,26 @@ function baseReport(over: Partial<ReportPayload> = {}): ReportPayload {
       { bucket: "comparison", mention_rate: 0.0, citation_rate: null, answered_cells: 3, total_cells: 3 },
     ],
     accuracy_flags: [
-      { type: "stale", severity: "low", claim: "Acme is iOS-only", reality: "Android shipped 2026" },
-      { type: "wrong_pricing", severity: "high", claim: "Acme costs $20/mo", reality: "Acme is free; $8/mo pro" },
+      {
+        type: "stale",
+        severity: "low",
+        claim: "Acme is iOS-only",
+        reality: "Android shipped 2026",
+        query_id: "cat-01",
+        engine_name: "perplexity",
+        intent: "category",
+        run_index: 0,
+      },
+      {
+        type: "wrong_pricing",
+        severity: "high",
+        claim: "Acme costs $20/mo",
+        reality: "Acme is free; $8/mo pro",
+        query_id: "cmp-02",
+        engine_name: "openai",
+        intent: "comparison",
+        run_index: 0,
+      },
     ],
     sources: [
       { domain: "reddit.com", count: 9 },

@@ -28,6 +28,7 @@ import type {
   ReportPayload,
   SiteAuditPayload,
 } from "../types/platform.ts";
+import { maySendFlag } from "../types/platform.ts";
 import { buildMatcher } from "./entity.ts";
 import { answerSnippet } from "../render/proofCard.ts";
 
@@ -185,8 +186,97 @@ function leadScore(row: LosingRow): number {
 }
 
 export type SelectionResult =
-  | { ok: true; lead: Finding; table: Finding[]; headline: HeadlineNumber; heroEngine: string }
+  | {
+      ok: true;
+      lead: Finding;
+      table: Finding[];
+      headline: HeadlineNumber;
+      heroEngine: string;
+      /**
+       * Accuracy findings this sheet is ENTITLED to send (F3). Empty when no
+       * fact sheet was used, when the sheet's tier forbids the severities
+       * present, or when no flag could be joined to a verbatim answer.
+       */
+      accuracyFindings: Finding[];
+    }
   | { ok: false; reason: string };
+
+/**
+ * Accuracy flags promoted to printable findings (plan F3).
+ *
+ * Three gates, all of which must pass, and each of which exists because failing
+ * it would put an unbacked accusation in front of a stranger:
+ *
+ * 1. **Send permission** — `maySendFlag` against the sheet's weakest
+ *    verification tier (§8). An auto-generated, unconfirmed sheet may carry
+ *    low/med only, and a high-severity flag is SUPPRESSED rather than
+ *    downgraded.
+ * 2. **Provenance** — the flag must name its cell. A flag with no
+ *    `query_id`/`engine_name` predates P0-T1 stamping, and the rule is that a
+ *    finding without engine + verbatim prompt is not shippable.
+ * 3. **A verbatim answer** — the flag must join back to the actual response, so
+ *    the card can quote what the model said rather than paraphrase the judge.
+ *
+ * Deterministic: severity first (high → low), then query/engine, so equal
+ * findings cannot swap on incoming order.
+ */
+export function selectAccuracyFindings(
+  report: ReportPayload,
+  answers: AnswerRecord[],
+  max = 3,
+): Finding[] {
+  const tier = report.fact_sheet_verification ?? null;
+  const sendable = (report.accuracy_flags ?? []).filter(
+    (f) => maySendFlag(tier, f.severity) && f.query_id && f.engine_name,
+  );
+  const ranked = [...sendable].sort(
+    (a, b) =>
+      (FLAG_SEVERITY_RANK[b.severity] ?? 0) - (FLAG_SEVERITY_RANK[a.severity] ?? 0) ||
+      a.query_id.localeCompare(b.query_id) ||
+      a.engine_name.localeCompare(b.engine_name),
+  );
+
+  const out: Finding[] = [];
+  const seen = new Set<string>();
+  for (const f of ranked) {
+    if (out.length >= max) break;
+    // One finding per (query, engine) — the same cell contradicting two sheet
+    // lines is one observation, and printing it twice reads as two problems.
+    const cellKey = `${f.query_id} ${f.engine_name}`;
+    if (seen.has(cellKey)) continue;
+    const answer = findAnswer(answers, f.query_id, f.engine_name);
+    if (!answer || !answer.response) continue;
+    seen.add(cellKey);
+    out.push({
+      role: out.length === 0 ? "lead" : "table",
+      source: "accuracy_flag",
+      queryId: f.query_id,
+      intent: f.intent as IntentBucket,
+      engineName: f.engine_name,
+      // No rival: the subject is the client's own facts, not a competitor.
+      competitor: "",
+      prominence: null,
+      verbatimQuery: answer.prompt,
+      verbatimAnswer: answer.response,
+      citations: answer.citations,
+      rankScore: FLAG_SEVERITY_RANK[f.severity] ?? 0,
+      // The judge scored ONE cell; this is not a reproduction measurement across
+      // runs. Claiming 1/1 would read as "we tried once and it held", so both stay
+      // 0 and the copy layer must not print an occurrence line for these.
+      runsObserved: 0,
+      runsConfirming: 0,
+      flag: {
+        type: f.type,
+        severity: f.severity,
+        claim: f.claim,
+        reality: f.reality,
+      },
+    });
+  }
+  return out;
+}
+
+const FLAG_SEVERITY_RANK: Record<string, number> = { high: 3, med: 2, low: 1 };
 
 export function findAnswer(
   answers: AnswerRecord[],
@@ -469,7 +559,14 @@ export function selectFindings(
 
   const headline = headlineFor(leadRow.competitor);
 
-  return { ok: true, lead, table, headline, heroEngine };
+  return {
+    ok: true,
+    lead,
+    table,
+    headline,
+    heroEngine,
+    accuracyFindings: selectAccuracyFindings(report, answers),
+  };
 }
 
 /** One "why AI skips you" gap — a fixable on/off-site cause behind the loss. */
