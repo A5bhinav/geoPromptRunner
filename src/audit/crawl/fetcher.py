@@ -70,7 +70,17 @@ _INLINE_JSON_RE = re.compile(
 # A page thinner than this in extracted text, with no inline payload, is worth a render.
 _INLINE_PAYLOAD_MIN_CHARS = 1000
 
-# Cloudflare / anti-bot challenge body markers — recorded as "blocked", never bypassed.
+# A challenge interstitial is a page with nothing on it: Cloudflare's runs ~1-3 KB,
+# and the 429 bodies from the same host measured 1,100 chars. A real page is orders
+# of magnitude larger. 15 KB leaves generous headroom above every interstitial seen
+# while sitting far below any served page, and it is what stops the JS-detection
+# script tag Cloudflare injects into GOOD pages from reading as a block (see
+# `_is_blocked`). Raising this trades false "blocked" verdicts back in; lowering it
+# risks letting a fat challenge page through as real content.
+_CHALLENGE_MAX_BODY_CHARS = 15_000
+
+# Cloudflare / anti-bot challenge body markers — recorded as "blocked", never
+# bypassed. Only consulted on a body small enough to BE an interstitial.
 _CF_CHALLENGE_MARKERS = (
     "just a moment",
     "cf-browser-verification",
@@ -197,11 +207,27 @@ def _is_blocked(response: httpx.Response, body: str) -> bool:
     challenge slip through as a normal-but-thin page, which then escalated to a
     real-browser render, passed the challenge, and got mislabeled CSR/FAIL instead
     of the intended "blocked/ungradeable". Mirrors technical_check._is_challenge.
+
+    **A marker in a LARGE body is not a challenge.** Cloudflare injects its
+    JS-detection tag — ``/cdn-cgi/challenge-platform/scripts/jsd/main.js`` — into
+    pages it serves NORMALLY, so ``challenge-platform`` appears in perfectly good
+    HTML. Measured on albertnahmanplumbing.com 2026-07-31: HTTP 200, no
+    ``cf-mitigated`` header, 207,768 chars of real content, and the marker matched
+    at offset 207,088 inside that injected script. Every page of the site was
+    recorded blocked, which discarded the whole crawl — and small-business sites
+    are overwhelmingly behind Cloudflare, so this silently ungraded a large share
+    of real prospects.
+
+    An interstitial is, by construction, a page with no content on it. Requiring
+    the body to be small keeps every genuine challenge (they run ~1-3 KB) while
+    letting a served page carrying a bot-detection script through. The
+    ``cf-mitigated`` header stays unconditional: it is Cloudflare stating outright
+    that it acted on the request, and it needs no corroboration.
     """
     if "cf-mitigated" in response.headers:
         return True
     server = response.headers.get("server", "").lower()
-    if "cloudflare" in server:
+    if "cloudflare" in server and len(body) <= _CHALLENGE_MAX_BODY_CHARS:
         low = body.lower()
         return any(marker in low for marker in _CF_CHALLENGE_MARKERS)
     return False

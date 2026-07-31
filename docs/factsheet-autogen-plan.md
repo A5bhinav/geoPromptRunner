@@ -644,6 +644,117 @@ the post-bump judge. Until it passes, **no accuracy or agreement figure may be
 quoted for either ICP.** The Layer-3 content judge is live and uncalibrated on
 the same terms.
 
+### 13.5 State of the build — audited 2026-07-31, evening
+
+*Two read-only audits against `464125e`, working tree clean. Everything below was
+traced in code, not inferred from commit messages.*
+
+#### The flow, as actually built
+
+| # | Step | State |
+|---|---|---|
+| 1 | Form → `leads` row + alert email | ✅ live |
+| 2 | Worker polls leads cross-project, enqueues Tier 1 | ✅ built (`worker.py`), PII-safe — the SELECT names five columns and `email`/`phone` are not among them |
+| 3 | Crawl + deterministic extraction → DRAFT sheet | ✅ built (`extract.py`, L0+L1, zero model calls) |
+| 4 | Sheet lands in a queue | ✅ built (`/fact-sheets`, `web/app/fact-sheets/page.tsx`) |
+| 5 | Human reviews claim-by-claim, approves | ✅ built — every claim shows its verbatim quote and a link to the page it came from; questions render first |
+| 6 | **The approved sheet reaches a run** | ❌ **does not exist in any form** |
+| 7 | Judge emits accuracy flags | ✅ pre-existing |
+| 8 | A flag becomes a teaser finding | ❌ built, permanently inert (below) |
+| 9 | Teaser renders it | ❌ no renderer reads it |
+| 10 | Email to the prospect | ❌ blocked on a verified Resend domain |
+
+**Steps 1–5 and 7 work. Steps 6, 8 and 9 are three breaks in series**, and each
+one independently nullifies work that is already shipped and tested.
+
+#### The three breaks
+
+**B1 — nothing reads an approved sheet.** `db.load_fact_sheet(domain, state=ACTIVE)`
+is complete, documented, tested and has **zero callers** outside `db.py`. Every
+run path still takes a hand-made artifact: `geo audit --fact-sheet` reads a *file
+path*; `POST /audits` reads `fact` rows from an *uploaded CSV*; `runner.py` never
+queries `fact_sheets`. `save_audit_run(fact_sheet_id=, fact_sheet_version=)`
+exists, the columns are applied, and no caller passes them — so every run row
+has NULL provenance. Approving a sheet changes one column and nothing else: no
+notification, no writeback to `leads.status`, no next step. The UI's own promise
+— *"Approving one makes it the reference every accuracy finding for that domain
+is measured against"* — is not true today.
+
+**B2 — `fact_sheet_verification` is never populated.** It is a `build_report`
+parameter defaulting to `None` (`reports.py:340`) and **neither production call
+site passes it** (`runner.py:899`, `:987`). The TS mirror `maySendFlag(null, …)`
+returns `false` unconditionally, so `selectAccuracyFindings` returns `[]` on
+every real run. F3 is built and can never fire.
+
+**B3 — `accuracyFindings` is produced and consumed by nothing.**
+`selectFindings.ts:568` builds the list; no renderer reads it.
+
+Fixing B2 is one argument at two call sites. B1 and B3 are real work.
+
+#### Also unrunnable / unreachable
+
+- **`data/schema_factsheets.sql` is still unapplied.** Against the live database
+  every `/fact-sheets` call raises `StorageError` → 503. The queue, the worker
+  and the gate are all inert until one command runs.
+- **No version allocation.** `build_sheet` never sets `version`; `save_fact_sheet`
+  is a plain insert against `unique (domain, version)`. The second worker job for
+  a known domain is filed as **`FAILED` / `"StorageError"`** — so every
+  regeneration is permanently unreachable *and* mislabelled as a crawler fault.
+  No test covers it.
+- **`CROSS_CONFIRMED` can never be set.** `resolve_conflicts` deliberately
+  refuses to upgrade on agreement and no other writer exists, so
+  `verification_tier` is permanently `public_source_only`. Even with B2 fixed,
+  `SENDABLE_SEVERITIES` would suppress every HIGH flag forever.
+- **`geo factsheet` does not persist.** It writes markdown/CSV to disk and never
+  calls `save_fact_sheet`. The queue's empty-state copy names it as a source of
+  rows; that is wrong.
+- **`rejected` → `active` is reachable.** `POST /approve` checks no current
+  state, and the UI offers a live Approve button on the rejected tab.
+- **`SheetStatus` (draft/client_reviewed/signed) has no column**, so every loaded
+  sheet reports `draft` and F4.5 has nothing to read.
+- **No per-claim edit or drop.** A reviewer who spots one bad claim in nine must
+  reject all nine. The `/teasers` and `/audit-deliverables` lifecycles both have
+  an `edit` arm; this one omits it.
+
+#### Extraction coverage — what the sheet can and cannot say
+
+The two fabrications found by the verify phase **were fixed at HEAD**
+(`464125e`), with tests pinning the correct behaviour — a street now needs a real
+thoroughfare type on an anchored line, and an unreadable hours entry refuses the
+whole block rather than deriving a closure from it.
+
+One residual of the same class survives, untested: the **same-line** NAP branch
+still uses unanchored `_STREET_RE.search`, so a footer reading
+`"Over 30 years on the road, Berkeley, CA 94702"` still produces
+`contact_address: 30 years on the road, Berkeley, CA 94702`. Every prose fixture
+in `test_factsheet_fabrication.py` puts the prose on a separate line, exercising
+only the branch that was hardened.
+
+By template section: **A** partial (name, website — no trade, aliases, founder),
+**B** good, **C** good, **D** positives only, **E · licensing — nothing at all**
+(declared, titled, never emitted), **F** `priceRange` only — the `SERVICE` and
+`PRICING` pages are crawled and never mined, **G** `sameAs` links only.
+
+So **two of the four local flag types have no producer**: `licensing`, and the
+negative half of `wrong_service_area` — the boundary line that §4.4 forbids
+deriving and nothing asks about.
+
+#### Deviation from the goal, stated plainly
+
+The goal was: *a form submission becomes a fact sheet, a human approves it, and
+the teaser tells the prospect what AI gets wrong about them.*
+
+What exists is **two working halves that do not touch.** The left half —
+lead to reviewed sheet — is real and good. The right half — judge, flags, teaser
+— is real and pre-existing. The join between them was never built, and three
+separate shipped work items (F2, F3, the gate) sit on the far side of it
+producing no observable effect.
+
+The cheapest path to closing it, in order: apply the schema; pass
+`fact_sheet_verification` at the two call sites; add version allocation; make
+`POST /audits` accept a `fact_sheet_id` and hydrate it through
+`load_fact_sheet` + `to_fact_rows`; then render `accuracyFindings`.
+
 ### 13.4 Stale docs this plan cites
 
 `docs/project-queue.md` (snapshot 2026-06-24) predates the entire SMB pivot and

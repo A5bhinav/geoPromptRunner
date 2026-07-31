@@ -20,15 +20,16 @@ import argparse
 import json
 from pathlib import Path
 
+from src.storage.models import AccuracyFlagType
+
 PROMINENCE = ["recommended_first", "mid_pack", "buried", "also_ran", "absent"]
 FRAMING = ["positive", "neutral", "negative"]
-FLAG_TYPES = [
-    "wrong_pricing",
-    "missing_or_invented_feature",
-    "competitor_confusion",
-    "identity",
-    "stale",
-]
+# Read from the enum, never re-typed. This list was a hardcoded copy of the five
+# CONSUMER types, so a local sheet offered a labeler no way to record wrong_hours,
+# wrong_service_area, wrong_contact or licensing — the four dimensions a
+# service-area gold set exists to calibrate. A label that cannot be written is a
+# false negative in the ground truth, which then reads as judge recall.
+FLAG_TYPES = [t.value for t in AccuracyFlagType]
 SEVERITY = ["high", "med", "low"]
 
 

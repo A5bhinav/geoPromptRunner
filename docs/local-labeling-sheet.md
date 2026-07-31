@@ -1,0 +1,2323 @@
+# Albert Nahman Plumbing Gold-Set Labeling Sheet
+
+Read each answer, then fill the **Label** table and the **Flags** block beneath it.
+Edit only the cells — keep the `<!-- LABELS -->` markers intact so the sheet can be
+parsed back into the gold JSON. The judge's own verdicts are deliberately omitted.
+
+**How to label each brand row**
+
+- **present** — `yes` / `no`: is the brand named anywhere in the answer?
+- **prominence** — one of: `recommended_first` · `mid_pack` · `buried` · `also_ran` · `absent`. Relative within *this* answer (who is named first vs. buried). `absent` iff present=no.
+- **framing** — one of: `positive` · `neutral` · `negative`. Absent brands stay `neutral`.
+
+**Flags** = real errors the answer makes **about Albert Nahman Plumbing** (the client only — not competitors).
+Format per line: `type | severity | note`. Types: `wrong_pricing` · `missing_or_invented_feature` · `competitor_confusion` · `identity` · `stale` · `wrong_hours` · `wrong_service_area` · `wrong_contact` · `licensing`. Severity: `high` · `med` · `low`. Leave the block empty if the answer is accurate about Albert Nahman Plumbing.
+
+**Uncovered claims** (optional) = claims the answer makes that the fact sheet does NOT
+cover — the judge must *not* flag these. One per line.
+
+<details><summary><b>Ground truth — Albert Nahman Plumbing fact sheet</b> (the source of truth for the Flags column)</summary>
+
+# Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing
+
+> **Meta**
+> - Domain: albertnahmanplumbing.com
+> - Business kind: local_service · Status: draft · Version: 1
+> - Generated: 2026-07-31T19:39:29+00:00 · Weakest verification: public_source_only
+> - Claims: 3 · Open questions: 1
+
+**3 of 3 claims are NOT client-confirmed.** A signature covers only the lines the owner vouched for; a line marked UNCONFIRMED may not be cited as the correct fact from a signed sheet (plan §8).
+
+---
+
+## A · Identity & basics
+
+- **identity_name:** Albert Nahman Plumbing — **UNCONFIRMED** — one public source [`FS-01`]
+- **identity_website:** albertnahmanplumbing.com — **UNCONFIRMED** — one public source [`FS-02`]
+
+## D · Service area → `wrong_service_area`
+
+- **service_area_primary:** Berkeley, California — **UNCONFIRMED** — one public source [`FS-03`]
+
+---
+
+## Open questions
+
+*Sources disagreed, or the answer cannot be derived from a closed enumeration. Nothing below is a fact yet — ask, then add (§4.3, §4.4).*
+
+1. contact_phone: sources disagree — http://albertnahmanplumbing.com/furnace-repair-in-san-francisco-ca/ says "(510) 295-0534"; https://albertnahmanplumbing.com/ says "(510) 408-7879". Which is current? (no claim emitted, plan §4.3)
+
+---
+
+## Provenance appendix
+
+*Every line above, with the source text it was taken from. A claim whose quote is not a literal substring of its source never ships (§4.1).*
+
+| claim_id | quote | source_url | as_of | verification |
+|---|---|---|---|---|
+| FS-01 | Albert Nahman Plumbing | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |
+| FS-02 | albertnahmanplumbing.com | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |
+| FS-03 | Berkeley, California | urn:geo:lead-form | 2026-07-31 | public_source_only (UNCONFIRMED) |
+
+</details>
+
+---
+
+## Item 0 · `gemini_grounded` · _is Albert Nahman Plumbing a good plumbing company?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing, Heating, and Cooling generally receives a mixed but often positive reception from customers, with a significant number of reviews highlighting professionalism and quality work, while some express concerns regarding pricing and service contracts. The company has been in business since 1981, serving Berkeley, CA, and surrounding areas.
+
+Here's a summary of what makes Albert Nahman Plumbing a good plumbing company, along with some areas where customers have reported issues:
+
+**Positive Aspects:**
+*   **High Overall Ratings:** Albert Nahman Plumbing, Heating, and Cooling holds an overall rating of 4.6 out of 5 on Angie's List and is Diamond Certified with a 4.7 average star score from 622 verified customer phone survey responses, indicating "Highest in Quality and Helpful Expertise." They also have an A+ rating with the Better Business Bureau (BBB).
+*   **Professional and Courteous Technicians:** Many customers praise technicians for being polite, professional, friendly, and respectful. Reviewers frequently mention that technicians explain problems thoroughly and offer options for fixes.
+*   **Effective Problem Diagnosis and Repair:** Customers have reported satisfaction with the company's ability to diagnose and fix complex plumbing issues, such as water leaks and drain clogs.
+*   **Punctuality and Efficiency:** Several reviews commend the company for arriving on time and completing work efficiently.
+*   **Cleanliness:** Technicians are often noted for doing a great job cleaning up after their work.
+*   **Responsiveness:** The company has been praised for responding immediately and completing projects promptly.
+
+**Areas for Consideration:**
+*   **Pricing:** Some customers have reported that the estimated costs for repairs were significantly higher than the actual cost or what other plumbers quoted. There are mentions of high charges for parts and labor, with one customer noting a charge of $1100 for about an hour and ten minutes of work.
+*   **Service Contracts and Honoring Promises:** One customer had a negative experience with a service contract, stating the company failed to honor it and did not send a technician on a promised day.
+*   **Communication and Management:** While many praise individual technicians, some reviews mention issues with communication, particularly after installation, and difficulties reaching management to resolve problems.
+*   **Inconsistent Experiences:** A few reviews describe "odd experiences" or express a loss of trust, particularly after the company was reportedly acquired by a larger national company, suggesting a potential change in service quality for some.
+*   **Heat Pump Installation Issues:** One customer reported a disastrous heat pump installation with an ongoing buzzing sound and unaddressed issues despite repeated attempts to contact the company.
+
+In conclusion, Albert Nahman Plumbing, Heating, and Cooling appears to be a reputable company with a long history and a strong focus on customer service and quality work, as evidenced by numerous positive reviews and high ratings from independent certification bodies. However, potential customers should be mindful of getting multiple quotes for larger jobs and thoroughly understanding service contract terms, as some past customers have raised concerns about pricing and follow-through on service agreements.
+```
+
+</details>
+
+<!-- LABELS item=0 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=0 -->
+
+---
+
+## Item 1 · `google_ai_mode` · _is Albert Nahman Plumbing a good plumbing company?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Based on numerous, high-rating reviews on platforms like [Yelp](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4), Google , and [Angi](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm) , Albert Nahman Plumbing, Heating, and Cooling is generally considered a **reputable, high-quality, and reliable** plumbing service provider in the San Francisco Bay Area, particularly in the East Bay. They are known for being professional, prompt, and experienced in a wide range of services, including emergency repairs and installations.[](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html) [[1]](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaeE0xOW9kbWhyGAo)[[3]](https://bestplumbers.com/california/berkeley/plumbing-services/albert-nahman-plumbing)[[4]](https://albertnahmanplumbing.com/plumber-in-san-francisco-ca/)[[5]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-hayward)
+
+**Key Takeaways:** 
+
+- **High Ratings:** The company often receives high praise for its professionalism, punctuality, and the quality of its work.[](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html) [[1]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)
+- **Reputation:** With over 40 years of service, they have built a strong, well-established reputation as a reliable and professional plumbing, heating, and cooling company, sometimes called "The Peace of Mind Folks".[](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/) [[1]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)[[2]](https://albertnahmanplumbing.com/about-us/)
+- **Services:** They offer a full range of services including plumbing repairs, drain cleaning, water heater installation (including tankless), HVAC services, and more.[](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html) 
+- **Experience:** They have a highly experienced team, with many employees having been with the company for over 20 years.[](https://albertnahmanplumbing.com/about-us/) 
+
+**Considerations:** 
+
+- **Cost:** Some reviews have noted that their services can be more expensive compared to other options, although this often comes with high-quality service and warranties.[](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4) [[1]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4)[[2]](https://www.reddit.com/r/eastbay/comments/1fu7n45/reputablepreferred_plumbers/)
+- **Customer Experience:** While the vast majority of reviews are positive, there are some mixed reviews regarding the "process" and potential upselling of services, particularly for those without a service membership.[](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4) 
+
+**Conclusion:**   
+For many, Albert Nahman Plumbing is a preferred choice due to their reliability and expertise. They are often described as professional, knowledgeable, and reliable, making them a good option for those looking for quality work, especially if they are willing to pay a bit more for that, according to some.[[1]](https://albertnahmanplumbing.com/commercial/hvac/)[[2]](https://albertnahmanplumbing.com/about-us/)
+
+Would you like me to find out about their specific **pricing for a common job** like a water heater installation, or perhaps their **current, available discounts**?
+```
+
+</details>
+
+<!-- LABELS item=1 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=1 -->
+
+---
+
+## Item 2 · `openai` · _is Albert Nahman Plumbing a good plumbing company?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing is generally considered a reputable, established plumbing company in the East Bay/Berkeley–Oakland area. They’re known for offering plumbing, sewer, drain, and HVAC services, and many customers value their professionalism and responsiveness.
+
+That said, customer experiences can vary—especially regarding **pricing**, since larger, established service companies may charge more than an independent plumber. Before hiring them, I’d recommend:
+
+- Get a written estimate, including labor, parts, permits, and possible additional charges.
+- Ask whether the diagnostic fee is credited toward the repair.
+- Compare with one or two licensed local plumbers.
+- Check recent Google/Yelp reviews for your specific location and service.
+- Verify their current California contractor license and insurance.
+
+**Bottom line:** They’re likely a reasonable choice if you prioritize a well-established company and clear service processes, but compare estimates if cost is important.
+```
+
+</details>
+
+<!-- LABELS item=2 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=2 -->
+
+---
+
+## Item 3 · `perplexity` · _is Albert Nahman Plumbing a good plumbing company?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+**Overall, Albert Nahman Plumbing appears to be a generally good plumbing company, but it is not uniformly rated as excellent.** Most major review sources show strong customer satisfaction, while a smaller number of sources and individual reviews raise concerns about *price* and occasional service/communication issues.[1][2][5][7][9][10]
+
+- On Yelp, the Berkeley location shows **3.3/5 from 718 reviews**, which is mixed rather than outstanding.[1]
+- On BirdEye, it shows **4.7/5 from 3,309 reviews**, and other platforms also show strong scores, including **4.6/5 on Angi** and **4.8/5** in Directorii’s listed reviews.[2][7][10]
+- BBB lists the business with an **A+ rating**, but its customer review rating is only **3.21/5 from 19 reviews**, showing a gap between accreditation and customer sentiment.[9][3]
+- HomeAdvisor reports **87% recommended**, which also points to generally favorable customer experience.[5]
+
+What the reviews suggest:
+- **Strengths:** professionalism, responsiveness, punctuality, and clean work are mentioned repeatedly.[8][9][4]
+- **Common complaint:** several sources mention that the company can be **expensive** or that labor/pricing felt high.[4][6][3]
+- **Occasional negatives:** a minority of reviews mention service or communication problems.[10][3]
+
+If you want, I can also help you judge whether they’re a good fit for your specific job by comparing them with other local plumbers or by checking recent complaint patterns.
+```
+
+</details>
+
+<!-- LABELS item=3 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=3 -->
+
+---
+
+## Item 4 · `gemini_grounded` · _Albert Nahman Plumbing reviews and complaints_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing, Heating, and Cooling receives a mixed range of reviews and complaints, with customers reporting both highly positive experiences and significant issues. The company is BBB accredited with an A+ rating and holds a Diamond Certified status, indicating a commitment to customer service and quality.
+
+**Positive Reviews:**
+Many customers praise Albert Nahman Plumbing for their professionalism, prompt service, and effective problem diagnosis. Several technicians, including Josue Hernandez, Jaleen, Fernando, Cole, James, Angel, and Charles, have been specifically commended for their courteousness, expertise, and thorough work. Customers appreciate that technicians often explain the issues and potential fixes clearly, arrive on time, and clean up thoroughly after completing the job. The company also offers warranties on new installations and certain repairs.
+
+**Complaints:**
+Despite positive feedback, a notable number of complaints highlight concerns about pricing and service quality. Some customers report being significantly overcharged, with estimates sometimes being much higher than the actual cost of the repair. There are accusations of taking advantage of elderly customers by charging exorbitant fees.
+
+Other common complaints include incomplete work, poor communication, and extended delays. Some customers have experienced situations where management failed to return calls or honor service contracts. There are also instances where customers felt the work was incompetent, leading to the situation worsening or requiring further repairs shortly after the initial service. A few reviews suggest that the company's service quality has declined since its acquisition by a larger national entity.
+```
+
+</details>
+
+<!-- LABELS item=4 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=4 -->
+
+---
+
+## Item 5 · `google_ai_mode` · _Albert Nahman Plumbing reviews and complaints_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing, Heating, and Cooling , based in Berkeley and Hayward, CA, has a mixed reputation, with a high volume of reviews often citing professional, timely service alongside significant complaints regarding high costs and aggressive upselling tactics.[[1]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4)[[2]](https://albertnahmanplumbing.com/hvac/)[[3]](https://albertnahmanplumbing.com/about-us/)
+
+**Overall Sentiment and Reputation** 
+
+- **Mixed Reviews:** While some customers praise the company as "prompt" and "professional," others describe it as a "bait-and-switch" operation that "takes advantage" of customers.[](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4) [[1]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4)[[2]](https://directorii.com/us/ca/berkeley/albert-nahman-plumbing-heating-and-cooling-berkeley-reviews-10116/)[[3]](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226/customer-reviews?page=2)[[4]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)[[5]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)
+- **High Costs:** A common complaint among negative reviews is that the company is "corrupt" and charges far more than other plumbing services.[](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm) [[1]](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm)[[2]](https://www.reddit.com/r/eastbay/comments/1fu7n45/reputablepreferred_plumbers/)
+- **Mixed Feedback Loop:** The company is often described as having "two faces," where some technicians are highly rated, while others are seen as unprofessional or overly focused on selling extras.[](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4) [[1]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4?start=10)[[2]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)[[3]](https://directorii.com/us/ca/berkeley/albert-nahman-plumbing-heating-and-cooling-berkeley-reviews-10116/)
+
+**Common Complaints** 
+
+- **Aggressive Upselling:** Numerous reviewers complained that standard service calls were used as opportunities for technicians to try to sell expensive, unnecessary filters and improvement systems.[](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4) 
+- **Poor Post-Installation Service:** Complaints indicate that while the company is prompt to sell maintenance contracts, they have failed to honor them, with customers noting a lack of follow-through on promised service.[](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm) 
+- **Damaged Property/Poor Workmanship:** Some customers reported that the company broke pipes, toilets, or irrigation systems during repairs and then tried to charge more to fix their own mistakes.[](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226/customer-reviews?page=2) 
+- **Communication Issues:** Several reviewers mentioned poor communication and high turnover of staff.[](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226/customer-reviews?page=2) [[1]](https://directorii.com/us/ca/berkeley/albert-nahman-plumbing-heating-and-cooling-berkeley-reviews-10116/)[[2]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-hayward)
+
+**Positive Reviews** 
+
+- **Promptness and Professionalism:** Several customers described the team as "incredibly responsible" and "prompt," often noting that the technicians were well-trained in customer service.
+- **Effective Problem Solving:** Some users noted that the company successfully diagnosed and fixed complex issues.
+- **Knowledgeable Technicians:** Some specific technicians were singled out for being "patient" and explaining the costs clearly.[](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/) [[1]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)
+
+**Key Details** 
+
+- **Service Area:** Serves the East Bay, including Berkeley, Hayward, Walnut Creek, and Oakland.
+- **Specials:** The company frequently offers promotions, such as "$25 off any plumbing, heating or cooling service".
+- **Warranty:** They claim a 5-year warranty on new installations, 2 years on repairs, and 20 years on complete copper repiping.[](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/) [[1]](https://albertnahmanplumbing.com/)[[2]](http://albertnahmanplumbing.com/service-areas/walnut-creek/)[[3]](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226)
+
+Would you like me to find **specific reviews** for a particular service, such as **HVAC repair** or **water heater installation**?
+```
+
+</details>
+
+<!-- LABELS item=5 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=5 -->
+
+---
+
+## Item 6 · `openai` · _Albert Nahman Plumbing reviews and complaints_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing, Heating & Drain Cleaning is a long-established Berkeley/East Bay plumbing company. I don’t have live access to current review databases, so I can’t reliably quote today’s ratings or complaint counts.
+
+For the most useful current picture, check:
+
+- **Google Reviews** – overall rating, recent service experiences, response to negative reviews  
+- **Yelp** – often more detailed narratives, though ratings can be polarized  
+- **BBB** – complaint history, business responses, and accreditation status  
+- **California Contractors State License Board** – license status and any formal disciplinary records  
+- **Angi/HomeAdvisor** – estimates, punctuality, workmanship, and warranty feedback  
+
+When reviewing complaints, pay particular attention to repeated reports involving:
+
+- Unexpected charges or estimates changing after work begins  
+- Delays, missed appointments, or poor communication  
+- Incomplete cleanup or damage to property  
+- Warranty or callback problems  
+- Whether the company responds constructively and resolves issues  
+
+A few isolated negative reviews are normal for a busy service contractor; repeated, recent complaints with similar details are more significant. Before hiring, get a written estimate, ask whether diagnostic or emergency fees apply, confirm warranty terms, and verify the plumber’s California license and insurance.
+
+If you share the review links or the specific complaint you’re concerned about, I can help assess whether it appears credible and how serious it is.
+```
+
+</details>
+
+<!-- LABELS item=6 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=6 -->
+
+---
+
+## Item 7 · `perplexity` · _Albert Nahman Plumbing reviews and complaints_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Albert Nahman Plumbing appears to have a **strong overall rating** but also a recurring set of complaints, especially around **high pricing**, **communication problems**, and a few reports of **damage or incomplete work**.[2][5][6][9][10]
+
+- On BBB, the company has **15 complaints in the last 3 years** and **8 complaints closed in the last 12 months**.[1]
+- BBB customer reviews show an average of **3.21/5 stars from 19 reviews**, which is notably lower than some other review platforms.[2]
+- Angi lists the company at **4.6/5 overall**, based on a much larger set of reviews, suggesting many customers are satisfied.[9][15]
+- BirdEye shows a **4.7-star rating with 3,309 reviews**, and HomeAdvisor says there are **2,700+ Google reviews at 4.8 stars**, indicating generally positive volume overall.[5][3]
+
+Common complaint themes across the results:
+- **Overpricing / high labor costs**: multiple reviewers said the work was “very expensive” or “overpriced.”[4][6][7]
+- **Poor communication or follow-through**: some complaints mention delayed responses, incomplete jobs, or trouble getting problems resolved.[6][10]
+- **Alleged workmanship issues**: a few reviews describe damaged pipes, unresolved leaks, or work that required expensive follow-up repairs.[2][3][13]
+- **Customer service frustration**: some reviewers praised the technicians but still criticized the company’s handling of billing or service recovery.[4][6]
+
+Overall, the pattern is: **many customers rate them highly, but the negative reviews consistently cluster around cost and communication rather than simple service quality**.[2][6][9][10] If you want, I can also turn this into a **pros/cons summary** or compare Albert Nahman against a few other Bay Area plumbing companies.
+```
+
+</details>
+
+<!-- LABELS item=7 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=7 -->
+
+---
+
+## Item 8 · `gemini_grounded` · _is Albert Nahman Plumbing licensed and insured?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Yes, Albert Nahman Plumbing, Heating and Cooling is licensed and insured. The company holds an active license number 1083634, issued by the Contractors State License Board, which is valid until January 31, 2027.
+
+Additionally, Albert Nahman Plumbing, Heating and Cooling is insured, carrying both liability insurance and workers' compensation.
+
+It is important to note that while an older license number, 414359, is listed as expired and not able to contract, the company operates under the active license 1083634.
+```
+
+</details>
+
+<!-- LABELS item=8 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=8 -->
+
+---
+
+## Item 9 · `google_ai_mode` · _is Albert Nahman Plumbing licensed and insured?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Yes, Albert Nahman Plumbing, Heating, and Cooling is **licensed and insured** . They are a long-standing, established company in the Bay Area (since 1981) that provides plumbing and HVAC services.[](https://albertnahmanplumbing.com/plumber-in-richmond-ca/) [[1]](https://albertnahmanplumbing.com/plumber-in-richmond-ca/)[[2]](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm)[[3]](https://albertnahmanplumbing.com/)[[4]](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226)
+
+Here are the details:
+
+- **Licensing:** They hold contractor licenses for plumbing and HVAC services, with records indicating active, insured status.
+- **Insurance:** They carry both liability insurance and workers' compensation, ensuring protection for both customers and their staff.
+- **Credentials:** They are [BBB Accredited](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226) with an A+ rating and are listed as [Diamond Certified](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/).
+- **Warranties:** The company offers warranties on their work, including five years on parts and up to twenty years on re-piping or sewer replacement.[](https://www.cslb.ca.gov/414359) [[1]](https://www.cslb.ca.gov/414359)[[2]](https://www.healthsafetyqualified.org/company/ca/berkeley/albert-nahman-plumbing-and-heating/)[[3]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)
+
+Would you like help looking up their **exact license number** on the CSLB website, or do you need to check if they have **specific availability** for a job?
+```
+
+</details>
+
+<!-- LABELS item=9 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=9 -->
+
+---
+
+## Item 10 · `openai` · _is Albert Nahman Plumbing licensed and insured?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Yes—Albert Nahman Plumbing & Heating in Berkeley, California, publicly represents that it is **licensed, bonded, and insured**.  
+
+For the most reliable confirmation, check the California Contractors State License Board (CSLB) using the company’s exact legal name or license number, and ask the company for a current **certificate of insurance**—especially if you need proof of general liability or workers’ compensation coverage.
+```
+
+</details>
+
+<!-- LABELS item=10 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=10 -->
+
+---
+
+## Item 11 · `perplexity` · _is Albert Nahman Plumbing licensed and insured?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Yes. Available listings indicate **Albert Nahman Plumbing, Heating and Cooling** is **licensed** in California, with CSLB license **#1083634** and an expiration date of **1/31/2027** on multiple directory profiles and BBB records.[4][5][7] Several sources also describe the company as **insured**; HomeAdvisor lists **General Liability** insurance, BuildZoom lists it as insured up to **$2,000,000**, and the company’s own site says its plumbers are “licensed and insured.”[5][6][13]
+
+A few notes on confidence:
+- The **license** status is well supported and consistent across sources.[4][5][7]
+- The **insurance** claim is supported by directory/profile sources, but insurance details can change, so if you need to verify current coverage for a job, it is best to ask the company directly for a current certificate of insurance.[5][6][10]
+```
+
+</details>
+
+<!-- LABELS item=11 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=11 -->
+
+---
+
+## Item 12 · `gemini_grounded` · _how much does a plumber cost in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+The cost of a plumber in Berkeley, California, can vary significantly depending on the type of service, urgency, and complexity of the job. Generally, you can expect to pay a service call or diagnostic fee, and then an hourly rate or a flat fee for specific services.
+
+**Typical Costs and Fees:**
+
+*   **Service Call / Diagnostic Fee:** Plumbers in Berkeley typically charge between $75 and $150 for a service call or diagnostic fee.
+*   **Hourly Rates:** While specific hourly rates for Berkeley plumbers can vary, the average hourly pay for a plumber in Berkeley is around $37.21 to $43.71. Some sources indicate that licensed professionals in urban areas of California, like Berkeley, may charge around $150 per hour, especially for specialized services.
+*   **Specific Services:**
+    *   Drain cleaning can range from $150 to $450.
+    *   Toilet repair typically costs between $100 and $350.
+    *   Faucet repair or replacement is usually $100 to $350.
+    *   Pipe repair can be $200 to $1,000, while pipe replacement can range from $500 to over $3,500.
+    *   Water heater repair is generally $150 to $700, and a tank water heater replacement can be $800 to $2,000. Tankless water heater installation is more expensive, ranging from $1,500 to $3,500.
+    *   Sewer line repair can be extensive, costing $1,000 to over $5,000. A sewer camera inspection typically costs $150 to $400.
+    *   Leak detection services are usually between $200 and $600.
+    *   Slab leak repair can range from $1,500 to $4,500.
+
+**Factors Affecting Plumbing Costs in Berkeley:**
+
+*   **Type of Service:** The complexity of the plumbing issue is the primary determinant of cost. Minor repairs like a leaky faucet will be less expensive than major work such as sewer line replacement or whole-house repiping.
+*   **Urgency (Emergency Services):** Emergency plumbing services, especially outside of normal business hours, on weekends, or holidays, will incur higher costs due to elevated labor rates and additional dispatch or labor premiums. Emergency service calls can range from $150 to over $350.
+*   **Local Labor Rates:** Plumbing costs in Berkeley are often higher than the national average due to elevated Bay Area labor rates and the higher cost of living in the region.
+*   **Age of Homes and Infrastructure:** Berkeley's older homes and aging underground infrastructure can increase the complexity and labor costs of plumbing repairs. Older plumbing materials, limited access behind walls or beneath crawl spaces, and issues like mature tree roots affecting aging clay piping systems are common challenges.
+*   **Permit and Inspection Requirements:** Strict California building regulations and local permit and inspection requirements in Alameda County can increase pricing for certain projects like sewer replacements, repiping, and water heater installations.
+*   **Materials:** The cost of materials used for the repair or installation will also impact the final price.
+
+It is recommended to get detailed, upfront quotes from licensed plumbers before any work begins.
+```
+
+</details>
+
+<!-- LABELS item=12 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=12 -->
+
+---
+
+## Item 13 · `google_ai_mode` · _how much does a plumber cost in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Based on data from July 2026, the typical cost for a plumber in Berkeley ranges from **$115 to $298 per job** , with an average of around $185. Hourly rates for local plumbing companies are often between **$225 and $254**.[](https://www.yelp.com/costs/plumbing/berkeley) [[1]](https://www.yelp.com/costs/plumbing/berkeley)[[2]](https://www.berkeleyparentsnetwork.org/recommend/home/plumber)
+
+Here is a breakdown of plumbing costs in Berkeley:
+
+**Common Service Costs** 
+
+- **Emergency Drain Cleaning:** $175 – $500
+- **Sewer Backup Emergency:** $500 – $3,500
+- **Water Heater Repair/Replacement:** $250 – $1,000
+- **Camera Inspection:** $300 – $600
+- **Slab Cut & Repair:** $1,850 – $3,700[[1]](https://proplumberberkeley.com/plumbing-cost-berkeley/)[[2]](https://plumber-cost.com/drain-line-replacement-cost/california/berkeley)
+
+**Factors Affecting Price** 
+
+- **Company vs. Individual:** Larger companies may have higher overhead (hourly rates over $200), while independent plumbers might be cheaper.
+- **Emergency Fees:** Immediate, 24/7 service will generally be more expensive.
+- **Severity:** Main drain line repairs or large-scale repiping can exceed $2,500-$9,000+.[](https://patch.com/california/berkeley/how-much-does-hiring-plumber-cost-berkeley) [[1]](https://patch.com/california/berkeley/how-much-does-hiring-plumber-cost-berkeley)[[2]](https://www.hamuch.com/rates/plumber)[[3]](https://www.mrrooter.com/oakland/berkeley/)
+
+Many highly-rated plumbers in Berkeley, such as Pelican Plumbers or Bay Plumbing , offer estimates, so it is recommended to get a quote before work begins.[](https://www.homeadvisor.com/c.Plumbing.Berkeley.CA.-12058.html) [[1]](https://www.homeadvisor.com/c.Plumbing.Berkeley.CA.-12058.html)[[2]](https://m.yelp.com/biz/pelican-plumbers-berkeley)[[3]](https://www.armorproservices.com/san-antonio-plumber)[[4]](https://www.yelp.com/search?find_desc=Plumber+Service&find_loc=Berkeley%2C+CA)
+
+Would you like me to find **plumbers with 5-star ratings** on Yelp, or perhaps **independent plumbers** who might charge less?
+```
+
+</details>
+
+<!-- LABELS item=13 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=13 -->
+
+---
+
+## Item 14 · `openai` · _how much does a plumber cost in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+In **Berkeley, CA**, a plumber typically costs:
+
+- **Service/diagnostic call:** $75–$200  
+- **Standard labor:** about **$120–$250 per hour**
+- **Emergency or after-hours service:** $200–$400+ per hour
+- **Unclogging a drain:** $150–$350
+- **Repairing a leaking faucet or pipe:** $150–$600
+- **Water heater repair:** $200–$900
+- **Water heater replacement:** $1,500–$4,000+
+- **Sewer line repair/replacement:** $2,000–$15,000+, depending on access and damage
+
+Costs can be higher if the plumber is licensed, the work requires a **Berkeley permit**, parts are expensive, or walls/floors must be opened. Ask whether the quote includes the service call, labor, materials, permits, and disposal fees. For anything beyond a simple repair, getting **2–3 written estimates** is worthwhile.
+```
+
+</details>
+
+<!-- LABELS item=14 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=14 -->
+
+---
+
+## Item 15 · `perplexity` · _how much does a plumber cost in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+In Berkeley, a **plumber typically costs about $150–$250 per hour**, with a **service call fee of $90–$150** that is often credited if you approve the work.[1] For a real-world local benchmark, Yelp shows a **typical** plumbing cost of about **$115** and a higher-end figure of **$298** in Berkeley.[2]
+
+For common jobs, local estimates vary widely by scope:
+
+- **Drain cleaning:** about **$150–$500**.[1]
+- **Water heater repair:** about **$150–$700**.[1]
+- **Water heater installation:** about **$1,300–$3,500**.[1]
+- **Toilet repair/installation:** about **$150–$800**.[1]
+- **Leak detection:** about **$150–$600**.[1]
+- **Emergency plumbing:** about **$200–$1,000**.[1]
+
+Other Berkeley-specific cost guides give lower hourly estimates, such as **about $100 per hour** from ProMatcher[4] and **$45–$150 per hour** from HomeGuide[5], so the most reliable takeaway is that **simple jobs often start around $100–$200+, while larger or emergency jobs can run much higher**.[1][4][5]
+
+If you want, I can also estimate the cost for a **specific plumbing job** in Berkeley, like a clogged drain, leak, or water heater replacement.
+```
+
+</details>
+
+<!-- LABELS item=15 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=15 -->
+
+---
+
+## Item 16 · `gemini_grounded` · _why is my water pressure suddenly low?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+A sudden drop in water pressure can be a frustrating issue, and its cause can range from simple, localized problems to more complex system-wide concerns. Identifying whether the low pressure affects a single fixture, only hot water, or your entire home is the first step in pinpointing the problem.
+
+Here are the most common reasons for sudden low water pressure:
+
+**1. Issues Affecting Your Entire Home's Water Pressure:**
+*   **Partially Closed Main Water Shut-Off Valve:** The main shut-off valve controls all water entering your home. If it's not fully open, it restricts the overall water flow and pressure to all fixtures. This can happen accidentally after a repair or if the valve mechanism drifts over time. For a ball valve, the handle should be parallel to the pipe when fully open; for a gate valve (round handle), turn it counterclockwise until it stops, then back it off a quarter turn.
+*   **Faulty Pressure Regulator (PRV):** Many homes have a pressure-reducing valve (PRV) that lowers the high water pressure coming from the municipal supply to a safer level for your home's plumbing. If this regulator malfunctions, it can cause a sudden drop or fluctuation in water pressure throughout the house.
+*   **Hidden Plumbing Leaks:** Even small leaks in your plumbing system can significantly reduce water pressure by diverting water before it reaches your fixtures. Look for signs like damp spots on walls or ceilings, mold growth, or an unusually high water bill. You can check for a leak by turning off all water-using appliances and taps, then checking your water meter. If the meter dial changes, you likely have a leak.
+*   **Corroded or Clogged Pipes:** Over time, mineral deposits, rust, and debris can build up inside pipes, especially in older homes with galvanized steel pipes, restricting water flow and causing low pressure.
+*   **Municipal Water Supply Issues:** Problems with your city's water supply, such as a water main break, maintenance work, or unusually high demand in your area (e.g., during hot, dry summer months), can lead to a temporary drop in water pressure for multiple homes. Checking with neighbors can help determine if this is the cause.
+*   **Water Meter Valve Partially Closed:** Similar to your main shut-off valve, the valve at your water meter can also be partially closed, restricting water flow into your home. However, it's generally not recommended to partially close this valve as it can cause damage.
+
+**2. Issues Affecting Only Hot Water Pressure:**
+If only your hot water has low pressure, the problem is likely related to your water heater or the hot water plumbing.
+*   **Sediment Buildup in Water Heater:** Minerals in hard water can settle at the bottom of your water heater tank and accumulate in the outlet pipes, restricting hot water flow and reducing pressure.
+*   **Partially Closed Shut-Off Valve at Water Heater:** A shut-off valve near your water heater that is not fully open can restrict the hot water supply.
+*   **Corroded Hot Water Pipes:** Similar to general pipe corrosion, specific hot water lines can corrode and restrict flow.
+*   **Faulty Mixing Valve or Water Heater Components:** A malfunctioning mixing valve (also called a tempering valve) or other internal water heater components can restrict hot water flow.
+
+**3. Issues Affecting a Single Faucet or Fixture:**
+If only one faucet or shower has low pressure, the problem is usually with that specific fixture.
+*   **Clogged Faucet Aerator or Showerhead:** Mineral deposits, dirt, and debris can build up in the aerator (the screen at the end of a faucet) or showerhead, restricting water flow. Cleaning or replacing the aerator is often an easy and inexpensive fix.
+*   **Clogged Faucet Cartridge:** The internal cartridge in a faucet can also become clogged.
+
+**4. Issues Specific to Well Water Systems:**
+If your home uses a well, low water pressure can be caused by:
+*   **Pressure Switch Problems:** The pressure switch tells your well pump when to turn on and off. If it's set too low or is failing, it can lead to low pressure.
+*   **Waterlogged Pressure Tank:** A pressure tank that has lost its air charge can cause inconsistent water flow and pressure fluctuations.
+*   **Clogged Sediment Filter:** A dirty whole-house sediment filter can restrict water flow from the well.
+*   **Worn Well Pump:** An aging or failing well pump may not be able to generate enough pressure.
+*   **Low Water Level in Well:** If the water level in your well is too low, the pump may pull air, reducing effective pressure.
+
+To diagnose the problem, it's recommended to first determine if the low pressure is isolated to one fixture, only hot water, or the entire house. If the issue affects your whole home or you suspect a more serious plumbing problem, contacting a professional plumber is advisable.
+```
+
+</details>
+
+<!-- LABELS item=16 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=16 -->
+
+---
+
+## Item 17 · `google_ai_mode` · _why is my water pressure suddenly low?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+A sudden drop in water pressure is usually caused by a **hidden leak** , a **partially closed main valve** , a **failing pressure regulator (PRV)** , or **issues with the municipal water supply**.[](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/) [[1]](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/)[[2]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)
+
+Here is a breakdown of why this happens and how to narrow it down based on the search results:
+
+1. Check for "Whole House" vs. "Single Fixture" Issues
+
+- **If all faucets are slow:** The issue is likely the main water supply, the main shutoff valve, or a malfunctioning Pressure Reducing Valve (PRV).[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system)
+- **If only one faucet/shower is slow:** It is likely a clogged faucet aerator or showerhead, or a faulty, partially closed valve under the sink.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/)[[2]](https://www.parkerandsons.com/blog/why-is-my-shower-pressure-suddenly-low)
+
+2. Common Causes of Sudden Low Pressure
+
+- **Partially Closed Valves:** Check your main shutoff valve (often in the basement, garage, or near the water meter) to ensure it is fully open.[](https://allplumbing.com/sudden-drop-in-water-pressure-heres-what-it-usually-means/) [[1]](https://lorenzphac.com/blog/low-water-pressure-in-house/)[[2]](https://fclwd.com/blog-low-water-pressure-causes-and-fixes/)[[3]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[4]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)
+- **Failing Pressure Regulator (PRV):** If your home has a PRV (usually located near the main shutoff), it may have failed, leading to a sudden drop in pressure.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://totalmechanicalcare.com/blog/5-reasons-your-water-pressure-changed-suddenly-and-what-to-do)
+- **Hidden Leaks:** A broken pipe (especially underground) can drastically reduce pressure. Look for water stains on walls, wet spots in the yard, or a rapidly ticking water meter.[](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/) [[1]](https://jayceeplumbing.com.au/is-your-weak-water-pressure-driving-you-crazy/)[[2]](https://www.patioandpizza.com/blogs/resources/how-to-fix-water-pressure-problems-in-your-outdoor-kitchen?srsltid=AfmBOoo-1_Ix-_sL2cj-jQgN8q19CLa5LEFSVyIZZ75DIjFDV4lWJ_JE)[[3]](https://www.leadingplumbingservices.com/when-every-faucet-feels-weak-at-the-same-time-its-not-a-coincidence)
+- **Water Main Break/Municipal Demand:** If your neighbors are experiencing the same issue, it is likely a municipal issue, such as a water main break or high demand.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) 
+- **Water Softener/Filter Clogs:** A malfunctioning water softener or clogged sediment filter can block water flow.[](https://www.quora.com/Plumbing-Water-pressure-was-fine-all-of-a-sudden-all-faucets-in-house-have-gone-to-slow-trickle-hot-and-cold-water-Is-there-a-clog-in-the-system) [[1]](https://dscwater.com/articles/low-water-pressure-on-well-water-7-common-causes-and-what-actually-fixes-them/)
+
+3. If Only Hot Water is Low
+
+If cold water pressure is fine, but hot water is low, the issue is typically:[[1]](https://www.tnstandard.com/causes-drops-water-pressure/)
+
+- **Sediment Buildup in the Water Heater:** Minerals (calcium) can settle in the tank, clogging the hot water outlet.
+- **A Closed Heater Valve:** Ensure the valves feeding the water heater are fully open.[](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66) [[1]](https://www.youtube.com/watch?v=bqwStAIZ4es&t=66)[[2]](https://www.tnstandard.com/causes-drops-water-pressure/)
+
+4. What to Do
+
+1. **Ask neighbors** if they have low pressure to rule out municipal issues.
+2. **Check your main shutoff valve** to ensure it hasn't been accidentally turned.
+3. **Check your water meter** while all fixtures are off to check for leaks.
+4. **Clean your faucet aerators** by soaking them in vinegar to remove mineral buildup.[](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/) [[1]](https://www.reddit.com/r/DIY/comments/1hhsmmn/water_pressure_in_house_slightly_lower_than/)[[2]](https://www.chasroberts.com/4-things-to-do-when-you-suddenly-lose-water-pressure/)[[3]](https://www.coolwichita.com/blog/low-water-pressure-repair)
+
+If all fixtures are affected and your main valve is open, you likely need a professional plumber to inspect the pressure regulator or look for a major leak.[](https://www.tnstandard.com/causes-drops-water-pressure/) [[1]](https://stevebennettplumbing.com.au/blog/plumber/information/what-causes-low-water-pressure/)[[2]](https://www.sobieskiinc.com/blog/common-water-pressure-problems-and-how-solve-them/)
+
+To help narrow down the cause, could you tell me:
+
+- Is the low pressure affecting the **whole house** or just one area/floor?
+- Is it only the **hot water** , or both?
+- Do you have a **well or city water**?
+
+I can give you more specific troubleshooting steps based on these details.
+```
+
+</details>
+
+<!-- LABELS item=17 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=17 -->
+
+---
+
+## Item 18 · `openai` · _why is my water pressure suddenly low?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Sudden low water pressure is usually caused by one of these:
+
+### First, narrow it down
+- **One faucet/shower only:** The aerator or showerhead may be clogged, or that fixture’s valve may not be fully open.
+- **All cold-water fixtures:** Check whether your **main shutoff valve** is partly closed, a whole-house filter is clogged, or there’s a leak.
+- **Hot water only:** The water heater’s shutoff valve, inlet screen, or plumbing may be restricted.
+- **Inside and outside:** There may be a municipal supply problem, pressure-regulator failure, or a significant leak.
+
+### Quick checks
+1. Ask a neighbor whether they also have low pressure—this indicates a city/utility issue.
+2. Check your main water shutoff valve; it should be fully open.
+3. Look at your water meter with all fixtures off. If it’s still moving, you may have a leak.
+4. Inspect for damp spots, running toilets, hissing sounds, or water pooling near the foundation.
+5. Clean faucet aerators and showerheads.
+6. If you have a whole-house filter or softener, check whether it needs replacement or bypassing.
+7. If pressure fluctuates or is low throughout the house, the **pressure-reducing valve** may have failed.
+
+### Call for help promptly if
+- Water pressure dropped suddenly and you see water damage or unexplained meter movement.
+- You hear water running inside walls.
+- The main shutoff won’t work.
+- Pressure is extremely low or absent throughout the house.
+
+If you rent, contact the landlord. Otherwise, check your water utility’s outage notices, then call a plumber if the issue is only at your property.
+```
+
+</details>
+
+<!-- LABELS item=18 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=18 -->
+
+---
+
+## Item 19 · `perplexity` · _why is my water pressure suddenly low?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+A sudden drop in **water pressure** is most often caused by a problem in your home plumbing or a temporary issue with the local water supply, such as a partially closed main valve, a leak, a faulty pressure regulator, clogged fixtures, or municipal work/breaks.[1][3][6]
+
+What to check first:
+
+- **Is it only one faucet or one fixture?** If so, the issue is usually local, such as a clogged aerator, a partially closed shutoff valve, or debris in that fixture.[4][13]
+- **Is hot water low but cold water normal?** That points to the water heater or its connections.[3][5]
+- **Is low pressure everywhere in the house?** That suggests a main shutoff valve, pressure regulator, hidden leak, or supply issue.[1][4][6]
+- **Did it happen suddenly after plumbing work?** A main valve may not have been reopened fully.[6][15]
+- **Is your water meter still moving when all water is off?** If yes, that is a strong sign of a leak.[2]
+
+Common causes of sudden low pressure include:
+
+- **Partially closed main shutoff valve** or water meter valve.[1][4][12]
+- **Hidden plumbing leak** inside or under the house.[1][2][6]
+- **Failing pressure-reducing valve** or pressure regulator.[1][6][11]
+- **Sediment, mineral buildup, or clogged fixtures** like aerators and filters.[1][4][7][12]
+- **Municipal supply issues** such as water main breaks, hydrant flushing, maintenance, or high neighborhood demand.[3][4][6][10]
+
+If you want, I can walk you through a quick **5-minute troubleshooting checklist** to narrow down the cause.
+```
+
+</details>
+
+<!-- LABELS item=19 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=19 -->
+
+---
+
+## Item 20 · `gemini_grounded` · _best plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+When searching for the best plumbers in Berkeley, several companies consistently receive high praise for their quality of work, responsiveness, and customer service. Based on numerous reviews and certifications, here are some of the top-rated options:
+
+**Highly-Rated Plumbing Services in Berkeley:**
+
+*   **Star Rooter and Plumbing, Inc.** is frequently mentioned for its high-quality work and customer satisfaction. Clients have praised their efficiency and the lasting nature of their repairs, often noting that they don't need follow-up calls for the same issue.
+*   **Albion Plumbing & Rooter, Inc.** is recognized for being easy to work with, responding quickly, and providing competent service. Customers appreciate their promptness and the quality of their work.
+*   **Savior Plumbing, Inc.** offers a wide range of residential and commercial plumbing services and is commended for being reliable, doing the work as promised, and completing it on time.
+*   **LemonTree Plumbing** stands out for its honest, high-quality plumbing services across the East Bay, including Berkeley. They offer 24/7 live answering, upfront pricing, and have over 100 five-star reviews. Customers highlight their fast response, same-day service, clear communication, and professional, friendly technicians.
+*   **Green Eagle Plumbing** is a top-rated, locally owned, and family-oriented company serving Berkeley and surrounding areas. They are known for quality workmanship, transparent pricing, and reliability, with customers often recommending them for both small and large projects, including whole-house repiping.
+*   **Pelican Plumbers** in Berkeley has a high percentage of "superior" overall ratings from customers and offers prices that are reportedly 19% lower than the average. They are noted for being very responsive to communication and for efficient, effective repairs.
+*   **Berkeley Plumbing and Heating** has been in business for over a century, offering experienced, union-trained plumbers who are dedicated to providing top-quality service for a wide range of plumbing, heating, and cooling needs. They are praised for their professionalism, quality, dependability, and affordability.
+*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** is a trusted name for professional plumbing services, including repairs, drain cleaning, and tankless water heater repair. They are known for quick, efficient, and professional services from licensed and insured plumbers, aiming for 100% customer satisfaction.
+*   **Pedro Galvan Plumbing, Inc.** receives high recommendations for professionalism, clarity, and compassion, especially in urgent situations. Customers appreciate their transparent pricing, cost-effectiveness, and precise, efficient, and tidy workmanship.
+
+When choosing a plumber, it's always advisable to consider the specific nature of your plumbing issue, read recent reviews, and inquire about estimates.
+```
+
+</details>
+
+<!-- LABELS item=20 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=20 -->
+
+---
+
+## Item 21 · `google_ai_mode` · _best plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Based on recent reviews and local ratings, here are some of the top-rated plumbing services in and around Berkeley, CA, for 2026:
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-869c3042d546:20)
+Afterglow Heating and Plumbing 5.0 (86)  
+Heating contractor  
+Open 1600 Shattuck Ave. Ste 214a  
+(5/5 stars) Highly rated for prompt, professional service, especially for emergency repairs, water heaters, and boilers.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo)[[2]](https://www.berkeleyplumbing.com/)[[3]](https://www.poorespropane.com/hvac/chester-md/)[[4]](https://bobbysplumbing.com/reviews/)
+
+![](https://lh3.googleusercontent.com/grass-cs/ACvplmOPplKGq-_tf4DZvhF2-Ri0kfwz_Gb8fZjb20-_xRV8D5RNOJg6P5_vJORoKddaKkYWrwH1DvUBOD0ZTZwAm9NOpElM-ysnuKaHTVdOEYfuEg7xLY7ROb7daIRZ4LUlHVwQwF6omQ=s192-w192-h144-n-k-no)
+LemonTree Plumbing 5.0 (30)  
+Plumber  
+Open  
+(5/5 stars) Highly recommended for personalized service, fair pricing, and clear communication, founded by a local operator.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo)[[2]](https://www.piazzaplumbing.net/reviews)[[3]](https://www.facebook.com/61561005844782/mentions/)[[4]](https://www.callbighorn.com/service-areas/new-washoe-city-nv-plumbing-services/)[[5]](https://www.jimwagnerplumbing.com/naperville-plumbers/underground-sewer-replacement/)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-869c3042d546:21)
+J J Rooter & Plumbing 4.9 (94)  
+Plumber  
+Open  
+(4.9/5 stars) Known for excellent sewer, drain cleaning, and general plumbing, with a 20% off discount on drain cleaning noted.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo)[[2]](https://www.thumbtack.com/ca/north-hollywood/plumbing)[[3]](https://www.mrrooter.com/baton-rouge/)[[4]](https://www.mrspeedyplumbing.com/plumber/los-angeles/)[[5]](https://gograsshopper.com/plumbing/hydro-jetting/)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-869c3042d546:22)
+L.J. Kruse Company 4.9 (305)  
+Plumber  
+Open 920 Pardee St  
+(4.9/5 stars) A long-standing family-owned business since 1916, offering reliable, skilled plumbing and heating services.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzMlgzRjNkQRgK)[[2]](https://ljkruse.com/)[[3]](https://bestairconditioningplumbingrepair.com/plumbing/)[[4]](https://greeneagleplumbing.com/)[[5]](https://www.berkeleyplumbing.com/)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-869c3042d546:23)
+Albert Nahman Plumbing, Heating, and Cooling 4.7 (3.4K)  
+HVAC contractor  
+Open 3333 Martin Luther King Jr Way  
+(4.7/5 stars) A well-known 24/7 service firm in the area, often cited for fast dispatch times.[[1]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK)[[2]](https://www.diamondcertified.org/report/albert-nahman-plumbing-heating-and-cooling/)[[3]](https://www.fixmyleaknow.com/service-areas/lorton/)[[4]](https://www.homeadvisor.com/rated.JoeBelangerPlumbing.36927984.html)[[5]](https://www.dispatch.com/press-release/story/158234/portlands-top-choice-for-emergency-plumbing-services/)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-869c3042d546:24)
+Wally's Plumbing & Leak Detection 5.0 (5)  
+Plumber  
+Open 225 University Ave  
+(5/5 stars) Specializes in leak detection and general plumbing repair.[[1]](https://www.thumbtack.com/ca/berkeley/drain-cleaning/wallys-plumbing/service/509067740351193089?utm_medium=partnership&utm_source=cma-google-ai)
+
+Key Things to Consider
+
+- **Emergencies:** Afterglow Heating and Plumbing and Albert Nahman offer 24-hour service.
+- **Specialties:** Pipe Spy is specialized for sewer lateral replacements, while AquaSaver Water Heaters focuses on water heaters.
+- **Local Focus:** Green Eagle Plumbing and Pelican Plumbers are frequently recommended by local community members.[](http://pelicanplumbers.com/) [[1]](http://pelicanplumbers.com/)[[2]](https://nextdoor.com/topics/plumber/berkeley/ca)
+
+Are you dealing with an **emergency** , such as a **burst pipe** or **major clog** , or looking for a **routine repair/installation**?
+```
+
+</details>
+
+<!-- LABELS item=21 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=21 -->
+
+---
+
+## Item 22 · `openai` · _best plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you mean **Berkeley, California**, the “best” plumber depends on the job and urgency. I’d compare highly rated local companies on **Google Maps and Yelp**, then verify:
+
+- **California C-36 plumbing license** through the CSLB  
+- Proof of insurance and written estimate  
+- Emergency/after-hours fees  
+- Warranty on labor and parts  
+- Recent reviews mentioning your specific issue
+
+For a **sewer line, repipe, gas line, or major remodel**, get at least **2–3 written bids**. For a small leak or clogged drain, choose a well-reviewed local plumber with a clear service-call fee rather than the cheapest ad.
+
+If you share your **Berkeley ZIP code, plumbing problem, and whether it’s urgent**, I can help narrow down the best options.
+```
+
+</details>
+
+<!-- LABELS item=22 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=22 -->
+
+---
+
+## Item 23 · `perplexity` · _best plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you want the **best plumber in Berkeley** based on the search results, **Pat O’Neill Plumbing** is the strongest candidate because it has a dedicated Berkeley profile, a local Berkeley address, and a clear business phone number.[2]
+
+A few other notable options from the results are:
+
+- **Prime Time Plumbing** — shows a **5.0 rating** on Yelp with 6 reviews, which is a strong signal of customer satisfaction, though the review count is still small.[5]
+- **One Step Plumbing** — appears in Expertise’s curated list of top Berkeley plumbers and has a Berkeley address, which suggests local presence and recognition.[1]
+- **Fito Plumbers** — lists Berkeley as a service location and is presented as a trusted plumbing option.[3]
+- **AquaSaver Water Heaters** — advertises 24/7 availability and quick response times, which may be useful if you need emergency service.[4]
+
+If you want, I can also narrow this down by **emergency availability, sewer/water heater work, or best-reviewed option**.
+```
+
+</details>
+
+<!-- LABELS item=23 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=23 -->
+
+---
+
+## Item 24 · `gemini_grounded` · _who is the most reliable plumber in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+When seeking the most reliable plumber in Berkeley, several companies consistently receive high praise for their professionalism, responsiveness, and quality of work. Based on customer reviews and industry ratings, the following plumbers are frequently highlighted for their dependability:
+
+**LemonTree Plumbing** is often recommended for its reliable East Bay plumbing services, offering 24/7 live answering, upfront pricing, and numerous five-star reviews. Customers commend their professional, on-time service, quick response, and thorough work, with specific mentions of technicians like Ramon providing excellent service for various issues, including water heater installations and drain cleaning.
+
+**Bay Plumbing** is recognized as an honest and reliable plumbing solution in Berkeley, Albany, and Oakland, with over 15 years of experience. They emphasize responsiveness, honesty, and a commitment to getting the job done right, employing a qualified team for general repairs, replacements, water heaters, and drain issues.
+
+**LJ Kruse** is a family-owned and operated company with over a century of service in the Greater Bay Area, known for its excellence and reliability in plumbing, heating, and cooling. They are praised for their traditional values, exceptional customer service, and effective solutions for both residential and commercial clients.
+
+**Berkeley Plumbing and Heating** also boasts over a century in business, with a reputation for trustworthy service. They are noted for their experienced, union-trained plumbers who are dedicated to providing top-quality service, resolving problems quickly and affordably, and taking pride in their work.
+
+Other highly-rated plumbers in the Berkeley area, as noted by Angi and Diamond Certified, include:
+
+*   **A.E Plumbing** received positive feedback for prompt arrival, clear explanations, reasonable pricing, and quick repairs.
+*   **Star Rooter and Plumbing, Inc.** is consistently praised by customers for their high-quality work, with many stating they don't need to call them back for repeat issues.
+*   **Albion Plumbing & Rooter, Inc.** is highlighted for being easy to work with, responding quickly, and providing quality service.
+*   **Pelican Plumbers** received a "superior" overall rating from 85% of 93 reviewers and are noted for being very responsive to communication and offering prices lower than average.
+*   **Pedro Galvan Plumbing, Inc.** is recommended for being attentive, transparent about pricing, and committed to solving problems quickly and efficiently.
+*   **Plumbing 1 Builders Inc.** is noted for being a professional and responsible team that offers competitive pricing and efficient work.
+
+When choosing a plumber, it's advisable to consider factors such as their responsiveness, clarity in explaining issues and pricing, and consistent positive feedback regarding the longevity and quality of their repairs.
+```
+
+</details>
+
+<!-- LABELS item=24 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=24 -->
+
+---
+
+## Item 25 · `google_ai_mode` · _who is the most reliable plumber in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Several plumbers in Berkeley are highly regarded for reliability based on customer reviews and expert ratings as of July 2026. Top options include specialized local firms and highly rated technicians in the East Bay area.[[1]](https://google.com/goto?url=CAESYgHuR6pNOUtISASd-TN2w7JZvlQ0CJSxDwGv3Ry56PZmEUAZ-qJaDKXoaaqQPbBk1pY6lJfvMCYvB_g83s8Ng-1I3uUr-KKohOB_nfJ1JejTr4faWj-oyqUhMuvHDRv3yY6e)
+
+Highly Recommended Berkeley Plumbers
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:28)
+LemonTree Plumbing 5.0 (30)  
+Plumber  
+Open  
+Known for being professional, on-time, and providing thorough, clear communication on repairs, with high praise for their technicians like Chia and Ramon.[](https://google.com/goto?url=CAESRQHuR6pNG7k4_vsgjYflBlfdUbg0ryJDZRQ382Yip5ynHvf1poIJ2o9P2NawnOZpiBzBVthXTNBPREWlJGU1fsqXSTRzlw==) [[1]](https://google.com/goto?url=CAESRQHuR6pNG7k4_vsgjYflBlfdUbg0ryJDZRQ382Yip5ynHvf1poIJ2o9P2NawnOZpiBzBVthXTNBPREWlJGU1fsqXSTRzlw==)[[2]](https://google.com/goto?url=CAESVwHuR6pNvSX05T_BJuGyCt1wU4kT-6AaTBA7gCYdyxZ2yvGAxyQeFnjxvg8vKlOYyOZAKh4ZCDLjHNrF9JWli0QgSGGi2GeXidEGkG1LBVCe4xgKCnj8vw==)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:29)
+Pelican Plumbers 4.3 (9)  
+Plumber  
+Open 1881 Alcatraz Ave  
+A local Berkeley firm with over 15 years of experience in residential and commercial plumbing, including drainage and gas lines.[](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==) [[1]](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==)[[2]](https://google.com/goto?url=CAESPgHuR6pNl2tc4vzvlMedZauYczgvnybRYG_ahJonPHxD1akn-dNiq9HIRsWqdXfRz0V2bPUCBhchnhyWs5Bc)[[3]](https://google.com/goto?url=CAESTwHuR6pNIPj-RTH98AHnaN0T1gWeZfXwOrExt7dxBRenGuYNAOcL3qgb0nk6qZ39nmPBTGWk24EjMagXmu4uTyCQ2jTBcGNB2EXYFpnaljc=)
+
+![](https://lh3.googleusercontent.com/grass-cs/ACvplmN3uinPVFROtWZ5MuPp2_Y5Q8EvAIo-Bm0tsBRMHM3KckHwaBcquJely64mHrhc19mDc8CpnWLESFYUWrujpoCNXbNX2G93JBa802jrkOkQQdZfIkXw6vhuMSDF6dsHUJnWPu8I=s192-w192-h144-n-k-no)
+Green Eagle Plumbing 5.0 (23)  
+Plumber  
+Open Kensington, CA  
+Highly recommended for reliability and prompt, professional service, often praised by Berkeley homeowners for fixing leaks and sewer issues.[](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==) [[1]](https://google.com/goto?url=CAESQgHuR6pNEHhiMsHCT0saO8QMdpAk2GEUeXSdyYOzTW3kNtnJEWUG0KQ2Y4Wc81tYOXy_Bn5IWusj0V4a0O5jay-ZAg==)[[2]](https://google.com/goto?url=CAESQgHuR6pNEHhiMsHCT0saO8QMdpAk2GEUeXSdyYOzTW3kNtnJEWUG0KQ2Y4Wc81tYOXy_Bn5IWusj0V4a0O5jay-ZAg==)[[3]](https://google.com/goto?url=CAESUwHuR6pNRYIUx9I20NjqOae3YkBJwllAkzo1K5aLC44CZMNCvx-pWohI_7zy3H3yiq9xQlPOlmTxpNKHB-rZTpYeB8nqgTvWyBgEUMuiomV6owZS)[[4]](https://google.com/goto?url=CAESUgHuR6pNwZTQkXxwa1pHhMKrCUKtdTRXIzukLZFJSCeliSRNJGsS0zrenl2Gz_1tJbJ1V3ikNCdSU-Wte-npa6oYiNPiJ02W57B0UStdKLNZsik=)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:30)
+Albert Nahman Plumbing, Heating, and Cooling 4.7 (3.4K)  
+HVAC contractor  
+Open 3333 Martin Luther King Jr Way  
+Listed as a top-rated local expert with 24/7 emergency service available.[](https://google.com/goto?url=CAESYgHuR6pNOUtISASd-TN2w7JZvlQ0CJSxDwGv3Ry56PZmEUAZ-qJaDKXoaaqQPbBk1pY6lJfvMCYvB_g83s8Ng-1I3uUr-KKohOB_nfJ1JejTr4faWj-oyqUhMuvHDRv3yY6e) [[1]](https://google.com/goto?url=CAESYgHuR6pNOUtISASd-TN2w7JZvlQ0CJSxDwGv3Ry56PZmEUAZ-qJaDKXoaaqQPbBk1pY6lJfvMCYvB_g83s8Ng-1I3uUr-KKohOB_nfJ1JejTr4faWj-oyqUhMuvHDRv3yY6e)[[2]](https://google.com/goto?url=CAESWQHuR6pNQXJtgQy3ZdAEWwYAB491K5NF9Tvg0wsMFPBVWrBR92hydZrcb_i_qqFKwTdgGldCFLtaJgBrEGbPIYvRZcmtJSj3DNMnD19kJrsldyThX19EAJjG)[[3]](https://google.com/goto?url=CAESdgHuR6pNYnS8Y2xXh_iTJi9UkaOgyHq-kzNFye6ti0moq0IxLL4747wMjMvkfYP4ZAvy_4whkuSz0yuw5b5VIpitrzGwlnqbFTw1oDDucXpePAXK0808yRQecmgpcKjbjbdKIkGdeH7yU25phoAOrutznr0nZ_o=)
+
+![](https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=TBDRg9vaxH-KbhjvMDbTow&cb_client=search.gws-prod.grass&yaw=39.630848&pitch=0&thumbfov=100&w=82&h=82)
+A Better Rooter Plumbing 4.8 (6)  
+Plumber  
+Open 379 Vassar Ave  
+A small, family-owned company established in 1984 with extensive experience in video inspection and drain/sewer cleaning.[](https://google.com/goto?url=CAESXQHuR6pNzmeuvFuXYKHBmLSrzI9LqmcJljgJ4nLZEvEhCFCemVGRc-U0SA1a-vE7R67-I8XSbIfTjdQzjZBqqOYNsCJS2PktP9Xp7yndtM6IjMDrUSCRDc_AuW7G0g==) [[1]](https://google.com/goto?url=CAESXQHuR6pNzmeuvFuXYKHBmLSrzI9LqmcJljgJ4nLZEvEhCFCemVGRc-U0SA1a-vE7R67-I8XSbIfTjdQzjZBqqOYNsCJS2PktP9Xp7yndtM6IjMDrUSCRDc_AuW7G0g==)
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:31)
+Wally’s Plumbing & Leak Detection 5.0 (5)  
+Plumber  
+Open 225 University Ave  
+Features 5-star ratings for expertise in drain repair and leak detection in Berkeley.[[1]](https://google.com/goto?url=CAESswEB7keqTZaP0g_C82A7euMNlobFQWqgPiel0wo2ITlGsqeDYyH-2mtiPiA0jUZVmhXj2v6Y83ybsRY4hf-Y-zdivJ6qPgsnwcvqP5qYr34jI3CsHy1c6ZfgWeFd0rb3FTmzXs2XNI1hOQLiLe-ydsOazzdYF0E0cgfqi0QjLnFi6h0seflsjl6EVNX5YS9sLieEJPrY-k-OG-C7jBX7qBVJxQHTkgJV_CyhL7V8fzapyAR4ww==)
+
+![](https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=lwx3ifOLOnDepI6SjShdyQ&cb_client=search.gws-prod.grass&yaw=239.73&pitch=0&thumbfov=100&w=82&h=82)
+Alfa Plumbing 5.0 (13)  
+Plumber  
+Open Albany, CA  
+A highly rated local option frequently mentioned for quality, quick service in the Berkeley/Albany area.[](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==) [[1]](https://google.com/goto?url=CAEScAHuR6pN3DLjbazOWolDN-SiX5jabD7Qt1wsIFlf-E2YEx2VFEEfbjoa8pGzxgV1ypUkLgC1x8tUV4nwoPqQbZy0KCi9-sVCgsDlJLOHZjjmTFUOR5DLtv7GN4tN3hfqY7PJ203VbHp4AvDlyZ7WYL8=)
+
+Top-Rated Emergency/General Plumbers
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:32)
+Mr. Rooter Plumbing of The Oakland-Berkeley Area 4.9 (1.4K)  
+Plumber  
+Open Oakland, CA  
+Known for 24/7 service, licensed technicians, and strong customer reviews for emergency repairs.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:33)
+Oakland Rooter & Plumbing 4.9 (105)  
+Plumber  
+Open Fruitvale  
+Highly rated for fast response times across the East Bay.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-b2eb5f665a3c:34)
+Clogbusters Plumbing & General Building 3.0 (4)  
+Plumber  
+Open 2000 Allston Way #495  
+Known for 36+ years of experience in the local area, offering quick response times for repairs.[](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==) [[1]](https://google.com/goto?url=CAESnQEB7keqTQRFDMLRewuLEQadGlFClU-U4xCSqTc13_RpHmMk_RrPI603U1_5iTydlep3MCMGiNl17UMFLDX8n8FD_sijV-aBCPF6oLt9Lfl54uIPQUDOYcu-qgD8d1vrYWRqdVqXcqxtVSjPtC4vZsqA3PKeY8qHC1RcR3vU7g8V74HY-YxmmS8oVUnd6kmv4Vypsx2x05Cag_ODWd_5)[[2]](https://google.com/goto?url=CAESTQHuR6pNdRkSOCo9pWcVcAlEz7W3atQF9qytEAhnqqrCEmr1yVrUn0j5-gB0gICw52Vlcp8ol4QeWSDt58k5xgZkvA6cyhqhu8Fshiga)[[3]](https://google.com/goto?url=CAESYgHuR6pNuCy1wfvd8MQeSNLJp9QlNX1PDWOQWwr139I55qlKnE6_uB1KbQlVTCQ34mOSI74jTxB_cpbOLVim_D6XtrcBkPC2skUksS1lKhsjDHC2c1sUr3NO9xhYN8AOwEMt)
+
+Things to Consider When Choosing
+
+- **Specialty:** Ensure the plumber specializes in your issue (e.g., sewers, water heaters, or general repairs).
+- **Experience with Older Homes:** Berkeley has many older homes; choosing a plumber experienced in "old house" plumbing is crucial, such as those listed by the [Berkeley Parents Network](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==).
+- **Availability:** For urgent issues, 24/7 companies like Mr. Rooter or Albert Nahman may be best.[](https://google.com/goto?url=CAESYAHuR6pNzSl3CstNTKZg4VILzMvsU_abD3eizPTZNe2JyWMVm-e2pZYIsfeVWY3xA9gFoXSnVsmZtoBhXXxmVFSTho6iDa6rLzOAegv2c1A2mqQUp6yHsjfnMIB-2QPaEg==) [[1]](https://google.com/goto?url=CAESYwHuR6pNz4o4Deu3CbmvVcZTlcaASLzLAzQbFQUA7sOmD2QOTPo2rJ5zw0RD4fqma3XnvcWMcRc20iEGx_uMfdl3aeMqu3DZtyAQ9n2i1Jn9QpS71QooJSUgXiCLIWPj1JYEGA==)[[2]](https://google.com/goto?url=CAESVQHuR6pNxPdB152lNG5kgzuOi8llN-d23nirBMhCJCdD2kh17CJVA6hM3X9d2wAINHcTagQha6pcz3o6JOqARcKsPgD1FlAWe8NmGSSgD9S4icdxX3g=)[[3]](https://google.com/goto?url=CAESSQHuR6pN6c8c9QbLxIlefTRoZ0YYmMeq6inzkKSK4fyPp0S2zRaOYb-tOTGn1uaSeR-RZtrmTxobCKWpjq40YJ-9ELDi5-4duAA=)
+
+For the most reliable service, it is recommended to verify current availability and get quotes from at least two of these companies.
+
+Would you like to focus on:
+
+- A **specific problem** (e.g., water heater, drain clog, sewer lateral)?
+- A **quick quote** for an **emergency**?
+- A **local, family-owned company**?
+
+Let me know, and I can narrow down the best option for you.
+```
+
+</details>
+
+<!-- LABELS item=25 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=25 -->
+
+---
+
+## Item 26 · `openai` · _who is the most reliable plumber in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Assuming you mean **Berkeley, California**, there isn’t one objectively “most reliable” plumber—and availability and reviews change. For a dependable choice, I’d shortlist **well-established, licensed local contractors** such as:
+
+- **Ongaro & Sons** — serves Berkeley and the broader East Bay; larger company with 24/7 service.
+- **Mr. Rooter Plumbing of the East Bay** — useful for emergency or drain work; confirm the specific technician and pricing.
+- **A highly rated Berkeley-area independent plumber** found through the **California Contractors State License Board** and recent Google reviews.
+
+Before hiring, verify:
+
+1. **California contractor license** at [cslb.ca.gov](https://www.cslb.ca.gov) — for plumbing work over $500, look for a **C-36 plumbing license**.
+2. Recent reviews mentioning **fair pricing, punctuality, and no surprise charges**.
+3. A written **diagnosis and estimate before work begins**.
+4. Whether the plumber is insured and offers a workmanship warranty.
+
+For a burst pipe or sewage backup, call the first licensed company with a clear emergency rate. For a non-emergency job, get **two or three written estimates**—that’s usually the best way to identify the reliable option.
+```
+
+</details>
+
+<!-- LABELS item=26 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=26 -->
+
+---
+
+## Item 27 · `perplexity` · _who is the most reliable plumber in Berkeley?_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+There isn’t enough reliable evidence in the results to name a single **most reliable plumber** in Berkeley with confidence. The strongest signals in the search results point to **Pelican Plumbers** and **Berkeley Plumbing and Heating**, while **Diamond Certified** is the best source here for an aggregated reliability-style rating across Berkeley plumbers.[6][4][1]
+
+If you want the safest short list, I’d prioritize these:
+- **Diamond Certified Berkeley plumbers** for the broadest third-party rating data, with an average of **4.4/5 stars** across **4,622 reviews** of **116** rated plumbers.[1]
+- **Pelican Plumbers** for strong public review volume and a **4.8 rating from 247 reviews** on Yelp.[6]
+- **Berkeley Plumbing and Heating** because it explicitly presents itself as a trusted local Berkeley provider, though the result shown does not include independent review counts.[4]
+
+If you want, I can narrow this to the **best choice for a specific job** like a leak, water heater, sewer line, or emergency service.
+```
+
+</details>
+
+<!-- LABELS item=27 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=27 -->
+
+---
+
+## Item 28 · `gemini_grounded` · _emergency plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you're in Berkeley, CA, and need an emergency plumber, several companies offer 24/7 services to address urgent plumbing issues:
+
+*   **PRO Plumbers of Berkeley** provides 24/7 emergency repairs for leaks, clogs, water heaters, and more. You can reach them at (510) 686-6437. They serve Berkeley and Alameda County.
+*   **Roto-Rooter** operates 24 hours a day, 7 days a week, 365 days a year in Berkeley for plumbing emergencies like burst pipes, sewage backups, and major water leaks. You can call them at 510-542-5250.
+*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers emergency plumbing services nights, weekends, and holidays. They are a fourth-generation plumbing company and can be contacted for quick service.
+*   **Z and Z Plumbing** offers 24/7 emergency work across Berkeley and the East Bay. They typically reach Berkeley within 30 to 60 minutes for standard calls, with emergency response available every day of the year. You can call them at (510) 708-4237 for emergencies.
+*   **Big Blue Plumbing** provides 24-hour support for plumbing needs in Berkeley. You can contact them at (510) 939-7870.
+*   **Fito Plumbers** offers 24/7 emergency plumbing support in Berkeley for issues like burst pipes, sewer backups, or unexpected leaks.
+*   **Plumbers 911 Berkeley** connects homeowners and businesses to skilled plumbing technicians throughout Berkeley, IL, with an emergency line open 24/7.
+*   **Plumbing Patrol** offers 24/7 emergency plumbing and drain repairs and replacements for residential and commercial customers.
+*   **Green Eagle Plumbing** provides emergency plumbing services for urgent leaks, bursts, and floods.
+*   **Hilltown Plumbing** offers emergency plumbing, sewer and drain repair, water heater services, and repiping in Berkeley, CA. You can call them at (510) 559-0150.
+```
+
+</details>
+
+<!-- LABELS item=28 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=28 -->
+
+---
+
+## Item 29 · `google_ai_mode` · _emergency plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Several plumbers in Berkeley offer 24/7 emergency services to address urgent issues like burst pipes, severe clogs, and water heater failures.[[1]](https://www.checkatrade.com/Search/Plumber/in/Berkeley)[[2]](https://caplumberdirectory.com/berkeley-ca/)[[3]](https://proplumberberkeley.com/emergency-plumber/)
+
+Top-Rated 24/7 Emergency Plumbers in Berkeley
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-51a1ff3079a0:22)
+LemonTree Plumbing 5.0 (30)  
+Plumber  
+Open  
+Known for same-day emergency service, including weekends, with a focus on clear communication.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-51a1ff3079a0:23)
+Afterglow Heating and Plumbing 5.0 (86)  
+Heating contractor  
+Open 1600 Shattuck Ave. Ste 214a  
+Specializes in after-hours repairs for leaks and water heaters.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-51a1ff3079a0:24)
+J J Rooter & Plumbing 4.9 (94)  
+Plumber  
+Open  
+Available for emergency sewer clogs and drain cleaning.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-51a1ff3079a0:25)
+Mr. Rooter Plumbing of The Oakland-Berkeley Area 4.9 (1.4K)  
+Plumber  
+Open Oakland, CA  
+Offers 24/7 service, including holidays, with no overtime fees.
+
+![](https://api.dataforseo.com/cdn/i/07290120-2179-0139-0000-51a1ff3079a0:26)
+Albert Nahman Plumbing, Heating, and Cooling 4.7 (3.4K)  
+HVAC contractor  
+Open 3333 Martin Luther King Jr Way  
+Provides 24/7 emergency commercial and residential services.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo)[[3]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdwMk0yZzFiWGQ0GAo)[[4]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK)[[5]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK)
+
+Other Emergency Options
+
+- **One Step Plumbing:** Open late (up to 11 PM on some weekdays).
+- **EO Plumbing Service:** 24/7 service operating in the Richmond/Berkeley area.
+- **[Roto-Rooter](https://www.rotorooter.com/berkeleyca/):** 24/7 service with same-day availability.[](https://www.rotorooter.com/berkeleyca/) [[1]](https://www.rotorooter.com/berkeleyca/)[[2]](https://www.rotorooter.com/berkeleyca/)[[3]](https://www.rotorooter.com/westminsterco/)
+
+Important Tips for Plumbing Emergencies
+
+- **Shut off the water:** Locate your main water shut-off valve immediately to stop further damage, especially for burst pipes.
+- **Call for a professional:** For severe leaks or sewage backups, call a 24/7 service immediately.
+- **Be aware of fees:** Some plumbers may charge a surcharge for after-hours or emergency service.[](https://proplumberberkeley.com/emergency-plumber/) [[1]](https://proplumberberkeley.com/emergency-plumber/)[[2]](https://banddindustries.com/things-to-consider-before-hiring-a-24-hour-emergency-plumber/)[[3]](https://www.sosaffordablerooter.com/plumbing-repair-questions)[[4]](https://goodplumbertn.com/emergency-plumber/)
+
+Would you like to see **customer reviews** for a specific company, or are you looking for someone who specializes in **water heaters** or **drain cleaning**?
+```
+
+</details>
+
+<!-- LABELS item=29 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=29 -->
+
+---
+
+## Item 30 · `openai` · _emergency plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you mean **Berkeley, California**, take these steps now:
+
+1. **Shut off the water**
+   - Turn the fixture’s valve clockwise, or use your home’s main shutoff.
+   - If water is near outlets or appliances, shut off electricity to that area if safe.
+2. **Call a 24/7 emergency plumber**
+   - Search: **“24 hour emergency plumber Berkeley CA”** on Google Maps.
+   - Confirm the plumber is licensed, offers emergency service, and provides an upfront dispatch/diagnostic fee.
+3. **For a street or meter leak**, contact **East Bay MUD emergency service: 1-866-403-2683**.
+4. **Call 911** if there is dangerous flooding, sewage exposure, gas odor, or electrical danger. For a gas smell, leave immediately and call **PG&E at 1-800-743-5000** from outside.
+
+Tell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell, or flooding—and I can help you decide the fastest next step.
+```
+
+</details>
+
+<!-- LABELS item=30 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=30 -->
+
+---
+
+## Item 31 · `perplexity` · _emergency plumber in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+For an **emergency plumber in Berkeley, CA**, these companies advertise **24/7 or same-day emergency service**:
+
+- **Roto-Rooter Berkeley** — **510-542-5250**; says it operates **24/7, 365 days a year** in Berkeley and can typically send a technician within hours.[1]
+- **Alvin’s Plumbing** — **888-565-9676**; advertises **24/7 emergency plumbing** in Berkeley for burst pipes, sewage backups, leaks, and flooding.[2]
+- **AquaSaver Water Heaters / WaterHeaterBerkeley.com** — **(510) 345-2489**; says it is available **24/7** with quick response and live phone support.[3]
+- **Emergency Plumbing Squad** — **(855) 812-2311**; lists a Berkeley address at **1935 Addison St Suite A, Berkeley, CA 94704**.[10]
+- **Rooter Hero Plumbing & Air** — **510-768-7140**; says it offers **24-hour emergency service** in Berkeley and can dispatch a plumber within the hour.[11]
+- **Plumbing Patrol** — **510-857-5815**; lists emergency plumbing and drain repair services for Berkeley.[5]
+- **Lacayo-Colt Plumbing and Heating** — **(415) 726-8549**; says it handles emergency plumbing in Oakland, Berkeley, and nearby areas.[7]
+
+If this is an urgent leak or burst pipe, the fastest first steps are to **shut off the main water supply** and move valuables away from standing water; if you smell gas, evacuate and contact PG&E from outside.[1]
+```
+
+</details>
+
+<!-- LABELS item=31 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=31 -->
+
+---
+
+## Item 32 · `gemini_grounded` · _24 hour plumbing service Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you're in Berkeley and need a 24-hour plumbing service, several companies offer emergency assistance around the clock:
+
+*   **Roto-Rooter** provides 24/7 plumbing, drain cleaning, and water cleanup services in Berkeley. They are fully licensed and insured, and their technicians are equipped to handle emergencies like burst pipes, sewage backups, and major water leaks. You can reach them at 510-542-5250.
+*   **Mr. Rooter Plumbing of The Oakland-Berkeley Area** offers 24/7 emergency plumbing services, including nights, weekends, and holidays. They are a locally owned, fourth-generation plumbing company.
+*   **On Call Plumbers** offers fast 24/7 emergency plumbing services for homes and businesses in Berkeley. You can call them at (510) 370-0881 for immediate assistance with issues like broken pipes or overflowing sewer systems.
+*   **Berkeley Plumbing, Drain, and Rooter Pros** provides 24-hour emergency services. Their team is licensed, bonded, and insured, and they offer a range of services including frozen and broken pipe repairs, sewer and drain cleaning, and water heater installation and repair. You can contact them at (510) 605-4820.
+*   **Plumbing Patrol** offers 24/7 emergency plumbing, drain repairs, and replacements for residential and commercial customers in Berkeley.
+*   **Fito Plumbers** provides 24/7 emergency plumbing support in Berkeley for issues such as burst pipes, sewer backups, or unexpected leaks.
+*   **Big Blue Plumbing** offers 24-hour support for plumbing needs in Berkeley, handling everything from clogged drains to water heater issues. You can contact them at (510) 939-7870.
+*   **PRO Plumbers of Berkeley** has local, licensed plumbers available 24 hours a day for plumbing repair, installation, and maintenance needs across Berkeley and Alameda County.
+*   **Hilltown Plumbing** also provides emergency plumbing services in Berkeley, addressing urgent issues like leaks, sewer backups, and pressure problems.
+*   **Green Eagle Plumbing** offers emergency plumbing services, including rapid response for urgent leaks, bursts, and floods.
+```
+
+</details>
+
+<!-- LABELS item=32 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=32 -->
+
+---
+
+## Item 33 · `google_ai_mode` · _24 hour plumbing service Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Several plumbers offer 24-hour, emergency services in Berkeley, CA, to handle urgent issues like burst pipes, sewer backups, and water heater failures.[[1]](https://www.rotorooter.com/berkeleyca/)
+
+**Top-Rated 24-Hour Plumbers in Berkeley (July 2026)** 
+
+- **Afterglow Heating and Plumbing:** Open 24 hours, specializing in water heaters, leak repairs, and heating systems (510-495-0550).
+- **LemonTree Plumbing:** 24-hour service (510-502-7843) with reported fast, same-day, and evening emergency response.
+- **Albert Nahman Plumbing, Heating, and Cooling:** 24/7 service (510-408-7879) for plumbing, drain cleaning, and HVAC needs.
+- **Mr. Rooter Plumbing of The Oakland-Berkeley Area:** 24/7 emergency service, particularly for drain cleaning, hydro jetting, and sewer lines (510-957-9648).
+- **Clogbusters Plumbing And General Building:** 24/7 service (510-689-8733).
+- **Lifesaver Plumbing & Rooter:** 24/7 emergency services including water heater repair and sewer backups.[[1]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhsbVpEUjBZbk5mGAo)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaZk1qbHVObWczGAo)[[3]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSd1oyWXlZZxgK)[[4]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK)[[5]](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdSZlluaHRjURgK)[[6]](https://www.yelp.com/search?find_desc=Emergency+Plumber&find_loc=Berkeley%2C+CA)
+
+**Common Emergency Services Available:** 
+
+- **Drain Cleaning & Sewer Repairs:** Immediate response for backed-up sewer lines.
+- **Water Heater Services:** Repair or replacement for failed water heaters.
+- **Leak Detection & Pipe Repair:** Emergency, trenchless, or traditional repair for bursts.[](https://www.rotorooter.com/berkeleyca/) [[1]](https://www.rotorooter.com/berkeleyca/)[[2]](https://superservicetoday.com/areas-we-serve/danvers-ma/)[[3]](https://www.mrrooter.com/oakland/berkeley/)
+
+**Notes on Emergency Service** 
+
+- **Rates:** Emergency plumbing calls typically cost between $100 and $500 per hour, with higher rates potentially applying to holiday or after-hours calls.
+- **Response Time:** Many services, such as Mr. Rooter , offer rapid dispatch, with some arriving within 30 minutes of a call.
+- **Coverage:** These services often cover Berkeley and surrounding areas such as Oakland, Albany, and Emeryville.[](https://www.angi.com/articles/emergency-plumber-cost.htm) [[1]](https://www.angi.com/articles/emergency-plumber-cost.htm)[[2]](https://www.barkerandsonsplumbing.com/city/whittier-plumber/)[[3]](https://www.mrrooterplumbingpa.com/plumbers-lewistown-pa-plumbing-repair-service)
+
+To help you get the **fastest service** , are you experiencing a **specific emergency** (e.g., sewage backup, burst pipe, or no hot water) that I can use to refine this list?
+```
+
+</details>
+
+<!-- LABELS item=33 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=33 -->
+
+---
+
+## Item 34 · `openai` · _24 hour plumbing service Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you mean **Berkeley, California**, for an emergency plumber:
+
+- Search Google Maps for **“24-hour emergency plumber Berkeley CA”** and confirm the business is currently open.
+- Nearby services may also dispatch from **Oakland, Emeryville, or San Francisco**, so expand the search area.
+- Before authorizing work, ask for the **dispatch fee, hourly rate, after-hours surcharge, license number, and estimated total**.
+- Verify California licensing through the **CSLB**: https://www.cslb.ca.gov
+
+For immediate emergencies:
+1. Shut off your home’s main water valve.
+2. For a gas smell, leave immediately and call **911 or PG&E at 1-800-743-5000**—don’t use switches or flames.
+3. For a burst pipe, turn off electricity to the affected area if it’s safe.
+
+If you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/country and I can narrow it down.
+```
+
+</details>
+
+<!-- LABELS item=34 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=34 -->
+
+---
+
+## Item 35 · `perplexity` · _24 hour plumbing service Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you need a **24-hour plumber in Berkeley**, several local companies advertise **around-the-clock emergency service**, including **Roto-Rooter** (510-542-5250), **Alvin’s Plumbing** (888-565-9676), **Rooter Hero** (510-768-7140), and **Capelli Plumbing** (510-677-3856).[1][2][3][14]
+
+A few other Berkeley-area options also list **24/7 emergency plumbing**:
+- **Plumbing Patrol** — 510-857-5815.[4]
+- **AquaSaver Water Heaters / Water Heater Berkeley** — (510) 345-2489.[5]
+- **Big Blue Plumbing** — (510) 939-7870.[13]
+- **Fito Plumbers** — 925-230-4286.[12]
+- **On Call Plumbers** — available 24 hours a day for emergency plumbing in Berkeley.[7]
+
+If you want, I can also help you narrow this down by **best-reviewed**, **fastest-response**, or **closest to a specific Berkeley neighborhood**.
+```
+
+</details>
+
+<!-- LABELS item=35 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=35 -->
+
+---
+
+## Item 36 · `gemini_grounded` · _top rated drain cleaning in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+When seeking top-rated drain cleaning services in Berkeley, CA, several companies consistently receive high marks for their expertise, customer service, and effective solutions. These include Capelli Plumbing, Mr. Rooter Plumbing of The Oakland-Berkeley Area, LJ Kruse, and Roto-Rooter.
+
+**Capelli Plumbing** is highly rated in Berkeley, CA, offering drain cleaning solutions at competitive rates. They utilize the latest technology to clear drains of debris, grease, roots, and rust build-up, aiming to rehabilitate existing drains and save customers money. With over 25 years of experience, owner James Capelli and his team are known for their honesty, professionalism, and efficient service, handling everything from garbage disposal installations to comprehensive plumbing needs.
+
+**Mr. Rooter Plumbing of The Oakland-Berkeley Area** is trusted by Berkeley homeowners for inspecting and cleaning drain lines to clear blockages and debris. They offer a complete process, from drainage assessment to ensuring seamless flow, and provide upfront pricing and emergency plumbing services 24 hours a day.
+
+**LJ Kruse** has been in business for over 100 years, proving their capability in solving plumbing problems, including stubborn clogged drains. They use the latest technology for pipe clearing, including sewer line cleaning, and are highly recommended for their responsive, knowledgeable, professional, and thorough technicians.
+
+**Roto-Rooter** in Berkeley, CA, offers top-notch plumbing and drain-cleaning services to both residents and businesses. With over 85 years of experience, their licensed and insured plumbers are available 24/7 for emergency services at no extra cost. They are highly rated on Google and are known for their powerful drain cleaning to clear clogs and restore flow.
+
+Other services mentioned for their positive reputation in the Berkeley area include:
+
+*   **PRO Plumbers of Berkeley** connects clients with skilled drain technicians who provide clear explanations, upfront estimates, and reliable workmanship, focusing on identifying the cause of blockages to prevent future issues.
+*   On platforms like HomeGuide and Thumbtack, services such as **VSA Construction**, **All Plumbing And Sewer**, **DC Construction**, **Norcal Installations**, **Tri-Valley Plumbing**, **New Century Marble & Granite**, **RP Construction**, and **Benjamin Franklin Plumbing Concord** are also listed among the top drain cleaning services, with homeowners praising their knowledge, experience, and communication. **Tidy Plumbing Inc.** also receives high praise for responsiveness, clear communication, competitive pricing, and professionalism.
+
+When choosing a drain cleaning service, it's recommended to review customer feedback on platforms like HomeGuide and Google, and to get quotes from a few local plumbers to ensure the best price and quality of service.
+```
+
+</details>
+
+<!-- LABELS item=36 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=36 -->
+
+---
+
+## Item 37 · `google_ai_mode` · _top rated drain cleaning in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Top-rated drain cleaning services in Berkeley, CA, for 2026, based on customer reviews and service reputation, include local specialists and highly-rated plumbing companies known for handling stubborn clogs and sewer line issues.[[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)
+
+Top-Rated Drain Cleaning Companies
+
+[Oakland Rooter Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHBIaCgNwdnESE0Nnd3ZaeTh4YUdNek1HNXlaM2cYCg) 
+
+**Oakland Rooter & Plumbing** (4.9/5 stars, 1.6k+ reviews): Known for fast response times and comprehensive residential, commercial, and emergency drain cleaning.
+
+[Mr. Rooter Plumbing of The Oakland-Berkeley Area](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZGpjMWN6TjJjURgK) 
+
+**Mr. Rooter Plumbing of The Oakland-Berkeley Area** (4.9/5 stars, 1.3k+ reviews): Highly rated for reliable service in the local area.
+
+[Wally&#39;s Plumbing &amp; Leak Detection](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaM1pITTJhbkpxGAo) 
+
+**Wally’s Plumbing** (5.0/5 stars): Specializes in plumbing and leak detection, offering 18 years of experience.
+
+[Lifesaver Plumbing And Rooter](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVcxa1pqbHFjV1k1GAo) 
+
+**Lifesaver Plumbing And Rooter** (5.0/5 stars): Highly rated for both water heater repairs and general rooter services.
+
+Pro Drain Cleaning Of Berkeley Provides 24/7 emergency services, including rapid diagnosis and on-the-spot repairs for clogged drains.
+
+[Capelli Plumbing](https://www.google.com/searchviewer/10?svid=CAwSGxIZCgNwdnESEkNnc3ZaeTh4ZEdzeU16UjZjURgK) 
+
+Known for specialized services like hydro jetting, pipe descaling, and 24/7 emergency support.
+
+[Pipe Arts Plumbing](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVdvME9UVTVjbTR6GAo) 
+
+**Pipe Arts Plumbing** (Recommended by parents network): Noted for being efficient, friendly, and specializing in older fixtures.[](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA) [[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[2]](https://www.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)[[3]](https://www.mrrooter.com/request-job-estimate/?utm_source=gmb&utm_medium=organic&utm_campaign=google_reserve&location=9386)[[4]](https://www.thumbtack.com/ca/berkeley/sewer-drain-cleaning)[[5]](https://www.thumbtack.com/ca/berkeley/drain-cleaning/wallys-plumbing/service/509067740351193089?utm_medium=partnership&utm_source=cma-google-ai)[[6]](https://m.yelp.com/search?find_desc=Sewer+Drain+Cleaning&find_loc=Berkeley%2C+CA)[[7]](https://prodraincleaningberkeley.com/)[[8]](https://www.capelliplumbing.com/plumbing-services/berkeley-ca)[[9]](https://www.capelliplumbing.com/hydro-jetting/berkeley-ca)[[10]](https://www.berkeleyparentsnetwork.org/recommend/home/plumber)
+
+Common Services Offered
+
+- **Hydro Jetting:** High-pressure water cleaning to clear grease, roots, and debris.
+- **Rooter Services:** Clearing sewer line blockages from tree roots, common in the Berkeley Hills.
+- **Video Inspection:** Diagnosing complex, deep-set clogs.
+- **24/7 Emergency Response:** Available for severe backups and flooding.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://grayplumbing.com/berkeley-plumber/)[[2]](https://www.rotorooter.com/berkeleyca/)[[3]](https://homeguide.com/ca/berkeley/drain-cleaning/)[[4]](https://tuckerhillaz.com/plumbing/drain-cleaning-repair/)
+
+Estimated Costs (2026)
+
+- **Standard Drain Snake:** $100 - $300.
+- **General Drain Cleaning:** $150 - $450.
+- **Complex/Heavy Duty:** Higher rates for services like hydro jetting.[](https://grayplumbing.com/berkeley-plumber/) [[1]](https://johnnyrooter.com/blog/how-much-does-it-cost-to-snake-a-drain/)[[2]](https://modernize.com/plumbing/best-plumbing-companies/roto-rooter)[[3]](https://idahodrainpros.com/locations/drain-cleaning-in-genesee)[[4]](https://www.josesplumbingrooter.com/hydro-jetting---complex-drain-cleaning)
+
+For urgent needs, Pro Drain Cleaning of Berkeley offers 24-hour service.[](https://prodraincleaningberkeley.com/) 
+
+Would you like recommendations for **preventative sewer maintenance** (like root maintenance) or do you need **emergency service for an active clog** right now?
+```
+
+</details>
+
+<!-- LABELS item=37 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=37 -->
+
+---
+
+## Item 38 · `openai` · _top rated drain cleaning in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+Assuming you mean **Berkeley, California**, these are commonly well-reviewed options to check for drain cleaning:
+
+- **Ace Plumbing & Rooter** — local plumbing and sewer/drain service  
+- **All Service Plumbing** — drain cleaning and plumbing repairs in the East Bay  
+- **Mr. Rooter Plumbing of the East Bay** — established chain with upfront estimates  
+- **Roto-Rooter (Oakland/East Bay)** — 24/7 availability; often useful for emergencies  
+- **Berkeley Home Repair / local licensed plumbers** — good for smaller residential drain issues
+
+Before booking, verify current **Google/Yelp ratings**, California contractor license status, trip fees, and whether the quote includes a **camera inspection**. For recurring clogs, ask for **hydro-jetting** or sewer-line inspection rather than repeated snaking.
+
+If you share your **ZIP code and whether it’s an emergency**, I can narrow this to the best nearby choices.
+```
+
+</details>
+
+<!-- LABELS item=38 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=38 -->
+
+---
+
+## Item 39 · `perplexity` · _top rated drain cleaning in Berkeley_
+
+**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+
+<details open><summary><b>Answer</b> (click to collapse)</summary>
+
+```text
+If you mean **top-rated drain cleaning in Berkeley**, the strongest match in the results is **J J Rooter & Plumbing**, which has a **4.9-star rating from 257 Yelp reviews**.[2]
+
+Other Berkeley-area options in the results include:
+
+- **Mr. Rooter Plumbing of The Oakland-Berkeley Area** — promotes drain cleaning services in Berkeley, but no review score is shown in the result provided.[1]
+- **Capelli Plumbing** — advertises drain cleaning in Berkeley, but the result does not include a rating.[3]
+- **Roto-Rooter Plumbing Sewer & Drain Cleaning Service** — listed in Berkeley with a **2.0-star rating from 3 reviews**.[4]
+
+If you want, I can also help you narrow this to:
+- **highest-rated by reviews**
+- **best for emergency service**
+- **most affordable**
+- **local independent plumbers vs. chains**
+```
+
+</details>
+
+<!-- LABELS item=39 -->
+
+**Label** — edit the `prominence` / `framing` / `present` cells:
+
+| brand | present | prominence | framing |
+| --- | --- | --- | --- |
+| Albert Nahman Plumbing | no | absent | neutral |
+| LemonTree Plumbing | no | absent | neutral |
+| J J Rooter & Plumbing | no | absent | neutral |
+
+**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+
+```flags
+
+```
+
+**Uncovered claims** (optional) — one per line:
+
+```candidates
+
+```
+
+<!-- /LABELS item=39 -->
+
+---
+
+_Generated from `local_gold.json` — 40 items to label._
