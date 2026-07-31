@@ -364,50 +364,92 @@ def _time_value(raw: Any) -> str | None:
     return f"{hour:02d}:{minute:02d}"
 
 
-def _intervals_from_specification(specs: Sequence[Any]) -> dict[str, list[tuple[str, str]]]:
-    """Day → sorted open intervals, from ``openingHoursSpecification`` entries."""
-    by_day: dict[str, set[tuple[str, str]]] = {}
-    for spec in specs:
-        if not isinstance(spec, dict):
-            continue
-        opens, closes = _time_value(spec.get("opens")), _time_value(spec.get("closes"))
-        # An interval that opens and closes at the same instant is how several
-        # CMS plugins spell "closed". Recording no hours for that day is right
-        # either way: it stays out of the positives, and the §4.4 derivation
-        # below then reports it closed if the rest of the week is a full week.
-        if opens is None or closes is None or opens == closes:
-            continue
-        for raw_day in _as_list(spec.get("dayOfWeek")):
-            day = _day_name(raw_day)
-            if day is not None:
-                by_day.setdefault(day, set()).add((opens, closes))
-    return {day: sorted(intervals) for day, intervals in by_day.items()}
+def _intervals_from_specification(
+    specs: Sequence[Any],
+) -> tuple[dict[str, list[tuple[str, str]]], bool]:
+    """Day → sorted open intervals from ``openingHoursSpecification``, plus READABILITY.
 
+    The bool is "every entry in this enumeration was understood". It exists
+    because :func:`derive_negative_claims` infers closure from ABSENCE, and this
+    function used to make two very different things absent in the same way:
 
-def _intervals_from_opening_hours(values: Sequence[Any]) -> dict[str, list[tuple[str, str]]]:
-    """Day → intervals, from the legacy ``openingHours`` microformat ("Mo-Sa 08:00-17:00").
+    - a day the markup never mentions (genuinely absent), and
+    - a day the markup DECLARES but whose times would not parse.
 
-    Strict on purpose. The format has no specification worth the name and sites
-    write things like ``"Mo-Fr 08:00-12:00,13:00-17:00"`` or ``"By appointment"``;
-    anything the regex does not fully match yields nothing rather than a guess,
-    and a partially-parsed week would then feed a wrong "Closed Sunday".
+    Dropping the second produced "Closed Saturday." for a business that published
+    Saturday hours we merely could not read — a fabricated fact, on the key the
+    judge grades ``wrong_hours`` against, and one that passes the §4.1 gate because
+    the quote is the real markup. Absence is only evidence of closure when
+    everything present was legible, so the caller refuses the whole block when this
+    is False.
+
+    ``opens == closes`` is NOT unreadable — it is how several CMS plugins spell
+    "closed". It is understood, contributes no interval, and is correctly reported
+    closed by the derivation.
     """
     by_day: dict[str, set[tuple[str, str]]] = {}
+    readable = True
+    for spec in specs:
+        if not isinstance(spec, dict):
+            readable = False
+            continue
+        days = [_day_name(raw) for raw in _as_list(spec.get("dayOfWeek"))]
+        if not days or any(day is None for day in days):
+            # An entry we cannot attribute to a day tells us nothing about which
+            # days it covered, so the whole week becomes unsafe to close.
+            readable = False
+            continue
+        opens, closes = _time_value(spec.get("opens")), _time_value(spec.get("closes"))
+        if opens is None or closes is None:
+            readable = False
+            continue
+        if opens == closes:
+            continue
+        for day in days:
+            if day is not None:
+                by_day.setdefault(day, set()).add((opens, closes))
+    return {day: sorted(intervals) for day, intervals in by_day.items()}, readable
+
+
+def _intervals_from_opening_hours(
+    values: Sequence[Any],
+) -> tuple[dict[str, list[tuple[str, str]]], bool]:
+    """Day → intervals from the legacy ``openingHours`` microformat, plus readability.
+
+    Strict on purpose. The format has no specification worth the name and sites
+    write things like ``"Mo-Fr 08:00-12:00,13:00-17:00"`` or ``"By appointment"``.
+
+    The docstring here always claimed that "anything the regex does not fully match
+    yields nothing rather than a guess" — but it only yielded nothing for that ONE
+    value, while the rest of the list still produced a week. So
+    ``["Mo-Fr 08:00-17:00", "Sa By appointment"]`` parsed five days, cleared the
+    five-day threshold, and emitted "Closed Saturday." for a business that
+    published Saturday hours. The refusal has to be at the level of the
+    ENUMERATION, because that is the unit the closed-week inference reasons over.
+    """
+    by_day: dict[str, set[tuple[str, str]]] = {}
+    readable = True
     for value in values:
         if not isinstance(value, str):
+            readable = False
             continue
         match = _OPENING_HOURS_RE.match(value.strip())
         if match is None:
-            continue
-        opens, closes = _time_value(match.group("opens")), _time_value(match.group("closes"))
-        if opens is None or closes is None or opens == closes:
+            readable = False
             continue
         days = _days_from_codes(match.group("days"))
         if days is None:
+            readable = False
+            continue
+        opens, closes = _time_value(match.group("opens")), _time_value(match.group("closes"))
+        if opens is None or closes is None:
+            readable = False
+            continue
+        if opens == closes:
             continue
         for day in days:
             by_day.setdefault(day, set()).add((opens, closes))
-    return {day: sorted(intervals) for day, intervals in by_day.items()}
+    return {day: sorted(intervals) for day, intervals in by_day.items()}, readable
 
 
 def _days_from_codes(spec: str) -> list[str] | None:
@@ -554,11 +596,27 @@ def _hours_claims(node: Mapping[str, Any], source_url: str, as_of: str) -> list[
     """
     if node.get("openingHoursSpecification"):
         prop = "openingHoursSpecification"
-        by_day = _intervals_from_specification(_as_list(node[prop]))
+        by_day, readable = _intervals_from_specification(_as_list(node[prop]))
     elif node.get("openingHours"):
         prop = "openingHours"
-        by_day = _intervals_from_opening_hours(_as_list(node[prop]))
+        by_day, readable = _intervals_from_opening_hours(_as_list(node[prop]))
     else:
+        return []
+
+    if not readable:
+        # Refuse the WHOLE block, positives included. The negatives are where the
+        # value is — "Closed Sunday." is what makes an "open 7 days" answer
+        # flaggable — and they are only sound when absence means absence. Keeping
+        # the legible days while suppressing the negatives was the alternative; it
+        # needs the readability signal threaded to `derive_negative_claims`, which
+        # groups by (source_url, quote) and has no view of the parse. Half a week
+        # of positives with no negatives is worth little enough that the simpler,
+        # obviously-correct refusal wins.
+        logger.info(
+            "hours block at %s not fully legible — no hours claims (a declared but "
+            "unparseable day would otherwise be reported closed)",
+            source_url,
+        )
         return []
 
     quote = _pair_quote(node, prop)
@@ -593,7 +651,42 @@ _PHONE_DISPLAY_RE = re.compile(
 # uppercase state code is required: "Berkeley, Ca 94702" yields nothing, which is
 # the right trade when the alternative is matching "Notice, We 12345".
 _CITY_STATE_ZIP_RE = re.compile(r",\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b")
-_STREET_RE = re.compile(r"\b\d{1,6}\s+\S")
+
+# A street THOROUGHFARE TYPE is required, and that requirement is the whole point.
+# The previous pattern was `\b\d{1,6}\s+\S` — "a number then anything" — which
+# matches "7 days" in "Open 7 days". Paired with the two-line join below, a footer
+# reading ["Open 7 days", "Berkeley, CA 94702"] produced
+# `contact_address: 7 days, Berkeley, CA 94702` at HIGH confidence, and it passed
+# the §4.1 quote gate because both fragments really are on the page — the FACT was
+# fabricated, not the quote. That line then becomes the judge's ground truth for
+# `wrong_contact`, so the sheet accuses an engine of getting an address wrong that
+# the business never had.
+#
+# The trade: an address with no type ("100 Broadway") is now missed. That is the
+# correct direction — a missing claim costs a finding, an invented one costs a
+# false accusation in a document we send a stranger (§4.2, blank is safe).
+_STREET_TYPES = (
+    r"aly|alley|ave|avenue|blvd|boulevard|cir|circle|ct|court|dr|drive|expy|expressway"
+    r"|hwy|highway|ln|lane|loop|pkwy|parkway|pl|place|plz|plaza|rd|road|row|sq|square"
+    r"|st|street|ste|terr|terrace|ter|trl|trail|way|wy"
+)
+# number, optional unit letter, optional direction, 0-4 name words, then a type.
+_STREET_BODY = (
+    r"\d{1,6}[A-Za-z]?\s+"
+    r"(?:[NSEW]\.?\s+|(?:North|South|East|West)\s+)?"
+    r"(?:[\w'.-]+\s+){0,4}"
+    rf"(?:{_STREET_TYPES})\b\.?"
+)
+_STREET_RE = re.compile(rf"\b{_STREET_BODY}", re.IGNORECASE)
+# For the two-line join the previous line must BE a street address, not merely
+# contain something street-shaped. Joining lines asserts they are one address; the
+# stricter test is what keeps "Open 7 days a week" (or a sentence that happens to
+# end in "…Way") from becoming the first half of one. Trailing punctuation and a
+# unit/suite tail are allowed because footers routinely carry them.
+_STREET_LINE_RE = re.compile(
+    rf"^{_STREET_BODY}(?:\s*(?:#|apt\.?|ste\.?|suite|unit)\s*[\w-]+)?[\s,.]*$",
+    re.IGNORECASE,
+)
 _FOOTER_SELECTOR = "footer, .footer, #footer"
 
 
@@ -746,8 +839,11 @@ def _nap_claims(tree: HTMLParser, source_url: str, as_of: str) -> list[FactClaim
         if street is not None:
             span = line[street.start() : zip_match.end()]
             value, quote = span, span
-        elif index and (previous := _STREET_RE.search(lines[index - 1])):
-            head = lines[index - 1][previous.start() :]
+        elif index and _STREET_LINE_RE.match(lines[index - 1].strip()):
+            # The whole previous line must be a street address — see _STREET_LINE_RE.
+            # `search` for something street-shaped anywhere in it is what let
+            # "Open 7 days" become an address.
+            head = lines[index - 1].strip().rstrip(" ,")
             tail = line[: zip_match.end()]
             value, quote = f"{head}, {tail}", f"{head} {tail}"
         else:
@@ -952,8 +1048,7 @@ def resolve_conflicts(claims: Sequence[FactClaim]) -> tuple[list[FactClaim], lis
         )
         cited = "; ".join(f'{c.source_url} says "{c.value}"' for c in witnesses)
         questions.append(
-            f"{key}: sources disagree — {cited}. Which is current? "
-            "(no claim emitted, plan §4.3)"
+            f"{key}: sources disagree — {cited}. Which is current? (no claim emitted, plan §4.3)"
         )
     return kept, questions
 
