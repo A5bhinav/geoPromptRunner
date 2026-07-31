@@ -7,7 +7,14 @@ from typing import Literal
 
 from src.engines.base import BaseEngine
 
-__all__ = ["ENGINE_SOURCES", "MockEngine", "build_engines", "engine_class", "sampling_for"]
+__all__ = [
+    "ENGINE_SOURCES",
+    "LOCATION_AWARE",
+    "MockEngine",
+    "build_engines",
+    "engine_class",
+    "sampling_for",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +48,12 @@ ENGINE_SOURCES: dict[str, tuple[str, str]] = {
 #: Engines whose constructor takes a market. These are the SERP-capture surfaces — the
 #: model APIs have no locale knob, so a location is silently irrelevant to them rather
 #: than an error: a local run still wants those surfaces measured, just un-localized.
-_LOCATION_AWARE: frozenset[str] = frozenset({"google_ai_overviews", "google_ai_mode"})
+#:
+#: A location is MANDATORY for these two, not merely useful — DataForSEO rejects a task
+#: with no ``location_name`` outright (see ``DataForSEOAIOverviewsEngine.__init__``), so
+#: an unlocated SERP surface returns nothing at all. Public because the CLI's engine
+#: loader needs the same set; one list, two callers.
+LOCATION_AWARE: frozenset[str] = frozenset({"google_ai_overviews", "google_ai_mode"})
 
 
 class MockEngine(BaseEngine):
@@ -149,10 +161,14 @@ def build_engines(
 
     ``location`` is Google's canonical location name ("Berkeley,California,United States")
     for service-area businesses (W1.4). Only the SERP-capture surfaces consume it
-    (``_LOCATION_AWARE``); the others are model APIs with no locale knob, so a location is
+    (``LOCATION_AWARE``); the others are model APIs with no locale knob, so a location is
     silently irrelevant to them rather than an error — a local run still wants those
-    surfaces measured, just un-localized. ``None`` (the default) reproduces the pre-pivot
-    behaviour exactly.
+    surfaces measured, just un-localized.
+
+    ``None`` reproduces the pre-pivot behaviour, but note it leaves the SERP surfaces
+    **non-functional**: DataForSEO rejects a task with no ``location_name``, so those two
+    engines answer nothing. Pass at least a country ("United States") whenever they are
+    in ``names``.
     """
     engines: list[BaseEngine] = []
     skipped: list[tuple[str, str]] = []
@@ -165,7 +181,7 @@ def build_engines(
             skipped.append((name, "engine SDK not installed"))
             continue
         try:
-            if location and name in _LOCATION_AWARE:
+            if location and name in LOCATION_AWARE:
                 engines.append(cls(location=location))  # type: ignore[call-arg]  # only the SERP engines take it
             else:
                 engines.append(cls())

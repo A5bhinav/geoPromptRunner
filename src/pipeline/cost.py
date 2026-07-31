@@ -27,7 +27,13 @@ ROUGH_COST_PER_CALL: dict[str, float] = {
     "gemini": 0.002,
     "perplexity": 0.006,
     "openai_search": 0.03,
-    "anthropic_search": 0.035,
+    # Measured live 2026-07-30, not estimated: one call reported input=10,928 out=534
+    # with 1 server web_search. At Sonnet 4.5 list ($3/$15 per 1M) plus Anthropic's
+    # $10/1k web searches that is $0.0508 — 45% above the 0.035 this line used to carry.
+    # n=1 and a query that searched once, so treat it as a FLOOR: a question that triggers
+    # several searches costs more. Rounded up rather than down, because this figure feeds
+    # MAX_AUDIT_COST_USD and an under-estimate is the failure that actually hurts.
+    "anthropic_search": 0.051,
     "gemini_grounded": 0.01,
     # The AI Overviews surface has two possible vendors (see api/engine_registry). Priced
     # here at DataForSEO's live-endpoint rate — $0.002/SERP plus the ~$0.0006

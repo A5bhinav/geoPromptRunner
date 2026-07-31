@@ -173,9 +173,20 @@ class DataForSEOAIOverviewsEngine(BaseEngine):
         Injected at construction, not per call, because the pipeline fans out through the
         uniform ``BaseEngine.query`` contract: one engine instance measures one market.
 
-        Leave ``None`` for nationally-marketed products. **A local query run without a
-        location is not a local measurement** — it answers "what does Google show
-        somebody, somewhere".
+        **A location is REQUIRED — this is not optional for national products.** Verified
+        live 2026-07-30: a task with no ``location_name`` comes back
+        ``40501 Invalid Field: 'location_name'`` with ``result_count=0``, on BOTH this
+        surface and AI Mode. An earlier version of this docstring said to leave it
+        ``None`` for nationally-marketed products; that was wrong and produced a silently
+        empty surface, because ``query`` honours the never-raise contract and returns
+        ``None`` — a *completed* run reading "the brand does not appear" when in truth the
+        request was rejected. (DataForSEO does not bill a rejected task, so the cost of
+        the bug was data, not money.)
+
+        Pass at least a country for a national product ("United States"; the country must
+        be its full English name, never an ISO code). For a local audit pass the full
+        hierarchy — **a local query run with only a country is not a local measurement**,
+        it answers "what does Google show somebody, somewhere".
         """
         if not (settings.DATAFORSEO_LOGIN and settings.DATAFORSEO_PASSWORD):
             raise ValueError(
