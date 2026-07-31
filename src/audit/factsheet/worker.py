@@ -44,16 +44,39 @@ __all__ = [
     "WorkerResult",
     "fetch_pending_leads",
     "enqueue_pending",
+    "is_probe",
     "run_one_job",
     "run_once",
 ]
 
 logger = logging.getLogger(__name__)
 
-# Only the four columns Tier 1 actually extracts from, plus the id we carry
-# across as `lead_ref`. Email and phone are NOT selected — the cheapest way to
-# guarantee PII cannot leak across projects is never to load it.
-_LEAD_COLUMNS = "id, business, website, area, description"
+# Only the columns Tier 1 extracts from, plus the id we carry across as
+# `lead_ref` and `source`, which exists solely to identify probe rows. Email and
+# phone are NOT selected — the cheapest way to guarantee PII cannot leak across
+# projects is never to load it.
+_LEAD_COLUMNS = "id, business, website, area, description, source"
+
+# The liveness canary writes REAL rows into `leads`, tagged by `source`
+# (geoWebsite `LEAD_CANARY_SOURCE` / `scripts/lead-canary.sql`; the two are copies
+# of one string, and geoWebsite/CLAUDE.md says it marks by source and never by a
+# new status value, because the anon INSERT policy asserts status='new').
+#
+# It runs on a schedule, so without this filter every probe becomes a fact-sheet
+# job forever: a crawl of a domain that cannot resolve, a FAILED job, and a row
+# of noise in the review queue on every probe. Observed live 2026-07-31 — three of
+# the four queued leads were probes.
+_CANARY_SOURCE = "canary:leads-probe"
+
+# Domains reserved by RFC 2606 / RFC 6761 for documentation and testing. No real
+# business is here, and `example.com` in particular RESOLVES — so a probe row
+# using it would crawl successfully and produce a plausible-looking sheet for a
+# business that does not exist. Source-tagging does not catch it: the observed
+# `TEST ROW — verify-leads-backend` row carried `source=NULL`.
+_RESERVED_HOSTS: frozenset[str] = frozenset(
+    {"example.com", "example.org", "example.net", "example.edu", "localhost"}
+)
+_RESERVED_TLDS: tuple[str, ...] = (".invalid", ".test", ".example", ".localhost")
 
 # A lead is a candidate the moment it exists. `enqueue_factsheet_job` owns dedup
 # through its partial unique index, so re-reading the same lead is harmless and
@@ -71,6 +94,7 @@ class LeadRow:
     website: str
     area: str | None
     description: str | None
+    source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +102,7 @@ class WorkerResult:
     """What one pass did. Counts, not sheets — the sheets are in the database."""
 
     leads_seen: int = 0
+    probes_skipped: int = 0
     enqueued: int = 0
     duplicates: int = 0
     built: int = 0
@@ -86,7 +111,8 @@ class WorkerResult:
 
     def summary(self) -> str:
         return (
-            f"{self.leads_seen} lead(s) seen, {self.enqueued} enqueued "
+            f"{self.leads_seen} lead(s) seen ({self.probes_skipped} probe/test skipped), "
+            f"{self.enqueued} enqueued "
             f"({self.duplicates} already in flight), {self.built} sheet(s) built, "
             f"{self.unusable} unusable, {self.failed} failed"
         )
@@ -136,9 +162,26 @@ def fetch_pending_leads(limit: int = _DEFAULT_LEAD_LIMIT) -> list[LeadRow]:
                     website=str(rec[2] or ""),
                     area=str(rec[3]) if rec[3] else None,
                     description=str(rec[4]) if rec[4] else None,
+                    source=str(rec[5]) if rec[5] else None,
                 )
             )
     return rows
+
+
+def is_probe(lead: LeadRow) -> bool:
+    """Whether this row is a liveness probe or a reserved test domain, not a prospect.
+
+    Two independent checks, because neither alone is sufficient. The canary tags
+    itself via ``source``; the `verify-leads-backend` row observed on 2026-07-31
+    did not, and pointed at ``example.com`` — which resolves, so it would have
+    crawled cleanly and produced a confident sheet for a business that does not
+    exist. That is the fact-sheet failure mode this whole module is built to avoid,
+    arriving through the front door.
+    """
+    if (lead.source or "").strip() == _CANARY_SOURCE:
+        return True
+    host = _domain_of(lead.website).lower()
+    return host in _RESERVED_HOSTS or host.endswith(_RESERVED_TLDS)
 
 
 def enqueue_pending(leads: list[LeadRow]) -> tuple[int, int]:
@@ -151,6 +194,9 @@ def enqueue_pending(leads: list[LeadRow]) -> tuple[int, int]:
     enqueued = duplicates = 0
     for lead in leads:
         if not lead.website.strip():
+            continue
+        if is_probe(lead):
+            logger.info("skipping probe/test lead %s (%s)", lead.id, lead.website)
             continue
         job_id = db.enqueue_factsheet_job(_domain_of(lead.website), lead_ref=lead.id, tier=1)
         if job_id is None:
@@ -275,6 +321,7 @@ def run_once(limit: int = _DEFAULT_LEAD_LIMIT, max_jobs: int = 10) -> WorkerResu
 
     return WorkerResult(
         leads_seen=len(leads),
+        probes_skipped=sum(1 for lead in leads if is_probe(lead)),
         enqueued=enqueued,
         duplicates=duplicates,
         built=built,

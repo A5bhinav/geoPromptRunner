@@ -26,7 +26,7 @@ def _lead(**over: Any) -> LeadRow:
     base = {
         "id": "lead-1",
         "business": "Fort Plumbing",
-        "website": "https://www.fortplumbing.example/",
+        "website": "https://www.fortplumbing.com/",
         "area": "Berkeley",
         "description": "Emergency plumbing",
     }
@@ -47,6 +47,9 @@ def test_the_lead_query_never_selects_email_or_phone() -> None:
         "website",
         "area",
         "description",
+        # Not PII: it exists to identify canary/probe rows so they never become
+        # fact sheets. Widening this set beyond these six should fail here.
+        "source",
     }
 
 
@@ -59,6 +62,7 @@ def test_the_lead_row_type_has_nowhere_to_put_contact_details() -> None:
         "website",
         "area",
         "description",
+        "source",
     }
 
 
@@ -72,7 +76,7 @@ def test_only_the_lead_id_is_carried_across(monkeypatch: pytest.MonkeyPatch) -> 
         ),
     )
     enqueue_pending([_lead()])
-    assert seen == [{"domain": "fortplumbing.example", "lead_ref": "lead-1", "tier": 1}]
+    assert seen == [{"domain": "fortplumbing.com", "lead_ref": "lead-1", "tier": 1}]
 
 
 def test_the_worker_only_ever_queues_tier_1(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -83,7 +87,7 @@ def test_the_worker_only_ever_queues_tier_1(monkeypatch: pytest.MonkeyPatch) -> 
         "enqueue_factsheet_job",
         lambda domain, lead_ref=None, tier=1: tiers.append(tier) or "job-1",
     )
-    enqueue_pending([_lead(), _lead(id="lead-2", website="acme.example")])
+    enqueue_pending([_lead(), _lead(id="lead-2", website="acme.com")])
     assert tiers == [1, 1]
 
 
@@ -110,9 +114,9 @@ def test_the_domain_is_normalised_before_dedup(monkeypatch: pytest.MonkeyPatch) 
         db, "enqueue_factsheet_job", lambda domain, **k: domains.append(domain) or "job"
     )
     enqueue_pending(
-        [_lead(website="https://www.fortplumbing.example/"), _lead(website="fortplumbing.example")]
+        [_lead(website="https://www.fortplumbing.com/"), _lead(website="fortplumbing.com")]
     )
-    assert domains == ["fortplumbing.example", "fortplumbing.example"]
+    assert domains == ["fortplumbing.com", "fortplumbing.com"]
 
 
 # --- terminal states ----------------------------------------------------------
@@ -207,7 +211,7 @@ def test_a_built_sheet_is_stored_as_a_draft_and_costs_nothing(
     class _Sheet:
         claims = ["a claim"]
         questions: list[Any] = []
-        domain = "fortplumbing.example"
+        domain = "fortplumbing.com"
         version = 1
 
     sheet = _Sheet()
@@ -266,3 +270,51 @@ def test_the_summary_reports_every_outcome() -> None:
     ).summary()
     for fragment in ("3 lead(s) seen", "2 enqueued", "1 already in flight", "1 sheet(s) built"):
         assert fragment in text
+
+
+# --- probe rows must never become fact sheets ---------------------------------
+
+
+def test_the_canary_source_is_recognised_as_a_probe() -> None:
+    """The liveness canary writes REAL rows into `leads` on a schedule. Unfiltered,
+    every probe becomes a job: a crawl of a domain that cannot resolve, a FAILED
+    job, and a row of noise in the review queue, forever."""
+    assert worker.is_probe(
+        _lead(website="https://canary.leads-probe.invalid", source="canary:leads-probe")
+    )
+
+
+def test_a_reserved_domain_is_a_probe_even_with_no_source_tag() -> None:
+    """Observed live 2026-07-31: a `TEST ROW — verify-leads-backend` lead carried
+    source=NULL and pointed at example.com. That domain RESOLVES, so it would have
+    crawled cleanly and produced a confident sheet for a business that does not
+    exist — the exact failure this module exists to prevent, through the front door."""
+    for site in (
+        "https://example.com",
+        "http://www.example.org",
+        "https://verify.leads-probe.invalid",
+        "https://anything.test",
+        "localhost",
+    ):
+        assert worker.is_probe(_lead(website=site, source=None)), site
+
+
+def test_a_real_lead_is_not_a_probe() -> None:
+    assert not worker.is_probe(_lead(website="https://blackpropeller.com/", source=None))
+    assert not worker.is_probe(_lead(website="https://fortplumbing.com/", source="google-ads"))
+
+
+def test_probe_leads_are_never_enqueued(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+    monkeypatch.setattr(
+        db, "enqueue_factsheet_job", lambda domain, **k: seen.append(domain) or "job"
+    )
+    enqueued, _ = enqueue_pending(
+        [
+            _lead(id="1", website="https://blackpropeller.com/"),
+            _lead(id="2", website="https://canary.leads-probe.invalid", source="canary:leads-probe"),
+            _lead(id="3", website="https://example.com"),
+        ]
+    )
+    assert seen == ["blackpropeller.com"]
+    assert enqueued == 1
