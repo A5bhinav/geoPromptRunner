@@ -16,6 +16,12 @@ PERPLEXITY_API_KEY: str | None = os.getenv("PERPLEXITY_API_KEY")
 GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
 SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
+# Direct Postgres connection, used ONLY to apply the DDL in data/*.sql — SUPABASE_KEY is
+# a REST key and PostgREST cannot run `alter table`. Nothing in the runtime path reads
+# this: every application read/write goes through the Supabase client in
+# src/storage/db.py. Optional; unset simply means migrations are applied by hand.
+# Like every other secret here it is read once, in this module, and never logged.
+SUPABASE_DB_URL: str | None = os.getenv("SUPABASE_DB_URL")
 
 # Google AI Overviews has no official API; capture it via a SERP provider
 # (DataForSEO — see DATAFORSEO_LOGIN/PASSWORD below). SearchApi.io served this surface

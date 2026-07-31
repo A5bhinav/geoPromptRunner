@@ -21,16 +21,6 @@ python -m src.cli --help                        # audit/teaser/judge/report/runs
 cd web && npm run dev                           # Next.js UI
 ```
 
-## Layout
-
-`src/engines/` (8 engine adapters) · `src/pipeline/` (orchestrator, judge,
-caches, metrics, calibration) · `src/audit/` (crawl, checks, content judge,
-offsite agent, synthesize) · `src/storage/` (Supabase) · `src/api/` + `web/`
-(FastAPI + Next.js) · `teaser/` (TS prospect-teaser/audit generator) ·
-`scripts/` (prejudge workflows, calibration, sheet builders) · `data/` (query
-sets, gold sets, SQL schemas) · `docs/` (plans + client artifacts — see the
-geo-dev skill's docs map; several are historical).
-
 ## Hard invariants
 
 - Engines return `None` on error, never raise; all engines subclass
