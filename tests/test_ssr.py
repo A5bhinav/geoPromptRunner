@@ -136,7 +136,11 @@ def test_classify_url() -> None:
     assert classify_url("https://x.com/pricing") is PageCategory.PRICING
     assert classify_url("https://x.com/compare/a-vs-b") is PageCategory.COMPARISON
     assert classify_url("https://x.com/docs/api") is PageCategory.DOCS
-    assert classify_url("https://x.com/about") is PageCategory.OTHER
+    # /about and /contact are now a category, not OTHER. They were dropped before
+    # scoring, so the page carrying a business's own NAP, licence and founding facts
+    # was the one page the crawl reliably missed.
+    assert classify_url("https://x.com/about") is PageCategory.CONTACT
+    assert classify_url("https://x.com/contact") is PageCategory.CONTACT
 
 
 def test_is_blocked_detects_200_challenge() -> None:

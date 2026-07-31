@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -288,11 +288,19 @@ async def preview(files: Annotated[list[UploadFile], File()]) -> dict[str, objec
 
 
 @api.post("/audits")
-async def create_audit(files: Annotated[list[UploadFile], File()]) -> dict[str, object]:
+async def create_audit(
+    files: Annotated[list[UploadFile], File()],
+    fact_sheet_id: Annotated[str | None, Form()] = None,
+) -> dict[str, object]:
     """Parse + validate; on success start the run and return its id.
 
     On validation failure returns 422 with the same structured preview the
     preview endpoint returns, so the UI can show errors inline.
+
+    ``fact_sheet_id`` attaches an APPROVED sheet from ``/fact-sheets`` as this run's
+    ground truth, instead of `fact` rows in the CSV. It is what connects the review
+    queue to a run at all: without it, approving a sheet moved one column and
+    nothing downstream ever read it.
     """
     uploads = await _read_uploads(files)
     result = _parse_cached(uploads)
@@ -300,7 +308,12 @@ async def create_audit(files: Annotated[list[UploadFile], File()]) -> dict[str, 
         raise HTTPException(status_code=422, detail=_serialize_parse(result))
     _enforce_audit_caps(result)
     try:
-        run_id = runner.start_run(result.audit)
+        run_id = runner.start_run(result.audit, (fact_sheet_id or "").strip() or None)
+    except runner.FactSheetNotUsable as exc:
+        # 422: the upload is well-formed but the ground truth it names cannot be
+        # used. A wrong reference is worse than none — it would judge every answer
+        # against a document nobody approved.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except CostBudgetExceeded as exc:
         # 402 Payment Required — the spend guard refused this run.
         raise HTTPException(status_code=402, detail=str(exc)) from exc

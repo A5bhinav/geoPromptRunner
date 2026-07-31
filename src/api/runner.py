@@ -5,6 +5,7 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 from src.api.engine_registry import build_engines
 from src.api.reports import (
@@ -14,6 +15,7 @@ from src.api.reports import (
     build_local_pack_payload,
     build_report,
 )
+from src.audit.factsheet import FactSheet, expected_fact_sheet_text
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.engines.local_pack import LocalEntity, LocalPackCapture
@@ -67,6 +69,15 @@ class _RunState:
     completed_calls: int = 0
     error: str | None = None
     db_run_id: str | None = None
+    # The APPROVED fact sheet this run was judged against, if one was attached.
+    # `fact_sheet_verification` is the sheet's WEAKEST claim tier and is what gates
+    # whether a flag may appear in anything sent to a prospect (factsheet/gate.py).
+    # Carried on the state because the live report path has no DB row to read it
+    # from, and `build_report` defaulting it to None silently suppressed every
+    # accuracy finding on every real run.
+    fact_sheet_id: str | None = None
+    fact_sheet_version: int | None = None
+    fact_sheet_verification: str | None = None
     results: list[QueryResult] = field(default_factory=list)
     judgments: list[AnswerJudgment] = field(default_factory=list)
     site_audit: SiteAuditPayload | None = None
@@ -211,15 +222,87 @@ def _outcome(state: _RunState) -> AuditOutcome:
     )
 
 
-def start_run(audit: ParsedAudit) -> str:
+class FactSheetNotUsable(Exception):
+    """An attached fact sheet cannot serve as a run's ground truth. Carries why."""
+
+
+def _sheet_text(sheet: FactSheet) -> str:
+    """The sheet as the flat text the judge is handed (`_build_fact_sheet`'s shape).
+
+    `expected_fact_sheet_text` is the oracle for exactly that, so the run row stores
+    the same bytes the judge will reason over rather than a second rendering of the
+    same claims.
+    """
+    return expected_fact_sheet_text(sheet)
+
+
+def _attach_fact_sheet(audit: ParsedAudit, fact_sheet_id: str | None) -> FactSheet | None:
+    """Load the approved sheet a run was submitted against, or None.
+
+    Three refusals, each because the alternative is a run judged against a document
+    nobody vouched for:
+
+    * **Unknown id** — better a 404 than silently running with no ground truth,
+      which produces a report with no accuracy findings and no indication why.
+    * **Not ACTIVE** — approval IS the gate (F4). Attaching a draft would route
+      around the only human review in the pipeline, and rejecting one would resurrect
+      a sheet a reviewer turned down.
+    * **A sheet AND CSV fact rows** — two ground truths for one run. §4.3 says
+      disagreement becomes a question, never a silent winner; here the honest move is
+      to refuse rather than pick.
+    """
+    if fact_sheet_id is None:
+        return None
+    if audit.fact_sheet is not None:
+        raise FactSheetNotUsable(
+            "this upload carries `fact` rows AND a fact_sheet_id. Two sources of "
+            "ground truth for one run — remove the fact rows, or submit without the "
+            "sheet id."
+        )
+    try:
+        sheet = db.get_fact_sheet(fact_sheet_id)
+    except db.StorageError as exc:
+        raise FactSheetNotUsable(f"could not load fact sheet {fact_sheet_id}: {exc}") from exc
+    if sheet is None:
+        raise FactSheetNotUsable(f"fact sheet {fact_sheet_id} not found")
+    state = _sheet_state(fact_sheet_id)
+    if state != db.FactSheetState.ACTIVE.value:
+        raise FactSheetNotUsable(
+            f"fact sheet {fact_sheet_id} is '{state}', not active. Approve it first — "
+            "approval is what makes a sheet the reference accuracy is measured against."
+        )
+    if not sheet.claims:
+        raise FactSheetNotUsable(
+            f"fact sheet {fact_sheet_id} has no claims; a sheet asserting nothing "
+            "cannot be contradicted, so no accuracy finding could ever be graded"
+        )
+    return sheet
+
+
+def _sheet_state(sheet_id: str) -> str:
+    """The stored lifecycle state of one sheet ('' when unreadable)."""
+    for row in db.list_fact_sheets():
+        if str(row.get("id")) == sheet_id:
+            return str(row.get("state") or "")
+    return ""
+
+
+def start_run(audit: ParsedAudit, fact_sheet_id: str | None = None) -> str:
     """Register a run and kick it off on a background thread. Returns the run id.
 
     The run id is generated here and used as *both* the in-memory key and the
     stored ``audit_runs`` row id, so a finished run can be read back from storage
     by the same id the UI is polling — even after the API restarts.
+
+    ``fact_sheet_id`` attaches an APPROVED sheet as this run's ground truth. Before
+    it existed, `load_fact_sheet` had no caller anywhere and approving a sheet
+    changed one column and nothing else — the review queue's own promise, that
+    approval makes a sheet "the reference every accuracy finding is measured
+    against", was not true of any code path.
     """
     cfg = audit.config
     run_id = str(uuid.uuid4())
+    sheet = _attach_fact_sheet(audit, fact_sheet_id)
     # Cost/total are estimated against the engines that will actually build, so
     # the progress denominator matches what runs (a missing key drops calls).
     engines, skipped = build_engines(
@@ -248,6 +331,9 @@ def start_run(audit: ParsedAudit) -> str:
         active_engines=[e.ENGINE_NAME for e in engines],
         skipped_engines=skipped,
         engine_completed={e.ENGINE_NAME: 0 for e in engines},
+        fact_sheet_id=fact_sheet_id if sheet is not None else None,
+        fact_sheet_version=sheet.version if sheet is not None else None,
+        fact_sheet_verification=(sheet.verification_tier.value if sheet is not None else None),
     )
 
     # Best-effort: open the durable row up front, sharing run_id, so progress is
@@ -267,9 +353,11 @@ def start_run(audit: ParsedAudit) -> str:
             total_calls=total_calls,
             engines=[e.ENGINE_NAME for e in engines],
             n_queries=len(qs.queries),
-            fact_sheet_present=audit.fact_sheet is not None,
+            fact_sheet_present=(audit.fact_sheet is not None or sheet is not None),
             queries=_serialize_queries(qs.queries),
-            fact_sheet=audit.fact_sheet,
+            fact_sheet=(_sheet_text(sheet) if sheet is not None else audit.fact_sheet),
+            fact_sheet_id=(fact_sheet_id if sheet is not None else None),
+            fact_sheet_version=(sheet.version if sheet is not None else None),
             judge=cfg.judge,
             location=cfg.location,
             engine_models=engine_models(engines),
@@ -287,6 +375,28 @@ def start_run(audit: ParsedAudit) -> str:
     )
     thread.start()
     return run_id
+
+
+def _verification_for_run(row: dict[str, Any]) -> str | None:
+    """The weakest claim tier of the sheet this run was judged against, or None.
+
+    Resolved from the run's OWN `fact_sheet_id`, never from whichever sheet happens
+    to be active for the domain now. A run is judged against a snapshot; attributing
+    today's tier to yesterday's verdicts is the provenance laundering §8 exists to
+    prevent, and it would silently upgrade what a flag is allowed to say.
+
+    None when the run predates the pointer or carried a hand-uploaded CSV sheet —
+    and None correctly suppresses every accuracy finding downstream, because a flag
+    with no vouched-for source is exactly the one not to send.
+    """
+    sheet_id = row.get("fact_sheet_id")
+    if not sheet_id:
+        return None
+    try:
+        sheet = db.get_fact_sheet(str(sheet_id))
+    except db.StorageError:
+        return None
+    return sheet.verification_tier.value if sheet is not None else None
 
 
 def _persist_state(state: _RunState, error: str | None = None) -> None:
@@ -900,6 +1010,7 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         outcome,
         judgments=judgments or None,
         fact_sheet_present=bool(row.get("fact_sheet_present")),
+        fact_sheet_verification=_verification_for_run(row),
         run_date=str(row.get("created_at", ""))[:10],
         site_audit=site_audit,
         local_pack=local_pack,
@@ -987,7 +1098,10 @@ def get_report(run_id: str) -> ReportPayload | None:
     report = build_report(
         _outcome(state),
         judgments=state.judgments or None,
-        fact_sheet_present=state.audit.fact_sheet is not None,
+        fact_sheet_present=(
+            state.audit.fact_sheet is not None or state.fact_sheet_id is not None
+        ),
+        fact_sheet_verification=state.fact_sheet_verification,
         run_date=state.created_at[:10],
         site_audit=state.site_audit,
         local_pack=build_local_pack_payload(

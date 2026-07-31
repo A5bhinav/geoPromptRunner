@@ -30,6 +30,7 @@ from src.audit.crawl.urls import content_hash, normalize_url
 from src.net_guard import UnsafeUrlError, assert_public_url
 
 __all__ = [
+    "AdaptiveThrottle",
     "FetchConfig",
     "RawFetch",
     "GPTBOT_UA",
@@ -126,6 +127,26 @@ class FetchConfig:
     polite_delay_s: float = 1.5
     # Minimum wait after a 429 that carries no Retry-After. See _retry_wait.
     rate_limit_floor_s: float = 2.5
+    # --- crawl-wide adaptive pacing (see AdaptiveThrottle) --------------------
+    # `polite_delay_s` used to be a CONSTANT for the whole crawl, so a host that
+    # started rejecting at page 3 kept receiving pages 4-20 at the same cadence.
+    # Each retried twice in isolation and gave up, and a 20-page crawl collapsed to
+    # one usable page — which is how a fact sheet ends up built from a single URL.
+    # These let the crawl slow itself down and stay slowed.
+    #
+    # Ceiling on the adaptive delay. 20s is well past any reasonable small-business
+    # rate limit while still finishing a ~20 page crawl inside a few minutes.
+    max_polite_delay_s: float = 20.0
+    # Multiplier applied to the current delay on each 429/503.
+    throttle_growth: float = 2.0
+    # Consecutive clean fetches before the delay decays one step back toward base.
+    # Deliberately >1: recovering after a single success is how a crawl oscillates
+    # between hammering and backing off instead of settling.
+    throttle_recovery_streak: int = 3
+    # Cap on an explicit `Retry-After`. Separate from retry_max_wait_s (10s), which
+    # bounds OUR guesswork — this bounds a number the SERVER asked for, so it is
+    # allowed to be much larger before we treat it as a refusal rather than a wait.
+    retry_after_max_s: float = 60.0
     # Per-render nav + wall-clock caps — Playwright can *hang* on OOM (§6.5 locked #2).
     render_nav_timeout_s: float = 20.0
     render_stabilize_cap_s: float = 5.0
@@ -233,8 +254,80 @@ def _is_blocked(response: httpx.Response, body: str) -> bool:
     return False
 
 
+class AdaptiveThrottle:
+    """One crawl's request pacing, which slows down when the host pushes back.
+
+    The per-page retry in :func:`fetch_raw` is bounded and LOCAL: it waits, retries
+    twice, gives up, and tells the next page nothing. So a host that starts
+    rejecting mid-crawl received every remaining page at the original cadence and
+    rejected those too. Measured on blackpropeller.com 2026-07-31 — a 20-page crawl
+    yielded ONE usable page, and every fact on the resulting sheet came from that
+    single URL.
+
+    This is the missing shared signal. A 429 or 503 anywhere raises the delay for
+    every subsequent request in the crawl; a run of clean fetches lowers it again.
+    Recovery needs a STREAK rather than one success, because decaying immediately
+    is how a crawler oscillates between hammering and backing off instead of
+    settling on the rate the host will actually serve.
+
+    Not thread-safe and does not need to be: a crawl is one event loop, and the
+    mutations are single statements between awaits.
+    """
+
+    def __init__(self, base_delay: float, config: FetchConfig) -> None:
+        self._base = max(base_delay, 0.0)
+        self._config = config
+        self._delay = self._base
+        self._clean_streak = 0
+        #: Peak delay reached — worth logging, since a crawl that quietly ran at
+        #: 20s spacing looks identical to a fast one in the page count.
+        self.peak_delay = self._base
+
+    @property
+    def delay(self) -> float:
+        return self._delay
+
+    def penalise(self, retry_after: float | None = None) -> None:
+        """Called on every 429/503. Grows the delay for the rest of the crawl."""
+        self._clean_streak = 0
+        grown = max(self._delay * self._config.throttle_growth, self._config.rate_limit_floor_s)
+        if retry_after is not None:
+            # The host named a number. Never pace faster than it asked for.
+            grown = max(grown, retry_after)
+        self._delay = min(grown, self._config.max_polite_delay_s)
+        self.peak_delay = max(self.peak_delay, self._delay)
+
+    def reward(self) -> None:
+        """Called on every clean fetch. Decays one step after a streak."""
+        if self._delay <= self._base:
+            return
+        self._clean_streak += 1
+        if self._clean_streak >= self._config.throttle_recovery_streak:
+            self._clean_streak = 0
+            self._delay = max(self._base, self._delay / self._config.throttle_growth)
+
+    async def wait(self) -> None:
+        if self._delay > 0:
+            await asyncio.sleep(self._delay)
+
+
 def _backoff(attempt: int, config: FetchConfig) -> float:
     return min(config.retry_base_wait_s * (2.0**attempt), config.retry_max_wait_s)
+
+
+def _retry_after_seconds(response: httpx.Response, config: FetchConfig) -> float | None:
+    """``Retry-After`` in seconds, or None when absent/unparseable.
+
+    Only the delta-seconds form is read; the HTTP-date form falls through to our
+    own backoff rather than risking a clock-skew parse.
+    """
+    raw = response.headers.get("retry-after")
+    if not raw:
+        return None
+    try:
+        return min(float(int(raw)), config.retry_after_max_s)
+    except ValueError:
+        return None
 
 
 def _retry_wait(response: httpx.Response, attempt: int, config: FetchConfig) -> float:
@@ -246,12 +339,9 @@ def _retry_wait(response: httpx.Response, attempt: int, config: FetchConfig) -> 
     retries at 0.5s and 1s both rejected, so the page was recorded as blocked when
     waiting a little longer would have fetched it.
     """
-    retry_after = response.headers.get("retry-after")
-    if retry_after:
-        try:
-            return min(float(int(retry_after)), config.retry_max_wait_s)
-        except ValueError:
-            pass  # HTTP-date form — fall back to backoff rather than parse a date
+    retry_after = _retry_after_seconds(response, config)
+    if retry_after is not None:
+        return retry_after
     if response.status_code == 429:
         return max(_backoff(attempt, config), config.rate_limit_floor_s)
     return _backoff(attempt, config)
@@ -274,7 +364,9 @@ async def _get_following_redirects(client: httpx.AsyncClient, url: str) -> httpx
     raise UnsafeUrlError(f"too many redirects from {url}")
 
 
-async def fetch_raw(url: str, config: FetchConfig) -> RawFetch:
+async def fetch_raw(
+    url: str, config: FetchConfig, throttle: AdaptiveThrottle | None = None
+) -> RawFetch:
     """Raw httpx GET through net_guard's per-hop SSRF validation, returning :class:`RawFetch`.
 
     Reads the *full* body (httpx is non-streaming here, so later RSC chunks are
@@ -282,6 +374,10 @@ async def fetch_raw(url: str, config: FetchConfig) -> RawFetch:
     and flags a Cloudflare challenge as ``blocked`` instead of trying to bypass it
     (§1.5). Raises ``UnsafeUrlError`` on an unsafe hop and ``httpx.HTTPError`` if
     transport errors persist past the retry budget.
+
+    ``throttle`` is the crawl-wide pacer. Reporting a 429 to it is what makes the
+    rejection visible to the REST of the crawl instead of dying inside this one
+    page's retry budget.
     """
     timeout = httpx.Timeout(
         connect=config.connect_timeout_s,
@@ -305,10 +401,16 @@ async def fetch_raw(url: str, config: FetchConfig) -> RawFetch:
                     await asyncio.sleep(_backoff(attempt, config))
                     continue
                 raise
-            if response.status_code in (429, 503) and attempt < config.max_retries:
-                await asyncio.sleep(_retry_wait(response, attempt, config))
-                continue
+            if response.status_code in (429, 503):
+                # Tell the whole crawl, not just this page's retry loop.
+                if throttle is not None:
+                    throttle.penalise(_retry_after_seconds(response, config))
+                if attempt < config.max_retries:
+                    await asyncio.sleep(_retry_wait(response, attempt, config))
+                    continue
             body = response.text
+            if throttle is not None and response.status_code == 200:
+                throttle.reward()
             return RawFetch(
                 requested_url=url,
                 final_url=str(response.url),
@@ -432,17 +534,43 @@ def _extract_text(html: str, url: str) -> str | None:
         return None
 
 
+#: Structured-data syntaxes read from every page, in descending authority.
+#:
+#: Only `json-ld` was requested before, and extruct parsed the rest and dropped
+#: them on the floor. Microdata (`itemscope`/`itemprop`) is still what plenty of
+#: older WordPress themes and small-business site builders emit, and RDFa turns up
+#: in the same places — so a site could carry a complete, machine-readable
+#: LocalBusiness block and yield ZERO claims purely because of the syntax it chose.
+#:
+#: `uniform=True` is what makes this safe to merge: extruct normalises microdata
+#: and RDFa into the same `@type`/property shape as JSON-LD, so the downstream
+#: extractor needs no per-syntax branch and cannot drift between them.
+_STRUCTURED_SYNTAXES: list[str] = ["json-ld", "microdata", "rdfa"]
+
+
 def _extract_json_ld(html: str, url: str) -> list[dict[str, Any]]:
-    """Authoritative JSON-LD graph via extruct (run on rendered HTML when escalated)."""
+    """Structured-data nodes via extruct, run on rendered HTML when we escalated.
+
+    Named for JSON-LD because that is the authoritative syntax and the one every
+    caller thinks in, but it returns the union of :data:`_STRUCTURED_SYNTAXES`.
+    JSON-LD comes FIRST in the returned list: `resolve_conflicts` keeps the earlier
+    claim when two sources agree and raises a question when they differ, so a
+    hand-written JSON-LD block outranks a theme-generated microdata one.
+    """
     try:
         import extruct
 
-        data = extruct.extract(html, base_url=url, syntaxes=["json-ld"], uniform=True)
-        blocks = data.get("json-ld") or []
-        return [block for block in blocks if isinstance(block, dict)]
-    except Exception as exc:  # malformed JSON-LD block — don't sink the page
-        logger.warning("JSON-LD extraction failed for %s: %s", url, exc)
+        data = extruct.extract(html, base_url=url, syntaxes=_STRUCTURED_SYNTAXES, uniform=True)
+    except Exception as exc:  # malformed block in any syntax — don't sink the page
+        logger.warning("structured-data extraction failed for %s: %s", url, exc)
         return []
+
+    blocks: list[dict[str, Any]] = []
+    for syntax in _STRUCTURED_SYNTAXES:
+        for block in data.get(syntax) or []:
+            if isinstance(block, dict):
+                blocks.append(block)
+    return blocks
 
 
 async def fetch_page(
@@ -450,6 +578,7 @@ async def fetch_page(
     category: PageCategory,
     config: FetchConfig,
     renderer: PlaywrightRenderer | None = None,
+    throttle: AdaptiveThrottle | None = None,
 ) -> PageRecord:
     """Fetch one page end to end: raw → (escalate?) render → extract → JSON-LD.
 
@@ -458,7 +587,7 @@ async def fetch_page(
     JSON-LD via JS, §1.7). A render failure is non-fatal — we keep the raw view
     and flag it.
     """
-    raw = await fetch_raw(url, config)
+    raw = await fetch_raw(url, config, throttle)
     raw_text = _extract_text(raw.html, url)
 
     rendered_html: str | None = None

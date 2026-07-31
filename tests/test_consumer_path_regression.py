@@ -384,15 +384,31 @@ def test_url_classification_is_unchanged_for_consumer_sites() -> None:
     from src.audit.crawl.models import PageCategory
     from src.audit.crawl.page_select import CATEGORY_CAPS, CATEGORY_PATTERNS, classify_url
 
-    # The consumer pattern/cap tables are byte-identical to their pre-pivot values.
+    # The consumer tables are their pre-pivot values PLUS one deliberate addition:
+    # PageCategory.CONTACT, added 2026-07-31 to BOTH sets at once.
+    #
+    # This lock exists to stop LOCAL patterns leaking into the consumer path — a
+    # SaaS /solutions page must never classify as a plumber's service page. That
+    # discipline is intact: CONTACT is not a local pattern promoted sideways, it is
+    # a category both ICPs genuinely have, and it is byte-identical in the two sets.
+    #
+    # It does change what a consumer audit crawls, by up to 2 of 20 pages, and that
+    # is the point of updating the lock consciously rather than loosening it: the
+    # page a business states its own NAP, licence and founding date on was being
+    # dropped before scoring, so the fact sheet could never see it.
     assert CATEGORY_PATTERNS == {
         PageCategory.PRICING: (r"/pricing|/plans?|/cost", 10),
+        PageCategory.CONTACT: (
+            r"/contact|/about|/locations?|/our[-_]team|/who[-_]we[-_]are",
+            9,
+        ),
         PageCategory.COMPARISON: (r"/(vs|versus|compare|alternatives?)", 9),
         PageCategory.PRODUCT: (r"/products?|/features?|/solutions?|/platform", 8),
         PageCategory.DOCS: (r"/docs?|/documentation|/guide|/api", 6),
         PageCategory.BLOG: (r"/blog|/articles?|/resources|/news", 4),
     }
     assert CATEGORY_CAPS == {
+        PageCategory.CONTACT: 2,
         PageCategory.PRICING: 3,
         PageCategory.COMPARISON: 3,
         PageCategory.PRODUCT: 5,

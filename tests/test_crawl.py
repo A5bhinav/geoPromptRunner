@@ -50,7 +50,11 @@ def _patch_crawl(monkeypatch: pytest.MonkeyPatch, *, save_raises: bool) -> None:
     monkeypatch.setattr(page_select, "discover_sitemap_urls", lambda home: [])
     monkeypatch.setattr(fetcher, "PlaywrightRenderer", _DummyRenderer)
 
-    async def fake_fetch_page(url: str, category: Any, cfg: Any, renderer: Any) -> PageRecord:
+    async def fake_fetch_page(
+        url: str, category: Any, cfg: Any, renderer: Any, throttle: Any = None
+    ) -> PageRecord:
+        # `throttle` is the crawl-wide pacer (AdaptiveThrottle). The double tracks
+        # the real signature deliberately: it is what caught the arity change.
         return _page(url)
 
     monkeypatch.setattr(fetcher, "fetch_page", fake_fetch_page)

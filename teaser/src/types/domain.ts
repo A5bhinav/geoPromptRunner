@@ -220,6 +220,16 @@ export interface TeaserDraft {
   cta: string;
   lead: Finding;
   table: Finding[];
+  /**
+   * Accuracy findings this run's fact sheet was ENTITLED to send (F3), already
+   * filtered by `selectAccuracyFindings` against the sheet's verification tier.
+   * Optional: legacy drafts predate it, and a run with no approved sheet has none.
+   *
+   * These carry `runsObserved: 0` on purpose — the judge scored one cell, so the
+   * copy must NOT print an occurrence line for them the way a losing-query finding
+   * does. "1 of 1" would read as "we tried once and it held".
+   */
+  accuracyFindings?: Finding[];
   /** Cached report + answers so the teaser is reproducible as engines drift. */
   report: ReportPayload;
   answers: AnswerRecord[];

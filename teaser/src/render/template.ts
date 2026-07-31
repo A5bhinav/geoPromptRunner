@@ -302,6 +302,48 @@ export function renderTeaserHtml(
     ? "AI recommends"
     : "AI names";
 
+  // "What AI states about you" — accuracy findings, already gated by
+  // `selectAccuracyFindings` against the fact sheet's verification tier (§8).
+  //
+  // The voice here is the audit-packaging rule, not a stylistic preference:
+  // "states", never "falsely claims" or "hallucinates". Anthropomorphising a
+  // named vendor is imprecise and legally careless, and stale-but-once-true is a
+  // different claim from fabricated. Severity carries the alarm; the prose does not.
+  //
+  // Deliberately NO occurrence line. These findings carry runsObserved: 0 because
+  // the judge scored ONE cell — printing "1 of 1" would read as "we tried once and
+  // it held", which is a reproducibility claim we did not measure.
+  const accuracy = t.accuracyFindings ?? [];
+  const accuracySection = accuracy.length
+    ? `
+      <section class="section">
+        <div class="kicker">What AI states about ${escapeHtml(t.companyName)}</div>
+        <ul class="why">
+          ${accuracy
+            .map((f) => {
+              const flag = f.flag;
+              if (!flag) return "";
+              return `
+          <li class="why-row accuracy-row">
+            <span class="why-marker"></span>
+            <span class="why-label">
+              ${escapeHtml(engineLabel(f.engineName))} states
+              <span class="q">“${escapeHtml(flag.claim)}”</span>.
+              Your site says: ${escapeHtml(flag.reality)}
+            </span>
+            <span class="why-tag">${escapeHtml(flag.severity)}</span>
+          </li>`;
+            })
+            .join("")}
+        </ul>
+        <p class="accuracy-note">
+          Checked ${escapeHtml(t.runDate)} against your own published pages. We do not
+          claim these reproduce on demand: AI systems are updated often and answer the
+          same question differently. This is what we observed, and when.
+        </p>
+      </section>`
+    : "";
+
   // "Why AI skips you" — the top fixable on/off-site gaps behind the loss, from
   // the site-audit roadmap. Omitted when no site audit ran.
   const whyGaps = selectWhyGaps(t.report.site_audit);
@@ -375,6 +417,7 @@ export function renderTeaserHtml(
         ${visibilityChart(t.report.leaderboard, h.competitorName)}
         <p class="caption">${escapeHtml(clientAppearanceLine(t))}</p>
       </section>
+      ${accuracySection}
       ${whySection}
 
       <div class="stakes"><p>${escapeHtml(stakesLine)}</p></div>

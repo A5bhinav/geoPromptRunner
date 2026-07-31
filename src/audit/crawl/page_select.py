@@ -33,6 +33,13 @@ logger = logging.getLogger(__name__)
 # more than one. Patterns are matched case-insensitively against the URL path.
 CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
     PageCategory.PRICING: (r"/pricing|/plans?|/cost", 10),
+    # Where a business states its OWN facts — NAP, licence numbers, founding,
+    # hours. Weight 9: below the pages an audit grades, above everything else,
+    # because it is small, singular, and carries facts no other page repeats.
+    # In BOTH sets deliberately: a plumber and a SaaS both have one, and this is
+    # the one category where the consumer/local fork has nothing to say.
+    PageCategory.CONTACT: (r"/contact|/about|/locations?|/our[-_]team|/who[-_]we[-_]are", 9),
+
     PageCategory.COMPARISON: (r"/(vs|versus|compare|alternatives?)", 9),
     PageCategory.PRODUCT: (r"/products?|/features?|/solutions?|/platform", 8),
     PageCategory.DOCS: (r"/docs?|/documentation|/guide|/api", 6),
@@ -49,6 +56,12 @@ CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
 # audit. The service pages that got dropped ("/hvac/heating/furnace-repair-maintenance/")
 # are exactly what Cat 3 is supposed to judge.
 LOCAL_CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
+    # Where a business states its OWN facts — NAP, licence numbers, founding,
+    # hours. Weight 9: below the pages an audit grades, above everything else,
+    # because it is small, singular, and carries facts no other page repeats.
+    # In BOTH sets deliberately: a plumber and a SaaS both have one, and this is
+    # the one category where the consumer/local fork has nothing to say.
+    PageCategory.CONTACT: (r"/contact|/about|/locations?|/our[-_]team|/who[-_]we[-_]are", 9),
     # The job pages. Highest weight: this is where an owner's customers land, and where
     # answer-first structure either exists or doesn't.
     PageCategory.SERVICE: (
@@ -67,6 +80,9 @@ LOCAL_CATEGORY_PATTERNS: dict[PageCategory, tuple[str, int]] = {
 # Per-category hard caps (newest by lastmod when over). Pricing/comparison are
 # few-and-decisive; docs/blog can be large so cap tighter relative to their count.
 CATEGORY_CAPS: dict[PageCategory, int] = {
+    # 2, not more: a site has one contact page and maybe an about page. A high cap
+    # would let "/about-our-process" style pages crowd out the ones being audited.
+    PageCategory.CONTACT: 2,
     PageCategory.PRICING: 3,
     PageCategory.COMPARISON: 3,
     PageCategory.PRODUCT: 5,
@@ -77,7 +93,8 @@ CATEGORY_CAPS: dict[PageCategory, int] = {
 # Local caps skew toward service pages: a plumber's site is mostly service pages, and
 # they are the ones Cat 3/4 must read. Sums to the global cap with room for the homepage.
 LOCAL_CATEGORY_CAPS: dict[PageCategory, int] = {
-    PageCategory.SERVICE: 10,
+    PageCategory.CONTACT: 2,
+    PageCategory.SERVICE: 9,
     PageCategory.SERVICE_AREA: 4,
     PageCategory.COMPARISON: 2,
     PageCategory.BLOG: 3,

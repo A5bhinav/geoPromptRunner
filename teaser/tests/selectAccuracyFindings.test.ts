@@ -138,3 +138,10 @@ test("max caps the number of findings", () => {
   const answers = [1, 2, 3, 4].map((i) => answer({ query_id: `q-${i}` }));
   assert.equal(selectAccuracyFindings(report(flags, "client_confirmed"), answers, 2).length, 2);
 });
+
+test("a draft with no approved sheet renders no accuracy section", () => {
+  // The whole chain must fail CLOSED: no sheet -> no tier -> no findings -> no
+  // section. A run without approved ground truth must not print an accusation.
+  const out = selectAccuracyFindings(report([flag()], null), [answer()]);
+  assert.deepEqual(out, []);
+});

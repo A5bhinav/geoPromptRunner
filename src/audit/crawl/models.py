@@ -39,6 +39,13 @@ class PageCategory(StrEnum):
     # Cat 3/4 then judged a homepage and a blog index, which is not a site audit.
     SERVICE = "service"  # the actual job pages: repair, installation, maintenance
     SERVICE_AREA = "service_area"  # "areas we serve" / per-town landing pages
+    # The page where a business states its own facts. Added because page selection
+    # was tuned for the AUDIT — which grades structure on service and pricing pages
+    # — and the fact-sheet generator inherited that page list. On
+    # albertnahmanplumbing.com the crawl fetched 13 pages and this was not one of
+    # them, while /contact/ carried the phone, BOTH addresses and the licence
+    # number. The best extractor is worth nothing on a page nobody fetched.
+    CONTACT = "contact"  # contact / about / locations: NAP, licensing, founding
     OTHER = "other"
 
 

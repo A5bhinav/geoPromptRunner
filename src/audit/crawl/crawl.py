@@ -61,7 +61,7 @@ async def crawl_domain(
     from contextlib import AsyncExitStack
 
     from src.audit.crawl import cache
-    from src.audit.crawl.fetcher import PlaywrightRenderer, fetch_page
+    from src.audit.crawl.fetcher import AdaptiveThrottle, PlaywrightRenderer, fetch_page
     from src.audit.crawl.models import PageCategory
     from src.audit.crawl.page_select import discover_sitemap_urls, select_pages
     from src.audit.crawl.robots import RobotsPolicy, load_robots
@@ -101,12 +101,16 @@ async def crawl_domain(
     # the render bound, which is about Chromium RAM). Either way a pause applies between
     # requests — see FetchConfig.polite_delay_s.
     gate = asyncio.Semaphore(1 if delay else cfg.fetch_concurrency)
-    pause = delay if delay else cfg.polite_delay_s
+    # ONE throttle for the whole crawl. A 429 on any page raises the delay for
+    # every page after it; without that shared signal a host that starts rejecting
+    # mid-crawl receives the remainder at the original cadence and rejects those
+    # too (measured: a 20-page crawl reduced to 1 usable page).
+    throttle = AdaptiveThrottle(delay if delay else cfg.polite_delay_s, cfg)
 
     async def _crawl_one(url: str, category: PageCategory, renderer: object | None) -> None:
         async with gate:
             try:
-                page = await fetch_page(url, category, cfg, renderer)  # type: ignore[arg-type]
+                page = await fetch_page(url, category, cfg, renderer, throttle)  # type: ignore[arg-type]
             except Exception as exc:  # per-page best-effort — record and move on
                 logger.warning("page fetch failed %s: %s", url, type(exc).__name__)
                 result.errors.append(f"{url}: fetch {type(exc).__name__}: {exc}")
@@ -115,9 +119,8 @@ async def crawl_domain(
                 # Politeness pause inside the gate, so it throttles the request RATE
                 # rather than just spacing completions. Applies with or without a robots
                 # Crawl-delay: without it, a 20-page crawl 429'd two thirds of a real
-                # client's site.
-                if pause:
-                    await asyncio.sleep(pause)
+                # client's site. The wait is ADAPTIVE — see AdaptiveThrottle.
+                await throttle.wait()
             result.pages.append(page)
             if not persist:
                 return
@@ -137,6 +140,15 @@ async def crawl_domain(
             logger.warning("browser launch failed; raw-only crawl: %s", type(exc).__name__)
         await asyncio.gather(*(_crawl_one(url, cat, renderer) for url, cat in pages))
 
+    if throttle.peak_delay > throttle.delay or throttle.peak_delay > cfg.polite_delay_s:
+        # A crawl that quietly ran at 20s spacing looks identical to a fast one in
+        # the page count, so say so — it is the signal that a host pushed back.
+        logger.info(
+            "crawl %s was throttled: delay peaked at %.1fs (base %.1fs)",
+            domain,
+            throttle.peak_delay,
+            cfg.polite_delay_s,
+        )
     logger.info(
         "crawl %s done: %d pages, %d errors, %d save-errors",
         domain,

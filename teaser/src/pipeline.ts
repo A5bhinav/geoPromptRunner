@@ -262,6 +262,7 @@ export function assembleDraft(
     cta: ctaLine(profile.name),
     lead: selection.lead,
     table: selection.table,
+    accuracyFindings: selection.accuracyFindings,
     report,
     answers,
     // Persist the resolved aliases so a regeneration from storage matches by
