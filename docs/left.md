@@ -1,5 +1,14 @@
 # What's Left
 
+> ⚠️ **SUPERSEDED (marked 2026-07-31).** Written 2026-06-03, before the gold
+> sets, the calibration runs, the real fact sheets and the whole SMB pivot.
+> Known-false as of today: "only 3 placeholder gold items" (Oura + Fort gold
+> sets exist and were calibrated 2026-06-28), "only the template and Oura
+> example" for fact sheets (Fort, Oura and Anoria sheets plus a local
+> template exist), "suite is now 50 tests" (418 passed / 1 skipped), and §3's
+> listing of **outreach automation as a deferred non-goal** — that is now the
+> product. Kept for history; do not plan from it.
+
 **As of 2026-06-03; front-end item updated 2026-06-06.** The engine build order from `design-and-decisions.md` §8 (items 1–11)
 is effectively done: LLM judge, cross-engine citations + AI Overviews, losing-queries view,
 teaser mode, orchestrator + dry run, cadence comparison, rubric capture + roadmap rollup,

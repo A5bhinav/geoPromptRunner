@@ -1,5 +1,21 @@
 # Project Queue & Status
 
+> ⚠️ **STALE — read the banner before quoting anything here (added 2026-07-31).**
+> Every calibration figure below (agreement 96/88/93, flag recall 95%, the
+> 80%-with-verifier / ~42%-without precision pair) was measured **2026-06-28
+> against the pre-bump judge prompt**. The Phase 3 `_PROMPT_LAYOUT` bump
+> (2026-07-27) changed the prompt fingerprint and W3.4's re-run has not
+> happened — `data/oura_gold.json` and `data/fort_gold.json` are untouched
+> since 2026-06-19. `src/pipeline/judge.py:245-249` states the standing gate:
+> **quote no accuracy or agreement figure for either ICP until W3.4 passes.**
+> Mention, prominence and framing are exempt.
+
+> **Also superseded in scope (2026-07-31).** This snapshot predates the entire
+> SMB pivot (Phases 0–5, all completed 2026-07-27/28). It contains no local
+> ICP, no `W*` items, no local report renderer and no DataForSEO migration,
+> so its "recommended order" and "immediate moves" are obsolete. Read
+> `docs/build-log.md` and `docs/smb-pivot-build-plan.md` for current state.
+
 > Snapshot authored 2026-06-24. A living "what's done / what's left" view across
 > calibration, the scraper decision, and the Audit Generator build. Update as
 > items move. Companion to `docs/build-log.md` (append-only chunk history),

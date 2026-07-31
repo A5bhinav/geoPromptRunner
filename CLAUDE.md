@@ -10,7 +10,10 @@ Powers a manual audit service for early-stage B2C consumer startups
 **Before non-trivial work, load the `geo-dev` skill**
 (`.claude/skills/geo-dev/SKILL.md`) — it has the full architecture map, judge
 cache-key discipline, cost model, config reference, and docs map. For judging
-stored runs without API spend, use the `prejudge` skill.
+stored runs without API spend, use the `prejudge` skill. **Before touching
+anything a client reads** — the report, its copy, charts, severity, scoring —
+load the `audit-packaging` skill; the build spec is
+`docs/audit-packaging-spec.md` (research: `docs/audit-packaging-research.md`).
 
 ## Commands
 

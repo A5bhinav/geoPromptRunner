@@ -1,3 +1,211 @@
+## F4: the fact-sheet gate is reachable — Completed 2026-07-31
+
+Before this, the worker could fill a table nobody could act on. `save_fact_sheet` always
+writes `DRAFT`, `activate_fact_sheet` existed, and **nothing called it** — so an automated
+generator produced a pile of drafts that no human could approve and no run could use.
+
+### The gate
+
+Four endpoints on `src/api/app.py`, mirroring the `/teasers` lifecycle:
+
+    GET  /fact-sheets?state=&domain=   the queue (rows, not documents)
+    GET  /fact-sheets/{id}             one sheet WITH each claim's evidence
+    POST /fact-sheets/{id}/approve     DRAFT -> ACTIVE, incumbent demoted
+    POST /fact-sheets/{id}/reject      records the verdict; the row stays
+
+Plus `web/app/fact-sheets/page.tsx` and a nav entry.
+
+**The design rule is that a reviewer must be able to CHECK a claim, not just read it.**
+Every claim renders its verbatim quote and a link to the page it came from, beside the
+assertion it produced. Open questions render first, in their own block, because the §4.3
+disagreements are the call list — the reason a human is in the loop at all.
+
+### Three decisions worth recording
+
+**`rejected` is a REVIEWED state, not a delete.** `data/schema_factsheets.sql` (still
+unapplied, so this cost nothing) gained `rejected` to the state check plus a
+`reject_reason` column. A reviewer saying "these claims are wrong" is the most valuable
+signal the extractor gets — it means L1 produced something plausible-but-false on that
+domain. Deleting the row teaches nothing and lets the next regeneration repeat the mistake
+unobserved.
+
+**An ACTIVE sheet cannot be rejected — 409.** Live runs are judged against it, and pulling
+it out from under them leaves their accuracy claims referencing a document that no longer
+exists. Activate a replacement instead; `activate_fact_sheet` already demotes the incumbent
+in the same operation, because `uq_fact_sheets_active_domain` refuses promote-before-demote.
+
+**An unknown `state` filter is 422, not an empty list.** Silently returning `[]` for a typo
+reads as "no sheets need review", which is the wrong answer to put in front of a reviewer.
+
+### A4 is still open, and this was built around it
+
+`audit-packaging-research.md` §9.5 binds the fact sheet and the competitor set into one
+governance artifact; this plan has no competitor-set plan, and the decision changes what
+the queue gates. Built to gate the SHEET only, with the second artifact additive rather
+than a rewrite — but if §9.5 is adopted, this screen gains a second panel and the approve
+action gains a second subject.
+
+### Gate
+
+`mypy src/` 91 files · `ruff check src/` clean · `pytest tests/` 563 passed, 1 skipped ·
+`tsc --noEmit` clean · `next build` compiles `/fact-sheets`.
+
+---
+
+## The fact-sheet cue: an invariant amended, a worker built — Completed 2026-07-31
+
+The fact-sheet queue had no producer and no consumer. `enqueue_factsheet_job`,
+`claim_factsheet_job` and `finish_factsheet_job` all existed in `db.py`, and grep found
+exactly one file mentioning any of them: `db.py`. A sheet existed only if someone typed
+the CLI command.
+
+### The invariant came first, deliberately
+
+`geoWebsite/CLAUDE.md` said *"No auto-triggering of the teaser pipeline."* Plan §0 is
+explicit that Tier-1 auto-generation is *"arguably inside that prohibition"* and needs an
+**explicit amendment in the same commit**, not a silent reading that fact-sheet generation
+is not "the teaser pipeline." So the amendment is written, and it is narrow:
+
+- The teaser prohibition is **unchanged**. Only Tier 1 is carved out.
+- Tier 1 crawls the lead's OWN site and parses it. No model, no engine spend, and the
+  output is a `draft` nothing may send until a human reviews it. The rule the invariant
+  protects — nothing reaches a prospect without a person deciding — is untouched, because
+  a fact sheet reaches no prospect.
+- Tier 2 (which does call models and does spend) is **explicitly not covered** and needs
+  its own amendment.
+
+### Why a worker and not a trigger
+
+Not a preference — a fact about the deployment. `leads` lives in the website's Supabase
+project, `factsheet_jobs` in the platform's. **Different databases**, so the existing
+`AFTER INSERT` trigger physically cannot enqueue. The `pg_net` alternative needs the
+platform API hosted and `run-api.sh` is localhost. Polling is the only bridge that works
+today (§12.1/§12.3).
+
+### `src/audit/factsheet/worker.py`
+
+`geo factsheet-worker [--limit N] [--max-jobs N]` — one pass per invocation, so scheduling
+stays outside the process. A daemon owning its own clock is harder to stop, and this reads
+a queue of real prospects.
+
+Read leads → enqueue Tier 1 → claim → crawl → extract → store DRAFT → finish.
+
+**No prospect PII crosses projects.** The SELECT names five columns and `email`/`phone` are
+not among them — the cheapest guarantee is never loading them. `LeadRow` has nowhere to put
+them either, so widening it would be a deliberate act rather than an accident of a wider
+query. Two tests assert both.
+
+**Every job reaches a terminal state**, the skips included. A job neither run nor recorded
+is a spend decision nobody can audit, and it never releases its domain — the in-flight
+unique index only covers `queued`/`running`. Thin text is `SKIPPED_UNUSABLE`, not `FAILED`:
+refusing it is the extractor working (§4.6), and filing it as failure would make a healthy
+worker look broken and bury the real ones. Crawl errors log the exception TYPE only; an
+error message can echo page content and this runs unattended against a stranger's site.
+
+`LEADS_DB_URL` uses the SELECT-only `leads_reader` role from
+`geoWebsite/scripts/leads-visibility.sql` — never the superuser, never the service_role key.
+Unset raises rather than reporting "no leads": an unattended worker that looks healthy while
+doing nothing is the failure mode to design against. psycopg stays an optional extra with an
+install hint, matching `apply_schema.py`.
+
+### Also landed this session
+
+**Migration applied.** `python -m scripts.apply_schema data/schema_run_provenance.sql` —
+`fact_sheet_id`, `fact_sheet_version`, plus `judge_model` and `location`, which had been
+backed up and unapplied since 2026-07-28. Verified readable.
+
+**P0-T1 provenance, cache-free.** `AccuracyFlag` gained `query_id`/`engine_name`/`intent`/
+`run_index`, stamped per-cell at the join in `judge_results`. The trap: verdicts dedup by
+`(prompt, answer)`, so one flag list is shared across every cell whose answer text matched —
+stamping upstream would attribute a Gemini error to Perplexity. `flag_to_dict` still emits
+four keys, so **no cached verdict was invalidated and no judge prompt moved.**
+
+**F3.** `selectAccuracyFindings` behind three gates: send permission by sheet tier
+(`factsheet/gate.py`, §8), provenance present, and a verbatim answer to quote. The
+`"accuracy_flag"` arm of `Finding.source` is no longer dead. The teaser's OUTPUT is
+unchanged — nothing renders `accuracyFindings` and nothing populates
+`fact_sheet_verification` yet, both of which are F2.
+
+### Still not built
+
+- **F4 — SHIPPED, see the entry above this one.**
+- **F2** — the run→sheet join, so `fact_sheet_verification` stops being null. Until then F3 returns [].
+- **A renderer** for accuracy findings, plus its copy.
+- **`data/schema_factsheets.sql` is unapplied** — the worker's tables do not exist yet in the live database.
+- **A2** (JSON-LD coverage across ~10 real trade sites) is still Josh's run.
+
+### Gate
+
+`mypy src/` 91 files · `ruff check src/` clean · `pytest tests/` 553 passed, 1 skipped ·
+teaser 194 tests, `tsc --noEmit` clean.
+
+---
+
+## Fact-sheet generation is reachable: F1 gets an entry point — Completed 2026-07-31
+
+F0 (the `FactClaim` contract + both renderers) and F1 (L0 lead-form + L1 JSON-LD/NAP
+extraction, `build_sheet`) were both written, tested and **unreachable**. Nothing in the
+CLI, the API or the teaser called `build_sheet`. The plan's F1 acceptance — *"on 8-10 real
+trade sites, produce a sheet with zero LLM calls"* — could not be attempted, because there
+was no way to run it on one site.
+
+### What was wrong
+
+**The package said it did less than it did.** `src/audit/factsheet/__init__.py` still
+described itself as *"the contract ... and nothing else"* and re-exported only `models` and
+`render`. `extract.py` — 1,000 lines including the orchestrator — was in the package but
+absent from `__all__`, so `build_sheet` was reachable only by importing the submodule.
+
+**A test asserted the opposite of the code.** `test_provenance_cells_survive_a_quote_containing_a_pipe`
+counted raw `|` characters and expected 6. `render._cell` escapes pipes by design, so the
+one input the test exists for — a quote containing `|` — produces 7 and failed. The
+escaping was right and the proxy was wrong: the test now counts *unescaped* delimiters
+via `(?<!\\)\|` and additionally asserts the escape is present.
+
+**A type error was masked.** Adding the extract re-export brought `extract.py` into mypy's
+graph and surfaced `derive_negative_claims` rebinding the loop variable `claim`
+(`FactClaim`) to `_claim(...)`'s `FactClaim | None`. Renamed to `negative`; the guard was
+already correct, only the name was.
+
+### The entry point
+
+`geo factsheet <website> --business NAME [--area] [--description] [--kind] [--out] [--csv]`
+
+Crawls the domain, runs L0+L1, renders markdown and/or platform CSV fact rows. No model is
+called and none may be added. A `ThinTextError` is reported as a refusal with exit 1 — a
+sheet built from a Cloudflare interstitial asserts things no page ever said, and refusing
+is the feature (§4.6). Output is labelled DRAFT and every claim renders UNCONFIRMED, because
+a fact sheet is what the judge measures answers against: a wrong line is not a missing
+finding, it is a false accusation in a document we send a stranger.
+
+**`crawl_domain` / `run_site_audit_blocking` gained `persist: bool = True`.** A standalone
+sheet has no parent `audit_runs` row, so every `cache.save_page` would fail its foreign key,
+land in `save_errors` and log a warning — a crawl that was never meant to be stored reading
+as a broken one. The pages are returned either way; only the write is skipped.
+
+### Verified live
+
+`geo factsheet fort.cx --business Fort --kind product` — 3 pages fetched, 3 usable, 0
+errors; 3 claims (2 L0, 1 `mailto:` via L1), 0 questions, weakest verification
+`public_source_only`; provenance appendix cites `urn:geo:lead-form` and `https://fort.cx/`.
+Thin for a pre-launch product site with no `LocalBusiness` markup — which is what §13.2
+predicts and what the unmeasured JSON-LD coverage question (A2) is about.
+
+### Still blocked, not built
+
+- **A2** — JSON-LD coverage across ~10 real trade sites is unmeasured. `scripts/measure_jsonld_coverage.py` exists; the run is Josh's.
+- **A3** — does F3 happen (`selectFindings` reading `accuracy_flags`)? Undecided. Without it F2 changes nothing a client sees.
+- **A4** — competitor-set governance is unplanned, and it changes what the F4 queue screen gates.
+
+F2 (teaser CSV emitter + `TeaserDraft` persistence) is unblocked by decision but pointless
+before A3 resolves. F4 waits on A4.
+
+### Gate
+
+`mypy src/` 89 files clean · `ruff check src/` clean · `pytest tests/` 516 passed, 1 skipped.
+
+---
+
 ## Report provenance: the methodology section now describes the run — Completed 2026-07-28
 
 `scripts/render_report_md.py` hand-typed the two facts a client is most entitled to trust:

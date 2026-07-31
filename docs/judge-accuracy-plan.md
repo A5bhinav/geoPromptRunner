@@ -1,5 +1,15 @@
 # Plan — Make the Judge More Accurate at ~Flat Cost (cheap model, no Opus)
 
+> ⚠️ **STALE — read the banner before quoting anything here (added 2026-07-31).**
+> Every calibration figure below (agreement 96/88/93, flag recall 95%, the
+> 80%-with-verifier / ~42%-without precision pair) was measured **2026-06-28
+> against the pre-bump judge prompt**. The Phase 3 `_PROMPT_LAYOUT` bump
+> (2026-07-27) changed the prompt fingerprint and W3.4's re-run has not
+> happened — `data/oura_gold.json` and `data/fort_gold.json` are untouched
+> since 2026-06-19. `src/pipeline/judge.py:245-249` states the standing gate:
+> **quote no accuracy or agreement figure for either ICP until W3.4 passes.**
+> Mention, prominence and framing are exempt.
+
 > **Status:** **Action A + cascade (idea #2) + atomic verifier (idea #4) built &
 > validated 2026-06-28** — see §3.1, §4.1, §4.2. Cascade ship gate met (100% flag recall);
 > verifier solved the precision problem (queue #9): **80% precision / 95% recall**. B1
