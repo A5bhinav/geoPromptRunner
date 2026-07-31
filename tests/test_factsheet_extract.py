@@ -277,12 +277,60 @@ def test_every_schema_claim_survives_the_quote_gate() -> None:
     assert len(kept) == len(claims)
 
 
-def test_a_non_local_business_node_is_ignored() -> None:
-    # Organization is a supertype, not a LocalBusiness: its telephone is an
-    # investor-relations line as often as a customer one, and the plan scopes L1
-    # to LocalBusiness and its subtypes.
-    block = {"@type": "Organization", "name": "Fort Holdings", "telephone": "(510) 555-0199"}
-    assert claims_from_json_ld([block], _URL, _AS_OF) == []
+def test_an_organizations_premises_fields_are_still_ignored() -> None:
+    """The original rule, kept and sharpened rather than dropped.
+
+    An `Organization` is a supertype, not a LocalBusiness: its `telephone` is an
+    investor-relations line as often as a customer one, its `address` is a
+    registered office, and `openingHours` describe a shopfront it may not have.
+    Putting a switchboard number on the sheet as the number to call would make the
+    judge grade a CORRECT answer wrong.
+    """
+    keys = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "Organization",
+                    "name": "Fort Holdings",
+                    "telephone": "(510) 555-0199",
+                    "address": {"@type": "PostalAddress", "streetAddress": "1 Corporate Plaza"},
+                    "priceRange": "$$$",
+                    "openingHours": ["Mo-Fr 09:00-17:00"],
+                    "areaServed": ["Berkeley"],
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    for premises_key in ("contact_phone", "contact_address", "pricing_range", "service_area_towns"):
+        assert premises_key not in keys
+    assert not any(k.startswith("hours_") for k in keys)
+
+
+def test_an_organizations_identity_fields_ARE_read() -> None:
+    """What changed: gating the whole NODE out meant an agency or SaaS — which
+    marks up as Organization — contributed nothing at all, so the sheet could say
+    where a company is but never what it does."""
+    keys = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "Organization",
+                    "name": "Black Propeller",
+                    "description": "A paid media agency.",
+                    "foundingDate": "2015",
+                    "sameAs": ["https://twitter.com/blackpropeller"],
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    assert keys["identity_name"].value == "Black Propeller"
+    assert keys["identity_description"].value == "A paid media agency."
+    assert keys["identity_founded"].value == "Founded 2015."
+    assert "presence_profiles" in keys
 
 
 def test_legacy_opening_hours_strings_are_parsed_conservatively() -> None:
@@ -593,3 +641,92 @@ def test_the_sheet_renders_through_the_f0_renderers() -> None:
     assert "## Provenance appendix" in markdown
     # Nothing here is client-confirmed, and the render has to say so (§8).
     assert "UNCONFIRMED" in markdown
+
+
+def test_a_services_catalog_becomes_one_positive_claim() -> None:
+    """The dimension that makes an invented-service flag gradeable at all."""
+    keys = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "ProfessionalService",
+                    "name": "Black Propeller",
+                    "hasOfferCatalog": {
+                        "@type": "OfferCatalog",
+                        "itemListElement": [
+                            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Paid Search"}},
+                            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Paid Social"}},
+                            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "SEO"}},
+                        ],
+                    },
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    assert keys["services_offered"].value == "Services offered include Paid Search, Paid Social and SEO."
+
+
+def test_the_services_claim_never_asserts_a_negative() -> None:
+    """A services list is an OPEN enumeration (§4.4): naming three does not assert
+    there is no fourth. Only hours may produce a closure, and only from a declared
+    complete week."""
+    claims = claims_from_json_ld(
+        [
+            {
+                "@type": "ProfessionalService",
+                "makesOffer": [{"@type": "Service", "name": "Paid Search"}],
+            }
+        ],
+        _URL,
+        _AS_OF,
+    )
+    services = [c for c in claims if c.key == "services_offered"]
+    assert services and all(c.polarity is Polarity.POSITIVE for c in services)
+    assert derive_negative_claims(claims) == []
+
+
+def test_duplicate_service_names_collapse() -> None:
+    keys = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "ProfessionalService",
+                    "makesOffer": [
+                        {"@type": "Service", "name": "SEO"},
+                        {"@type": "Service", "name": "seo"},
+                        {"@type": "Service", "name": "Paid Search"},
+                    ],
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    assert keys["services_offered"].value == "Services offered include SEO and Paid Search."
+
+
+def test_an_aggregate_rating_needs_both_numbers() -> None:
+    # "4.8" from one review and from a thousand are different facts, so a partial
+    # block yields nothing rather than half a claim.
+    partial = _by_key(
+        claims_from_json_ld(
+            [{"@type": "Plumber", "aggregateRating": {"ratingValue": "4.8"}}], _URL, _AS_OF
+        )
+    )
+    assert "presence_rating" not in partial
+
+    full = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "Plumber",
+                    "aggregateRating": {"ratingValue": "4.8", "reviewCount": "126"},
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    assert full["presence_rating"].value == "Rated 4.8/5 from 126 reviews."

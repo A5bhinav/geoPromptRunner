@@ -51,6 +51,8 @@ __all__ = [
     "MIN_EXTRACTION_TEXT_CHARS",
     "LEAD_FORM_SOURCE_URL",
     "LOCAL_BUSINESS_TYPES",
+    "ORGANIZATION_TYPES",
+    "BUSINESS_NODE_TYPES",
     "ThinTextError",
     "readable_text_length",
     "assert_sufficient_text",
@@ -287,6 +289,34 @@ LOCAL_BUSINESS_TYPES: frozenset[str] = frozenset(
     }
 )
 
+# Businesses that are not premises. `LocalBusiness` is a subtype of `Organization`,
+# and a marketing agency, a SaaS or a consultancy marks itself up as the parent —
+# so gating on the local set alone yielded ZERO site claims for them, no matter
+# how good their schema was. Observed on blackpropeller.com: seven claims, six
+# from one page, none describing what the business does.
+#
+# Kept as a SEPARATE set rather than merged, because the two are not
+# interchangeable downstream: an `Organization` has no premises, so hours and
+# `areaServed` mean something different on it, and a future check that reasons
+# about a service-area business must still be able to tell them apart.
+ORGANIZATION_TYPES: frozenset[str] = frozenset(
+    {
+        "Organization",
+        "Corporation",
+        "NGO",
+        "EducationalOrganization",
+        "GovernmentOrganization",
+        "SportsOrganization",
+        "PerformingGroup",
+        "NewsMediaOrganization",
+        "OnlineBusiness",
+        "OnlineStore",
+    }
+)
+
+#: Every node type the fact-sheet extractor will read business facts from.
+BUSINESS_NODE_TYPES: frozenset[str] = LOCAL_BUSINESS_TYPES | ORGANIZATION_TYPES
+
 _DAYS: tuple[str, ...] = (
     "monday",
     "tuesday",
@@ -521,7 +551,7 @@ def claims_from_json_ld(
     """
     claims: list[FactClaim] = []
     for node in flatten_typed_nodes([dict(block) for block in blocks]):
-        if not (_types_of(node) & LOCAL_BUSINESS_TYPES):
+        if not (_types_of(node) & BUSINESS_NODE_TYPES):
             continue
         claims.extend(_claims_from_business_node(node, source_url, as_of))
     return claims
@@ -543,20 +573,33 @@ def _claims_from_business_node(
             as_of=as_of,
         )
 
+    # PREMISES fields are read only from a LocalBusiness. On a bare Organization
+    # they mean something else or nothing: its `telephone` is an investor-relations
+    # line as often as a customer one, its `address` is a registered office, and
+    # `openingHours`/`areaServed` describe a shopfront it may not have. Emitting
+    # them anyway would put a switchboard number on the sheet as the number a
+    # customer should call, and the judge would then grade a correct answer wrong.
+    #
+    # IDENTITY, services and presence fields carry the same meaning on both, so
+    # they are read from either. That split is what lets an agency or a SaaS —
+    # which marks up as `Organization` and would otherwise yield nothing at all —
+    # contribute the lines that actually matter for accuracy grading.
+    is_premises = bool(_types_of(node) & LOCAL_BUSINESS_TYPES)
+
     claims: list[FactClaim | None] = []
     if node.get("name"):
         claims.append(build(SheetSection.IDENTITY, "identity_name", node["name"], "name"))
-    if node.get("telephone"):
+    if is_premises and node.get("telephone"):
         claims.append(build(SheetSection.CONTACT, "contact_phone", node["telephone"], "telephone"))
-    if node.get("address"):
+    if is_premises and node.get("address"):
         address = _address_line(node["address"])
         claims.append(build(SheetSection.CONTACT, "contact_address", address, "address"))
-    if node.get("priceRange"):
+    if is_premises and node.get("priceRange"):
         claims.append(
             build(SheetSection.SERVICES_PRICING, "pricing_range", node["priceRange"], "priceRange")
         )
 
-    areas = _area_names(node.get("areaServed"))
+    areas = _area_names(node.get("areaServed")) if is_premises else []
     if areas:
         # "Serves X" rather than the bare list: the judge measures answers about
         # where the business WORKS, and a bare town list reads equally as where
@@ -581,8 +624,112 @@ def _claims_from_business_node(
             )
         )
 
-    claims.extend(_hours_claims(node, source_url, as_of))
+    if node.get("description"):
+        # The single highest-value line for a non-local business. Without it the
+        # sheet says where a company is and not what it does, so "AI invented a
+        # service you don't offer" has nothing to contradict.
+        claims.append(
+            build(SheetSection.IDENTITY, "identity_description", node["description"], "description")
+        )
+    if node.get("slogan"):
+        claims.append(build(SheetSection.IDENTITY, "identity_slogan", node["slogan"], "slogan"))
+    founded = node.get("foundingDate")
+    if founded:
+        claims.append(
+            build(SheetSection.IDENTITY, "identity_founded", f"Founded {founded}.", "foundingDate")
+        )
+
+    rating = _aggregate_rating(node)
+    if rating is not None:
+        claims.append(build(SheetSection.PRESENCE, "presence_rating", rating, "aggregateRating"))
+
+    services = _service_names(node)
+    if services:
+        # POSITIVES ONLY, and the phrasing carries that. A services list is an OPEN
+        # enumeration (§4.4): a catalog naming five services does not assert the
+        # business offers no sixth, so "does not offer X" must never be derived
+        # from absence here — unlike hours, which are declared complete.
+        claims.append(
+            _claim(
+                section=SheetSection.SERVICES_PRICING,
+                key="services_offered",
+                value=f"Services offered include {_oxford(services)}.",
+                quote=_services_quote(node),
+                source_url=source_url,
+                source_kind=SourceKind.SITE_JSONLD,
+                as_of=as_of,
+            )
+        )
+
+    if is_premises:
+        claims.extend(_hours_claims(node, source_url, as_of))
     return [c for c in claims if c is not None]
+
+
+def _aggregate_rating(node: Mapping[str, Any]) -> str | None:
+    """``"Rated 4.8/5 from 126 reviews."`` — or None unless both numbers are present.
+
+    A rating with no count is unreadable as evidence ("4.8" from one review and
+    from a thousand are different facts), and a count with no rating says nothing,
+    so a partial block yields nothing rather than half a claim.
+    """
+    raw = node.get("aggregateRating")
+    if not isinstance(raw, dict):
+        return None
+    value = _one_line(raw.get("ratingValue"))
+    count = _one_line(raw.get("reviewCount") or raw.get("ratingCount"))
+    if not value or not count:
+        return None
+    best = _one_line(raw.get("bestRating")) or "5"
+    return f"Rated {value}/{best} from {count} reviews."
+
+
+#: Where a business declares what it sells. `hasOfferCatalog` nests
+#: `itemListElement` -> `Offer` -> `itemOffered`; `makesOffer` is the flat form.
+_OFFER_PROPS: tuple[str, ...] = ("hasOfferCatalog", "makesOffer")
+
+
+def _service_names(node: Mapping[str, Any]) -> list[str]:
+    """Named services from an offer catalog, de-duplicated, order preserved.
+
+    Only NAMES are taken. Descriptions and prices nested under an offer are left
+    to L2: a price inside a catalog is frequently a "from" figure, and lifting it
+    into a `pricing_*` claim would assert a headline price the page never quoted.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+
+    def walk(value: Any, depth: int = 0) -> None:
+        if depth > 4:  # catalogs nest, but not arbitrarily; bound the recursion
+            return
+        if isinstance(value, list):
+            for item in value:
+                walk(item, depth + 1)
+            return
+        if not isinstance(value, dict):
+            return
+        types = _types_of(value)
+        if {"Service", "Product"} & types:
+            name = _one_line(value.get("name"))
+            if name and name.casefold() not in seen:
+                seen.add(name.casefold())
+                names.append(name)
+        for prop in ("itemListElement", "itemOffered", "offers", "hasOfferCatalog"):
+            if prop in value:
+                walk(value[prop], depth + 1)
+
+    for prop in _OFFER_PROPS:
+        if prop in node:
+            walk(node[prop])
+    return names
+
+
+def _services_quote(node: Mapping[str, Any]) -> str:
+    """The whole offer property as the evidence, so a reader sees the full catalog."""
+    for prop in _OFFER_PROPS:
+        if prop in node:
+            return _pair_quote(node, prop)
+    return ""
 
 
 def _hours_claims(node: Mapping[str, Any], source_url: str, as_of: str) -> list[FactClaim]:
