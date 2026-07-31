@@ -207,14 +207,22 @@ def test_a_built_sheet_is_stored_as_a_draft_and_costs_nothing(
     class _Sheet:
         claims = ["a claim"]
         questions: list[Any] = []
+        domain = "fortplumbing.example"
+        version = 1
 
+    sheet = _Sheet()
     monkeypatch.setattr("src.audit.crawl.run_site_audit_blocking", lambda **k: _Crawl())
-    monkeypatch.setattr(worker, "build_sheet", lambda **k: _Sheet())
+    monkeypatch.setattr(worker, "build_sheet", lambda **k: sheet)
+    monkeypatch.setattr(db, "next_fact_sheet_version", lambda domain: 3)
     monkeypatch.setattr(db, "save_fact_sheet", lambda s, **k: "sheet-1")
 
     state = run_one_job({"id": "job-1", "lead_ref": "lead-1"}, [_lead()])
     assert state is db.FactSheetJobState.DONE
     assert calls[0]["fact_sheet_id"] == "sheet-1"
+    # The allocated version is stamped BEFORE the save — without it the second
+    # sheet for a known domain dies on unique (domain, version) and is filed as a
+    # crawler failure.
+    assert sheet.version == 3
 
 
 def test_the_crawl_never_persists_pages(monkeypatch: pytest.MonkeyPatch) -> None:

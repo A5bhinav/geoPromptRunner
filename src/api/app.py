@@ -751,6 +751,10 @@ def approve_fact_sheet(sheet_id: str) -> dict[str, object]:
     try:
         db.activate_fact_sheet(sheet_id)
     except db.StorageError as exc:
+        # 409, not 503: promoting a rejected sheet is a conflicting request, not a
+        # storage outage, and the reviewer needs to be told which it was.
+        if "was REJECTED" in str(exc):
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"id": sheet_id, "state": db.FactSheetState.ACTIVE.value}
 

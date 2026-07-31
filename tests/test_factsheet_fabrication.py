@@ -85,6 +85,37 @@ def test_common_street_types_and_a_suite_tail_survive() -> None:
         assert _addresses(_footer(street, "Berkeley, CA 94702")), street
 
 
+def test_prose_ending_in_a_street_type_on_the_SAME_line_is_refused() -> None:
+    """The residual of the same class, found by review after the first fix.
+
+    Every prose fixture above puts the text on its own line, so they exercise only
+    the two-line branch. The same-line branch searched for something street-shaped
+    anywhere before the ZIP, and "road" is a thoroughfare type — so
+    "Over 30 years on the road, Berkeley, CA 94702" shipped as the address.
+    The fix is capitalisation: street names are proper nouns, prose is not.
+    """
+    assert _addresses(_footer("Over 30 years on the road, Berkeley, CA 94702")) == []
+
+
+def test_lowercase_prose_before_a_street_type_never_forms_an_address() -> None:
+    for prose in (
+        "Serving every street in Berkeley, CA 94702",
+        "We have come a long way, Berkeley, CA 94702",
+        "Open 7 days a week on the road, Berkeley, CA 94702",
+    ):
+        assert _addresses(_footer(prose)) == [], prose
+
+
+def test_a_capitalised_street_still_extracts_on_one_line() -> None:
+    # The control for the capitalisation rule, both branches.
+    assert _addresses(_footer("1234 Shattuck Ave, Berkeley, CA 94702")) == [
+        "1234 Shattuck Ave, Berkeley, CA 94702"
+    ]
+    assert _addresses(_footer("3333 Martin Luther King Jr. Way", "Berkeley, CA 94703")) == [
+        "3333 Martin Luther King Jr. Way, Berkeley, CA 94703"
+    ]
+
+
 def test_a_sentence_that_merely_ends_in_a_street_word_is_refused() -> None:
     # `search` for something street-shaped anywhere in the line is what let the
     # original bug through; the whole line must BE an address.

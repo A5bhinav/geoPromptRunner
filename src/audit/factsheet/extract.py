@@ -671,21 +671,33 @@ _STREET_TYPES = (
     r"|st|street|ste|terr|terrace|ter|trl|trail|way|wy"
 )
 # number, optional unit letter, optional direction, 0-4 name words, then a type.
+#
+# The name words must be CAPITALISED, and that is the discriminator doing the real
+# work. Requiring only a thoroughfare type is not enough on the same-line branch:
+# "Over 30 years on the road, Berkeley, CA 94702" ends in a street type, so an
+# uncased pattern read it as `30 years on the road` and shipped it as the
+# business's address. Street names are proper nouns — "Shattuck Ave", "Martin
+# Luther King Jr. Way", "N Main St" — and English prose between a number and a
+# street word is not. The type itself stays case-insensitive (`AVE`, `ave`, `Ave`
+# all appear in real footers); only the words before it must look like a name.
 _STREET_BODY = (
     r"\d{1,6}[A-Za-z]?\s+"
     r"(?:[NSEW]\.?\s+|(?:North|South|East|West)\s+)?"
-    r"(?:[\w'.-]+\s+){0,4}"
-    rf"(?:{_STREET_TYPES})\b\.?"
+    r"(?:[A-Z][\w'.-]*\s+){0,4}"
+    rf"(?:(?i:{_STREET_TYPES}))\b\.?"
 )
-_STREET_RE = re.compile(rf"\b{_STREET_BODY}", re.IGNORECASE)
+# No IGNORECASE: it would defeat the capitalisation requirement above.
+_STREET_RE = re.compile(rf"\b{_STREET_BODY}")
 # For the two-line join the previous line must BE a street address, not merely
 # contain something street-shaped. Joining lines asserts they are one address; the
 # stricter test is what keeps "Open 7 days a week" (or a sentence that happens to
 # end in "…Way") from becoming the first half of one. Trailing punctuation and a
 # unit/suite tail are allowed because footers routinely carry them.
+# Same rule, anchored. IGNORECASE is scoped to the unit keywords rather than
+# applied to the whole pattern, which would silently re-admit lowercase prose
+# through _STREET_BODY's capitalisation requirement.
 _STREET_LINE_RE = re.compile(
-    rf"^{_STREET_BODY}(?:\s*(?:#|apt\.?|ste\.?|suite|unit)\s*[\w-]+)?[\s,.]*$",
-    re.IGNORECASE,
+    rf"^{_STREET_BODY}(?:\s*(?i:#|apt\.?|ste\.?|suite|unit)\s*[\w-]+)?[\s,.]*$",
 )
 _FOOTER_SELECTOR = "footer, .footer, #footer"
 
