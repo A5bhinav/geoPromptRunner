@@ -19,15 +19,15 @@ import json
 import re
 from pathlib import Path
 
+from src.storage.models import AccuracyFlagType
+
 PROMINENCE = {"recommended_first", "mid_pack", "buried", "also_ran", "absent"}
 FRAMING = {"positive", "neutral", "negative"}
-FLAG_TYPES = {
-    "wrong_pricing",
-    "missing_or_invented_feature",
-    "competitor_confusion",
-    "identity",
-    "stale",
-}
+# From the enum, never re-typed. This was a hardcoded copy of the five CONSUMER
+# types, so a local sheet's wrong_hours / wrong_service_area / wrong_contact /
+# licensing labels failed validation — the sheet could not express the very
+# dimensions a service-area gold set exists to calibrate.
+FLAG_TYPES = {t.value for t in AccuracyFlagType}
 SEVERITY = {"high", "med", "low"}
 
 _BLOCK = re.compile(r"<!-- LABELS item=(\d+) -->(.*?)<!-- /LABELS item=\1 -->", re.S)

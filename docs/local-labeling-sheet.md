@@ -1,22 +1,36 @@
-# Albert Nahman Plumbing Gold-Set Labeling Sheet
+# Albert Nahman Plumbing — Gold-Set Labeling Sheet
 
-Read each answer, then fill the **Label** table and the **Flags** block beneath it.
-Edit only the cells — keep the `<!-- LABELS -->` markers intact so the sheet can be
-parsed back into the gold JSON. The judge's own verdicts are deliberately omitted.
+40 answers to label. Work down the file; items are **grouped by question**, so you read all four engines' answers to one query together and judge them consistently.
 
-**How to label each brand row**
+Edit only the cells inside the `<!-- LABELS -->` markers — leave the markers alone, they are how the sheet is read back. Pipe alignment does not matter; `|Acme|yes|mid_pack|positive|` parses fine.
 
-- **present** — `yes` / `no`: is the brand named anywhere in the answer?
-- **prominence** — one of: `recommended_first` · `mid_pack` · `buried` · `also_ran` · `absent`. Relative within *this* answer (who is named first vs. buried). `absent` iff present=no.
-- **framing** — one of: `positive` · `neutral` · `negative`. Absent brands stay `neutral`.
+When you are done:
 
-**Flags** = real errors the answer makes **about Albert Nahman Plumbing** (the client only — not competitors).
-Format per line: `type | severity | note`. Types: `wrong_pricing` · `missing_or_invented_feature` · `competitor_confusion` · `identity` · `stale` · `wrong_hours` · `wrong_service_area` · `wrong_contact` · `licensing`. Severity: `high` · `med` · `low`. Leave the block empty if the answer is accurate about Albert Nahman Plumbing.
+```bash
+python -m scripts.parse_labeling_sheet SHEET.md GOLD.json          # validate
+python -m scripts.parse_labeling_sheet SHEET.md GOLD.json --write  # apply
+```
 
-**Uncovered claims** (optional) = claims the answer makes that the fact sheet does NOT
-cover — the judge must *not* flag these. One per line.
+It validates every value and refuses to write if anything is off, so a typo costs you a re-run and never a corrupted set.
 
-<details><summary><b>Ground truth — Albert Nahman Plumbing fact sheet</b> (the source of truth for the Flags column)</summary>
+## The three columns
+
+| column | values | what it means |
+| --- | --- | --- |
+| `present` | `yes` · `no` | Is the brand named at all? A **disavowal** — "there is no such company", "I have no information about them" — is `no`. The name appearing only because the question contained it is also `no`. |
+| `prominence` | `recommended_first` · `mid_pack` · `buried` · `also_ran` · `absent` | Relative *within this answer*: who is named first vs. buried at the bottom. Must be `absent` when `present=no`, and must not be when `present=yes`. |
+| `framing` | `positive` · `neutral` · `negative` | How the answer treats it. Absent brands stay `neutral`. |
+
+## The flags block
+
+Real errors the answer makes **about Albert Nahman Plumbing only** — never about a competitor. One per line, `type | severity | note`. Leave it empty when the answer is accurate.
+
+- **types** — `wrong_pricing` · `missing_or_invented_feature` · `competitor_confusion` · `identity` · `stale` · `wrong_hours` · `wrong_service_area` · `wrong_contact` · `licensing`
+- **severity** — `high` · `med` · `low`
+
+A flag needs a line in the fact sheet below that the answer **contradicts**. If the sheet is silent on the topic, that is not a flag — put it in **uncovered claims** instead, which is the list of things the judge must *not* flag.
+
+<details><summary><b>Ground truth — the Albert Nahman Plumbing fact sheet</b> (open this before writing any flag)</summary>
 
 # Client Fact Sheet (LOCAL SERVICE) — Albert Nahman Plumbing
 
@@ -61,13 +75,39 @@ cover — the judge must *not* flag these. One per line.
 
 </details>
 
+## What you are labeling
+
+| question | items | engines |
+| --- | --- | --- |
+| is Albert Nahman Plumbing a good plumbing company? | 0, 1, 2, 3 | gemini_grounded, google_ai_mode, openai, perplexity |
+| Albert Nahman Plumbing reviews and complaints | 4, 5, 6, 7 | gemini_grounded, google_ai_mode, openai, perplexity |
+| is Albert Nahman Plumbing licensed and insured? | 8, 9, 10, 11 | gemini_grounded, google_ai_mode, openai, perplexity |
+| how much does a plumber cost in Berkeley? | 12, 13, 14, 15 | gemini_grounded, google_ai_mode, openai, perplexity |
+| why is my water pressure suddenly low? | 16, 17, 18, 19 | gemini_grounded, google_ai_mode, openai, perplexity |
+| best plumber in Berkeley | 20, 21, 22, 23 | gemini_grounded, google_ai_mode, openai, perplexity |
+| who is the most reliable plumber in Berkeley? | 24, 25, 26, 27 | gemini_grounded, google_ai_mode, openai, perplexity |
+| emergency plumber in Berkeley | 28, 29, 30, 31 | gemini_grounded, google_ai_mode, openai, perplexity |
+| 24 hour plumbing service Berkeley | 32, 33, 34, 35 | gemini_grounded, google_ai_mode, openai, perplexity |
+| top rated drain cleaning in Berkeley | 36, 37, 38, 39 | gemini_grounded, google_ai_mode, openai, perplexity |
+
 ---
 
-## Item 0 · `gemini_grounded` · _is Albert Nahman Plumbing a good plumbing company?_
+# Question: is Albert Nahman Plumbing a good plumbing company?
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 0 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> is Albert Nahman Plumbing a good plumbing company?
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — 4×, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing, Heating, and Cooling generally receives a mixed but often positive reception from customers, with a significant number of reviews highlighting professionalism and quality work, while some express concerns regarding pricing and service contracts. The company has been in business since 1981, serving Berkeley, CA, and surrounding areas.
@@ -96,7 +136,7 @@ In conclusion, Albert Nahman Plumbing, Heating, and Cooling appears to be a repu
 
 <!-- LABELS item=0 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -104,13 +144,13 @@ In conclusion, Albert Nahman Plumbing, Heating, and Cooling appears to be a repu
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -120,11 +160,20 @@ In conclusion, Albert Nahman Plumbing, Heating, and Cooling appears to be a repu
 
 ---
 
-## Item 1 · `google_ai_mode` · _is Albert Nahman Plumbing a good plumbing company?_
+## Item 1 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing a good plumbing company?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — 2×, first at **8%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Based on numerous, high-rating reviews on platforms like [Yelp](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4), Google , and [Angi](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm) , Albert Nahman Plumbing, Heating, and Cooling is generally considered a **reputable, high-quality, and reliable** plumbing service provider in the San Francisco Bay Area, particularly in the East Bay. They are known for being professional, prompt, and experienced in a wide range of services, including emergency repairs and installations.[](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html) [[1]](https://www.homeadvisor.com/rated.AlbertNahman.140734115.html)[[2]](https://www.google.com/searchviewer/10?svid=CAwSHRIbCgNwdnESFENnMHZaeTh4TVhaeE0xOW9kbWhyGAo)[[3]](https://bestplumbers.com/california/berkeley/plumbing-services/albert-nahman-plumbing)[[4]](https://albertnahmanplumbing.com/plumber-in-san-francisco-ca/)[[5]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-hayward)
@@ -151,7 +200,7 @@ Would you like me to find out about their specific **pricing for a common job** 
 
 <!-- LABELS item=1 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -159,13 +208,13 @@ Would you like me to find out about their specific **pricing for a common job** 
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -175,11 +224,20 @@ Would you like me to find out about their specific **pricing for a common job** 
 
 ---
 
-## Item 2 · `openai` · _is Albert Nahman Plumbing a good plumbing company?_
+## Item 2 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing a good plumbing company?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing is generally considered a reputable, established plumbing company in the East Bay/Berkeley–Oakland area. They’re known for offering plumbing, sewer, drain, and HVAC services, and many customers value their professionalism and responsiveness.
@@ -199,7 +257,7 @@ That said, customer experiences can vary—especially regarding **pricing**, sin
 
 <!-- LABELS item=2 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -207,13 +265,13 @@ That said, customer experiences can vary—especially regarding **pricing**, sin
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -223,11 +281,20 @@ That said, customer experiences can vary—especially regarding **pricing**, sin
 
 ---
 
-## Item 3 · `perplexity` · _is Albert Nahman Plumbing a good plumbing company?_
+## Item 3 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing a good plumbing company?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **1%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 **Overall, Albert Nahman Plumbing appears to be a generally good plumbing company, but it is not uniformly rated as excellent.** Most major review sources show strong customer satisfaction, while a smaller number of sources and individual reviews raise concerns about *price* and occasional service/communication issues.[1][2][5][7][9][10]
@@ -249,7 +316,7 @@ If you want, I can also help you judge whether they’re a good fit for your spe
 
 <!-- LABELS item=3 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -257,13 +324,13 @@ If you want, I can also help you judge whether they’re a good fit for your spe
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -273,11 +340,22 @@ If you want, I can also help you judge whether they’re a good fit for your spe
 
 ---
 
-## Item 4 · `gemini_grounded` · _Albert Nahman Plumbing reviews and complaints_
+# Question: Albert Nahman Plumbing reviews and complaints
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 4 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> Albert Nahman Plumbing reviews and complaints
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — 2×, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing, Heating, and Cooling receives a mixed range of reviews and complaints, with customers reporting both highly positive experiences and significant issues. The company is BBB accredited with an A+ rating and holds a Diamond Certified status, indicating a commitment to customer service and quality.
@@ -295,7 +373,7 @@ Other common complaints include incomplete work, poor communication, and extende
 
 <!-- LABELS item=4 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -303,13 +381,13 @@ Other common complaints include incomplete work, poor communication, and extende
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -319,11 +397,20 @@ Other common complaints include incomplete work, poor communication, and extende
 
 ---
 
-## Item 5 · `google_ai_mode` · _Albert Nahman Plumbing reviews and complaints_
+## Item 5 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> Albert Nahman Plumbing reviews and complaints
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing, Heating, and Cooling , based in Berkeley and Hayward, CA, has a mixed reputation, with a high volume of reviews often citing professional, timely service alongside significant complaints regarding high costs and aggressive upselling tactics.[[1]](https://m.yelp.com/biz/albert-nahman-plumbing-heating-and-cooling-berkeley-4)[[2]](https://albertnahmanplumbing.com/hvac/)[[3]](https://albertnahmanplumbing.com/about-us/)
@@ -360,7 +447,7 @@ Would you like me to find **specific reviews** for a particular service, such as
 
 <!-- LABELS item=5 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -368,13 +455,13 @@ Would you like me to find **specific reviews** for a particular service, such as
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -384,11 +471,20 @@ Would you like me to find **specific reviews** for a particular service, such as
 
 ---
 
-## Item 6 · `openai` · _Albert Nahman Plumbing reviews and complaints_
+## Item 6 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> Albert Nahman Plumbing reviews and complaints
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing, Heating & Drain Cleaning is a long-established Berkeley/East Bay plumbing company. I don’t have live access to current review databases, so I can’t reliably quote today’s ratings or complaint counts.
@@ -418,7 +514,7 @@ If you share the review links or the specific complaint you’re concerned about
 
 <!-- LABELS item=6 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -426,13 +522,13 @@ If you share the review links or the specific complaint you’re concerned about
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -442,11 +538,20 @@ If you share the review links or the specific complaint you’re concerned about
 
 ---
 
-## Item 7 · `perplexity` · _Albert Nahman Plumbing reviews and complaints_
+## Item 7 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> Albert Nahman Plumbing reviews and complaints
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Albert Nahman Plumbing appears to have a **strong overall rating** but also a recurring set of complaints, especially around **high pricing**, **communication problems**, and a few reports of **damage or incomplete work**.[2][5][6][9][10]
@@ -469,7 +574,7 @@ Overall, the pattern is: **many customers rate them highly, but the negative rev
 
 <!-- LABELS item=7 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -477,13 +582,13 @@ Overall, the pattern is: **many customers rate them highly, but the negative rev
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -493,11 +598,22 @@ Overall, the pattern is: **many customers rate them highly, but the negative rev
 
 ---
 
-## Item 8 · `gemini_grounded` · _is Albert Nahman Plumbing licensed and insured?_
+# Question: is Albert Nahman Plumbing licensed and insured?
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 8 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> is Albert Nahman Plumbing licensed and insured?
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — 2×, first at **1%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Yes, Albert Nahman Plumbing, Heating and Cooling is licensed and insured. The company holds an active license number 1083634, issued by the Contractors State License Board, which is valid until January 31, 2027.
@@ -511,7 +627,7 @@ It is important to note that while an older license number, 414359, is listed as
 
 <!-- LABELS item=8 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -519,13 +635,13 @@ It is important to note that while an older license number, 414359, is listed as
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -535,11 +651,20 @@ It is important to note that while an older license number, 414359, is listed as
 
 ---
 
-## Item 9 · `google_ai_mode` · _is Albert Nahman Plumbing licensed and insured?_
+## Item 9 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing licensed and insured?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **0%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Yes, Albert Nahman Plumbing, Heating, and Cooling is **licensed and insured** . They are a long-standing, established company in the Bay Area (since 1981) that provides plumbing and HVAC services.[](https://albertnahmanplumbing.com/plumber-in-richmond-ca/) [[1]](https://albertnahmanplumbing.com/plumber-in-richmond-ca/)[[2]](https://www.angi.com/companylist/us/ca/berkeley/albert-nahman-plumbing%2C-heating%2C-and-cooling-reviews-176247.htm)[[3]](https://albertnahmanplumbing.com/)[[4]](https://www.bbb.org/us/ca/hayward/profile/plumber/albert-nahman-plumbing-heating-and-cooling-1116-28226)
@@ -558,7 +683,7 @@ Would you like help looking up their **exact license number** on the CSLB websit
 
 <!-- LABELS item=9 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -566,13 +691,13 @@ Would you like help looking up their **exact license number** on the CSLB websit
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -582,11 +707,20 @@ Would you like help looking up their **exact license number** on the CSLB websit
 
 ---
 
-## Item 10 · `openai` · _is Albert Nahman Plumbing licensed and insured?_
+## Item 10 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing licensed and insured?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **1%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Yes—Albert Nahman Plumbing & Heating in Berkeley, California, publicly represents that it is **licensed, bonded, and insured**.  
@@ -598,7 +732,7 @@ For the most reliable confirmation, check the California Contractors State Licen
 
 <!-- LABELS item=10 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -606,13 +740,13 @@ For the most reliable confirmation, check the California Contractors State Licen
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -622,11 +756,20 @@ For the most reliable confirmation, check the California Contractors State Licen
 
 ---
 
-## Item 11 · `perplexity` · _is Albert Nahman Plumbing licensed and insured?_
+## Item 11 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> is Albert Nahman Plumbing licensed and insured?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **4%** through the answer
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Yes. Available listings indicate **Albert Nahman Plumbing, Heating and Cooling** is **licensed** in California, with CSLB license **#1083634** and an expiration date of **1/31/2027** on multiple directory profiles and BBB records.[4][5][7] Several sources also describe the company as **insured**; HomeAdvisor lists **General Liability** insurance, BuildZoom lists it as insured up to **$2,000,000**, and the company’s own site says its plumbers are “licensed and insured.”[5][6][13]
@@ -640,7 +783,7 @@ A few notes on confidence:
 
 <!-- LABELS item=11 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -648,13 +791,13 @@ A few notes on confidence:
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -664,11 +807,22 @@ A few notes on confidence:
 
 ---
 
-## Item 12 · `gemini_grounded` · _how much does a plumber cost in Berkeley?_
+# Question: how much does a plumber cost in Berkeley?
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 12 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> how much does a plumber cost in Berkeley?
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 The cost of a plumber in Berkeley, California, can vary significantly depending on the type of service, urgency, and complexity of the job. Generally, you can expect to pay a service call or diagnostic fee, and then an hourly rate or a flat fee for specific services.
@@ -703,7 +857,7 @@ It is recommended to get detailed, upfront quotes from licensed plumbers before 
 
 <!-- LABELS item=12 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -711,13 +865,13 @@ It is recommended to get detailed, upfront quotes from licensed plumbers before 
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -727,11 +881,20 @@ It is recommended to get detailed, upfront quotes from licensed plumbers before 
 
 ---
 
-## Item 13 · `google_ai_mode` · _how much does a plumber cost in Berkeley?_
+## Item 13 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> how much does a plumber cost in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Based on data from July 2026, the typical cost for a plumber in Berkeley ranges from **$115 to $298 per job** , with an average of around $185. Hourly rates for local plumbing companies are often between **$225 and $254**.[](https://www.yelp.com/costs/plumbing/berkeley) [[1]](https://www.yelp.com/costs/plumbing/berkeley)[[2]](https://www.berkeleyparentsnetwork.org/recommend/home/plumber)
@@ -761,7 +924,7 @@ Would you like me to find **plumbers with 5-star ratings** on Yelp, or perhaps *
 
 <!-- LABELS item=13 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -769,13 +932,13 @@ Would you like me to find **plumbers with 5-star ratings** on Yelp, or perhaps *
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -785,11 +948,20 @@ Would you like me to find **plumbers with 5-star ratings** on Yelp, or perhaps *
 
 ---
 
-## Item 14 · `openai` · _how much does a plumber cost in Berkeley?_
+## Item 14 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> how much does a plumber cost in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 In **Berkeley, CA**, a plumber typically costs:
@@ -810,7 +982,7 @@ Costs can be higher if the plumber is licensed, the work requires a **Berkeley p
 
 <!-- LABELS item=14 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -818,13 +990,13 @@ Costs can be higher if the plumber is licensed, the work requires a **Berkeley p
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -834,11 +1006,20 @@ Costs can be higher if the plumber is licensed, the work requires a **Berkeley p
 
 ---
 
-## Item 15 · `perplexity` · _how much does a plumber cost in Berkeley?_
+## Item 15 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> how much does a plumber cost in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 In Berkeley, a **plumber typically costs about $150–$250 per hour**, with a **service call fee of $90–$150** that is often credited if you approve the work.[1] For a real-world local benchmark, Yelp shows a **typical** plumbing cost of about **$115** and a higher-end figure of **$298** in Berkeley.[2]
@@ -861,7 +1042,7 @@ If you want, I can also estimate the cost for a **specific plumbing job** in Ber
 
 <!-- LABELS item=15 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -869,13 +1050,13 @@ If you want, I can also estimate the cost for a **specific plumbing job** in Ber
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -885,11 +1066,22 @@ If you want, I can also estimate the cost for a **specific plumbing job** in Ber
 
 ---
 
-## Item 16 · `gemini_grounded` · _why is my water pressure suddenly low?_
+# Question: why is my water pressure suddenly low?
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 16 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> why is my water pressure suddenly low?
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 A sudden drop in water pressure can be a frustrating issue, and its cause can range from simple, localized problems to more complex system-wide concerns. Identifying whether the low pressure affects a single fixture, only hot water, or your entire home is the first step in pinpointing the problem.
@@ -931,7 +1123,7 @@ To diagnose the problem, it's recommended to first determine if the low pressure
 
 <!-- LABELS item=16 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -939,13 +1131,13 @@ To diagnose the problem, it's recommended to first determine if the low pressure
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -955,11 +1147,20 @@ To diagnose the problem, it's recommended to first determine if the low pressure
 
 ---
 
-## Item 17 · `google_ai_mode` · _why is my water pressure suddenly low?_
+## Item 17 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> why is my water pressure suddenly low?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 A sudden drop in water pressure is usually caused by a **hidden leak** , a **partially closed main valve** , a **failing pressure regulator (PRV)** , or **issues with the municipal water supply**.[](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/) [[1]](https://gfbowman.com/blog/why-do-i-suddenly-have-low-water-pressure-in-my-house/)[[2]](https://www.facebook.com/plumbingpals/videos/do-you-have-low-water-pressurehere-are-the-top-5-reasons-it-happens-and-what-cau/844552675069604/)
@@ -1008,7 +1209,7 @@ I can give you more specific troubleshooting steps based on these details.
 
 <!-- LABELS item=17 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1016,13 +1217,13 @@ I can give you more specific troubleshooting steps based on these details.
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1032,11 +1233,20 @@ I can give you more specific troubleshooting steps based on these details.
 
 ---
 
-## Item 18 · `openai` · _why is my water pressure suddenly low?_
+## Item 18 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> why is my water pressure suddenly low?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Sudden low water pressure is usually caused by one of these:
@@ -1069,7 +1279,7 @@ If you rent, contact the landlord. Otherwise, check your water utility’s outag
 
 <!-- LABELS item=18 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1077,13 +1287,13 @@ If you rent, contact the landlord. Otherwise, check your water utility’s outag
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1093,11 +1303,20 @@ If you rent, contact the landlord. Otherwise, check your water utility’s outag
 
 ---
 
-## Item 19 · `perplexity` · _why is my water pressure suddenly low?_
+## Item 19 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> why is my water pressure suddenly low?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 A sudden drop in **water pressure** is most often caused by a problem in your home plumbing or a temporary issue with the local water supply, such as a partially closed main valve, a leak, a faulty pressure regulator, clogged fixtures, or municipal work/breaks.[1][3][6]
@@ -1125,7 +1344,7 @@ If you want, I can walk you through a quick **5-minute troubleshooting checklist
 
 <!-- LABELS item=19 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1133,13 +1352,13 @@ If you want, I can walk you through a quick **5-minute troubleshooting checklist
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1149,11 +1368,22 @@ If you want, I can walk you through a quick **5-minute troubleshooting checklist
 
 ---
 
-## Item 20 · `gemini_grounded` · _best plumber in Berkeley_
+# Question: best plumber in Berkeley
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 20 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> best plumber in Berkeley
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — once, first at **33%** through the answer
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 When searching for the best plumbers in Berkeley, several companies consistently receive high praise for their quality of work, responsiveness, and customer service. Based on numerous reviews and certifications, here are some of the top-rated options:
@@ -1177,7 +1407,7 @@ When choosing a plumber, it's always advisable to consider the specific nature o
 
 <!-- LABELS item=20 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1185,13 +1415,13 @@ When choosing a plumber, it's always advisable to consider the specific nature o
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1201,11 +1431,20 @@ When choosing a plumber, it's always advisable to consider the specific nature o
 
 ---
 
-## Item 21 · `google_ai_mode` · _best plumber in Berkeley_
+## Item 21 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> best plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **61%** through the answer
+- `LemonTree Plumbing` — once, first at **21%** through the answer
+- `J J Rooter & Plumbing` — once, first at **35%** through the answer
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Based on recent reviews and local ratings, here are some of the top-rated plumbing services in and around Berkeley, CA, for 2026:
@@ -1259,7 +1498,7 @@ Are you dealing with an **emergency** , such as a **burst pipe** or **major clog
 
 <!-- LABELS item=21 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1267,13 +1506,13 @@ Are you dealing with an **emergency** , such as a **burst pipe** or **major clog
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1283,11 +1522,20 @@ Are you dealing with an **emergency** , such as a **burst pipe** or **major clog
 
 ---
 
-## Item 22 · `openai` · _best plumber in Berkeley_
+## Item 22 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> best plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you mean **Berkeley, California**, the “best” plumber depends on the job and urgency. I’d compare highly rated local companies on **Google Maps and Yelp**, then verify:
@@ -1307,7 +1555,7 @@ If you share your **Berkeley ZIP code, plumbing problem, and whether it’s urge
 
 <!-- LABELS item=22 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1315,13 +1563,13 @@ If you share your **Berkeley ZIP code, plumbing problem, and whether it’s urge
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1331,11 +1579,20 @@ If you share your **Berkeley ZIP code, plumbing problem, and whether it’s urge
 
 ---
 
-## Item 23 · `perplexity` · _best plumber in Berkeley_
+## Item 23 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> best plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you want the **best plumber in Berkeley** based on the search results, **Pat O’Neill Plumbing** is the strongest candidate because it has a dedicated Berkeley profile, a local Berkeley address, and a clear business phone number.[2]
@@ -1354,7 +1611,7 @@ If you want, I can also narrow this down by **emergency availability, sewer/wate
 
 <!-- LABELS item=23 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1362,13 +1619,13 @@ If you want, I can also narrow this down by **emergency availability, sewer/wate
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1378,11 +1635,22 @@ If you want, I can also narrow this down by **emergency availability, sewer/wate
 
 ---
 
-## Item 24 · `gemini_grounded` · _who is the most reliable plumber in Berkeley?_
+# Question: who is the most reliable plumber in Berkeley?
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 24 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> who is the most reliable plumber in Berkeley?
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — once, first at **10%** through the answer
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 When seeking the most reliable plumber in Berkeley, several companies consistently receive high praise for their professionalism, responsiveness, and quality of work. Based on customer reviews and industry ratings, the following plumbers are frequently highlighted for their dependability:
@@ -1411,7 +1679,7 @@ When choosing a plumber, it's advisable to consider factors such as their respon
 
 <!-- LABELS item=24 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1419,13 +1687,13 @@ When choosing a plumber, it's advisable to consider factors such as their respon
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1435,11 +1703,20 @@ When choosing a plumber, it's advisable to consider factors such as their respon
 
 ---
 
-## Item 25 · `google_ai_mode` · _who is the most reliable plumber in Berkeley?_
+## Item 25 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> who is the most reliable plumber in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **35%** through the answer
+- `LemonTree Plumbing` — once, first at **6%** through the answer
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Several plumbers in Berkeley are highly regarded for reliability based on customer reviews and expert ratings as of July 2026. Top options include specialized local firms and highly rated technicians in the East Bay area.[[1]](https://google.com/goto?url=CAESYgHuR6pNOUtISASd-TN2w7JZvlQ0CJSxDwGv3Ry56PZmEUAZ-qJaDKXoaaqQPbBk1pY6lJfvMCYvB_g83s8Ng-1I3uUr-KKohOB_nfJ1JejTr4faWj-oyqUhMuvHDRv3yY6e)
@@ -1529,7 +1806,7 @@ Let me know, and I can narrow down the best option for you.
 
 <!-- LABELS item=25 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1537,13 +1814,13 @@ Let me know, and I can narrow down the best option for you.
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1553,11 +1830,20 @@ Let me know, and I can narrow down the best option for you.
 
 ---
 
-## Item 26 · `openai` · _who is the most reliable plumber in Berkeley?_
+## Item 26 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> who is the most reliable plumber in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Assuming you mean **Berkeley, California**, there isn’t one objectively “most reliable” plumber—and availability and reviews change. For a dependable choice, I’d shortlist **well-established, licensed local contractors** such as:
@@ -1580,7 +1866,7 @@ For a burst pipe or sewage backup, call the first licensed company with a clear 
 
 <!-- LABELS item=26 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1588,13 +1874,13 @@ For a burst pipe or sewage backup, call the first licensed company with a clear 
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1604,11 +1890,20 @@ For a burst pipe or sewage backup, call the first licensed company with a clear 
 
 ---
 
-## Item 27 · `perplexity` · _who is the most reliable plumber in Berkeley?_
+## Item 27 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> who is the most reliable plumber in Berkeley?
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 There isn’t enough reliable evidence in the results to name a single **most reliable plumber** in Berkeley with confidence. The strongest signals in the search results point to **Pelican Plumbers** and **Berkeley Plumbing and Heating**, while **Diamond Certified** is the best source here for an aggregated reliability-style rating across Berkeley plumbers.[6][4][1]
@@ -1625,7 +1920,7 @@ If you want, I can narrow this to the **best choice for a specific job** like a 
 
 <!-- LABELS item=27 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1633,13 +1928,13 @@ If you want, I can narrow this to the **best choice for a specific job** like a 
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1649,11 +1944,22 @@ If you want, I can narrow this to the **best choice for a specific job** like a 
 
 ---
 
-## Item 28 · `gemini_grounded` · _emergency plumber in Berkeley_
+# Question: emergency plumber in Berkeley
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 28 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> emergency plumber in Berkeley
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you're in Berkeley, CA, and need an emergency plumber, several companies offer 24/7 services to address urgent plumbing issues:
@@ -1674,7 +1980,7 @@ If you're in Berkeley, CA, and need an emergency plumber, several companies offe
 
 <!-- LABELS item=28 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1682,13 +1988,13 @@ If you're in Berkeley, CA, and need an emergency plumber, several companies offe
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1698,11 +2004,20 @@ If you're in Berkeley, CA, and need an emergency plumber, several companies offe
 
 ---
 
-## Item 29 · `google_ai_mode` · _emergency plumber in Berkeley_
+## Item 29 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> emergency plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **40%** through the answer
+- `LemonTree Plumbing` — once, first at **13%** through the answer
+- `J J Rooter & Plumbing` — once, first at **27%** through the answer
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Several plumbers in Berkeley offer 24/7 emergency services to address urgent issues like burst pipes, severe clogs, and water heater failures.[[1]](https://www.checkatrade.com/Search/Plumber/in/Berkeley)[[2]](https://caplumberdirectory.com/berkeley-ca/)[[3]](https://proplumberberkeley.com/emergency-plumber/)
@@ -1758,7 +2073,7 @@ Would you like to see **customer reviews** for a specific company, or are you lo
 
 <!-- LABELS item=29 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1766,13 +2081,13 @@ Would you like to see **customer reviews** for a specific company, or are you lo
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1782,11 +2097,20 @@ Would you like to see **customer reviews** for a specific company, or are you lo
 
 ---
 
-## Item 30 · `openai` · _emergency plumber in Berkeley_
+## Item 30 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> emergency plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you mean **Berkeley, California**, take these steps now:
@@ -1807,7 +2131,7 @@ Tell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell,
 
 <!-- LABELS item=30 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1815,13 +2139,13 @@ Tell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell,
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1831,11 +2155,20 @@ Tell me what’s happening—burst pipe, clogged sewer, no hot water, gas smell,
 
 ---
 
-## Item 31 · `perplexity` · _emergency plumber in Berkeley_
+## Item 31 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> emergency plumber in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 For an **emergency plumber in Berkeley, CA**, these companies advertise **24/7 or same-day emergency service**:
@@ -1855,7 +2188,7 @@ If this is an urgent leak or burst pipe, the fastest first steps are to **shut o
 
 <!-- LABELS item=31 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1863,13 +2196,13 @@ If this is an urgent leak or burst pipe, the fastest first steps are to **shut o
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1879,11 +2212,22 @@ If this is an urgent leak or burst pipe, the fastest first steps are to **shut o
 
 ---
 
-## Item 32 · `gemini_grounded` · _24 hour plumbing service Berkeley_
+# Question: 24 hour plumbing service Berkeley
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 32 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> 24 hour plumbing service Berkeley
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you're in Berkeley and need a 24-hour plumbing service, several companies offer emergency assistance around the clock:
@@ -1904,7 +2248,7 @@ If you're in Berkeley and need a 24-hour plumbing service, several companies off
 
 <!-- LABELS item=32 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1912,13 +2256,13 @@ If you're in Berkeley and need a 24-hour plumbing service, several companies off
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1928,11 +2272,20 @@ If you're in Berkeley and need a 24-hour plumbing service, several companies off
 
 ---
 
-## Item 33 · `google_ai_mode` · _24 hour plumbing service Berkeley_
+## Item 33 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> 24 hour plumbing service Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — once, first at **17%** through the answer
+- `LemonTree Plumbing` — once, first at **13%** through the answer
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Several plumbers offer 24-hour, emergency services in Berkeley, CA, to handle urgent issues like burst pipes, sewer backups, and water heater failures.[[1]](https://www.rotorooter.com/berkeleyca/)
@@ -1965,7 +2318,7 @@ To help you get the **fastest service** , are you experiencing a **specific emer
 
 <!-- LABELS item=33 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -1973,13 +2326,13 @@ To help you get the **fastest service** , are you experiencing a **specific emer
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -1989,11 +2342,20 @@ To help you get the **fastest service** , are you experiencing a **specific emer
 
 ---
 
-## Item 34 · `openai` · _24 hour plumbing service Berkeley_
+## Item 34 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> 24 hour plumbing service Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you mean **Berkeley, California**, for an emergency plumber:
@@ -2015,7 +2377,7 @@ If you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/co
 
 <!-- LABELS item=34 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2023,13 +2385,13 @@ If you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/co
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -2039,11 +2401,20 @@ If you mean a different **Berkeley** (such as Berkeley, UK), tell me the city/co
 
 ---
 
-## Item 35 · `perplexity` · _24 hour plumbing service Berkeley_
+## Item 35 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> 24 hour plumbing service Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you need a **24-hour plumber in Berkeley**, several local companies advertise **around-the-clock emergency service**, including **Roto-Rooter** (510-542-5250), **Alvin’s Plumbing** (888-565-9676), **Rooter Hero** (510-768-7140), and **Capelli Plumbing** (510-677-3856).[1][2][3][14]
@@ -2062,7 +2433,7 @@ If you want, I can also help you narrow this down by **best-reviewed**, **fastes
 
 <!-- LABELS item=35 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2070,13 +2441,13 @@ If you want, I can also help you narrow this down by **best-reviewed**, **fastes
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -2086,11 +2457,22 @@ If you want, I can also help you narrow this down by **best-reviewed**, **fastes
 
 ---
 
-## Item 36 · `gemini_grounded` · _top rated drain cleaning in Berkeley_
+# Question: top rated drain cleaning in Berkeley
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+## Item 36 · `gemini_grounded`
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+> top rated drain cleaning in Berkeley
+
+*answer 1 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 When seeking top-rated drain cleaning services in Berkeley, CA, several companies consistently receive high marks for their expertise, customer service, and effective solutions. These include Capelli Plumbing, Mr. Rooter Plumbing of The Oakland-Berkeley Area, LJ Kruse, and Roto-Rooter.
@@ -2115,7 +2497,7 @@ When choosing a drain cleaning service, it's recommended to review customer feed
 
 <!-- LABELS item=36 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2123,13 +2505,13 @@ When choosing a drain cleaning service, it's recommended to review customer feed
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -2139,11 +2521,20 @@ When choosing a drain cleaning service, it's recommended to review customer feed
 
 ---
 
-## Item 37 · `google_ai_mode` · _top rated drain cleaning in Berkeley_
+## Item 37 · `google_ai_mode`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> top rated drain cleaning in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 2 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Top-rated drain cleaning services in Berkeley, CA, for 2026, based on customer reviews and service reputation, include local specialists and highly-rated plumbing companies known for handling stubborn clogs and sewer line issues.[[1]](https://m.yelp.com/search?find_desc=Drain+Cleaning&find_loc=Berkeley%2C+CA)
@@ -2198,7 +2589,7 @@ Would you like recommendations for **preventative sewer maintenance** (like root
 
 <!-- LABELS item=37 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2206,13 +2597,13 @@ Would you like recommendations for **preventative sewer maintenance** (like root
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -2222,11 +2613,20 @@ Would you like recommendations for **preventative sewer maintenance** (like root
 
 ---
 
-## Item 38 · `openai` · _top rated drain cleaning in Berkeley_
+## Item 38 · `openai`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> top rated drain cleaning in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 3 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — **not found**
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 Assuming you mean **Berkeley, California**, these are commonly well-reviewed options to check for drain cleaning:
@@ -2246,7 +2646,7 @@ If you share your **ZIP code and whether it’s an emergency**, I can narrow thi
 
 <!-- LABELS item=38 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2254,13 +2654,13 @@ If you share your **ZIP code and whether it’s an emergency**, I can narrow thi
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 
@@ -2270,11 +2670,20 @@ If you share your **ZIP code and whether it’s an emergency**, I can narrow thi
 
 ---
 
-## Item 39 · `perplexity` · _top rated drain cleaning in Berkeley_
+## Item 39 · `perplexity`
 
-**Client:** Albert Nahman Plumbing  ·  **Competitors:** LemonTree Plumbing, J J Rooter & Plumbing
+> top rated drain cleaning in Berkeley
 
-<details open><summary><b>Answer</b> (click to collapse)</summary>
+*answer 4 of 4 to this question. Client: **Albert Nahman Plumbing**. Competitors: LemonTree Plumbing, J J Rooter & Plumbing.*
+
+**Where each name appears** — literal text match, so you do not have to scan for it.
+This is evidence, not a label: a disavowal ("there is no such company") names the brand while meaning the opposite, and only you can see that.
+
+- `Albert Nahman Plumbing` — **not found**
+- `LemonTree Plumbing` — **not found**
+- `J J Rooter & Plumbing` — once, first at **12%** through the answer
+
+<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>
 
 ```text
 If you mean **top-rated drain cleaning in Berkeley**, the strongest match in the results is **J J Rooter & Plumbing**, which has a **4.9-star rating from 257 Yelp reviews**.[2]
@@ -2296,7 +2705,7 @@ If you want, I can also help you narrow this to:
 
 <!-- LABELS item=39 -->
 
-**Label** — edit the `prominence` / `framing` / `present` cells:
+`present` yes/no · `prominence` recommended_first / mid_pack / buried / also_ran / absent · `framing` positive / neutral / negative
 
 | brand | present | prominence | framing |
 | --- | --- | --- | --- |
@@ -2304,13 +2713,13 @@ If you want, I can also help you narrow this to:
 | LemonTree Plumbing | no | absent | neutral |
 | J J Rooter & Plumbing | no | absent | neutral |
 
-**Flags** about Albert Nahman Plumbing — `type | severity | note` per line (empty = accurate):
+**Flags about Albert Nahman Plumbing** — `type | severity | note`, one per line. Empty = accurate.
 
 ```flags
 
 ```
 
-**Uncovered claims** (optional) — one per line:
+**Uncovered claims** — things the answer asserts that the fact sheet does not cover, one per line. The judge must not flag these.
 
 ```candidates
 

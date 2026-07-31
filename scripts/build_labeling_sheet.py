@@ -1,23 +1,42 @@
 """Render a blind gold-set skeleton into a human-fillable Markdown labeling sheet.
 
-Reads a v2 gold file (e.g. data/oura_gold.json) and emits one Markdown section
-per item: the verbatim answer (fenced so its own markdown can't break the sheet)
-beside a pre-filled label table + flag/candidate blocks. Defaults come straight
-from the skeleton (absent/neutral), so "losing query" items need few or no edits.
+Reads a v2 gold file (e.g. data/local_gold.json) and emits one Markdown section
+per item: the verbatim answer beside a pre-filled label table + flag/candidate
+blocks. Defaults come straight from the skeleton (absent/neutral), so "losing
+query" items need few or no edits.
 
 Each item's editable region is wrapped in `<!-- LABELS item=N -->` ...
-`<!-- /LABELS -->` markers so a companion parser can later read the filled sheet
-back into the gold JSON. The judge's verdicts are never shown — blindness is the
-point (a labeler must not rubber-stamp the judge's own call).
+`<!-- /LABELS item=N -->` markers so `parse_labeling_sheet.py` can read the filled
+sheet back into the gold JSON. The judge's verdicts are never shown — blindness is
+the point (a labeler must not rubber-stamp the judge's own call).
+
+Three things here exist to make an hour of labeling survivable, and each is a
+deliberate line between HELP and ANSWER:
+
+* **Items are grouped by query**, so the four engines' answers to one question sit
+  together. Prominence is relative *within* an answer, but a labeler calibrates it
+  far more consistently having just read three siblings. `parse_labeling_sheet`
+  keys on the `item=N` marker, not on file order, so regrouping is free.
+* **Every item carries the vocabulary inline.** A legend 2,000 lines up is a
+  legend nobody reads; a mistyped enum is a validation error at the end of the
+  afternoon.
+* **Mention evidence per brand** — literal match count and where the first one
+  falls in the answer. This is mechanical fact, NOT a suggested label: it is the
+  scanning a human would otherwise do by eye, and it is exactly what prominence is
+  read from. The label stays the human's, and `present` is deliberately still
+  defaulted to `no` rather than pre-filled from the match, because a pre-filled
+  answer gets rubber-stamped and a disavowal ("there is no such plumber") names
+  the brand while meaning the opposite.
 
 Usage:
-    python -m scripts.build_labeling_sheet data/oura_gold.json docs/oura-labeling-sheet.md
+    python -m scripts.build_labeling_sheet data/local_gold.json docs/local-labeling-sheet.md
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from src.storage.models import AccuracyFlagType
@@ -33,37 +52,91 @@ FLAG_TYPES = [t.value for t in AccuracyFlagType]
 SEVERITY = ["high", "med", "low"]
 
 
-def _legend(client: str, fact_sheet: str | None) -> list[str]:
+def _mentions(answer: str, brand: str) -> tuple[int, float | None]:
+    """``(count, first-position as a fraction)`` for a literal, case-insensitive match.
+
+    Word-boundaried so "Fort" does not match "comfort". Returns the position as a
+    fraction of the answer because that is the shape prominence is judged on — a
+    brand first named 4% in reads very differently from one at 85%.
+    """
+    if not answer or not brand:
+        return 0, None
+    hits = list(re.finditer(rf"\b{re.escape(brand)}\b", answer, re.I))
+    if not hits:
+        return 0, None
+    return len(hits), hits[0].start() / max(len(answer), 1)
+
+
+def _evidence_lines(answer: str, brands: list[str]) -> list[str]:
     lines = [
-        f"# {client} Gold-Set Labeling Sheet",
+        "**Where each name appears** — literal text match, so you do not have to scan for it.",
+        "This is evidence, not a label: a disavowal (\"there is no such company\") names the "
+        "brand while meaning the opposite, and only you can see that.",
         "",
-        "Read each answer, then fill the **Label** table and the **Flags** block beneath it.",
-        "Edit only the cells — keep the `<!-- LABELS -->` markers intact so the sheet can be",
-        "parsed back into the gold JSON. The judge's own verdicts are deliberately omitted.",
+    ]
+    for brand in brands:
+        count, pos = _mentions(answer, brand)
+        if count == 0:
+            lines.append(f"- `{brand}` — **not found**")
+        else:
+            times = "once" if count == 1 else f"{count}×"
+            assert pos is not None
+            lines.append(f"- `{brand}` — {times}, first at **{pos:.0%}** through the answer")
+    lines.append("")
+    return lines
+
+
+def _legend(client: str, fact_sheet: str | None, n_items: int) -> list[str]:
+    lines = [
+        f"# {client} — Gold-Set Labeling Sheet",
         "",
-        "**How to label each brand row**",
+        f"{n_items} answers to label. Work down the file; items are **grouped by question**, so "
+        "you read all four engines' answers to one query together and judge them consistently.",
         "",
-        "- **present** — `yes` / `no`: is the brand named anywhere in the answer?",
-        f"- **prominence** — one of: {' · '.join(f'`{p}`' for p in PROMINENCE)}. "
-        "Relative within *this* answer (who is named first vs. buried). `absent` iff present=no.",
-        f"- **framing** — one of: {' · '.join(f'`{f}`' for f in FRAMING)}. "
-        "Absent brands stay `neutral`.",
+        "Edit only the cells inside the `<!-- LABELS -->` markers — leave the markers alone, "
+        "they are how the sheet is read back. Pipe alignment does not matter; "
+        "`|Acme|yes|mid_pack|positive|` parses fine.",
         "",
-        f"**Flags** = real errors the answer makes **about {client}** "
-        "(the client only — not competitors).",
-        f"Format per line: `type | severity | note`. "
-        f"Types: {' · '.join(f'`{t}`' for t in FLAG_TYPES)}. "
-        f"Severity: {' · '.join(f'`{s}`' for s in SEVERITY)}. "
-        f"Leave the block empty if the answer is accurate about {client}.",
+        "When you are done:",
         "",
-        "**Uncovered claims** (optional) = claims the answer makes that the fact sheet does NOT",
-        "cover — the judge must *not* flag these. One per line.",
+        "```bash",
+        "python -m scripts.parse_labeling_sheet SHEET.md GOLD.json          # validate",
+        "python -m scripts.parse_labeling_sheet SHEET.md GOLD.json --write  # apply",
+        "```",
+        "",
+        "It validates every value and refuses to write if anything is off, so a typo costs "
+        "you a re-run and never a corrupted set.",
+        "",
+        "## The three columns",
+        "",
+        "| column | values | what it means |",
+        "| --- | --- | --- |",
+        "| `present` | `yes` · `no` | Is the brand named at all? A **disavowal** — \"there is no "
+        "such company\", \"I have no information about them\" — is `no`. The name appearing only "
+        "because the question contained it is also `no`. |",
+        f"| `prominence` | {' · '.join(f'`{p}`' for p in PROMINENCE)} | Relative *within this "
+        "answer*: who is named first vs. buried at the bottom. Must be `absent` when "
+        "`present=no`, and must not be when `present=yes`. |",
+        f"| `framing` | {' · '.join(f'`{f}`' for f in FRAMING)} | How the answer treats it. "
+        "Absent brands stay `neutral`. |",
+        "",
+        "## The flags block",
+        "",
+        f"Real errors the answer makes **about {client} only** — never about a competitor. "
+        "One per line, `type | severity | note`. Leave it empty when the answer is accurate.",
+        "",
+        f"- **types** — {' · '.join(f'`{t}`' for t in FLAG_TYPES)}",
+        f"- **severity** — {' · '.join(f'`{s}`' for s in SEVERITY)}",
+        "",
+        "A flag needs a line in the fact sheet below that the answer **contradicts**. If the "
+        "sheet is silent on the topic, that is not a flag — put it in **uncovered claims** "
+        "instead, which is the list of things the judge must *not* flag.",
         "",
     ]
     if fact_sheet:
         lines += [
-            f"<details><summary><b>Ground truth — {client} fact sheet</b> "
-            "(the source of truth for the Flags column)</summary>",
+            f"<details><summary><b>Ground truth — the {client} fact sheet</b> "
+            "(open this before writing any flag)</summary>",
             "",
             fact_sheet.rstrip(),
             "",
@@ -72,10 +145,26 @@ def _legend(client: str, fact_sheet: str | None) -> list[str]:
         ]
     else:
         lines += [
-            f"> No fact sheet embedded — {client} accuracy is not assessed on this set.",
+            f"> No fact sheet embedded — {client} accuracy is not assessed on this set, "
+            "so leave every flags block empty.",
             "",
         ]
-    lines += ["---", ""]
+    return lines
+
+
+def _index(groups: list[tuple[str, list[tuple[int, dict]]]]) -> list[str]:
+    """A contents table: what is in the file, in the order it appears."""
+    lines = [
+        "## What you are labeling",
+        "",
+        "| question | items | engines |",
+        "| --- | --- | --- |",
+    ]
+    for query, members in groups:
+        nums = ", ".join(str(i) for i, _ in members)
+        engines = ", ".join(sorted({str(it.get("engine", "?")) for _, it in members}))
+        lines.append(f"| {query} | {nums} | {engines} |")
+    lines += ["", "---", ""]
     return lines
 
 
@@ -83,23 +172,27 @@ def _present_str(label: dict) -> str:
     return "yes" if label.get("present") else "no"
 
 
-def _item_section(idx: int, item: dict) -> list[str]:
+def _item_section(idx: int, item: dict, position: str) -> list[str]:
     query = item.get("query", "")
     engine = item.get("engine", "?")
     client = item.get("client", "Client")
     competitors = item.get("competitors", [])
-    answer = item.get("answer", "")
+    answer = item.get("answer", "") or ""
     labels = item.get("labels", {})
 
-    # Brand order: client first, then competitors as listed.
     brands = [client] + [c for c in competitors if c != client]
 
     lines = [
-        f"## Item {idx} · `{engine}` · _{query}_",
+        f"## Item {idx} · `{engine}`",
         "",
-        f"**Client:** {client}  ·  **Competitors:** {', '.join(competitors) or '—'}",
+        f"> {query}",
         "",
-        "<details open><summary><b>Answer</b> (click to collapse)</summary>",
+        f"*{position}. Client: **{client}**. Competitors: {', '.join(competitors) or '—'}.*",
+        "",
+    ]
+    lines += _evidence_lines(answer, brands)
+    lines += [
+        "<details open><summary><b>The answer</b> (click to collapse once labeled)</summary>",
         "",
         "```text",
         answer.rstrip(),
@@ -109,7 +202,8 @@ def _item_section(idx: int, item: dict) -> list[str]:
         "",
         f"<!-- LABELS item={idx} -->",
         "",
-        "**Label** — edit the `prominence` / `framing` / `present` cells:",
+        f"`present` yes/no · `prominence` {' / '.join(PROMINENCE)} · "
+        f"`framing` {' / '.join(FRAMING)}",
         "",
         "| brand | present | prominence | framing |",
         "| --- | --- | --- | --- |",
@@ -122,13 +216,14 @@ def _item_section(idx: int, item: dict) -> list[str]:
         )
     lines += [
         "",
-        f"**Flags** about {client} — `type | severity | note` per line (empty = accurate):",
+        f"**Flags about {client}** — `type | severity | note`, one per line. Empty = accurate.",
         "",
         "```flags",
         "",
         "```",
         "",
-        "**Uncovered claims** (optional) — one per line:",
+        "**Uncovered claims** — things the answer asserts that the fact sheet does not cover, "
+        "one per line. The judge must not flag these.",
         "",
         "```candidates",
         "",
@@ -142,13 +237,35 @@ def _item_section(idx: int, item: dict) -> list[str]:
     return lines
 
 
+def _grouped(items: list[dict]) -> list[tuple[str, list[tuple[int, dict]]]]:
+    """Items bucketed by query, each keeping its ORIGINAL index.
+
+    The index is the join key `parse_labeling_sheet` merges on, so it must survive
+    the regrouping — the file's order is presentation, the marker is contract.
+    """
+    order: list[str] = []
+    buckets: dict[str, list[tuple[int, dict]]] = {}
+    for i, item in enumerate(items):
+        query = str(item.get("query", ""))
+        if query not in buckets:
+            buckets[query] = []
+            order.append(query)
+        buckets[query].append((i, item))
+    return [(q, buckets[q]) for q in order]
+
+
 def build_sheet(gold_path: Path) -> str:
     items = json.loads(gold_path.read_text())["items"]
     client = next((str(it["client"]) for it in items if it.get("client")), "Client")
     fact_sheet = next((it.get("fact_sheet") for it in items if it.get("fact_sheet")), None)
-    out = _legend(client, fact_sheet)
-    for i, item in enumerate(items):
-        out += _item_section(i, item)
+    groups = _grouped(items)
+
+    out = _legend(client, fact_sheet, len(items))
+    out += _index(groups)
+    for query, members in groups:
+        out += [f"# Question: {query}", ""]
+        for n, (idx, item) in enumerate(members, start=1):
+            out += _item_section(idx, item, f"answer {n} of {len(members)} to this question")
     out.append(f"_Generated from `{gold_path.name}` — {len(items)} items to label._")
     out.append("")
     return "\n".join(out)
@@ -156,7 +273,7 @@ def build_sheet(gold_path: Path) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="build_labeling_sheet")
-    ap.add_argument("gold", help="path to the v2 gold skeleton (e.g. data/oura_gold.json)")
+    ap.add_argument("gold", help="path to the v2 gold skeleton (e.g. data/local_gold.json)")
     ap.add_argument("out", nargs="?", default="docs/oura-labeling-sheet.md")
     args = ap.parse_args()
 
