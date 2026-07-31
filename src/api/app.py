@@ -15,6 +15,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api import projects, runner
+from src.audit.factsheet import FactSheet, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
 from src.pipeline.cost import CostBudgetExceeded
@@ -647,6 +648,129 @@ def reject_audit_deliverable(deliverable_id: str, body: RejectAuditBody) -> dict
     except db.StorageError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return row or {}
+
+
+# --- Fact sheets: the reachable human gate (plan F4) -------------------------
+#
+# The generator is deliberately cheap and unreviewed: `save_fact_sheet` always writes
+# DRAFT, and `uq_fact_sheets_active_domain` allows exactly one ACTIVE row per domain.
+# Promotion is therefore the ONLY way a generated sheet becomes something a run is
+# judged against, and it happens here, through a person. That is the whole point of
+# F4 — before it, the worker could fill a table and nothing could act on the contents.
+#
+# CRUD/state only, no LLM work, mirroring the /teasers lifecycle.
+
+
+class RejectFactSheetBody(BaseModel):
+    reason: str = ""
+
+
+def _fact_sheet_or_404(sheet_id: str) -> FactSheet:
+    try:
+        sheet = db.get_fact_sheet(sheet_id)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if sheet is None:
+        raise HTTPException(status_code=404, detail=f"fact sheet {sheet_id} not found")
+    return sheet
+
+
+@api.get("/fact-sheets")
+def list_fact_sheets(
+    state: str | None = None, domain: str | None = None
+) -> list[dict[str, object]]:
+    """The review queue: sheet rows newest first, optionally filtered by state.
+
+    Rows, not documents — the queue shows a domain, a state and a claim count, and
+    rehydrating every claim of every sheet to render that would be a join per row.
+    """
+    parsed: db.FactSheetState | None = None
+    if state is not None:
+        try:
+            parsed = db.FactSheetState(state)
+        except ValueError as exc:
+            allowed = ", ".join(s.value for s in db.FactSheetState)
+            raise HTTPException(
+                status_code=422, detail=f"unknown state {state!r}; expected one of: {allowed}"
+            ) from exc
+    try:
+        return db.list_fact_sheets(state=parsed, domain=domain)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@api.get("/fact-sheets/{sheet_id}")
+def get_fact_sheet(sheet_id: str) -> dict[str, object]:
+    """One sheet with every claim's EVIDENCE attached — the reviewable unit.
+
+    A reviewer cannot approve a claim they cannot check, so each claim carries its
+    verbatim quote, source URL and as-of date, not just the assertion. The open
+    questions come too: they are the call list, and the §4.3 disagreements are
+    exactly what a human is here to resolve.
+    """
+    sheet = _fact_sheet_or_404(sheet_id)
+    return {
+        "id": sheet_id,
+        "domain": sheet.domain,
+        "business_name": sheet.business_name,
+        "business_kind": sheet.business_kind.value,
+        "version": sheet.version,
+        "sheet_status": sheet.sheet_status.value,
+        "verification_tier": sheet.verification_tier.value,
+        "generated_at": sheet.generated_at,
+        "lead_ref": sheet.lead_ref,
+        "questions": list(sheet.questions),
+        "claims": [
+            {
+                "claim_id": c.claim_id,
+                "section": c.section.value,
+                "key": c.key,
+                "value": c.value,
+                "polarity": c.polarity.value,
+                "verbatim_quote": c.verbatim_quote,
+                "source_url": c.source_url,
+                "source_kind": c.source_kind.value,
+                "as_of": c.as_of,
+                "verification": c.verification.value,
+                "confidence": c.confidence.value,
+            }
+            for c in sheet.claims
+        ],
+        "markdown": to_markdown(sheet),
+    }
+
+
+@api.post("/fact-sheets/{sheet_id}/approve")
+def approve_fact_sheet(sheet_id: str) -> dict[str, object]:
+    """Promote DRAFT -> ACTIVE, demoting the domain's incumbent in the same call.
+
+    This is the moment a generated document becomes a measurement reference, so it
+    is a person's decision and never the worker's.
+    """
+    _fact_sheet_or_404(sheet_id)
+    try:
+        db.activate_fact_sheet(sheet_id)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"id": sheet_id, "state": db.FactSheetState.ACTIVE.value}
+
+
+@api.post("/fact-sheets/{sheet_id}/reject")
+def reject_fact_sheet(sheet_id: str, body: RejectFactSheetBody) -> dict[str, object]:
+    """Record that a reviewer read this sheet and said no. The row stays.
+
+    409 when the sheet is ACTIVE: live runs are judged against it, and pulling it
+    out from under them would leave accuracy claims referencing a document that no
+    longer exists. Activate a replacement instead.
+    """
+    _fact_sheet_or_404(sheet_id)
+    try:
+        db.reject_fact_sheet(sheet_id, body.reason)
+    except db.StorageError as exc:
+        if "is ACTIVE" in str(exc):
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"id": sheet_id, "state": db.FactSheetState.REJECTED.value}
 
 
 app.include_router(api)

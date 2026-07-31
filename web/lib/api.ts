@@ -718,3 +718,107 @@ export async function rejectAuditDeliverable(id: string, reason?: string): Promi
   if (!res.ok) throw new Error(`reject audit failed (${res.status})`);
   return res.json();
 }
+
+// --- Fact sheets: the F4 review queue (src/api/app.py /fact-sheets) ---
+//
+// A generated sheet is always DRAFT. Approving it is the only way it becomes the
+// reference a run's accuracy judging is measured against, so this client exists to
+// put that decision in front of a person.
+
+export type FactSheetState = "draft" | "active" | "superseded" | "rejected";
+export type FactSheetVerification =
+  | "public_source_only"
+  | "cross_confirmed"
+  | "client_confirmed";
+
+/** One row of the queue list — a projection, not the document. */
+export interface FactSheetSummary {
+  id: string;
+  domain: string;
+  business_name: string;
+  business_kind: string;
+  version: number;
+  state: FactSheetState;
+  verification_tier: FactSheetVerification;
+  lead_ref: string | null;
+  questions: string[] | null;
+  reject_reason: string | null;
+  generated_at: string;
+  created_at: string;
+}
+
+/** One claim, WITH the evidence a reviewer needs to check it. */
+export interface FactSheetClaim {
+  claim_id: string;
+  section: string;
+  key: string;
+  value: string;
+  polarity: "positive" | "negative";
+  /** The literal source line. Never a paraphrase — that is the §4.1 gate. */
+  verbatim_quote: string;
+  source_url: string;
+  source_kind: string;
+  as_of: string;
+  verification: FactSheetVerification;
+  confidence: "high" | "medium" | "low";
+}
+
+export interface FactSheetDetail {
+  id: string;
+  domain: string;
+  business_name: string;
+  business_kind: string;
+  version: number;
+  sheet_status: string;
+  verification_tier: FactSheetVerification;
+  generated_at: string;
+  lead_ref: string | null;
+  questions: string[];
+  claims: FactSheetClaim[];
+  markdown: string;
+}
+
+export async function listFactSheets(state?: FactSheetState): Promise<FactSheetSummary[]> {
+  const qs = state ? `?state=${encodeURIComponent(state)}` : "";
+  const res = await fetch(`${API_BASE}/fact-sheets${qs}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`list fact sheets failed (${res.status})`);
+  return res.json();
+}
+
+export async function getFactSheet(id: string): Promise<FactSheetDetail> {
+  const res = await fetch(`${API_BASE}/fact-sheets/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`get fact sheet failed (${res.status})`);
+  return res.json();
+}
+
+export async function approveFactSheet(id: string): Promise<{ id: string; state: string }> {
+  const res = await fetch(`${API_BASE}/fact-sheets/${encodeURIComponent(id)}/approve`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`approve fact sheet failed (${res.status})`);
+  return res.json();
+}
+
+export async function rejectFactSheet(
+  id: string,
+  reason: string,
+): Promise<{ id: string; state: string }> {
+  const res = await fetch(`${API_BASE}/fact-sheets/${encodeURIComponent(id)}/reject`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ reason }),
+  });
+  // 409 = the sheet is ACTIVE; live runs are judged against it.
+  if (res.status === 409) {
+    throw new Error("This sheet is active — activate a replacement instead of rejecting it.");
+  }
+  if (!res.ok) throw new Error(`reject fact sheet failed (${res.status})`);
+  return res.json();
+}

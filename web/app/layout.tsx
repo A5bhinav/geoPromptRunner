@@ -39,6 +39,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/audit" className="text-muted-foreground transition-colors hover:text-foreground">
                 Visibility Audit
               </Link>
+              <Link href="/fact-sheets" className="text-muted-foreground transition-colors hover:text-foreground">
+                Fact sheets
+              </Link>
             </nav>
           </div>
         </header>
