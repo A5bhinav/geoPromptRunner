@@ -382,14 +382,26 @@ export async function previewAudit(files: File[]): Promise<ParsePreview> {
 
 export async function createAudit(
   files: File[],
-): Promise<{ run_id: string } | { errors: ParsePreview }> {
+  factSheetId?: string | null,
+): Promise<{ run_id: string } | { errors: ParsePreview } | { refused: string }> {
+  const form = filesToForm(files);
+  // Attaches an APPROVED sheet from /fact-sheets as this run's ground truth.
+  // Without it the endpoint accepts the run and judges against whatever `fact`
+  // rows the CSV carried — which is how approving a sheet came to change one
+  // column and nothing downstream.
+  if (factSheetId) form.append("fact_sheet_id", factSheetId);
   const res = await fetch(`${API_BASE}/audits`, {
     method: "POST",
-    body: filesToForm(files),
+    body: form,
     headers: authHeaders(),
   });
   if (res.status === 422) {
     const body = await res.json();
+    // Two different 422s share this status: a CSV that would not parse (a
+    // structured preview) and a fact sheet that cannot serve as ground truth (a
+    // sentence). Showing the second as a parse error would send someone hunting
+    // through their CSV for a problem that is not in it.
+    if (typeof body.detail === "string") return { refused: body.detail };
     return { errors: body.detail as ParsePreview };
   }
   if (!res.ok) throw new Error(`create failed (${res.status})`);
@@ -503,13 +515,25 @@ export async function downloadAudit(
   await saveBlob(res, `geo-audit-${runId}-answers.${ext}`);
 }
 
-export async function downloadTemplate(): Promise<void> {
-  const res = await fetch(`${API_BASE}/template.csv`, {
+export async function listTrades(): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/trades`, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
+ * The starter CSV. With a trade, a filled local query set (29 questions) instead
+ * of the 4-query consumer starter — the trade templates existed behind the
+ * endpoint and were unreachable because it never passed one through.
+ */
+export async function downloadTemplate(trade?: string | null): Promise<void> {
+  const qs = trade ? `?trade=${encodeURIComponent(trade)}` : "";
+  const res = await fetch(`${API_BASE}/template.csv${qs}`, {
     cache: "no-store",
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`template failed (${res.status})`);
-  await saveBlob(res, "geo-audit-template.csv");
+  await saveBlob(res, trade ? `geo-audit-template-${trade}.csv` : "geo-audit-template.csv");
 }
 
 // --- Teaser persistence + review (src/api/app.py /teasers) ---
@@ -820,5 +844,49 @@ export async function rejectFactSheet(
     throw new Error("This sheet is active — activate a replacement instead of rejecting it.");
   }
   if (!res.ok) throw new Error(`reject fact sheet failed (${res.status})`);
+  return res.json();
+}
+
+// --- Assemble a runnable audit from a lead (src/api/app.py /audits/assemble) ---
+
+export interface AssembleRequest {
+  business: string;
+  website: string;
+  trade: string;
+  city: string;
+  /** The state's FULL name ("California"). "CA" is refused by the API, not guessed. */
+  region: string;
+  country?: string;
+  category?: string | null;
+  runs_per_query?: number;
+  judge?: boolean;
+  /** Supply your own to skip the local-pack lookup (which spends a Serper credit). */
+  competitors?: string[] | null;
+}
+
+export interface AssembleResult {
+  csv: string;
+  competitors: string[];
+  /** What the local pack returned and why each was dropped — shown, never hidden. */
+  excluded: { name: string; reason: string }[];
+  competitor_source: string;
+  /** Set when no competitor survived: the run would measure against nobody. */
+  warning: string | null;
+}
+
+export async function assembleAudit(body: AssembleRequest): Promise<AssembleResult> {
+  const res = await fetch(`${API_BASE}/audits/assemble`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  });
+  if (res.status === 422) {
+    // A refusal with a reason (an abbreviated region, an unknown trade). Surfaced
+    // verbatim — the API's message explains what to do, and paraphrasing it here
+    // would lose that.
+    const detail = (await res.json()).detail;
+    throw new Error(typeof detail === "string" ? detail : "Could not assemble the audit.");
+  }
+  if (!res.ok) throw new Error(`assemble failed (${res.status})`);
   return res.json();
 }

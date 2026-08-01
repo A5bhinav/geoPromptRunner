@@ -7,6 +7,7 @@ import logging
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -15,15 +16,18 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api import projects, runner
+from src.audit.competitors import candidates_from_local_pack
 from src.audit.factsheet import FactSheet, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
 from src.pipeline.cost import CostBudgetExceeded
+from src.prompts.assemble import AssembleError, assemble_run_csv
 from src.prompts.csv_loader import (
     ParseResult,
     build_template_csv,
     parse_csv_files,
 )
+from src.prompts.local_templates import TRADES
 from src.storage import db
 
 __all__ = ["app"]
@@ -220,12 +224,115 @@ def health() -> dict[str, str]:
 
 
 @api.get("/template.csv")
-def template_csv() -> Response:
+def template_csv(trade: str | None = None) -> Response:
+    """The starter CSV. With ``?trade=``, a filled local query set instead.
+
+    `build_template_csv` has always taken a trade and this endpoint never passed
+    one, so the only reachable template was the 4-query consumer starter — while
+    `render_trade_queries` sat behind it generating 29 real local_intent questions
+    per trade, deterministically and with no model call. The queries existed and
+    could not be obtained.
+    """
+    if trade is not None and trade not in TRADES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"unknown trade {trade!r}; expected one of: {', '.join(TRADES)}",
+        )
+    name = f"geo-audit-template-{trade}.csv" if trade else "geo-audit-template.csv"
     return Response(
-        content=build_template_csv(),
+        content=build_template_csv(trade),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="geo-audit-template.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
     )
+
+
+class AssembleBody(BaseModel):
+    """A lead, plus the two things a lead form does not capture."""
+
+    business: str
+    website: str
+    trade: str
+    city: str
+    # The state's FULL name. Not derivable from the lead's free-text "area", and
+    # deliberately not guessed: nothing in this repo expands "CA" to "California",
+    # because a wrong market is worse than a missing one.
+    region: str
+    country: str = "United States"
+    category: str | None = None
+    runs_per_query: int = 3
+    judge: bool = False
+    # Skip the local-pack call (which costs a Serper credit) and supply your own.
+    competitors: list[str] | None = None
+
+
+@api.post("/audits/assemble")
+def assemble_audit(body: AssembleBody) -> dict[str, object]:
+    """Build a runnable audit CSV for one local business.
+
+    Combines the four inputs that already existed separately: the lead's fields, a
+    trade query template (29 filled local questions, no model), competitors from
+    Google's local pack, and the config block. Returns the CSV text plus what it
+    excluded, so a caller can show the drops rather than present a list that looks
+    complete.
+
+    The fact sheet is NOT embedded — it attaches to the run by id, and a run
+    carrying both is refused.
+    """
+    location = f"{body.city.strip()},{body.region.strip()},{body.country.strip()}"
+    excluded: list[dict[str, str]] = []
+    competitors = list(body.competitors or [])
+    pack_source = "supplied"
+
+    if body.competitors is None:
+        seed = f"best {body.trade} in {body.city.strip()}"
+        entities, pack_source = fetch_local_pack(seed, location)
+        found = candidates_from_local_pack(
+            entities,
+            client_name=body.business,
+            client_website=body.website,
+            source_query=seed,
+            location=location,
+            as_of=datetime.now(UTC).date().isoformat(),
+        )
+        competitors = found.names
+        excluded = [{"name": n, "reason": r} for n, r in found.exclusions]
+
+    try:
+        csv_text = assemble_run_csv(
+            business=body.business,
+            website=body.website,
+            trade=body.trade,
+            city=body.city,
+            region=body.region,
+            country=body.country,
+            competitors=competitors,
+            category=body.category,
+            runs_per_query=body.runs_per_query,
+            judge=body.judge,
+        )
+    except AssembleError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {
+        "csv": csv_text,
+        "competitors": competitors,
+        "excluded": excluded,
+        "competitor_source": pack_source,
+        # Loud rather than silent: a run with no competitors measures share-of-voice
+        # against nobody, and the caller has to decide whether that is acceptable.
+        "warning": (
+            "no competitors found — the local pack returned nothing usable. Add them "
+            "by hand before running, or the audit measures the client against nobody."
+            if not competitors
+            else None
+        ),
+    }
+
+
+@api.get("/trades")
+def list_trades() -> list[str]:
+    """Trades with a query template, so the UI never hardcodes the list."""
+    return list(TRADES)
 
 
 @api.get("/local-entities")

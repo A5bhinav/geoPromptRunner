@@ -6,9 +6,16 @@ import { Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/upload-dropzone";
+import { AssembleFromLead } from "@/components/assemble-from-lead";
 import { PreviewPanels } from "@/components/preview-panels";
 import { RecentAudits } from "@/components/recent-audits";
-import { createAudit, previewAudit, type ParsePreview } from "@/lib/api";
+import {
+  createAudit,
+  previewAudit,
+  listFactSheets,
+  type ParsePreview,
+  type FactSheetSummary,
+} from "@/lib/api";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -17,6 +24,16 @@ export default function UploadPage() {
   const [previewing, setPreviewing] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // Approved sheets only. A draft is not ground truth — approval is the gate —
+  // and the API refuses one anyway, so offering it here would only produce a 422.
+  const [sheets, setSheets] = React.useState<FactSheetSummary[]>([]);
+  const [factSheetId, setFactSheetId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    listFactSheets("active")
+      .then(setSheets)
+      .catch(() => setSheets([]));
+  }, []);
 
   React.useEffect(() => {
     if (files.length === 0) {
@@ -49,9 +66,13 @@ export default function UploadPage() {
     setCreating(true);
     setError(null);
     try {
-      const res = await createAudit(files);
+      const res = await createAudit(files, factSheetId);
       if ("run_id" in res) {
         router.push(`/audits/${res.run_id}`);
+      } else if ("refused" in res) {
+        // The CSV parsed; the SHEET was rejected. Say so as a sentence rather
+        // than rendering it as a parse error over the upload.
+        setError(res.refused);
       } else {
         setPreview(res.errors);
       }
@@ -61,6 +82,30 @@ export default function UploadPage() {
       setCreating(false);
     }
   };
+
+  const sheetPicker =
+    sheets.length > 0 ? (
+      <div className="rounded-lg border p-4">
+        <p className="text-sm font-medium">Fact sheet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Judge this run&apos;s accuracy against an approved sheet instead of{" "}
+          <code>fact</code> rows in the CSV. Only approved sheets appear here, and a
+          run cannot use both.
+        </p>
+        <select
+          className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          value={factSheetId ?? ""}
+          onChange={(e) => setFactSheetId(e.target.value || null)}
+        >
+          <option value="">No fact sheet (use the CSV&apos;s fact rows)</option>
+          {sheets.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.business_name || s.domain} — v{s.version} · {s.domain}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : null;
 
   return (
     <div className="space-y-6">
@@ -76,7 +121,10 @@ export default function UploadPage() {
         <CardHeader>
           <CardTitle className="text-base">Upload</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* The assembled CSV enters as a normal file, so it goes through the
+              same preview and validation a hand-made one does. */}
+          <AssembleFromLead onAssembled={(file) => addFiles([file])} />
           <UploadDropzone
             files={files}
             provenance={preview?.provenance ?? []}
@@ -111,6 +159,7 @@ export default function UploadPage() {
               Run audit
             </Button>
           </div>
+          {sheetPicker}
           <PreviewPanels preview={preview} />
         </div>
       )}
