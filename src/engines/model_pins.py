@@ -34,7 +34,28 @@ UNDATED_PINS: dict[str, str] = {
         "visible rather than implicit."
     ),
     "gemini_grounded": (
-        "gemini-2.5-flash, same reason as `gemini`: Google publishes no dated snapshots."
+        "gemini-3.6-flash, same reason as `gemini`: Google publishes no dated snapshots "
+        "for stable models — dated forms exist only on previews. Repinned off "
+        "gemini-2.5-flash 2026-08-01 because 2.5 was two generations behind the surface "
+        "this engine claims to measure; the repin costs more, not less."
+    ),
+    "openai_search": (
+        "gpt-5.6-luna via the Responses web_search tool. OpenAI publishes no dated "
+        "snapshot for the 5.6 family (verified live 2026-08-01: each model page's "
+        "Snapshots section lists only the bare id) and returns no system_fingerprint, "
+        "so neither drift signal exists. Accepted knowingly: the previous pin "
+        "`gpt-5-search-api-2025-10-14` WAS dated but answered 0 of 10 cells against a "
+        "6,000 TPM account cap, and a dated pin on a surface that returns nothing is "
+        "worth less than an undated pin that returns data. DRIFT IS UNDETECTABLE HERE."
+    ),
+    "anthropic_search": (
+        "claude-sonnet-5. Anthropic publishes no dated snapshot for the Sonnet 5 "
+        "generation (verified live 2026-08-01: `claude-sonnet-5` is its own canonical "
+        "id, as are opus-5 and sonnet-4-6). Repinned off claude-sonnet-4-5-20250929, "
+        "which carried a dated id but a retirement floor of 2026-09-29 — so the choice "
+        "was a dated pin that dies in eight weeks or an undated pin that does not. "
+        "Drift here is detectable only through the run's engine_models metadata and "
+        "answer-level change, not through the model id."
     ),
     "perplexity": (
         "sonar. Perplexity exposes only floating model aliases; no dated variant exists."

@@ -18,21 +18,27 @@ logger = logging.getLogger(__name__)
 
 # Per-engine in-flight caps that override ENGINE_PROVIDER_CONCURRENCY.
 #
-# Measured, not guessed, and it protects against bursts rather than against a token
-# budget. Read live 2026-07-28: OpenAI's search-class models are capped at **6,000
-# tokens/minute** on this account (`x-ratelimit-limit-tokens`; the 100 req/min cap never
-# binds first), and one `openai_search` answer actually consumes **17,227 tokens** —
-# 16,455 of them retrieved web context. A single call is ~3x the whole minute budget.
+# Empty as of 2026-08-01, but kept as the mechanism: when a provider's real limits make
+# one surface the bottleneck, this is where a measured cap belongs — not a global
+# throttle that slows every engine to the slowest one.
 #
-# So serializing this surface does NOT rescue it: the sustainable rate is 0.3 calls/min,
-# i.e. ~29 min for a 10-query set and ~7 h for a 29-query set at runs=5. The cap here
-# stops it stampeding the provider with 429s; the actual fix is a higher OpenAI tier,
-# and until then `openai_search` is left out of the local template's default engines
-# (see src/prompts/local_templates.py). Both `gpt-5-search-api` and
-# `gpt-4o-search-preview` carry the same 6k cap, so this is tier, not model choice.
-PROVIDER_CONCURRENCY_OVERRIDES: dict[str, int] = {
-    "openai_search": 1,
-}
+# HISTORY — why `openai_search: 1` used to be here, and why it isn't any more. Read live
+# 2026-07-28: OpenAI's search-class models were capped at **6,000 tokens/minute** on this
+# account (`x-ratelimit-limit-tokens`; the 100 req/min cap never bound first), while one
+# `openai_search` answer consumed **17,227 tokens** — 16,455 of them retrieved web
+# context, i.e. ~3x the whole minute budget in a single call. Serializing did not rescue
+# it: the sustainable rate was 0.3 calls/min (~7 h for a 29-query set at runs=5), and a
+# real run answered **0 of 10 cells, twice**. The cap only stopped it stampeding the
+# provider with 429s. Both `gpt-5-search-api` and `gpt-4o-search-preview` carried the same
+# 6k ceiling, so it was tier, not model choice.
+#
+# That constraint no longer applies. `openai_search` moved to the Responses `web_search`
+# tool on `gpt-5.6-luna` (2026-08-01), and the hosted tool bills against the CALLING
+# MODEL's limits — 500,000 TPM / 500 RPM at Tier 1, ~83x the headroom, with no tier
+# upgrade. The surface now fans out under the normal per-provider gate. Removing the
+# override is what actually delivers the rewrite's throughput win; leaving it would have
+# kept the surface serialized no matter what model it called.
+PROVIDER_CONCURRENCY_OVERRIDES: dict[str, int] = {}
 
 
 class _ProviderGate:

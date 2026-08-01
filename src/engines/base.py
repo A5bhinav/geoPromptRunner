@@ -33,7 +33,11 @@ class BaseEngine(ABC):
     - no prior turns resent in ``messages``/``contents``
     - no system prompt on a measured engine (only the judge has one)
     - no stateful endpoint or params: no Assistants/threads, no
-      ``previous_response_id``, no ``store``, no conversation/session ids
+      ``previous_response_id``, no ``store: true``, no conversation/session ids.
+      An explicit ``store: false`` is the *strengthened* form of this rule, not a
+      breach of it — the OpenAI Responses API retains responses unless told not to,
+      so on that endpoint stating the refusal is the only way to guarantee it.
+      Saying nothing would be the violation.
     - reused SDK/httpx clients are connection pools only, never conversations
 
     This is what makes per-query results independent and cross-cycle

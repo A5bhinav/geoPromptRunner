@@ -14,8 +14,17 @@ __all__ = ["AnthropicSearchEngine"]
 
 logger = logging.getLogger(__name__)
 
-# Dated snapshot (Anthropic ids carry their release date) — isolation plan, L3.
-MODEL = "claude-sonnet-4-5-20250929"
+# UNDATED — see src/engines/model_pins.py. Anthropic publishes no dated snapshot for
+# Sonnet 5 (verified 2026-08-01: `claude-sonnet-5` is its own canonical id, as is the
+# rest of the current generation — opus-5, opus-4-6/7/8, sonnet-4-6).
+#
+# Repinned off claude-sonnet-4-5-20250929 on 2026-08-01: that id carried a real date but
+# a tentative retirement floor of 2026-09-29, so the choice was a dated pin that dies in
+# eight weeks or an undated pin that does not. Sonnet 5 is also $2/$10 through 2026-08-31
+# and $3/$15 after — i.e. identical to Sonnet 4.5's current price from September on.
+#
+# Do NOT add a temperature to this payload: Sonnet 5 400s on any non-default value.
+MODEL = "claude-sonnet-5"
 MAX_TOKENS = 1024
 WEB_SEARCH_TOOL: dict[str, Any] = {
     "type": "web_search_20250305",

@@ -16,6 +16,7 @@ from src.pipeline.judge import (
     Severity,
     _accuracy_tool,
     _brand_lines,
+    _call_flags,
     _cascade_identity,
     _judgment_tool,
     _parse_brands,
@@ -230,6 +231,32 @@ def test_single_judge_caches_shared_rubric_prefix(monkeypatch) -> None:  # type:
     assert "An answer naming Fortbudget." in user
     assert "An answer naming Fortbudget." not in block["text"]
     assert "which app?" in user
+
+
+def test_call_flags_default_to_the_safe_side_for_unknown_models() -> None:
+    """Both per-model knobs fail SILENTLY when wrong — `_call_tool` swallows the 400
+    and the answer is recorded "not assessed" — so an unrecognised model must default
+    to the direction that still produces verdicts: omit temperature, disable thinking."""
+    send_temperature, send_thinking_disabled = _call_flags("claude-some-future-model-9")
+    assert send_temperature is False  # a rejected temperature would kill every judgment
+    assert send_thinking_disabled is True  # adaptive thinking would eat _JUDGE_MAX_TOKENS
+
+
+def test_call_flags_for_the_models_actually_configured() -> None:
+    """The shipped judge models accept an explicit temperature=0 (which is what makes a
+    verdict reproducible), and the models that reject it must not be sent one."""
+    from src.config import settings
+
+    for model in (settings.JUDGE_MODEL, settings.JUDGE_STRUCTURAL_MODEL):
+        assert _call_flags(model) == (True, True), model
+
+    # Sonnet 5 / Opus 5 / Opus 4.7+ reject a non-default temperature with a 400, and
+    # Sonnet 5 and Opus 5 run adaptive thinking unless told not to.
+    for model in ("claude-sonnet-5", "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7"):
+        assert _call_flags(model) == (False, True), model
+
+    # Fable/Mythos think unconditionally and 400 on an explicit `disabled`.
+    assert _call_flags("claude-fable-5") == (False, False)
 
 
 # --- adversarial flag verifier (queue #9 precision fix) ---

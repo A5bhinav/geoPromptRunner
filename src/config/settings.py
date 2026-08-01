@@ -89,20 +89,30 @@ MAX_UPLOAD_BYTES: int = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
 MAX_QUERIES: int = int(os.getenv("MAX_QUERIES", "200"))
 MAX_ENGINES: int = int(os.getenv("MAX_ENGINES", "8"))
 MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
-# Default repeats per (query, engine). The determinism baseline (2026-06-19,
-# docs/isolation-determinism-plan.md) found the brand READ is 100% stable on
-# openai/anthropic but wobbles on gemini + perplexity (~60% worst-brand), and the
-# standard memory audit includes both — so K=5 is the data-driven default.
+# Default repeats per (query, engine), to average out nondeterminism.
 #
-# RE-MEASURED 2026-07-28 after `openai` was repinned to a model that cannot take a
-# temperature (see openai_engine.MODEL), on the same probe (`scripts/run_determinism.py`,
-# k=5, one category query): label agreement openai min 60% / mean 80%, anthropic
-# min 60% / mean 92%. Both still suggest K=5, so this default holds — but the
-# "100% stable on openai/anthropic" line above is FALSIFIED for both. Note anthropic
-# is still at temperature 0 and shows the same 60% worst-brand floor, so the wobble is
-# not an artifact of the repin. One query is a probe, not a baseline: widen it across
-# the query set before quoting these numbers as the noise band.
-DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "5"))
+# K=3 as of 2026-08-01. This is a DECISION, not a finding — the measurements that argued
+# for K=5 still stand and are not refuted:
+#   - 2026-06-19 determinism baseline (docs/isolation-determinism-plan.md): the brand
+#     READ is 100% stable on openai/anthropic but wobbles to ~60% worst-brand on
+#     gemini + perplexity.
+#   - RE-MEASURED 2026-07-28 after `openai` was repinned to a model that cannot take a
+#     temperature (see openai_engine.MODEL), same probe (`scripts/run_determinism.py`,
+#     k=5, one category query): label agreement openai min 60% / mean 80%, anthropic
+#     min 60% / mean 92%. Both suggested K=5 — and the "100% stable on openai/anthropic"
+#     half of the 2026-06 finding is FALSIFIED. anthropic is still at temperature 0 and
+#     shows the same 60% worst-brand floor, so the wobble is not an artifact of the
+#     repin. One query is a probe, not a baseline.
+#
+# What K=3 buys and what it costs. The six-surface set is entirely RETRIEVAL surfaces,
+# where the retrieved document set varies run to run independently of the model — so the
+# noise K exists to average is higher here, not lower. At K=3 one flipped run moves a
+# query's reading by 33 points instead of 20, and 2-of-3 vs 3-of-3 is not meaningfully
+# distinguishable. It was taken as a deliberate cost/breadth trade: 25 queries x 3 rather
+# than 15 x 5 at an identical cell count, on the view that question coverage buys more
+# than a third repeat of the same question. Revisit it against a widened determinism run,
+# not against intuition.
+DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "3"))
 # Spend guard (rough estimated USD, engines + judge). A single audit estimated
 # above MAX_AUDIT_COST_USD is rejected; once the running total of accepted audits
 # this process would exceed MAX_TOTAL_SPEND_USD, further audits are rejected.

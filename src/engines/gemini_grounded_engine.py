@@ -19,8 +19,13 @@ __all__ = ["GeminiGroundedEngine"]
 
 logger = logging.getLogger(__name__)
 
-# Stable GA name — Google offers no dated snapshots (isolation plan, L3).
-MODEL = "gemini-2.5-flash"
+# Stable GA name — Google offers no dated snapshots for stable models (isolation plan,
+# L3); dated forms exist only on previews. Repinned off gemini-2.5-flash 2026-08-01:
+# 2.5 is two generations behind the surface this engine claims to measure. Costs MORE
+# (3.x grounding bills per search executed, not per prompt, and the free allowance is
+# 5,000/month rather than 1,500/day) — bought for fidelity, not savings. Grounding on
+# 3.x is not available on the free tier at all; Tier 1 billing is required.
+MODEL = "gemini-3.6-flash"
 
 # Gemini returns grounded sources as opaque redirect URLs on this host rather
 # than the real page; we follow the redirect to recover the actual domain so

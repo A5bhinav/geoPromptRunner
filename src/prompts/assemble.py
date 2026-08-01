@@ -32,15 +32,17 @@ __all__ = [
 ]
 
 # Mirrors the local template's engine row, which was measured rather than chosen:
-# `openai` is the parametric ChatGPT surface, included because ~100% coverage at
-# $0.0015/call beats a retrieval surface that answers nothing (openai_search is
-# out on a 6k TPM cap). Kept in one place so the assembled CSV and the downloadable
-# template cannot drift.
+# `openai` is the parametric ChatGPT surface (~100% coverage at $0.0015/call) and
+# `openai_search` is the live-retrieval one, re-added 2026-08-01 once the surface moved
+# to the Responses web_search tool and stopped losing every cell to the old 6k TPM cap.
+# Kept in one place so the assembled CSV and the downloadable template cannot drift —
+# if you change this tuple, change src/prompts/local_templates.py to match.
 DEFAULT_LOCAL_ENGINES: tuple[str, ...] = (
     "gemini_grounded",
     "perplexity",
     "google_ai_mode",
     "openai",
+    "openai_search",
 )
 
 _COLUMNS = ("block", "key", "value", "intent", "persona")

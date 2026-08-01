@@ -158,17 +158,23 @@ def test_the_local_templates_engine_list_is_a_pinned_decision() -> None:
     - `google_ai_mode` is the Google answer surface, NOT `google_ai_overviews`: AI Mode
       answers every intent, while Overviews is absent from ~85% of local-intent SERPs.
     - `openai` is parametric (gpt-5.6-luna): ~100% coverage at ~$0.0015/call.
-    - `openai_search` is absent on purpose: OpenAI caps search-class models at 6,000
-      tokens/min on this account while one answer costs ~17,200, so a real run loses
-      every cell to 429s. Re-add it when the tier is raised, not before.
+    - `openai_search` is present again as of 2026-08-01. It was dropped on 2026-07-28
+      because OpenAI capped search-class models at 6,000 tokens/min on this account
+      while one answer cost ~17,200, so a real run lost every cell to 429s. The surface
+      now calls the Responses `web_search` tool on gpt-5.6-luna, which bills against the
+      calling model's limits (500k TPM at Tier 1), so the cap no longer applies.
     """
+    from src.prompts.assemble import DEFAULT_LOCAL_ENGINES
     from src.prompts.csv_loader import build_template_csv
     from src.prompts.local_templates import TRADES
 
+    expected = "gemini_grounded;perplexity;google_ai_mode;openai;openai_search"
+    # The downloadable template and the assembled CSV must name the same surfaces —
+    # they are two copies of one decision (see assemble.DEFAULT_LOCAL_ENGINES).
+    assert ";".join(DEFAULT_LOCAL_ENGINES) == expected
     for trade in TRADES:
         csv_text = build_template_csv(trade)
-        assert "config,engines,gemini_grounded;perplexity;google_ai_mode;openai" in csv_text
-        assert "openai_search" not in csv_text
+        assert f"config,engines,{expected}" in csv_text
 
 
 def test_an_unknown_engine_defaults_to_running_everything() -> None:

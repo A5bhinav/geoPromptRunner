@@ -26,15 +26,57 @@ ROUGH_COST_PER_CALL: dict[str, float] = {
     "anthropic": 0.012,
     "gemini": 0.002,
     "perplexity": 0.006,
-    "openai_search": 0.03,
-    # Measured live 2026-07-30, not estimated: one call reported input=10,928 out=534
-    # with 1 server web_search. At Sonnet 4.5 list ($3/$15 per 1M) plus Anthropic's
-    # $10/1k web searches that is $0.0508 — 45% above the 0.035 this line used to carry.
-    # n=1 and a query that searched once, so treat it as a FLOOR: a question that triggers
-    # several searches costs more. Rounded up rather than down, because this figure feeds
-    # MAX_AUDIT_COST_USD and an under-estimate is the failure that actually hurts.
-    "anthropic_search": 0.051,
-    "gemini_grounded": 0.01,
+    # gpt-5.6-luna + the Responses web_search tool (repinned 2026-08-01 off
+    # gpt-5-search-api, which answered nothing against a 6k TPM cap).
+    #
+    # MEASURED 2026-08-01 on this exact configuration, n=3 (budgeting/plumber/smart-ring):
+    # mean 31,098 in / 1,199 out / 3.3 web_search calls per answer. At $0.20/1M in +
+    # $1.20/1M out + the $10/1k hosted-tool fee that is $0.0062 + $0.0014 + $0.0333 =
+    # ~$0.041. Priced off the PRICING PAGE, not the model page — an OpenAI model page
+    # carried a two-day-stale Luna price on 2026-08-01.
+    #
+    # THE TOOL FEE DOMINATES, at 81% of the cost: OpenAI bills "$10.00 / 1k calls", and one
+    # answer makes 2-5 calls, not one. The pre-measurement estimate of $0.014 assumed one
+    # call per request and a 16,700/530 token profile carried over from gpt-5-search-api —
+    # both wrong, which is why this line is ~3x higher than planned. Retrieved content is
+    # already inside the measured input count ("search content tokens billed at model
+    # rates"), so it is not double-counted here.
+    "openai_search": 0.041,
+    # claude-sonnet-5 + the web_search server tool (repinned 2026-08-01 off
+    # claude-sonnet-4-5-20250929).
+    #
+    # MEASURED 2026-08-01, n=3 on the same queries: mean 18,171 in / 1,123 out / 1.7 server
+    # web searches. At Sonnet 5's introductory $2/$10 per 1M plus Anthropic's $10/1k web
+    # searches that is $0.0363 + $0.0112 + $0.0167 = ~$0.064.
+    #
+    # This SUPERSEDES the 2026-07-30 n=1 figure (10,928 in / 534 out / 1 search → $0.051 on
+    # Sonnet 4.5), which was correctly flagged as a floor and was one: the n=3 mean is 66%
+    # higher on input and 2x on output. Repinning to Sonnet 5 cut the per-token rate by a
+    # third and the measured token profile more than ate the saving.
+    #
+    # EXPIRES 2026-09-01, when Sonnet 5's introductory pricing ends ($3/$15). The same
+    # measured profile then costs ~$0.088. Raise this line on that date.
+    #
+    # Still the largest single line on the six-surface set (~48% of engine spend), and
+    # still a floor in the sense that search count varies by question. Under-estimates are
+    # the failure that hurts — this figure feeds MAX_AUDIT_COST_USD.
+    "anthropic_search": 0.064,
+    # gemini-3.6-flash (repinned 2026-08-01 off gemini-2.5-flash).
+    #
+    # MEASURED 2026-08-01, n=3: mean 267 in / 1,171 answer out / 875 thinking / 2.7 search
+    # queries executed. Thinking bills as output, so the billable output is ~2,046 tokens.
+    # At $1.50/1M in + $7.50/1M out that is ~$0.016 — up from the 0.01 carried over from
+    # 2.5-flash, which was an under-estimate. 3.6-flash's output rate is what dominates.
+    #
+    # TIERED, and a flat figure cannot say so. Grounding is free for the first 5,000 SEARCH
+    # QUERIES per month, shared across all Gemini 3.x models; beyond that it is $14 per
+    # 1,000. Google's own note: "A customer-submitted request to Gemini may result in one
+    # or more queries to Google Search. You will be charged for each individual search
+    # query performed." At the measured 2.7 queries/answer, a 75-cell audit burns ~200 of
+    # the allowance — i.e. ~25 audits/month before this line becomes ~$0.053/call. 2.5
+    # billed per PROMPT with a 1,500/day allowance, so this is a different shape, not just
+    # a different number.
+    "gemini_grounded": 0.016,
     # The AI Overviews surface has two possible vendors (see api/engine_registry). Priced
     # here at DataForSEO's live-endpoint rate — $0.002/SERP plus the ~$0.0006
     # load_async_ai_overview surcharge, which is refunded when cached data sufficed —
@@ -62,7 +104,18 @@ _DEFAULT_PER_CALL = 0.02
 # deliberately so — on the 80-item gold set Haiku matched Sonnet on the structural reads
 # but recalled 43% of accuracy flags against Sonnet's 95%, a 52-point gap on the exact
 # metric the judge exists to protect. Cheapening this line is not available.
-JUDGE_COST_PER_CALL = 0.003
+#
+# Raised 0.003 -> 0.0098 on 2026-08-01: 0.003 was an UNDER-estimate, which is the
+# direction that actually hurts, because this feeds MAX_AUDIT_COST_USD. Basis is the
+# cached single-Sonnet judge (one forced-tool call per unique answer, with the rubric
+# system block cached) plus the flag verifier at the observed flag rate.
+#
+# NOTE THE SCALE: this multiplies by the FULL cell count, so on a 6-surface x 25-query x
+# K=3 = 450-cell run the judge component moves from $1.35 to ~$4.41. That is correct for
+# an API-judged run. It is pure phantom spend for a run that will be prejudged on the
+# subscription, where the real judge cost is $0 — which is why every caller that isn't
+# going to judge over the API must pass judge=False rather than leave it defaulted.
+JUDGE_COST_PER_CALL = 0.0098
 # The liveness probe sends one real query per engine before the fan-out
 # (src/pipeline/preflight.py), and a failing engine costs two (it retries once). Priced
 # at the default per-call rate: it is a real call against a real surface, and a spend

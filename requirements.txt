@@ -2,7 +2,11 @@
 # Python 3.11+
 
 # AI engine SDKs
-openai>=1.30.0
+# >=2.38.0 because openai_search calls client.responses.create with the hosted
+# web_search tool. 1.30 predates the Responses API entirely (no `.responses`
+# attribute), so mypy fails and every call would AttributeError. 2.38.0 is the
+# floor VERIFIED here, not the theoretical earliest — re-check before lowering it.
+openai>=2.38.0
 anthropic>=0.34.0
 google-genai>=0.3.0  # Gemini (memory + grounding); replaced legacy google-generativeai
 

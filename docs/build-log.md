@@ -1,3 +1,127 @@
+## Engine repin: the six-surface search set — Completed 2026-08-01
+
+Three surfaces repinned, one adapter rewritten, `runs_per_query` cut to 3, and the cost
+model corrected from measurement rather than estimate. Spec: `docs/engine-repin-spec.md`.
+Judge untouched — `JUDGE_MODEL` stays `claude-sonnet-4-5-20250929`.
+
+    anthropic_search  claude-sonnet-4-5-20250929 -> claude-sonnet-5
+    openai_search     gpt-5-search-api-2025-10-14 -> gpt-5.6-luna + Responses web_search
+    gemini_grounded   gemini-2.5-flash -> gemini-3.6-flash
+    perplexity / google_ai_mode / google_ai_overviews   unchanged
+
+### openai_search was a rewrite, not a repin
+
+The old pin was a Chat Completions specialized model capped at **6,000 TPM** on this
+account against a ~17,230-token call — it answered **0 of 10 cells, twice**, and was
+excluded from the local template because of it. The Responses `web_search` tool bills
+against the **calling model's** limits instead: Luna is 500,000 TPM / 500 RPM at Tier 1.
+
+Three things had to land together or the rewrite delivers nothing:
+`PROVIDER_CONCURRENCY_OVERRIDES["openai_search"] = 1` removed from `prompt_runner.py`
+(it would have kept the surface serialized no matter what model it called), the surface
+added back to `local_templates.py` **and** `assemble.DEFAULT_LOCAL_ENGINES` (two copies of
+one decision — the spec named only the first), and `test_engine_routing.py`'s
+"openai_search is absent on purpose" assertion rewritten, which the spec also missed. That
+test now asserts the two engine lists match each other, so the copies can't drift again.
+
+`requirements.txt` moved to `openai>=2.38.0` — the verified floor, not a guessed one;
+`1.30.0` predates the Responses API entirely.
+
+### `store: False` is the isolation rule, not a breach of it
+
+`FORBIDDEN_STATE_PARAMS` in `tests/test_isolation.py` contains `store`, written against a
+Chat Completions world where the param appearing at all meant "keep this". The Responses
+API retains by default, so an explicit `store: False` is how an engine **refuses**
+retention. Resolved with a shared `_forbidden_state_params()` helper that discards `store`
+only when it is present-and-False — used by **both** assert helpers, so neither is
+weakened, and present-and-truthy is still caught. `base.py`'s statelessness docstring now
+says `store: true` and explains why the explicit false is the strengthened form.
+
+### The cost model was wrong in the expensive direction
+
+The spec's figures were estimates; this run measured them (n=3, three query shapes, real
+API calls) and they came out **~80% higher**:
+
+    surface            spec est.   MEASURED   why
+    anthropic_search      0.037      0.064    18,171 in / 1,123 out / 1.7 searches
+    openai_search         0.014      0.041    31,098 in / 1,199 out / 3.3 tool calls
+    gemini_grounded       0.011      0.016    2,046 billable out (thinking bills as out)
+    -----------------------------------------------------------------
+    engine spend / audit  $5.52     $10.02    25 queries x K=3 x 6 surfaces
+
+Two estimate errors, both structural rather than arithmetic:
+
+- **The hosted-tool fee is per CALL, not per request.** OpenAI bills "$10.00 / 1k calls"
+  and one answer makes 2-5 of them. That fee alone is 81% of `openai_search`'s cost. The
+  spec assumed one.
+- **The 2026-07-30 `anthropic_search` figure was n=1 and was correctly flagged a floor —
+  it was one.** The n=3 mean is 66% higher on input and 2x on output. Repinning to Sonnet 5
+  cut the token rate by a third and the real token profile more than ate the saving.
+
+`anthropic_search` **expires 2026-09-01**: Sonnet 5's introductory $2/$10 ends and the same
+measured profile costs ~$0.088. `gemini_grounded` is **tiered** — free for the first 5,000
+search *queries*/month shared across all Gemini 3.x models, then $14/1k. At the measured
+2.7 queries/answer a 75-cell audit burns ~200, i.e. **~25 audits/month** before that line
+becomes ~$0.053/call.
+
+### §6 checked: the spend guard is not double-charging prejudged runs
+
+`JUDGE_COST_PER_CALL` 0.003 -> 0.0098 multiplies the full cell count, so on a 450-cell run
+the judge component moves $1.35 -> $4.41. Verified where that lands:
+`estimate_total_cost_for_queries` has exactly one caller (`api/runner.py:313`) and it
+passes `cfg.judge`, which `csv_loader` defaults to **False**. The CLI path uses
+`estimate_cost_for_queries`, which has no judge component at all. So a run headed for
+prejudge sees $10.02, not $14.43 — **no code change needed**. Both sit under the $25 cap,
+but the margin is now 1.7x rather than the 3.6x the spec projected.
+
+### runs_per_query 5 -> 3
+
+Both places, or the two paths disagree: `settings.py` and `local_templates.py`.
+`assemble.py` and `csv_loader.py`'s consumer template were already 3.
+
+The K=5 justification comment is rewritten to record a **decision**, not a finding — the
+2026-06-19 and 2026-07-28 determinism measurements still argue for K=5 and are kept
+verbatim in past tense. What K=3 accepts: this set is entirely retrieval surfaces, where
+the noise K exists to average is *higher*, and one flipped run now moves a query 33 points
+instead of 20. Taken as a cost/breadth trade — 25 queries x 3 rather than 15 x 5 at
+identical cell count. `local_sampling.py`'s module docstring updated to match.
+
+### Liveness — all six surfaces answer
+
+One real query, K=1, every surface returned text:
+
+    anthropic_search  claude-sonnet-5    2458 chars   4 citations
+    openai_search     gpt-5.6-luna       3902 chars   6 citations   <- the point of §2
+    gemini_grounded   gemini-3.6-flash   4810 chars  10 citations
+    perplexity        sonar              1883 chars  20 citations
+    google_ai_overviews (DataForSEO)     2113 chars   6 citations
+    google_ai_mode      (DataForSEO)     5278 chars  22 citations
+
+`gemini_grounded` still sends `temperature=ENGINE_TEMPERATURE` and 3.6-flash accepted it —
+worth knowing, since Google discourages non-default temperature on the 3.x line.
+
+### Watch items
+
+**`anthropic_search` tool version.** Still `web_search_20250305`. Sonnet 5 supports
+`web_search_20260209` (dynamic filtering), and `openai_search` likewise has a dated
+`web_search_2025_08_26` beside the `web_search` it now uses. Both would change what the
+surfaces retrieve — a separate measured decision, not a drive-by edit.
+`test_isolation.py:243` pinning the current value is that guard working.
+
+**perplexity/sonar** — unchanged, but its Chat Completions endpoint is deprecated in favour
+of the Agent API. Same failure class as the dead OpenAI pin; preflight will catch it.
+
+**Repin timing.** All three landed together, at a cycle boundary. Answers captured under
+different pins are not comparable cycle-over-cycle — a client's apparent "movement" across
+this date is partly our own churn.
+
+### Gate
+
+`mypy src/` 93 files clean · `ruff check src/` clean · `pytest tests/` 633 passed,
+1 skipped · six-surface liveness green · cost figures measured, not estimated.
+
+---
+
 ## F4: the fact-sheet gate is reachable — Completed 2026-07-31
 
 Before this, the worker could fill a table nobody could act on. `save_fact_sheet` always

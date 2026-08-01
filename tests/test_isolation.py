@@ -40,13 +40,40 @@ FORBIDDEN_STATE_PARAMS = {
 DATED_MODEL = re.compile(r"\d{4}-?\d{2}-?\d{2}$")
 
 
+def _forbidden_state_params(payload: dict[str, Any]) -> set[str]:
+    """Stateful params present in an outgoing payload.
+
+    ``store`` is the one entry that can appear legitimately. The Responses API retains
+    responses unless told not to, so an explicit ``store: False`` is how an engine
+    REFUSES retention — present-and-False is the isolation guarantee being asserted, not
+    broken. Present-and-truthy is still the violation this set was written to catch.
+    ``FORBIDDEN_STATE_PARAMS`` was written against a Chat Completions world where the
+    param appearing at all meant "keep this".
+    """
+    found = FORBIDDEN_STATE_PARAMS & set(payload)
+    if payload.get("store") is False:
+        found.discard("store")
+    return found
+
+
 def _assert_isolated_chat_payload(payload: dict[str, Any], prompt: str) -> None:
     """The core Test B assertion for chat-completions-shaped payloads."""
     messages = payload["messages"]
     assert len(messages) == 1, f"expected exactly one message, got {len(messages)}"
     assert messages[0]["role"] == "user"
     assert messages[0]["content"] == prompt
-    forbidden = FORBIDDEN_STATE_PARAMS & set(payload)
+    forbidden = _forbidden_state_params(payload)
+    assert not forbidden, f"stateful params in outgoing payload: {forbidden}"
+
+
+def _assert_isolated_responses_payload(payload: dict[str, Any], prompt: str) -> None:
+    """Test B for Responses-API-shaped payloads: one input, nothing retained."""
+    assert payload["input"] == prompt
+    assert payload.get("store") is False, (
+        "the Responses API retains responses by default; an engine that lets OpenAI "
+        "keep the response is not making an isolated call"
+    )
+    forbidden = _forbidden_state_params(payload)
     assert not forbidden, f"stateful params in outgoing payload: {forbidden}"
 
 
@@ -165,18 +192,39 @@ def test_openai_second_call_carries_no_history(openai_engine: Any) -> None:
 # --- OpenAI search (retrieval) ------------------------------------------------
 
 
+class _CapturingOpenAIResponses:
+    """Stands in for the OpenAI client's Responses API; records every create() kwargs."""
+
+    captured: list[dict[str, Any]] = []
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.responses = self
+
+    def create(self, **kwargs: Any) -> Any:
+        _CapturingOpenAIResponses.captured.append(kwargs)
+        annotation = SimpleNamespace(type="url_citation", url="https://example.com/a")
+        content = SimpleNamespace(annotations=[annotation])
+        message = SimpleNamespace(type="message", content=[content])
+        return SimpleNamespace(output_text="ok", output=[message])
+
+
 def test_openai_search_payload_isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     from src.engines import openai_search_engine as mod
 
     monkeypatch.setattr(settings, "OPENAI_API_KEY", "test-key")
-    monkeypatch.setattr(mod, "OpenAI", _CapturingOpenAI)
-    _CapturingOpenAI.captured = []
+    monkeypatch.setattr(mod, "OpenAI", _CapturingOpenAIResponses)
+    _CapturingOpenAIResponses.captured = []
     engine = mod.OpenAISearchEngine()
     text, urls = engine.query_with_citations("best budgeting app")
-    assert text == "ok" and urls == []
-    (payload,) = _CapturingOpenAI.captured
-    _assert_isolated_chat_payload(payload, "best budgeting app")
-    assert DATED_MODEL.search(payload["model"])
+    assert text == "ok" and urls == ["https://example.com/a"]
+    (payload,) = _CapturingOpenAIResponses.captured
+    _assert_isolated_responses_payload(payload, "best budgeting app")
+    # The hosted web_search tool is the only extra — and it holds no state.
+    assert [t["type"] for t in payload["tools"]] == ["web_search"]
+    # The model id is deliberately NOT asserted dated: OpenAI publishes no dated
+    # snapshot for the 5.6 family, which is a reviewed exception carrying its own
+    # written cost in model_pins.UNDATED_PINS — enforced by
+    # test_engine_model_pins_are_dated_or_explicitly_excepted, not weakened here.
     _assert_sampling_label_matches(mod.OpenAISearchEngine, payload)
 
 

@@ -6,10 +6,17 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from enum import StrEnum
+from functools import cache
 
 import anthropic
 from anthropic import Anthropic
-from anthropic.types import Message, TextBlockParam, ToolChoiceToolParam, ToolParam
+from anthropic.types import (
+    Message,
+    TextBlockParam,
+    ThinkingConfigDisabledParam,
+    ToolChoiceToolParam,
+    ToolParam,
+)
 
 from src.config import settings
 from src.pipeline.judge_cache import JudgeCache, Verdict
@@ -57,6 +64,56 @@ _SYSTEM = (
 # (the Anthropic API has no json_object mode). Output is small structured JSON;
 # 4096 leaves headroom for many accuracy flags without risking truncation.
 _JUDGE_MAX_TOKENS = 4096
+
+# --- Per-model call parameters -------------------------------------------------
+#
+# Two request knobs are model-dependent, and both fail *silently* when wrong:
+# `_call_tool` swallows APIError and returns None, which the pipeline records as
+# "not assessed". A guard that guesses wrong therefore doesn't crash a run — it
+# produces a run where every answer is unjudged and nothing says so.
+#
+# Both lists are allowlists keyed on id substrings, and both DEFAULT TO THE SAFE
+# SIDE for an unrecognised model, because the two directions are not symmetric:
+#
+#   temperature -- Sonnet 5, Opus 5, Opus 4.7/4.8 and Fable reject a non-default
+#     value with a 400. Older models accept 0. Sending it where it's rejected
+#     kills every judgment; omitting it where it's accepted costs reproducibility
+#     (at the API default of 1.0 the flag list swung run-to-run). So the default
+#     is OMIT, and only models known to accept an explicit value opt in.
+#   thinking -- Sonnet 5 and Opus 5 run adaptive thinking when `thinking` is
+#     omitted, which a forced tool call doesn't want and which would eat
+#     _JUDGE_MAX_TOKENS (the cap covers thinking + response together). Older
+#     models already default to no thinking, so sending `disabled` to them is a
+#     no-op rather than a behaviour change. The default is therefore SEND, with
+#     an opt-out for the models that reject `disabled` outright.
+#
+# NOTE: neither knob is part of the judge cache key (`_single_fingerprint` hashes
+# the prompt text and tool schema, not call params) — but `model` is, so a model
+# swap re-keys on its own. Changing one of these lists for a model *already in
+# use* would change verdicts under an unchanged key: bump `_PROMPT_LAYOUT` if you
+# ever do that.
+_TEMPERATURE_ACCEPTED = ("sonnet-4-5", "sonnet-4-6", "haiku-4-5", "opus-4-5", "opus-4-6")
+# Fable/Mythos think unconditionally and 400 on an explicit `disabled`.
+_THINKING_DISABLE_REJECTED = ("fable-5", "mythos-5")
+
+
+@cache
+def _call_flags(model: str) -> tuple[bool, bool]:
+    """(send_temperature, send_thinking_disabled) for ``model``.
+
+    Cached per model id so the unrecognised-model warning is emitted once rather
+    than on every judged answer.
+    """
+    send_temperature = any(tag in model for tag in _TEMPERATURE_ACCEPTED)
+    send_thinking_disabled = not any(tag in model for tag in _THINKING_DISABLE_REJECTED)
+    if not send_temperature:
+        logger.info(
+            "Judge model %s: omitting temperature (not in the accepts-temperature "
+            "allowlist). Verdicts may vary run-to-run; add it to "
+            "_TEMPERATURE_ACCEPTED if this model takes an explicit 0.",
+            model,
+        )
+    return send_temperature, send_thinking_disabled
 
 _BASE_INSTRUCTIONS = """Question asked: {query}
 
@@ -668,18 +725,24 @@ class Judge:
         failure (logged, never raised).
 
         Forced tool call = guaranteed structured JSON; no thinking (incompatible
-        with a forced tool, unneeded for this classification pass). temperature=0
-        makes the verdict reproducible — at the API default of 1.0 the flag list
-        swung run-to-run. Opus-4.8-class models reject an explicit temperature, so
-        omit it for them; the Haiku/Sonnet judge models accept 0.
+        with a forced tool, unneeded for this classification pass, and billed
+        against the same _JUDGE_MAX_TOKENS cap as the answer). temperature=0 makes
+        the verdict reproducible — at the API default of 1.0 the flag list swung
+        run-to-run. Which of the two the model actually accepts is model-dependent
+        and fails silently when wrong; see `_call_flags`.
         """
         try:
             tool_choice: ToolChoiceToolParam = {"type": "tool", "name": tool_name}
-            temperature = anthropic.omit if "opus-4-8" in model else 0.0
+            send_temperature, send_thinking_disabled = _call_flags(model)
+            temperature: float | anthropic.Omit = 0.0 if send_temperature else anthropic.omit
+            thinking: ThinkingConfigDisabledParam | anthropic.Omit = (
+                {"type": "disabled"} if send_thinking_disabled else anthropic.omit
+            )
             response = self._client.messages.create(
                 model=model,
                 max_tokens=_JUDGE_MAX_TOKENS,
                 temperature=temperature,
+                thinking=thinking,
                 system=system,
                 messages=[{"role": "user", "content": prompt}],
                 tools=[tool],

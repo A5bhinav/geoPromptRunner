@@ -114,29 +114,34 @@ def build_trade_template_csv(trade: str, city: str = "{city}", brand: str = "{br
         # quota, and it was the richest surface on a live probe (2660 chars / 6
         # citations vs perplexity's 746 / 2). It was previously omitted entirely.
         #
-        # openai_search is deliberately NOT here. It works, but OpenAI's search-class
-        # models are capped at 6,000 tokens/min on this account while one search answer
-        # consumes ~17,200 (mostly retrieved context) — so a real run loses every cell
-        # to 429s (verified twice: 0 of 10 answered). Sustainable rate is 0.3 calls/min,
-        # ~7 h for this template at runs=5. Add it back once the OpenAI tier is raised;
-        # `geo audit --surface search` still includes it for anyone who has.
+        # openai_search is BACK as of 2026-08-01, after being dropped on 2026-07-28.
+        # It was removed because OpenAI's search-class models were capped at 6,000
+        # tokens/min on this account while one search answer consumed ~17,200 (mostly
+        # retrieved context), so a real run lost every cell to 429s (verified twice:
+        # 0 of 10 answered) at a sustainable 0.3 calls/min. The surface has since been
+        # rewritten onto the Responses `web_search` tool on gpt-5.6-luna, which bills
+        # against the calling model's own limits (500k TPM / 500 RPM at Tier 1) — so the
+        # cap that excluded it no longer exists, and neither does the per-engine
+        # concurrency override that used to serialize it (see prompt_runner.py).
+        #
         # google_ai_mode REPLACES google_ai_overviews as the Google answer surface: AI
         # Mode answers every intent, so it has no routing skip and covers the local-intent
         # buying moment that AI Overviews structurally cannot (~15% of local SERPs, 0 of 5
         # measured). Needs DATAFORSEO_LOGIN/PASSWORD; without them it is reported in the
         # run's skipped_engines rather than silently dropped.
         #
-        # openai is the parametric ChatGPT surface (gpt-5.6-luna, ~$0.0015/call). Included
-        # because ~100% coverage at that price beats a retrieval surface that answers
-        # nothing: openai_search stays out on the 6k TPM cap.
+        # openai is the parametric ChatGPT surface (gpt-5.6-luna, ~$0.0015/call), kept
+        # alongside openai_search rather than replaced by it: parametric memory and live
+        # retrieval are two different consumer moments, and the parametric one is the
+        # cheapest ~100%-coverage surface in the stack.
         [
             "config",
             "engines",
-            "gemini_grounded;perplexity;google_ai_mode;openai",
+            "gemini_grounded;perplexity;google_ai_mode;openai;openai_search",
             "",
             "",
         ],
-        ["config", "runs_per_query", "5", "", ""],
+        ["config", "runs_per_query", "3", "", ""],
         ["config", "client_domains", "", "", ""],
         # Google's canonical location name — "City,State,United States" (the country's
         # FULL NAME; an ISO code is rejected). Without it a local run
