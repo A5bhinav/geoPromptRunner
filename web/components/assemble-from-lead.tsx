@@ -13,24 +13,73 @@
 import * as React from "react";
 import { Loader2, Wand2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { assembleAudit, listTrades, type AssembleResult } from "@/lib/api";
+import {
+  assembleAudit,
+  getFactSheet,
+  listFactSheets,
+  listTrades,
+  type AssembleResult,
+  type FactSheetSummary,
+} from "@/lib/api";
 
 interface Props {
   onAssembled: (file: File) => void;
+  /**
+   * Fires when a sheet is picked here, so the run-time fact-sheet picker can
+   * pre-select the same one. The two selections are genuinely different acts —
+   * this one supplies CONFIG, that one supplies the GROUND TRUTH the judge scores
+   * against — but choosing the same sheet twice is friction, not information.
+   */
+  onSheetChosen: (id: string | null) => void;
 }
 
-export function AssembleFromLead({ onAssembled }: Props) {
+export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
   const [open, setOpen] = React.useState(false);
   const [trades, setTrades] = React.useState<string[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<AssembleResult | null>(null);
 
+  const [sheets, setSheets] = React.useState<FactSheetSummary[]>([]);
+  const [sheetId, setSheetId] = React.useState("");
+  const [prefilled, setPrefilled] = React.useState(false);
   const [business, setBusiness] = React.useState("");
   const [website, setWebsite] = React.useState("");
   const [trade, setTrade] = React.useState("");
   const [city, setCity] = React.useState("");
   const [region, setRegion] = React.useState("");
+
+  React.useEffect(() => {
+    listFactSheets("active")
+      .then(setSheets)
+      .catch(() => setSheets([]));
+  }, []);
+
+  // Picking a sheet fills in what it already knows. It was extracted from the
+  // business's own website, so asking for the name, domain and city again is
+  // copying data we hold. Fields it cannot derive stay blank for you to type —
+  // a blank means ask, not guess.
+  const useSheet = async (id: string) => {
+    setSheetId(id);
+    setPrefilled(false);
+    // Carry it to the run-time picker immediately, on SELECT rather than on
+    // build: a run assembled from a sheet should be judged against that sheet,
+    // and making someone re-pick it is an invitation to forget.
+    onSheetChosen(id || null);
+    if (!id) return;
+    try {
+      const sheet = await getFactSheet(id);
+      const s = sheet.suggested;
+      if (!s) return;
+      if (s.business) setBusiness(s.business);
+      if (s.website) setWebsite(s.website);
+      if (s.city) setCity(s.city);
+      if (s.region) setRegion(s.region);
+      setPrefilled(true);
+    } catch {
+      setError("Could not read that fact sheet.");
+    }
+  };
 
   React.useEffect(() => {
     listTrades()
@@ -80,6 +129,32 @@ export function AssembleFromLead({ onAssembled }: Props) {
           competitors from Google&apos;s local pack. Attach the fact sheet after, below.
         </p>
       </div>
+
+      {sheets.length > 0 && (
+        <label className="block space-y-1">
+          <span className="text-xs text-muted-foreground">
+            Start from an approved fact sheet
+          </span>
+          <select
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            value={sheetId}
+            onChange={(e) => void useSheet(e.target.value)}
+          >
+            <option value="">Enter the details by hand</option>
+            {sheets.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.business_name || s.domain} — {s.domain}
+              </option>
+            ))}
+          </select>
+          {prefilled && (
+            <span className="block text-[11px] text-muted-foreground">
+              Filled from the sheet, and attached to the run below. Check anything
+              it left blank.
+            </span>
+          )}
+        </label>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1">

@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from src.api import projects, runner
 from src.audit.competitors import candidates_from_local_pack
-from src.audit.factsheet import FactSheet, to_markdown
+from src.audit.factsheet import FactSheet, suggested_run_inputs, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
 from src.pipeline.cost import CostBudgetExceeded
@@ -857,6 +857,10 @@ def get_fact_sheet(sheet_id: str) -> dict[str, object]:
             for c in sheet.claims
         ],
         "markdown": to_markdown(sheet),
+        # What a run's config can be prefilled with, so "start from a lead" stops
+        # asking for the name, domain and city this sheet was extracted from.
+        # Any field may be null — that means ASK, never guess.
+        "suggested": suggested_run_inputs(sheet),
     }
 
 

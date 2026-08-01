@@ -51,6 +51,7 @@ from src.audit.factsheet.models import (
 from src.audit.factsheet.render import (
     FACT_CSV_HEADER,
     expected_fact_sheet_text,
+    suggested_run_inputs,
     to_csv,
     to_fact_rows,
     to_markdown,
@@ -72,6 +73,7 @@ __all__ = [
     "to_csv",
     "to_markdown",
     "expected_fact_sheet_text",
+    "suggested_run_inputs",
     "build_sheet",
     "claims_from_lead_form",
     "claims_from_json_ld",

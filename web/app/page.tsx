@@ -124,7 +124,10 @@ export default function UploadPage() {
         <CardContent className="space-y-4">
           {/* The assembled CSV enters as a normal file, so it goes through the
               same preview and validation a hand-made one does. */}
-          <AssembleFromLead onAssembled={(file) => addFiles([file])} />
+          <AssembleFromLead
+            onAssembled={(file) => addFiles([file])}
+            onSheetChosen={setFactSheetId}
+          />
           <UploadDropzone
             files={files}
             provenance={preview?.provenance ?? []}

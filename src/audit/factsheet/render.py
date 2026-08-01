@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 
 from src.audit.factsheet.models import (
     BusinessKind,
@@ -35,6 +36,7 @@ __all__ = [
     "to_csv",
     "to_markdown",
     "expected_fact_sheet_text",
+    "suggested_run_inputs",
 ]
 
 # Mirrors ``csv_loader._COLUMNS``. Duplicated rather than imported because that
@@ -234,3 +236,49 @@ def _cell(text: str) -> str:
     """
     collapsed = " ".join(text.split())
     return collapsed.replace("|", r"\|") if collapsed else "—"
+
+
+# --- derived run inputs (the "start from a lead" prefill) ---------------------
+
+# "…, Abingdon, Maryland 21009" — city, then a state spelled in FULL. Two-letter
+# forms are deliberately not matched: nothing in this repo expands "MD" to
+# "Maryland", because the SERP vendors reject the short form and return an empty
+# surface, which reads as the business being absent. Better to leave the field
+# blank and let a human type it than to guess a market.
+_CITY_FULL_REGION_RE = re.compile(
+    r",\s*([A-Z][\w.'-]*(?:\s+[A-Z][\w.'-]*){0,3})\s*,\s*([A-Z][a-z]{3,}(?:\s+[A-Z][a-z]+)?)\b"
+)
+
+
+def suggested_run_inputs(sheet: FactSheet) -> dict[str, str | None]:
+    """What a run's config can be PREFILLED with from an approved sheet.
+
+    The sheet was extracted from the business's own website, so retyping its name,
+    domain and city into a run form is copying data we already hold. This reads it
+    back out.
+
+    Best-effort and honest about it: `city`/`region` come from parsing an address
+    claim, and either may be None. A None means "ask the human", never "guess" —
+    which is why a two-letter state yields None rather than an expansion.
+    """
+    by_key = {c.key: c.value for c in sheet.claims}
+    city: str | None = None
+    region: str | None = None
+
+    # The postal address first: it is the one claim that reliably spells a state in
+    # full. `service_area_primary` is often the lead's own "Abingdon, MD" shorthand.
+    for key in ("contact_address", "contact_address_berkeley", "service_area_primary"):
+        value = by_key.get(key)
+        if not value:
+            continue
+        match = _CITY_FULL_REGION_RE.search(value)
+        if match:
+            city, region = match.group(1).strip(), match.group(2).strip()
+            break
+
+    return {
+        "business": sheet.business_name or None,
+        "website": by_key.get("identity_website") or sheet.domain or None,
+        "city": city,
+        "region": region,
+    }

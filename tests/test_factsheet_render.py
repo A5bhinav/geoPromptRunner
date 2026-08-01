@@ -331,3 +331,52 @@ def test_markdown_lists_open_questions() -> None:
     markdown = to_markdown(sheet)
     assert "## Open questions" in markdown
     assert "1. Footer phone and GBP phone disagree" in markdown
+
+
+# --- derived run inputs (the "start from a lead" prefill) ---------------------
+
+
+def test_suggested_inputs_read_the_business_and_domain_back_out() -> None:
+    """The sheet was extracted from the business's own site, so a run form asking
+    for its name and domain again is retyping data we already hold."""
+    from src.audit.factsheet import suggested_run_inputs
+
+    sheet = _sheet(
+        _claim(
+            section=SheetSection.CONTACT,
+            key="contact_address",
+            value="3465 Box Hill Drive - Suite 100, Abingdon, Maryland 21009",
+            verbatim_quote="3465 Box Hill Drive - Suite 100, Abingdon, Maryland 21009",
+            polarity=Polarity.POSITIVE,
+        )
+    )
+    out = suggested_run_inputs(sheet)
+    assert out["business"] == "Fort Plumbing"
+    assert out["city"] == "Abingdon"
+    assert out["region"] == "Maryland"
+
+
+def test_a_two_letter_state_yields_no_region_rather_than_an_expansion() -> None:
+    """Nothing here expands "MD" to "Maryland". The SERP vendors reject the short
+    form and return an empty surface, which reads as the business being absent —
+    so a blank field the human fills is the safe answer."""
+    from src.audit.factsheet import suggested_run_inputs
+
+    sheet = _sheet(
+        _claim(
+            section=SheetSection.SERVICE_AREA,
+            key="service_area_primary",
+            value="Abingdon, MD",
+            verbatim_quote="Abingdon, MD",
+            polarity=Polarity.POSITIVE,
+        )
+    )
+    assert suggested_run_inputs(sheet)["region"] is None
+
+
+def test_a_sheet_with_no_address_suggests_no_city() -> None:
+    from src.audit.factsheet import suggested_run_inputs
+
+    out = suggested_run_inputs(_sheet(_claim()))
+    assert out["city"] is None and out["region"] is None
+    assert out["business"] == "Fort Plumbing"

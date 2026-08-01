@@ -800,6 +800,19 @@ export interface FactSheetDetail {
   questions: string[];
   claims: FactSheetClaim[];
   markdown: string;
+  /**
+   * Run config derivable from this sheet, so a "start from a lead" form stops
+   * asking for the name, domain and city the sheet was already extracted from.
+   * Any field may be null — that means ASK, not guess. `region` in particular is
+   * null when the sheet only carried a two-letter state, because nothing expands
+   * an abbreviation.
+   */
+  suggested?: {
+    business: string | null;
+    website: string | null;
+    city: string | null;
+    region: string | null;
+  };
 }
 
 export async function listFactSheets(state?: FactSheetState): Promise<FactSheetSummary[]> {
