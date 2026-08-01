@@ -20,6 +20,19 @@ import type { AnswerRecord, ReportPayload, RunStatus } from "../types/platform.t
 export interface AuditInput {
   /** Exact CSV body (block,key,value,intent,persona) sent to POST /audits. */
   csv: string;
+  /**
+   * An APPROVED fact sheet to judge this run's accuracy against.
+   *
+   * Mutually exclusive with `fact` rows in the CSV — the platform refuses a run
+   * carrying both, because two sources of ground truth for one measurement is the
+   * ambiguity §4.3 says becomes a question rather than a silent winner.
+   *
+   * The pointer rather than embedded rows, deliberately: only the id populates
+   * `fact_sheet_verification` on the report, and without that tier every accuracy
+   * finding is suppressed by the send gate. Embedding the rows gives the judge
+   * ground truth and then throws away the permission to say anything about it.
+   */
+  factSheetId?: string | null;
   /** Parsed essentials (the real client ignores these; the mock uses them). */
   clientName: string;
   clientDomains: string[];
@@ -61,6 +74,15 @@ export interface PlatformClient {
    * surfaced no local pack. Those are different situations and the caller must be
    * able to tell them apart — an empty list must never be read as "no competitors".
    */
+  /**
+   * The APPROVED fact sheet for a domain, or null when none has been approved.
+   *
+   * Null is the normal state, not an error: most prospects have no reviewed sheet,
+   * and a teaser without one simply carries no accuracy findings. Returning null
+   * rather than throwing is what keeps the teaser generating for every other
+   * prospect while sheets are still being reviewed.
+   */
+  getActiveFactSheetId(domain: string): Promise<string | null>;
   getLocalEntities(query: string, location: string): Promise<LocalEntity[]>;
   getStatus(runId: string): Promise<RunStatus>;
   getReport(runId: string): Promise<ReportPayload>;

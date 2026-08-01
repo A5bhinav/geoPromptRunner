@@ -197,13 +197,24 @@ export async function runTeaserPipeline(
   //    are the parsed essentials the mock re-synthesizes from, and the real client
   //    ignores them. Since the rows ride on the profile, anything the confirm gate
   //    edits (or drops) reaches the platform exactly as the human left it.
-  const csv = buildAuditCsv(profile, querySet, {
+  //    An APPROVED fact sheet is attached by ID, never embedded. Only the id
+  //    populates `fact_sheet_verification` on the report, and without that tier
+  //    the send gate suppresses every accuracy finding — so embedding the rows
+  //    would hand the judge ground truth and then discard the permission to say
+  //    anything about it. The two are mutually exclusive: the platform refuses a
+  //    run carrying both, so the fact rows are dropped when a sheet is attached.
+  const factSheetId = await deps.platform.getActiveFactSheetId(
+    profile.clientDomains[0] ?? "",
+  );
+  const csvProfile = factSheetId ? { ...profile, factClaims: undefined } : profile;
+  const csv = buildAuditCsv(csvProfile, querySet, {
     engines: opts.engines,
     runsPerQuery: opts.runsPerQuery,
     judge: opts.judge,
   });
   const { runId } = await deps.platform.submitAudit({
     csv,
+    factSheetId,
     clientName: profile.name,
     clientDomains: profile.clientDomains,
     competitors: profile.competitors.map((c) => c.name),

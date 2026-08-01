@@ -74,10 +74,28 @@ export class HttpPlatformClient implements PlatformClient {
       new Blob([input.csv], { type: "text/csv" }),
       "audit.csv",
     );
+    if (input.factSheetId) form.append("fact_sheet_id", input.factSheetId);
     const body = await this.request<CreateAuditResponse>("POST", "/audits", {
       body: form,
     });
     return { runId: body.run_id };
+  }
+
+  async getActiveFactSheetId(domain: string): Promise<string | null> {
+    // Active only. A draft is not ground truth — approval is the gate — and the
+    // platform refuses one anyway, so asking for it would only produce a 422 on a
+    // path that runs unattended.
+    try {
+      const rows = await this.request<{ id: string }[]>(
+        "GET",
+        `/fact-sheets?state=active&domain=${encodeURIComponent(domain)}`,
+      );
+      return rows[0]?.id ?? null;
+    } catch {
+      // A teaser must still generate when the sheet lookup is unavailable. It
+      // loses its accuracy findings, not its whole run.
+      return null;
+    }
   }
 
   async getStatus(runId: string): Promise<RunStatus> {

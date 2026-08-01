@@ -79,6 +79,17 @@ export class MockPlatformClient implements PlatformClient {
    * throws rather than returning synthetic entities — the local path is only ever
    * exercisable against the real platform.
    */
+  /**
+   * Null, always. The mock has no sheet store, and inventing an id would attach a
+   * fact sheet that does not exist — the run would be refused by the platform, or
+   * worse, judged against something nobody approved. A mock teaser simply carries
+   * no accuracy findings, which is the honest mock of "this prospect has no
+   * reviewed sheet yet".
+   */
+  async getActiveFactSheetId(_domain: string): Promise<string | null> {
+    return null;
+  }
+
   async getLocalEntities(_query: string, _location: string): Promise<LocalEntity[]> {
     throw new Error(
       "MockPlatformClient cannot supply local-pack entities: fabricating local " +
