@@ -4,10 +4,13 @@ import dataclasses
 import hashlib
 import hmac
 import logging
+import subprocess
+import tempfile
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -15,12 +18,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from src.api import projects, runner
+from src.api import digest as digest_mod
+from src.api import projects, runner, sharing
 from src.audit.competitors import candidates_from_local_pack
 from src.audit.factsheet import FactSheet, suggested_run_inputs, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
 from src.pipeline.cost import CostBudgetExceeded
+from src.pipeline.fixpack import render_fix_pack
 from src.prompts.assemble import AssembleError, assemble_run_csv
 from src.prompts.csv_loader import (
     ParseResult,
@@ -537,6 +542,173 @@ def audit_answers(run_id: str) -> list[dict[str, object]]:
     if answers is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
     return [dict(a) for a in answers]
+
+
+# --- Phase 3: layering the delivery -------------------------------------------
+
+
+@api.get("/audits/{run_id}/answers/{query_id}/{engine}/{run_index}")
+def audit_answer_cell(run_id: str, query_id: str, engine: str, run_index: int) -> dict[str, object]:
+    """The full model answer behind one finding (P3-T1).
+
+    Answers are already stored — this is retrieval and presentation only. It
+    exists because the evidence trail was otherwise reachable only by downloading
+    the whole `answers.md`, and a finding a client cannot check is a finding they
+    have to take on trust.
+    """
+    answers = runner.get_answers(run_id)
+    if answers is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    for row in answers:
+        if (
+            row["query_id"] == query_id
+            and row["engine_name"] == engine
+            and row["run_index"] == run_index
+        ):
+            return dict(row)
+    raise HTTPException(
+        status_code=404,
+        detail=f"no answer for {query_id}/{engine}/run {run_index} in run {run_id}",
+    )
+
+
+@api.get("/audits/{run_id}/digest")
+def audit_digest(run_id: str, base_url: str = "") -> dict[str, str]:
+    """The weekly digest as text + HTML (P3-T3). Delivery transport is elsewhere."""
+    report = runner.get_report(run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    root = base_url.rstrip("/")
+    built = digest_mod.build_digest(
+        report,
+        report_url=f"{root}/audits/{run_id}" if root else "",
+        answers_url=f"{root}/audits/{run_id}?tab=answers" if root else "",
+    )
+    return {"subject": built.subject, "text": built.text, "html": built.html}
+
+
+@api.get("/audits/{run_id}/fix-pack.md")
+def audit_fix_pack(run_id: str) -> Response:
+    """Every prioritised finding as one pasteable markdown document (P3-T6)."""
+    _guard_export_ready(run_id)
+    report = runner.get_report(run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    markdown = render_fix_pack(
+        report.get("finding_groups") or [], report["client_name"], report["run_date"]
+    )
+    return Response(
+        content=markdown,
+        media_type="text/markdown",
+        headers={
+            "Content-Disposition": f'attachment; filename="geo-fix-pack-{run_id}.md"'
+        },
+    )
+
+
+class ShareRequest(BaseModel):
+    ttl_seconds: int = sharing.DEFAULT_TTL_SECONDS
+    password: str = ""
+
+
+@api.get("/audits/{run_id}/report.pdf")
+def audit_report_pdf(run_id: str, base_url: str = "http://localhost:3000") -> Response:
+    """Server-side PDF of the report route (P3-T5).
+
+    Wraps `web/scripts/render-report-pdf.mjs` — the worker built in P1-T7, which
+    owns every Chromium-specific trap (one margin source, isolated header iframe,
+    the readiness gate). This endpoint is the scheduling surface, not a second
+    renderer.
+
+    Degrades the way the rest of the repo does: **503 with the install hint** when
+    Chromium is absent, so an operator gets a fixable instruction rather than a
+    stack trace. The print-ready HTML at `/audits/{id}?mode=print` still works.
+    """
+    _guard_export_ready(run_id)
+    if runner.get_report(run_id) is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+
+    script = Path(__file__).resolve().parents[2] / "web" / "scripts" / "render-report-pdf.mjs"
+    if not script.exists():
+        raise HTTPException(status_code=503, detail="the PDF worker is not installed")
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / f"{run_id}.pdf"
+        result = subprocess.run(
+            ["node", str(script), run_id, "--base", base_url, "--out", str(out)],
+            cwd=script.parent.parent,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        # Exit 2 is the worker's "Chromium missing" code — an environment problem,
+        # not a bad request, so it must not read as a failed render.
+        if result.returncode == 2:
+            raise HTTPException(status_code=503, detail=result.stderr.strip())
+        if result.returncode != 0 or not out.exists():
+            raise HTTPException(
+                status_code=500, detail=f"PDF render failed: {result.stderr.strip()[:300]}"
+            )
+        pdf = out.read_bytes()
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="geo-report-{run_id}.pdf"'},
+    )
+
+
+@api.post("/audits/{run_id}/share")
+def create_share_link(run_id: str, body: ShareRequest) -> dict[str, object]:
+    """Mint a signed, expiring read-only link (P3-T4).
+
+    A login wall is what kills forwardability, and forwardability is the one thing
+    a PDF has over a dashboard. Requires the API key to MINT; the link itself does
+    not, which is the point.
+    """
+    if runner.get_status(run_id) is None and runner.get_report(run_id) is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    try:
+        token = sharing.mint_share_token(run_id, body.ttl_seconds, body.password)
+    except sharing.ShareError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"token": token, "path": f"/shared/{token}", "expires_in": body.ttl_seconds}
+
+
+# Deliberately on `app`, NOT `api`: a shared link that required the API key would
+# be a login wall with extra steps.
+@app.get("/shared/{token}/report")
+def shared_report(token: str, password: str = "") -> dict[str, object]:
+    """Read-only report behind a signed link. No API key; the token IS the auth."""
+    try:
+        parsed = sharing.verify_share_token(token, password, _revoked_share_ids())
+    except sharing.ShareError as exc:
+        # 403 for every failure mode, with the reason in the body: a 404-vs-403
+        # split would let a visitor enumerate which run ids exist.
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    report = runner.get_report(parsed.run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="report not found")
+    return dict(report)
+
+
+# In-process revocation set. Deliberately not a database table yet: revocation is
+# rare, and a restart re-enabling a revoked link is a real limitation that is
+# better written down than hidden behind a half-built store.
+_REVOKED_SHARES: set[str] = set()
+
+
+def _revoked_share_ids() -> frozenset[str]:
+    return frozenset(_REVOKED_SHARES)
+
+
+@api.post("/shares/{token_id}/revoke")
+def revoke_share(token_id: str) -> dict[str, object]:
+    """Withdraw one link. Per-token, so revoking one does not revoke them all.
+
+    NOTE: in-process only — a restart forgets. Move to a table before this is
+    used for anything a leak would matter for.
+    """
+    _REVOKED_SHARES.add(token_id)
+    return {"revoked": token_id, "persistent": False}
 
 
 @api.post("/audits/{run_id}/cancel")

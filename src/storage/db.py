@@ -37,6 +37,8 @@ from src.storage.models import (
 __all__ = [
     "StorageError",
     "create_audit_run",
+    "supports_run_lineage",
+    "superseded_run_ids",
     "update_audit_run_progress",
     "save_engine_probe",
     "save_local_pack_entities",
@@ -235,6 +237,8 @@ def create_audit_run(
     engine_probe: dict[str, Any] | None = None,
     fact_sheet_id: str | None = None,
     fact_sheet_version: int | None = None,
+    run_kind: str = "baseline",
+    supersedes_run_id: str | None = None,
 ) -> str:
     """Insert an audit-run row (client identity + locked query-set version).
 
@@ -288,6 +292,34 @@ def create_audit_run(
         f"create_audit_run for client {client_name}",
         lambda c: c.table(TABLE_AUDIT_RUNS).insert(row).execute(),
     )
+    if run_kind != "baseline" or supersedes_run_id is not None:
+        # Same follow-up-update pattern as the fact-sheet pointer below, and the
+        # same reason: these columns arrive with data/schema_run_corrections.sql
+        # and a database predating it would reject the whole INSERT.
+        #
+        # But it RAISES where the fact-sheet write only warns, and the asymmetry
+        # is deliberate. Losing fact-sheet provenance loses a trace. Losing a
+        # correction's lineage leaves an ordinary-looking extra run for the same
+        # client and query set — a phantom second cycle, which the prior-run
+        # resolver will happily compare against, reporting the repair of a broken
+        # measurement as client progress. Better to fail loudly with a row nobody
+        # trusts than to succeed into a false claim.
+        #
+        # Callers reach this only after `supports_run_lineage()`, so in practice
+        # it fires on a race, not on a stale schema.
+        _execute(
+            f"record correction lineage for run {run_id}",
+            lambda c: c.table(TABLE_AUDIT_RUNS)
+            .update(
+                {
+                    "run_kind": run_kind,
+                    "supersedes_run_id": supersedes_run_id,
+                    "updated_at": _now(),
+                }
+            )
+            .eq("id", run_id)
+            .execute(),
+        )
     if fact_sheet_id is not None:
         # Deliberately NOT part of the insert above. These two columns arrive with
         # data/schema_run_provenance.sql, and a database that predates it rejects the
@@ -520,6 +552,41 @@ def get_query_results(run_id: str) -> list[QueryResult]:
             )
         )
     return results
+
+
+def supports_run_lineage() -> bool:
+    """Whether ``audit_runs`` carries ``run_kind``/``supersedes_run_id``.
+
+    Checked BEFORE a correction run is created, not after: the lineage write
+    happens after the row insert, so discovering the gap then would leave an
+    untracked run behind that reads as an extra cycle. One cheap select on the
+    correction path only.
+    """
+    try:
+        _execute(
+            "probe audit_runs.supersedes_run_id",
+            lambda c: c.table(TABLE_AUDIT_RUNS).select("supersedes_run_id").limit(1).execute(),
+        )
+    except StorageError:
+        return False
+    return True
+
+
+def superseded_run_ids(client_name: str) -> set[str]:
+    """Runs for this client that a later correction replaces.
+
+    A superseded run is not a cycle — it is the broken first attempt at one — so
+    the prior-run resolver must skip it. Comparing against it would report the
+    repair of a failed measurement as movement in the client's visibility.
+
+    Degrades to an empty set on a database without the column: every run then
+    looks like a cycle, which is exactly today's behaviour and no worse.
+    """
+    try:
+        rows = _select_rows(TABLE_AUDIT_RUNS, client_name, key="client_name")
+    except StorageError:
+        return set()
+    return {str(r["supersedes_run_id"]) for r in rows if r.get("supersedes_run_id")}
 
 
 def get_audit_run(run_id: str) -> dict[str, object] | None:

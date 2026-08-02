@@ -233,3 +233,39 @@ def test_the_reality_tiebreaker_only_fires_for_a_claim_too_terse_to_read() -> No
         reality="Live order page says Ships Q2 2027 (press's Q3 2026 is stale).",
     )
     assert stated.theme == Theme.LIFECYCLE_STATUS.value
+
+
+def test_the_rules_fingerprint_is_pinned() -> None:
+    """A theme-rule change must be a DELIBERATE act with a visible diff.
+
+    Cards are keyed on theme and the lifecycle asks "was this theme open last
+    cycle", so moving findings between themes is a change to what a client is
+    told. Adding the ship-date pattern moved ~90 real Fort observations between
+    two themes — a strict improvement, and exactly the kind of edit that should
+    never happen by accident.
+
+    If this fails and the change was intended, update the constant in the same
+    commit as the rule. Same discipline as the judge prompt fingerprint.
+    """
+    from src.pipeline.themes import rules_fingerprint
+
+    assert rules_fingerprint() == "8d6bfe3d15aaa6fc", (
+        "theme rules changed — update this pin in the same commit, and note that "
+        "both cycles are re-classified with the current rules on every render, so "
+        "the comparison stays valid"
+    )
+
+
+def test_the_fingerprint_moves_when_a_rule_moves() -> None:
+    """Otherwise the pin above is decoration."""
+    import src.pipeline.themes as themes_mod
+    from src.pipeline.themes import Theme, rules_fingerprint
+
+    before = rules_fingerprint()
+    original = themes_mod.RULES
+    try:
+        themes_mod.RULES = (*original, themes_mod.Rule("x.test", Theme.COMPANY_FACTS, "t", ()))
+        assert rules_fingerprint() != before
+    finally:
+        themes_mod.RULES = original
+    assert rules_fingerprint() == before

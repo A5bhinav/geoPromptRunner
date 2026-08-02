@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src.pipeline.agreement import AgreementReport
 from src.pipeline.judge import AccuracyFlag, BrandJudgment, Judge
 from src.pipeline.judge_cache import JudgeCache
 from src.storage.models import Framing, Prominence, Severity
 
 __all__ = [
     "GoldFlag",
+    "severity_label",
+    "severity_agreement",
     "GoldItem",
     "FlagStats",
     "CalibrationReport",
@@ -382,6 +386,44 @@ def isolated_cache() -> JudgeCache:
     from src.pipeline.judge_cache import InMemoryJudgeCache
 
     return InMemoryJudgeCache()
+
+
+def severity_label(flags: Sequence[object]) -> str:
+    """One label per answer: its WORST severity, or "none".
+
+    Collapsing an answer's flags to a single label is what makes AC1, kappa and
+    per-class recall well defined — they are single-label classification metrics
+    and a multi-label item has no single "the judge said X" to compare.
+
+    Worst rather than first or modal, because that is what a reader acts on: an
+    answer carrying a Critical and three Lows is a Critical.
+    """
+    from src.pipeline.agreement import NO_FLAG
+    from src.pipeline.severity import escalate, worst
+
+    tiers = [
+        escalate(
+            str(getattr(f, "type", "")),
+            str(getattr(f, "severity", "")),
+            str(getattr(f, "claim", "")),
+        )
+        for f in flags
+    ]
+    return worst(tiers) if tiers else NO_FLAG
+
+
+def severity_agreement(
+    judged: Sequence[tuple[Sequence[object], Sequence[object]]],
+) -> AgreementReport:
+    """Judge-vs-human agreement on an answer's worst severity.
+
+    ``judged`` is ``(gold_flags, judge_flags)`` per item. This is the input to the
+    production gate — per-class recall on Critical/High — and to the agreement
+    rate the report publishes.
+    """
+    from src.pipeline.agreement import agreement as _agreement
+
+    return _agreement([(severity_label(gold), severity_label(judge)) for gold, judge in judged])
 
 
 def calibrate(

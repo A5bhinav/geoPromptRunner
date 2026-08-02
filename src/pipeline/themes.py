@@ -27,6 +27,7 @@ indicator that the rule set has stopped keeping up with what the engines say;
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -42,6 +43,7 @@ __all__ = [
     "classify",
     "coverage",
     "theme_label",
+    "rules_fingerprint",
 ]
 
 
@@ -437,6 +439,47 @@ def coverage(classifications: Sequence[Classification]) -> Coverage:
 def theme_label(theme: str) -> str:
     """Client-facing heading for a theme. Unknown themes render readably, not raw."""
     return THEME_LABELS.get(theme, theme.replace("_", " ").capitalize())
+
+
+def rules_fingerprint() -> str:
+    """A hash of the classification rules that produced a report's themes.
+
+    **Why this exists.** Cards are keyed on theme, and the lifecycle asks "was
+    this theme open last cycle?" — so a rule change can move findings between
+    themes for reasons that have nothing to do with the client. It happened once
+    already: adding the ship-date pattern moved ~90 real Fort observations out of
+    ``source_citation_quality`` into ``lifecycle_status`` and dropped the
+    type-default rate from 0.40 to 0.042. A strict improvement, and one that
+    would have read as "weak sources: resolved / lifecycle status: new" if it had
+    landed between two cycles.
+
+    **Why it does NOT block the comparison.** The lifecycle classifies every
+    cycle's raw flags with the CURRENT rules at report time, so a rule change is
+    applied to both sides of the diff identically and cannot manufacture a
+    resolve. Blocking on a changed fingerprint would throw away a comparison that
+    is in fact valid.
+
+    What it is for is the honest other half: a client read last week's edition
+    under the old rules, so their *memory* of the card list is what changed, not
+    the data. Recording the fingerprint per edition is what lets a future
+    edition-diff say so ("we regrouped these findings; nothing about your brand
+    moved"). Until editions are stored it rides in the payload and the
+    methodology section, which costs nothing and is the cheap half to get wrong
+    later.
+
+    Computed from the rules rather than hand-maintained, so it cannot be
+    forgotten — ``tests/test_themes.py`` pins the value, exactly like the judge
+    prompt fingerprint, so a change is a deliberate act with a visible diff.
+    """
+    parts: list[str] = []
+    for rule in RULES:
+        patterns = "|".join(p.pattern for p in rule.patterns)
+        only = ",".join(sorted(rule.only_types)) if rule.only_types else ""
+        parts.append(f"{rule.rule_id}\x1f{rule.theme.value}\x1f{patterns}\x1f{only}")
+    for flag_type, theme in sorted(TYPE_DEFAULTS.items()):
+        parts.append(f"default\x1f{flag_type}\x1f{theme.value}")
+    parts.append(f"terse\x1f{_TERSE_CLAIM_WORDS}")
+    return hashlib.sha256("\x1e".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
 if __name__ == "__main__":

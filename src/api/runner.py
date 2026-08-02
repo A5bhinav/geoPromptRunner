@@ -19,7 +19,7 @@ from src.audit.factsheet import FactSheet, expected_fact_sheet_text
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.engines.local_pack import LocalEntity, LocalPackCapture
-from src.pipeline import metrics, preflight
+from src.pipeline import judge_metrics, lifecycle, metrics, preflight, themes
 from src.pipeline.answers_export import build_answers_markdown, build_results_csv
 from src.pipeline.cost import CostBudgetExceeded, estimate_total_cost_for_queries
 from src.pipeline.engine_routing import routed_totals_by_name
@@ -883,6 +883,99 @@ def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> Aud
     )
 
 
+#: How many earlier cycles the lifecycle looks back over.
+#:
+#: The state machine itself is unbounded, but each cycle costs two Supabase reads
+#: to reconstruct its theme set, so the window is capped and the report SAYS how
+#: many cycles it considered rather than implying "since we started" over a
+#: silently truncated history.
+_LIFECYCLE_LOOKBACK_CYCLES = 12
+
+
+def _cycle_history(
+    run_id: str, client_name: str, created_at: str, query_set_version: str
+) -> tuple[list[lifecycle.CycleObservation], dict[str, tuple[int, int]]]:
+    """Rebuild the prior cycles' theme sets and the previous cycle's engine counts.
+
+    Returns ``([] , {})`` on any storage problem — a report that renders without a
+    comparison is degraded; one that fails to render is broken.
+
+    Superseded runs are excluded: a run a correction replaced is the broken first
+    attempt at a cycle, not a cycle. Comparing against it reports the repair as
+    client progress.
+    """
+    try:
+        runs = db.list_audit_runs(client_name)
+        superseded = db.superseded_run_ids(client_name)
+    except db.StorageError:
+        return [], {}
+
+    earlier = [
+        r
+        for r in runs
+        if str(r.get("id", "")) != run_id
+        and str(r.get("created_at", "")) < created_at
+        and str(r.get("status") or "") == "done"
+        and str(r.get("id", "")) not in superseded
+        and str(r.get("query_set_version", "")) == query_set_version
+    ][-_LIFECYCLE_LOOKBACK_CYCLES:]
+
+    history: list[lifecycle.CycleObservation] = []
+    engine_counts: dict[str, tuple[int, int]] = {}
+    for index, row in enumerate(earlier):
+        prior_id = str(row.get("id", ""))
+        try:
+            results = db.get_query_results(prior_id)
+            judgments = db.get_judgments(prior_id)
+        except db.StorageError:
+            continue
+        answered = sum(1 for r in results if r["response"] is not None)
+        themes = _themes_of(judgments)
+        history.append(
+            lifecycle.CycleObservation(
+                run=lifecycle.RunMeta(
+                    run_id=prior_id,
+                    run_date=str(row.get("created_at", ""))[:10],
+                    status="done",
+                    coverage_ratio=(answered / len(results) if results else 0.0),
+                    query_set_version=str(row.get("query_set_version", "")),
+                ),
+                themes=themes,
+            )
+        )
+        # Only the IMMEDIATELY prior cycle feeds the movement section — a
+        # week-over-week delta compares two cycles, not a trend line.
+        if index == len(earlier) - 1:
+            engine_counts = _client_engine_counts_from(judgments, str(row.get("client_name", "")))
+    return history, engine_counts
+
+
+def _themes_of(judgments: list[AnswerJudgment]) -> frozenset[str]:
+    """Which themes were open in a stored cycle.
+
+    Classified with TODAY's rules, deliberately. Both sides of the diff are
+    classified the same way on every render, so a rule change moves findings
+    identically in both cycles and cannot manufacture a resolve.
+    """
+    return frozenset(
+        themes.classify(f.type, f.claim, f.reality).theme
+        for j in judgments
+        if j.assessed
+        for f in j.accuracy_flags
+    )
+
+
+def _client_engine_counts_from(
+    judgments: list[AnswerJudgment], client: str
+) -> dict[str, tuple[int, int]]:
+    """(present, answered cells) per engine for the client, from stored verdicts."""
+    counts: dict[str, tuple[int, int]] = {}
+    for cell in judge_metrics.brand_cells_map(judgments, [client]).get(client, []):
+        present, total = counts.get(cell.engine_name, (0, 0))
+        counts[cell.engine_name] = (present + (1 if cell.present else 0), total + 1)
+    return counts
+
+
 def _prior_comparable_run(run_id: str, client_name: str, created_at: str) -> tuple[str, str] | None:
     """The most recent EARLIER run for this client, and its query-set version.
 
@@ -900,6 +993,10 @@ def _prior_comparable_run(run_id: str, client_name: str, created_at: str) -> tup
         runs = db.list_audit_runs(client_name)
     except db.StorageError:
         return None
+    # A run a later correction replaced is not a cycle — it is the broken first
+    # attempt at one. Comparing against it reports the repair of a failed
+    # measurement as movement in the client's visibility.
+    superseded = db.superseded_run_ids(client_name)
     earlier = [
         r
         for r in runs
@@ -909,6 +1006,7 @@ def _prior_comparable_run(run_id: str, client_name: str, created_at: str) -> tup
         # against it would report the shortfall as a drop in the client's
         # visibility, which is the single most damaging false claim available here.
         and str(r.get("status") or "") == "done"
+        and str(r.get("id", "")) not in superseded
     ]
     if not earlier:
         return None
@@ -1058,6 +1156,12 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
     except db.StorageError:
         return None
     outcome = _outcome_from_row(row, results)
+    history, engine_counts = _cycle_history(
+        run_id,
+        str(row.get("client_name", "")),
+        str(row.get("created_at", "")),
+        str(row.get("query_set_version", "")),
+    )
     report = build_report(
         outcome,
         judgments=judgments or None,
@@ -1069,6 +1173,8 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         prior_run=_prior_comparable_run(
             run_id, str(row.get("client_name", "")), str(row.get("created_at", ""))
         ),
+        prior_cycles=history,
+        prior_engine_counts=engine_counts,
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -1150,6 +1256,12 @@ def get_report(run_id: str) -> ReportPayload | None:
     state = _get(run_id)
     if state is None:
         return _report_from_db(run_id)
+    live_history, live_engine_counts = _cycle_history(
+        state.db_run_id or "",
+        state.audit.config.client_name,
+        state.created_at,
+        state.audit.query_set.version,
+    )
     report = build_report(
         _outcome(state),
         judgments=state.judgments or None,
@@ -1167,6 +1279,8 @@ def get_report(run_id: str) -> ReportPayload | None:
         prior_run=_prior_comparable_run(
             state.db_run_id or "", state.audit.config.client_name, state.created_at
         ),
+        prior_cycles=live_history,
+        prior_engine_counts=live_engine_counts,
     )
     if state.state == "done":
         with _REPORT_CACHE_LOCK:

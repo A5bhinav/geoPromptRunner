@@ -7,7 +7,16 @@ from dataclasses import field
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.pipeline import preflight
-from src.pipeline.cost import CostBudgetExceeded, estimate_cost_for_queries
+from src.pipeline.correction import (
+    CorrectionPlan,
+    answered_cells,
+    plan_correction,
+)
+from src.pipeline.cost import (
+    CostBudgetExceeded,
+    estimate_cost_for_cells,
+    estimate_cost_for_queries,
+)
 from src.pipeline.engine_routing import ENGINE_POLICY, routed_totals
 from src.pipeline.prompt_runner import run_query_set
 from src.prompts.intent import IntentBucket
@@ -19,12 +28,23 @@ from src.storage.models import QueryResult
 __all__ = [
     "AuditOutcome",
     "EnginesUnavailable",
+    "NothingToCorrect",
     "engine_models",
     "run_audit",
     "run_teaser",
 ]
 
 logger = logging.getLogger(__name__)
+
+
+class NothingToCorrect(RuntimeError):
+    """A correction of this run would achieve nothing. Carries the reason.
+
+    Raised rather than proceeding, because both cases produce a run that looks
+    like a correction and is not one: with no failed cells there is nothing to
+    re-ask, and with no answered cells there is nothing to carry, so the "top-up"
+    is a full re-run that also suppresses its parent from the trend.
+    """
 
 
 class EnginesUnavailable(RuntimeError):
@@ -94,15 +114,37 @@ def run_audit(
     progress: bool = True,
     max_cost: float | None = None,
     resume_run_id: str | None = None,
+    correct_run_id: str | None = None,
 ) -> AuditOutcome:
     """Run a full audit cycle: query set -> engines -> persisted results.
 
     Synchronous and order-stable. Persists incrementally (one query at a time)
-    so a failure mid-run keeps prior progress. Pass ``resume_run_id`` to continue
-    an interrupted run — queries already stored are skipped. ``max_cost`` aborts
-    before any calls if the rough estimate exceeds the budget. If storage isn't
-    configured, the run continues in-memory and ``run_id`` is None.
+    so a failure mid-run keeps prior progress. ``max_cost`` aborts before any
+    calls if the rough estimate exceeds the budget. If storage isn't configured,
+    the run continues in-memory and ``run_id`` is None.
+
+    Two ways to reuse an earlier run's work, and they are NOT the same thing:
+
+    ``resume_run_id``
+        Continue a run left unfinished. Skips every cell that has a stored row,
+        answered or not — an attempted cell is treated as done so a resume cannot
+        start re-paying for a permanently dead surface on each restart.
+
+    ``correct_run_id``
+        Re-measure an earlier run's FAILED cells (:mod:`src.pipeline.correction`).
+        Creates a NEW run that carries the parent's answered cells forward and
+        re-asks only the ones that returned nothing, so the parent stays exactly
+        as it was and only the gaps are paid for. This is the one that makes a
+        broken run cheap to fix; resume cannot, by design, because it cannot tell
+        "attempted" from "answered".
+
+    The two are mutually exclusive.
     """
+    if resume_run_id is not None and correct_run_id is not None:
+        raise ValueError(
+            "pass resume_run_id or correct_run_id, not both — resuming continues a run "
+            "in place, correcting creates a new one that supersedes it"
+        )
     client_domains = client_domains or []
     queries = query_set.queries
 
@@ -122,11 +164,44 @@ def run_audit(
                 "query (check model pins and API keys)"
             )
 
+    # A correction's work-list is "the cells the parent failed", not "the query
+    # set", so its plan is built FIRST and its cost estimate replaces the
+    # whole-run one below. Otherwise a $1 top-up would be budget-gated as if it
+    # were a $10 audit — and refused, which is the opposite of the point.
+    plan: CorrectionPlan | None = None
+    if correct_run_id is not None:
+        # Checked before anything is created, because the lineage write happens
+        # AFTER the row insert — discovering the gap then would leave an untracked
+        # run behind that reads as an extra cycle.
+        if persist and not db.supports_run_lineage():
+            raise StorageError(
+                "this database has no run_kind / supersedes_run_id columns — apply "
+                "data/schema_run_corrections.sql first. Without them a correction is "
+                "indistinguishable from a second cycle, and the next report would "
+                "compare a client against their own broken run."
+            )
+        try:
+            plan = plan_correction(correct_run_id, db.get_query_results(correct_run_id))
+        except StorageError as exc:
+            raise StorageError(f"cannot read run {correct_run_id} to correct it") from exc
+        if not plan.missing:
+            raise NothingToCorrect(plan.summary())
+        if not plan.carried:
+            # Every cell failed. A "correction" here carries nothing forward, so
+            # it is a full re-run that would additionally suppress its parent from
+            # the trend. Refuse and say what to do instead.
+            raise NothingToCorrect(plan.summary())
+        if progress:
+            print(plan.summary())
+
     # Routing-aware: an engine skipped on some intents costs less than queries x
     # engines x runs implies, and printing the un-routed number would overstate both
     # the spend and what the run is about to measure.
-    estimated, total_calls = estimate_cost_for_queries(queries, engines, runs_per_query)
-    if progress:
+    if plan is not None:
+        estimated, total_calls = estimate_cost_for_cells(plan.missing)
+    else:
+        estimated, total_calls = estimate_cost_for_queries(queries, engines, runs_per_query)
+    if progress and plan is None:
         engine_names = ", ".join(e.ENGINE_NAME for e in engines) or "none"
         print(
             f"Audit: {query_set.client} ({query_set.version}) — "
@@ -169,6 +244,14 @@ def run_audit(
             run_id = None
     elif persist:
         try:
+            # A correction inherits the PARENT's answered cells as its starting
+            # point. `done_cells` is seeded from what actually answered, not from
+            # what has a row — that difference is the whole feature, because a
+            # failed call still writes a row and a row-based skip would step over
+            # exactly the cells being corrected.
+            if plan is not None:
+                prior_results = list(plan.carried)
+                done_cells = answered_cells(prior_results)
             run_id = db.create_audit_run(
                 client_name=query_set.client,
                 client_domains=client_domains,
@@ -181,7 +264,15 @@ def run_audit(
                 n_queries=len(queries),
                 total_calls=total_calls,
                 engine_models=engine_models(engines),
+                run_kind="correction" if plan is not None else "baseline",
+                supersedes_run_id=correct_run_id,
             )
+            # Copy the carried answers onto the new run so it renders standalone.
+            # The alternative — storing only the new cells and unioning at read
+            # time — would put the join in every reader, and one reader forgetting
+            # it is a report that silently loses most of its data.
+            if plan is not None and run_id is not None and prior_results:
+                db.save_query_results(run_id, prior_results)
         except StorageError as exc:
             logger.warning("Storage unavailable, continuing in-memory: %s", exc)
             run_id = None

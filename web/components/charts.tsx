@@ -101,22 +101,31 @@ const tooltipStyle = {
   },
 };
 
-/** Horizontal share-of-model bars (client highlighted). */
+/** Horizontal share-of-model bars, PAIRED with the prior cycle when there is one.
+ *
+ * Paired, not replaced: on a recurring report the reader's question is "versus
+ * last time", and overwriting the old value with the new one answers a different
+ * question. The prior bar is Mist so the current one still reads first. */
 export const LeaderboardChart = React.memo(function LeaderboardChart({
   rows,
+  prior,
 }: {
   rows: LeaderRow[];
+  /** brand -> prior-cycle share (0..1). Omitted on a first cycle. */
+  prior?: Record<string, number>;
 }) {
   useChartSettled();
   const isPrint = useIsPrint();
+  const hasPrior = !!prior && Object.keys(prior).length > 0;
   const data = React.useMemo(
     () =>
       rows.map((r) => ({
         brand: r.brand,
         share: Math.round(r.share_of_model * 100),
+        priorShare: Math.round((prior?.[r.brand] ?? 0) * 100),
         isClient: r.is_client,
       })),
-    [rows],
+    [rows, prior],
   );
   const height = Math.max(120, data.length * 46);
 
@@ -133,15 +142,31 @@ export const LeaderboardChart = React.memo(function LeaderboardChart({
           tick={{ fontSize: 13, fill: "hsl(var(--foreground))" }}
         />
         <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, "Share of model"]} />
-        <Bar dataKey="share" radius={[4, 4, 4, 4]} barSize={22} isAnimationActive={!isPrint}>
+        {hasPrior && (
+          <Bar
+            dataKey="priorShare"
+            name="Last cycle"
+            radius={[4, 4, 4, 4]}
+            barSize={10}
+            fill="var(--mist)"
+            isAnimationActive={!isPrint}
+          />
+        )}
+        <Bar
+          dataKey="share"
+          name="This cycle"
+          radius={[4, 4, 4, 4]}
+          barSize={hasPrior ? 14 : 22}
+          isAnimationActive={!isPrint}
+        >
           {data.map((d, i) => (
-            <Cell key={i} fill={d.isClient ? "hsl(var(--primary))" : "hsl(215 20% 70%)"} />
+            <Cell key={i} fill={d.isClient ? "var(--navy)" : "var(--harbour)"} />
           ))}
           <LabelList
             dataKey="share"
             position="right"
             formatter={(v: number) => `${v}%`}
-            style={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+            style={{ fontSize: 12, fill: "var(--harbour)" }}
           />
         </Bar>
       </BarChart>

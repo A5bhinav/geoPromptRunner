@@ -256,6 +256,47 @@ export interface FindingGroupRow {
   verification: string;
   priority: number;
   flag_types: string[];
+  /** new | persisting | resolved | regressed. "new" on a first cycle, which is
+   * honest — nothing has been compared against. */
+  lifecycle_status?: string;
+  cycles_open?: number;
+  first_seen_date?: string;
+}
+
+/** One surface's week-over-week change, already gated. */
+export interface MovementRow {
+  key: string;
+  before_successes: number;
+  before_n: number;
+  after_successes: number;
+  after_n: number;
+  delta_pp: number;
+  direction: "up" | "down" | "flat" | "unknown";
+  /** "ChatGPT: held steady at 8 of 12 runs" — pre-formatted, render as-is. */
+  phrase: string;
+  /** Why it is flat, when it is. Render it: a reader who asks "why isn't this
+   * news" should get an answer, not a shrug. */
+  flat_reason: string;
+}
+
+/** Lead with what changed, not with a static score.
+ *
+ * `accountability` is the sentence that determines renewal. Its arithmetic
+ * closes exactly (opening = resolved + still_open, closing = still_open + new +
+ * regressed) — never recompute it in the client, or the two can disagree. */
+export interface WhatChangedPayload {
+  available: boolean;
+  accountability: string;
+  opening: number;
+  resolved: number;
+  still_open: number;
+  new: number;
+  regressed: number;
+  closing: number;
+  resolved_all_time: number;
+  cycles_considered: number;
+  movements: MovementRow[];
+  prior_run_date: string;
 }
 
 /** One brand's presence on one engine, as a count with its denominator. */
@@ -381,6 +422,12 @@ export interface ReportPayload {
    * structured fields — no LLM. A hallucinating summary in a
    * hallucination-detection product is the worst failure mode available. */
   exec_summary?: string;
+  /** What changed since last cycle. Optional so pre-P2 stored runs parse. */
+  what_changed?: WhatChangedPayload;
+  /** The theme rules that produced these groupings. Both cycles are always
+   * classified with the current rules, so a rule change cannot manufacture a
+   * resolve; this exists so an edition-diff can say "we regrouped these". */
+  theme_rules_version?: string;
   /** ≤15 themed findings, Critical → High → Medium → Low then by priority.
    * THIS renders; `accuracy_flags` is the appendix. Optional so runs stored
    * before P1-T1 still parse and fall back to the flat flag list. */
@@ -400,6 +447,10 @@ export interface ReportPayload {
   methodology_disclosure?: string;
   /** Vendor-independence disclaimer. Verbatim, once per report. */
   independence_disclaimer?: string;
+  /** How often the judge agreed with a human reviewer. Render it even when it
+   * says "not yet measured" — every Critical finding rests on the judge, and an
+   * omission reads as "not applicable" rather than "not measured". */
+  judge_agreement?: string;
   accuracy_flags: FlagRow[];
   sources: SourceRow[];
   losing_queries: LosingRow[];

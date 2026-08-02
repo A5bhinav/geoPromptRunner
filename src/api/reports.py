@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TypedDict
 
 from src.engines.local_pack import LocalPackCapture
 from src.pipeline import findings as findings_mod
-from src.pipeline import judge_metrics, metrics, stats
+from src.pipeline import judge_metrics, lifecycle, metrics, movement, stats
+from src.pipeline import themes as themes_mod
 from src.pipeline.orchestrator import AuditOutcome
+from src.pipeline.priority import sort_key as priority_sort_key
 from src.pipeline.severity import SEVERITY_ORDER
 from src.storage.models import AccuracyFlag, AnswerJudgment
 
@@ -24,6 +27,8 @@ __all__ = [
     "EvidenceRow",
     "FindingGroupRow",
     "OpenFindingsPayload",
+    "MovementRow",
+    "WhatChangedPayload",
     "SourceRow",
     "LosingRow",
     "SiteCheckRow",
@@ -33,6 +38,7 @@ __all__ = [
     "ReportPayload",
     "NON_REPRODUCIBILITY_DISCLOSURE",
     "INDEPENDENCE_DISCLAIMER",
+    "JUDGE_AGREEMENT_UNMEASURED",
     "build_report",
 ]
 
@@ -51,6 +57,22 @@ NON_REPRODUCIBILITY_DISCLOSURE = (
     "independent attempts we made, how many produced the error, the exact date and time, "
     "and the exact prompt used. Our claims are about what we observed, when — not a "
     "guarantee of what you will see if you ask right now."
+)
+
+#: What the methodology says when no gold set has been run for this ICP.
+#:
+#: Saying nothing would be worse. Every Critical finding rests on the judge, and a
+#: reader is entitled to know whether that has been checked — an omission reads as
+#: "not applicable" rather than "not measured".
+#:
+#: The current state is not "unmeasured" but "unmeasurable at this sample size":
+#: Fort carries three gold flags, and two identical runs returned precision 29%
+#: then 43% on the same inputs. One flag moves the metric 14 points. The fix is a
+#: gold set with enough flag-bearing items, not a better judge.
+JUDGE_AGREEMENT_UNMEASURED = (
+    "Judge agreement with a human reviewer has not yet been measured at a sample size "
+    "that would support quoting a figure. Every finding in this report cites the exact "
+    "prompt, model and date behind it so it can be checked directly."
 )
 
 #: Also once per report. Nominative fair use covers plain-text vendor names; it
@@ -213,6 +235,11 @@ class FindingGroupRow(TypedDict):
     verification: str
     priority: float
     flag_types: list[str]
+    # --- lifecycle (P2-T2). "new" on a first cycle, which is honest: nothing has
+    # been compared against, so nothing can be persisting or resolved. ---
+    lifecycle_status: str  # new | persisting | resolved | regressed
+    cycles_open: int
+    first_seen_date: str
 
 
 class EngineCellRow(TypedDict):
@@ -388,6 +415,50 @@ class ScorecardPayload(TypedDict):
     attempted_cells: int
 
 
+class MovementRow(TypedDict):
+    """One surface's week-over-week change, already gated."""
+
+    key: str  # the client-facing surface label
+    before_successes: int
+    before_n: int
+    after_successes: int
+    after_n: int
+    delta_pp: float
+    direction: str  # up | down | flat | unknown
+    # "ChatGPT: held steady at 8 of 12 runs" — pre-formatted so the wording is the
+    # same in the report, the digest and the PDF.
+    phrase: str
+    # Why it is flat, when it is. A reader who asks "why isn't this news" gets an
+    # answer instead of a shrug.
+    flat_reason: str
+
+
+class WhatChangedPayload(TypedDict):
+    """Lead with what changed, not with a static score.
+
+    ``accountability`` is the sentence that determines renewal — *"3 of 7 findings
+    from last cycle are resolved, 1 regressed, 4 still open"*. Its arithmetic must
+    close exactly (``opening = resolved + still_open``,
+    ``closing = still_open + new + regressed``) or a reader can do the subtraction
+    and catch a contradiction, after which every number on the page is suspect.
+    """
+
+    available: bool  # False on a first cycle or a blocked comparison
+    accountability: str
+    opening: int
+    resolved: int
+    still_open: int
+    new: int
+    regressed: int
+    closing: int
+    resolved_all_time: int
+    cycles_considered: int
+    # Per-surface, in a FIXED order so the section can be compared at a glance
+    # between editions. Flat cells are included, never omitted.
+    movements: list[MovementRow]
+    prior_run_date: str
+
+
 class ReportPayload(TypedDict):
     client_name: str
     run_date: str
@@ -421,6 +492,15 @@ class ReportPayload(TypedDict):
     # before the grounding post-check exists. A hallucinating summary in a
     # hallucination-detection product is the worst failure mode available.
     exec_summary: str
+    # Lead with what changed. Placed immediately after the exec summary and
+    # before the scorecard, because "did your recommendations do anything" is
+    # what determines renewal.
+    what_changed: WhatChangedPayload
+    # The theme-classification rules that produced these groupings. Both cycles
+    # are always classified with the CURRENT rules, so a rule change cannot
+    # manufacture a resolve — this is here so a future edition-diff can say
+    # "we regrouped these findings; nothing about your brand moved".
+    theme_rules_version: str
     # ≤15 themed findings, ordered Critical → High → Medium → Low then by
     # priority. THIS is what renders; `accuracy_flags` is the appendix.
     finding_groups: list[FindingGroupRow]
@@ -438,6 +518,11 @@ class ReportPayload(TypedDict):
     # Verbatim, once per report. See the module constants.
     methodology_disclosure: str
     independence_disclaimer: str
+    # How often the judge agreed with a human reviewer, published in the
+    # methodology section. Empty when it has not been measured — "the judge said
+    # so" is not an evidentiary standard for a Critical finding shown to a CMO,
+    # and the honest version of an unmeasured judge is saying so, not omitting it.
+    judge_agreement: str
     accuracy_flags: list[FlagRow]
     # The WEAKEST verification across the fact sheet this run was judged against
     # (a `Verification` value), or None when no sheet was used. Consumers that
@@ -519,7 +604,55 @@ def _group_row(g: findings_mod.FindingGroup) -> FindingGroupRow:
         verification=g.verification,
         priority=round(g.priority, 4),
         flag_types=g.flag_types,
+        # Overwritten by `_with_lifecycle` once the comparable history is known.
+        lifecycle_status="new",
+        cycles_open=1,
+        first_seen_date="",
     )
+
+
+def _client_engine_counts(
+    matrix: list[EngineCellRow], client: str
+) -> list[tuple[str, tuple[int, int]]]:
+    """(engine, (present, cells)) for the CLIENT only, engine order fixed.
+
+    Sorted so the movement section keeps a memorized column order between
+    editions — a section whose layout moves cannot be compared at a glance, which
+    is the entire job of a recurring report.
+    """
+    return sorted(
+        (row["engine_name"], (row["present"], row["cells"]))
+        for row in matrix
+        if row["brand"] == client
+    )
+
+
+def _with_lifecycle(
+    groups: list[FindingGroupRow], facts: dict[str, lifecycle.LifecycleFact]
+) -> list[FindingGroupRow]:
+    """Stamp each card with its status and re-sort worst-news-first.
+
+    REGRESSED outranks a same-severity NEW: a fix that did not hold means the
+    recommendation was wrong or the change was reverted, and either way the
+    client needs to hear it before a fresh problem.
+    """
+    stamped: list[FindingGroupRow] = []
+    for group in groups:
+        fact = facts.get(group["theme"])
+        stamped.append(
+            {
+                **group,
+                "lifecycle_status": fact.status if fact else "new",
+                "cycles_open": fact.cycles_open if fact else 1,
+                "first_seen_date": fact.first_seen_date if fact else "",
+            }
+        )
+    stamped.sort(
+        key=lambda g: priority_sort_key(
+            g["severity"], g["priority"], g["theme"], g["lifecycle_status"] == "regressed"
+        )
+    )
+    return stamped
 
 
 def _exec_summary(
@@ -662,6 +795,9 @@ def build_report(
     local_pack: LocalPackPayload | None = None,
     fact_sheet_verification: str | None = None,
     prior_run: tuple[str, str] | None = None,
+    prior_cycles: Sequence[lifecycle.CycleObservation] = (),
+    prior_engine_counts: dict[str, tuple[int, int]] | None = None,
+    judge_agreement: str = "",
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -945,6 +1081,7 @@ def build_report(
     # is the answered cells, read off the run rather than from RUNS_PER_QUERY
     # (which defaults to 5 while stored runs vary).
     answered_cells = sum(c.answered_cells for c in engine_coverage.values())
+    attempted_cells = sum(c.total_cells for c in engine_coverage.values())
     client_mentions = round(mention_by_brand.get(client, 0.0) * answered_cells)
     ai_visibility = _rate_payload(
         client_mentions, answered_cells, outcome.runs_per_query, unit="sampled answers"
@@ -963,6 +1100,82 @@ def build_report(
         instances=grouping.total_instances,
         by_severity=by_severity,
     )
+
+    # --- What changed since last cycle (P2-T2/T4/T5) ---
+    #
+    # The lifecycle runs over the PRIOR cycles plus this one, filtered by the
+    # run-coverage gate and the query set. It is computed fresh from raw flags on
+    # every render, so both sides of the diff are always classified with the same
+    # theme rules — which is why a rule change cannot manufacture a resolve.
+    this_cycle = lifecycle.CycleObservation(
+        run=lifecycle.RunMeta(
+            run_id=outcome.run_id or "",
+            run_date=run_date,
+            status="done",
+            # The gate that stops a half-measured run being read as findings
+            # disappearing. Computed from this run's own cells rather than taken
+            # on trust — a run reporting itself complete is not evidence that it is.
+            coverage_ratio=(answered_cells / attempted_cells if attempted_cells else 0.0),
+            query_set_version=outcome.query_set_version,
+        ),
+        themes=frozenset(row["theme"] for row in finding_groups),
+    )
+    comparable = lifecycle.comparable_cycles(
+        [*prior_cycles, this_cycle], outcome.query_set_version
+    )
+    facts = lifecycle.compute_lifecycle(comparable)
+    account = lifecycle.accountability(comparable)
+
+    # Per-surface movement, gated. Flat cells are INCLUDED — both because "flat"
+    # is a claim the report must make, and because the FDR correction needs every
+    # comparison performed in its family or it silently corrects nothing.
+    movements: list[MovementRow] = []
+    if len(comparable) > 1 and prior_engine_counts:
+        raw = [
+            movement.compare_cell(
+                key=engine,
+                before_successes=prior_engine_counts.get(engine, (0, 0))[0],
+                before_n=prior_engine_counts.get(engine, (0, 0))[1],
+                after_successes=present,
+                after_n=cells,
+                runs_per_query=outcome.runs_per_query,
+            )
+            for engine, (present, cells) in sorted(_client_engine_counts(engine_matrix, client))
+        ]
+        movements = [
+            MovementRow(
+                key=m.key,
+                before_successes=m.before_successes,
+                before_n=m.before_n,
+                after_successes=m.after_successes,
+                after_n=m.after_n,
+                delta_pp=round(m.delta_pp, 1),
+                direction=m.direction,
+                phrase=m.phrase(),
+                flat_reason=m.flat_reason,
+            )
+            for m in movement.gate_movements(raw)
+        ]
+
+    what_changed = WhatChangedPayload(
+        available=len(comparable) > 1 and not comparison_blocked_reason,
+        accountability=account.sentence(),
+        opening=account.opening,
+        resolved=account.resolved,
+        still_open=account.still_open,
+        new=account.new,
+        regressed=account.regressed,
+        closing=account.closing,
+        resolved_all_time=account.resolved_all_time,
+        cycles_considered=account.cycles_considered,
+        movements=movements,
+        prior_run_date=comparable[-2].run.run_date if len(comparable) > 1 else "",
+    )
+    # Attach each theme's lifecycle status to its card, and re-sort so a
+    # REGRESSED finding outranks a same-severity NEW one: a fix that did not hold
+    # is worse news than a fresh problem.
+    finding_groups = _with_lifecycle(finding_groups, facts)
+    priority_actions = finding_groups[:7]
 
     exec_summary = _exec_summary(
         client=client,
@@ -994,7 +1207,7 @@ def build_report(
         accuracy_assessed=accuracy_assessed,
         accuracy_flag_count=(len(accuracy_flags) if accuracy_assessed else None),
         answered_cells=answered_cells,
-        attempted_cells=sum(c.total_cells for c in engine_coverage.values()),
+        attempted_cells=attempted_cells,
     )
 
     return ReportPayload(
@@ -1013,6 +1226,8 @@ def build_report(
         stability=stability,
         engine_matrix=engine_matrix,
         exec_summary=exec_summary,
+        what_changed=what_changed,
+        theme_rules_version=themes_mod.rules_fingerprint(),
         finding_groups=finding_groups,
         priority_actions=priority_actions,
         theme_coverage={
@@ -1026,6 +1241,7 @@ def build_report(
         comparison_blocked_reason=comparison_blocked_reason,
         methodology_disclosure=NON_REPRODUCIBILITY_DISCLOSURE,
         independence_disclaimer=INDEPENDENCE_DISCLAIMER,
+        judge_agreement=judge_agreement or JUDGE_AGREEMENT_UNMEASURED,
         accuracy_flags=accuracy_flags,
         fact_sheet_verification=fact_sheet_verification,
         sources=sources,

@@ -28,7 +28,12 @@ from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.discovery import discover_competitors
 from src.pipeline.judge import Judge
 from src.pipeline.judge_cache import make_judge_cache
-from src.pipeline.orchestrator import AuditOutcome, run_audit, run_teaser
+from src.pipeline.orchestrator import (
+    AuditOutcome,
+    NothingToCorrect,
+    run_audit,
+    run_teaser,
+)
 from src.pipeline.trend import compare_runs, due_for_rerun, render_comparison
 from src.prompts.local_templates import TRADES
 from src.prompts.query_set import load_query_set
@@ -128,8 +133,11 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     runs = args.runs
     if runs is None:
         runs = settings.DEFAULT_RUNS_PER_QUERY
-        if args.resume:
-            stored = db.get_audit_run(args.resume)
+        # A correction must keep the parent's instrument for the same reason a
+        # resume must: mixed run counts inside one run skew every aggregate.
+        parent = args.resume or args.correct
+        if parent:
+            stored = db.get_audit_run(parent)
             if stored is not None:
                 runs = int(str(stored.get("runs_per_query") or settings.DEFAULT_RUNS_PER_QUERY))
     try:
@@ -141,9 +149,13 @@ def _cmd_audit(args: argparse.Namespace) -> int:
             persist=not args.no_persist,
             max_cost=args.max_cost,
             resume_run_id=args.resume,
+            correct_run_id=args.correct,
         )
     except CostBudgetExceeded as exc:
         print(f"Aborted: {exc}")
+        return 1
+    except NothingToCorrect as exc:
+        print(f"Nothing to correct: {exc}")
         return 1
 
     judgments = None
@@ -597,6 +609,15 @@ def main(argv: list[str] | None = None) -> int:
         "--max-cost", type=float, default=None, help="abort if est. $ exceeds this"
     )
     p_audit.add_argument("--resume", default=None, help="resume an interrupted run by id")
+    p_audit.add_argument(
+        "--correct",
+        default=None,
+        help=(
+            "re-ask only the cells a finished run FAILED to answer. Creates a new run "
+            "that carries the parent's answers forward and supersedes it, so you pay "
+            "for the gaps instead of the whole audit"
+        ),
+    )
     p_audit.add_argument("--judge", action="store_true", help="LLM-judge the answers inline")
     p_audit.add_argument("--fact-sheet", help="client fact sheet for --judge accuracy")
     p_audit.add_argument(

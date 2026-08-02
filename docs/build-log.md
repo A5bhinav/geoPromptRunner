@@ -1,3 +1,286 @@
+## Migration applied; P4-T1 agreement metrics and the production gate — Completed 2026-08-02
+
+### The migration
+
+`data/schema_run_corrections.sql` is live. `supports_run_lineage()` returns True
+and `--correct` works against the real database:
+
+    Correcting run e186c524: re-asking 19 cells (~$0.43), carrying 11 answered
+    cells forward. Missing by surface: openai_search 10, google_ai_overviews 9.
+
+First attempt rolled back on `invalid sslmode value: "require\`"` — a stray
+backtick on the end of `SUPABASE_DB_URL` in `.env`. The whole file runs in one
+transaction, so nothing half-applied. Fixed the value (backed up and removed the
+backup after verifying); the DSN was never printed unredacted.
+
+### P4-T1 — the metrics half
+
+`src/pipeline/agreement.py`, hand-rolled, no new dependency. `irrCAC` would have
+been two functions' worth of import for a dozen lines of closed-form arithmetic —
+the same trade already made in `stats.py`.
+
+**Gwet's AC1 is the headline, not Cohen's kappa**, and the module reproduces the
+paradox that makes that necessary:
+
+    raw agreement 0.975 -> AC1 0.973 · kappa 0.654
+
+Kappa penalises agreement in proportion to class imbalance, and this data is
+nothing but class imbalance — most answers carry no flags. Publishing the kappa
+would say the judge is unreliable when it agrees with a human 39 times in 40, and
+the natural response to that number is to "fix" a judge that is not broken. AC1,
+raw agreement, kappa and the full confusion matrix all ship together; no single
+number is honest on its own.
+
+### The gate is recall, and it fails three different ways
+
+A judge answering "no flag" to everything scores **95% aggregate accuracy** on a
+5%-prevalence set with **zero recall on the tiers a client acts on**. Aggregate
+accuracy cannot see that. `gate_critical_high_recall` can, and it also fails:
+
+- a tier with **no gold examples** — unmeasured must not read as passing;
+- a tier that is **under-powered**, even at perfect recall. Three gold flags
+  cannot demonstrate 90% recall whatever they score, and the current Fort set has
+  exactly three: two identical runs returned recall 67% then 100% on the same
+  inputs. That is the sample size talking, not the judge.
+
+`_rate` returns 0.0 for an empty denominator rather than 1.0, deliberately. The
+opposite convention flatters precisely the case that matters — a gold set with no
+Criticals would report the judge as flawless on Criticals.
+
+### One label per answer, or none of the metrics are defined
+
+AC1, kappa and per-class recall are single-label classification metrics; a
+multi-label item has no single "the judge said X". `calibration.severity_label`
+collapses an answer's flags to its **worst** severity, because that is what a
+reader acts on: an answer carrying a Critical and three Lows is a Critical.
+
+### Published, including when it cannot be
+
+The report's methodology now carries a judge-agreement line, and when no
+sufficient gold set exists it says so rather than omitting it. Omission reads as
+"not applicable"; the truth is "not measured", and every Critical finding rests
+on this. The current state is sharper than unmeasured — it is *unmeasurable at
+this sample size*.
+
+`required_items_for_minority(20, 0.06)` = **334 randomly-sampled items** for 20
+Criticals, or far fewer with the stratified sampling the spec asks for. Size the
+gold set by the rare class, never by the total.
+
+### Still open inside P4-T1
+
+The stratified sampler, blind two-reviewer labelling, and the durable override
+record keyed on `prompt_fingerprint`. Tracked in
+`docs/audit-packaging-status.md`, which is now the live checklist for the whole
+spec.
+
+### Gate
+
+`mypy src/` 103 files · `ruff check src/` clean · `pytest tests/` 913 passed,
+3 skipped · `tsc --noEmit` clean.
+
+---
+
+## Phase 2 complete: the report now says what changed — Completed 2026-08-02
+
+Five pieces, in dependency order: theme-rule fingerprinting, the lifecycle state
+machine, the what-changed section, significance gating, delta pills and paired
+bars. Live status and what's left: `docs/audit-packaging-status.md`.
+
+Rendered against the real Fort `csv-2026-06-13` trio — the only multi-cycle
+history with actual findings:
+
+    cycle 1  no_prior_run · 5 findings opened
+    cycle 2  "0 of 5 findings from last cycle are resolved, 2 newly opened,
+              5 still open"  · 4 surfaces, all "held steady"
+    cycle 3  cycles_considered=3 · pricing_offer persisting, open 3 cycles
+
+Those three runs are 11 and 22 minutes apart, and every surface correctly reads
+**held steady**. That is the gating working: small-sample jitter between two
+attempts at one measurement is exactly what must not render as movement.
+
+### I talked myself out of the thing I proposed
+
+I pitched `comparison_blocked_reason: "theme_rules_changed"` — block the diff
+when the classification rules move. Building it showed it was the wrong
+mechanism.
+
+The lifecycle classifies **every cycle's raw flags with the current rules at
+report time**, so a rule change applies to both sides of the diff identically
+and cannot manufacture a resolve. Blocking would discard a comparison that is in
+fact valid.
+
+What a rule change really breaks is narrower: the client read last week's edition
+under the old rules, so their *memory* of the card list is what moved. So the
+fingerprint ships in the payload and the methodology instead — the input a future
+edition-diff needs to say "we regrouped these findings; nothing about your brand
+moved". `rules_fingerprint()` is computed from the rules rather than
+hand-maintained, so it cannot be forgotten, and `tests/test_themes.py` pins it
+exactly like the judge prompt fingerprint.
+
+### Benjamini–Hochberg was inert. Twice.
+
+Both versions look correct, which is why they are worth recording.
+
+**First:** rank on a pseudo-p derived from the interval's distance from zero,
+capped at 0.05. At rank *m* the BH threshold **is** the FDR, so a p that can
+never exceed 0.05 always survives. Replaced with a real two-proportion test on
+the effective samples (`stats.two_proportion_p_value`).
+
+**Second, and subtler:** feed BH only the cells that had already passed a
+per-cell α≈0.05 gate. Every candidate then has p ≲ 0.05, the step-up finds
+k = m, and it rejects all of them. **Filtering before correcting removes the very
+comparisons that make the correction bite.**
+
+The family has to be every comparison performed, flat ones included. With 2
+strong cells among 18 marginal and 5 flat, `p(20)=0.0496` faces a threshold of
+`(20/25)·0.05 = 0.04`, the step-up walks down to k=2, and the 18 marginal cells
+are correctly demoted. `test_correcting_over_only_the_significant_cells_would_be_inert`
+pins both failure modes directly.
+
+### Exhaustive beats property-based here
+
+The spec asks for Hypothesis. It is not a dependency, and for a state machine
+over boolean presence sequences it would be strictly weaker than what replaced
+it: **every** sequence up to length 12 is 4,096 cases and runs instantly. So the
+invariants — exactly one status per cycle, first fact always NEW, RESOLVED only
+after ≥N absences, REGRESSED only immediately after RESOLVED, age resets to 1 on
+REGRESSED, `first_seen` never moves — are checked over all of them rather than a
+sample.
+
+The case worth naming: `TFT` and `TFFT` differ by one cycle and mean opposite
+things. The first never actually resolved, so its return is continuation. The
+second reached a confirmed fix that then broke. Collapsing them tells a client a
+fix failed when it never landed.
+
+### Both guardrails hold on real data
+
+Albert Nahman's shape — good run, broken run, good run — is a test:
+`test_a_broken_run_between_two_good_ones_does_not_break_the_streak`. The 0.37-
+coverage run is skipped entirely, so the theme persists across it rather than
+appearing to lapse. Filtering happens BEFORE the state machine, not inside it,
+which is what makes that free.
+
+### Deliberately not built
+
+**Bump chart.** Needs ≥3 cycles to say anything; an empty state would be
+decoration. **Pareto sources** likewise deferred. Both recorded in the status doc
+rather than half-built.
+
+### What this does NOT do
+
+Everything here is fixture-correct and **unvalidated against a real cadence**.
+Only three stored runs ever carried a fact sheet and they sit on three different
+query sets; the one multi-cycle history has cycles minutes apart. The unblock is
+one re-run of Fort on `csv-2026-06-14` with the same sheet — relaunchable from
+the stored row, ~$10, judging free if prejudged.
+
+The cycle-length decision (weekly vs `trend.py`'s 42 days) is still open, and it
+has a live consequence: `_prior_comparable_run` applies no minimum interval, so
+those 11-minutes-apart runs render as three cycles. Correct arithmetic, wrong
+unit. The agreed fix is a labelling rule, not a blocking one.
+
+### Gate
+
+`mypy src/` 102 files · `ruff check src/` clean · `pytest tests/` 899 passed,
+3 skipped · `tsc --noEmit` clean · `next build` clean · rendered end to end
+against three real Fort cycles.
+
+---
+
+## Correction runs: top up a broken audit instead of re-running it — Completed 2026-08-02
+
+A run that FINISHES with dead engines was terminal. `list_resumable_runs` only
+picks up `running`/`queued`, and `done_cells` is built from row existence — but a
+failed call still writes a row (`response: NULL`), so a resume steps over exactly
+the cells that need retrying. Albert Nahman's 2026-07-28 cycle is what that cost:
+
+    06:26  30 cells, 11 answered
+    07:37  25 cells, 11 answered
+    07:41  35 cells, 21 answered
+    22:19  40 cells, 40 answered   <- four full runs for one measurement
+
+`geo audit <queries> --correct <run-id>` now re-asks only the failed cells.
+Planned against the real rows, no spend:
+
+    e186c524: re-asking 19 cells (~$0.43), carrying 11 forward.
+              Missing by surface: openai_search 10, google_ai_overviews 9.
+    86b644f0: answered every attempted cell — nothing to correct.
+
+The plan also *diagnoses*: ten `openai_search` misses in every run is a dead
+surface, not bad luck — which is exactly what the repin later confirmed.
+
+### A new run, not an edit
+
+Filling a stored `response: NULL` in place would mutate a run someone may already
+have been shown. Create-only storage (`CLAUDE.md`) and immutable prior cycles
+(the packaging rules) both exist so "what did we tell the client on the 14th"
+always has an answer. So a correction is a new immutable row carrying
+`run_kind='correction'` and `supersedes_run_id`, holding the parent's answered
+cells verbatim plus the newly-filled ones.
+
+Answers are COPIED onto the new run rather than left to a read-time union. A
+union puts the join in every reader, and one reader forgetting it is a report
+that silently loses most of its data.
+
+### A correction is not a new cycle
+
+This is the half that matters more than the cost saving. `_prior_comparable_run`
+now skips any run something supersedes, so a corrected week compares against the
+previous **week** — not against its own broken first attempt. Without that skip
+the repair of a failed measurement renders as movement in the client's
+visibility, which is the same class of false claim as calling model
+nondeterminism a fix.
+
+It also means corrections need no exception in whatever cycle rule lands later.
+The gap governs *cycles*; corrections govern *completeness*.
+
+### Three decisions worth the words
+
+**`resume` and `correct` are mutually exclusive, and mean opposite things about a
+failed cell.** Resume treats attempted-as-done, so a restart cannot start
+re-paying for a permanently dead surface; correction treats attempted-and-failed
+as the work. Passing both raises.
+
+**Cost is priced per engine, not scaled from the whole-run estimate.** Failures
+concentrate on one surface — that IS the failure mode — and the six surfaces
+differ ~25x per call. Scaling by "fraction of cells missing" would badly
+under-charge a correction whose dead surface is `anthropic_search` (~48% of
+engine spend). `estimate_cost_for_cells` sums the actual cells, and it replaces
+the whole-run figure in the budget gate, so a $0.43 top-up is not refused as if
+it were a $10 audit.
+
+**The lineage write RAISES where the fact-sheet write only warns.** Losing
+fact-sheet provenance loses a trace. Losing a correction's lineage leaves an
+ordinary-looking extra run for the same client and query set — a phantom cycle
+the resolver will compare against. `supports_run_lineage()` is checked BEFORE the
+row is created, because the lineage write happens after the insert and finding
+the gap then would leave that phantom behind.
+
+### Migration NOT applied
+
+`data/schema_run_corrections.sql` adds `run_kind` (default `'baseline'`, so no
+backfill) and `supersedes_run_id`. It is written and tested but **not applied to
+the live database** — that is a production schema change and is Abhi's call:
+
+    python -m scripts.apply_schema data/schema_run_corrections.sql
+
+Until then `--correct` refuses with the migration hint rather than creating an
+untracked run. Verified against the live database: the probe returns False and
+the refusal fires.
+
+### Not wired
+
+The API and web UI have no correction path — recovery is CLI-only for now. Runs
+are started from the UI, so a broken run is noticed there and fixed at the
+terminal. Worth a button eventually; not worth blocking this on.
+
+### Gate
+
+`mypy src/` 100 files · `ruff check src/` clean · `pytest tests/` 845 passed,
+3 skipped · planner verified against all four real Albert Nahman runs.
+
+---
+
 ## P1-T7 + P1-T8: the PDF is reproducible, and 15 pages shorter — Completed 2026-08-02
 
 The client PDF was a human pressing `window.print()`. It is now

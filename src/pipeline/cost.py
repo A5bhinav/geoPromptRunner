@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from src.engines.base import BaseEngine
 from src.pipeline.engine_routing import routed_totals
 from src.prompts.query_set import Query
@@ -12,6 +14,7 @@ __all__ = [
     "estimate_cost",
     "estimate_total_cost",
     "estimate_cost_for_queries",
+    "estimate_cost_for_cells",
     "estimate_total_cost_for_queries",
     "CostBudgetExceeded",
 ]
@@ -174,6 +177,24 @@ def estimate_cost_for_queries(
         ROUGH_COST_PER_CALL.get(name, _DEFAULT_PER_CALL) * calls for name, calls in totals.items()
     )
     return estimated, sum(totals.values())
+
+
+def estimate_cost_for_cells(cells: Iterable[tuple[str, str, int]]) -> tuple[float, int]:
+    """Cost of an explicit list of ``(query_id, engine_name, run_index)`` cells.
+
+    For a correction run, where the work-list is "the cells that failed" rather
+    than "the query set". Priced PER ENGINE rather than by scaling the full
+    estimate proportionally, because failures concentrate on one surface — that is
+    the failure mode, not a coincidence — and the per-call rates differ by ~25x
+    across the six. Scaling the whole-run estimate by a cell fraction would
+    over-charge a run whose only dead surface was `google_ai_mode` and badly
+    under-charge one whose dead surface was `anthropic_search`.
+    """
+    cell_list = list(cells)
+    estimated = sum(
+        ROUGH_COST_PER_CALL.get(engine, _DEFAULT_PER_CALL) for _, engine, _ in cell_list
+    )
+    return estimated, len(cell_list)
 
 
 def estimate_total_cost_for_queries(

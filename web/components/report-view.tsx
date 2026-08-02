@@ -70,6 +70,7 @@ import {
   judgeAudit,
   type FindingGroupRow,
   type JudgeStatus,
+  type MovementRow,
   type ReportPayload,
 } from "@/lib/api";
 
@@ -131,6 +132,62 @@ const ENGINE_LABELS: Record<string, string> = {
 
 const engineLabel = (name: string) => ENGINE_LABELS[name] ?? name;
 
+/** The delta, as a chip.
+ *
+ * On a recurring report the delta is the SECOND-LARGEST element on a tile, after
+ * the value — it is the thing a returning reader looks for first. Sentence case:
+ * "Up from 1 of 6", never "UP FROM 1 OF 6". The only uppercase in the system is
+ * the tracked label. */
+function DeltaChip({ movement }: { movement: MovementRow }) {
+  if (movement.direction === "unknown") {
+    return <span className="body text-xs">not comparable</span>;
+  }
+  const flat = movement.direction === "flat";
+  const glyph = flat ? "—" : movement.direction === "up" ? "▲" : "▼";
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      style={
+        flat
+          ? { backgroundColor: "var(--rule-soft)", color: "var(--harbour)" }
+          : { backgroundColor: "var(--navy)", color: "#fff" }
+      }
+      // Shape AND text, never colour alone — the palette is a single navy ramp
+      // and has no up/down hue to spend.
+      title={movement.flat_reason || undefined}
+    >
+      <span aria-hidden="true">{glyph}</span>
+      {flat
+        ? "Held steady"
+        : `${movement.direction === "up" ? "Up" : "Down"} from ${movement.before_successes} of ${movement.before_n}`}
+    </span>
+  );
+}
+
+/** Where a finding is in its life. Regressed is the one that must stand out —
+ * a fix that did not hold is worse news than a fresh problem. */
+function LifecycleBadge({ status, cycles }: { status?: string; cycles?: number }) {
+  if (!status || status === "new") return null;
+  const label =
+    status === "regressed"
+      ? "Regressed"
+      : status === "resolved"
+        ? "Resolved"
+        : `Open ${cycles ?? 1} cycle${(cycles ?? 1) === 1 ? "" : "s"}`;
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+      style={
+        status === "regressed"
+          ? { backgroundColor: "var(--navy)", color: "#fff" }
+          : { backgroundColor: "var(--rule-soft)", color: "var(--harbour)" }
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
 /** A full finding card. Critical and High only — Medium and Low collapse into a
  * compact table, because a report where every finding looks identical gives the
  * reader no triage signal and they stop reading.
@@ -153,6 +210,7 @@ function FindingCard({ group }: { group: FindingGroupRow }) {
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <SeverityBadge severity={group.severity} />
         <span className="font-medium">{group.title}</span>
+        <LifecycleBadge status={group.lifecycle_status} cycles={group.cycles_open} />
         <span className="body ml-auto text-xs">{group.theme_label}</span>
       </div>
 
@@ -254,8 +312,98 @@ export function ReportView({
   const open = s.open_findings;
   const visibility = s.ai_visibility;
   const bySeverity = open?.by_severity ?? {};
-  const criticalAndHigh = groups.filter((g) => g.severity === "critical" || g.severity === "high");
-  const mediumAndLow = groups.filter((g) => g.severity === "med" || g.severity === "low");
+  // Only rendered when a comparison is genuinely available. A first cycle shows
+  // nothing here rather than an empty section implying something was compared.
+  const changed = report.what_changed?.available ? report.what_changed : null;
+  // The tile's delta is the run-wide roll-up of the SAME gated movements the
+  // section lists — derived, never separately computed, so the tile and the
+  // section can never disagree about whether something moved.
+  const overall: MovementRow | null = React.useMemo(() => {
+    const rows = changed?.movements.filter((m) => m.direction !== "unknown") ?? [];
+    if (rows.length === 0) return null;
+    const sum = (pick: (m: MovementRow) => number) => rows.reduce((a, m) => a + pick(m), 0);
+    const moved = rows.filter((m) => m.direction !== "flat");
+    return {
+      key: "overall",
+      before_successes: sum((m) => m.before_successes),
+      before_n: sum((m) => m.before_n),
+      after_successes: sum((m) => m.after_successes),
+      after_n: sum((m) => m.after_n),
+      delta_pp: 0,
+      // Flat unless at least one surface earned a direction, and it takes the
+      // majority direction of those that did. A tile that says "Up" while every
+      // listed surface says "held steady" is the contradiction to avoid.
+      direction:
+        moved.length === 0
+          ? "flat"
+          : moved.filter((m) => m.direction === "up").length >= moved.length / 2
+            ? "up"
+            : "down",
+      phrase: "",
+      flat_reason:
+        moved.length === 0 ? "no surface moved beyond this cycle's noise" : "",
+    };
+  }, [changed]);
+
+  // Prior-cycle share per brand, for the paired bars. Only the client's series
+  // is measured cycle-over-cycle today, so competitors show no prior bar rather
+  // than a fabricated one.
+  const priorShares = React.useMemo(() => {
+    if (!changed) return undefined;
+    const before = changed.movements.reduce((a, m) => a + m.before_successes, 0);
+    const beforeN = changed.movements.reduce((a, m) => a + m.before_n, 0);
+    if (!beforeN) return undefined;
+    return { [report.client_name]: before / beforeN };
+  }, [changed, report.client_name]);
+  // P3-T2 filters. Client-side only, no new payload. `no-print` on the controls
+  // so a filtered PDF cannot be mistaken for the whole report — a partial export
+  // that looks complete is the same class of bug as a lazy-loaded section that
+  // silently vanishes.
+  const [engineFilter, setEngineFilter] = React.useState<string>("all");
+  const [intentFilter, setIntentFilter] = React.useState<string>("all");
+
+  const matches = React.useCallback(
+    (engines: string[], intents: string[]) =>
+      (engineFilter === "all" || engines.includes(engineFilter)) &&
+      (intentFilter === "all" || intents.includes(intentFilter)),
+    [engineFilter, intentFilter],
+  );
+
+  const visibleGroups = React.useMemo(
+    () => groups.filter((g) => matches(g.engines, g.intents)),
+    [groups, matches],
+  );
+  const visibleLosing = React.useMemo(
+    () =>
+      report.losing_queries.filter(
+        (l) =>
+          (engineFilter === "all" || l.engine_name === engineFilter) &&
+          (intentFilter === "all" || l.intent === intentFilter),
+      ),
+    [report.losing_queries, engineFilter, intentFilter],
+  );
+  const isFiltered = engineFilter !== "all" || intentFilter !== "all";
+
+  // The severity bar counts what is VISIBLE, so the bar and the cards below it
+  // can never disagree — a summary that ignores the filter is a summary of a
+  // different report.
+  const visibleBySeverity = React.useMemo(() => {
+    const counts: Record<string, number> = { critical: 0, high: 0, med: 0, low: 0 };
+    for (const g of visibleGroups) counts[g.severity] = (counts[g.severity] ?? 0) + 1;
+    return counts;
+  }, [visibleGroups]);
+
+  const intentOptions = React.useMemo(
+    () => [...new Set(groups.flatMap((g) => g.intents))].sort(),
+    [groups],
+  );
+
+  const criticalAndHigh = visibleGroups.filter(
+    (g) => g.severity === "critical" || g.severity === "high",
+  );
+  const mediumAndLow = visibleGroups.filter(
+    (g) => g.severity === "med" || g.severity === "low",
+  );
 
   const [judging, setJudging] = React.useState(false);
   const [judgeError, setJudgeError] = React.useState<string | null>(null);
@@ -448,6 +596,46 @@ export function ReportView({
         </section>
       )}
 
+      {/* §0b What changed — immediately after the summary and before the
+          scorecard, because "did your recommendations do anything" is the
+          question that determines renewal. A recurring report with no
+          comparison is a status update. */}
+      {changed && (
+        <section className="report-section space-y-3">
+          <SectionTitle icon={<Repeat2 className="h-3.5 w-3.5" />}>
+            What changed since {changed.prior_run_date || "the last cycle"}
+          </SectionTitle>
+          <Card className="card">
+            <CardContent className="space-y-4 pt-6">
+              <p className="text-base font-medium">{changed.accountability}</p>
+
+              {changed.movements.length > 0 && (
+                <div>
+                  <p className="label mb-2">By surface</p>
+                  <ul className="space-y-1.5">
+                    {/* Flat cells are LISTED, not omitted. A weekly product that
+                        manufactures news in flat weeks destroys itself faster
+                        than one that reports nothing happened. */}
+                    {changed.movements.map((m) => (
+                      <li key={m.key} className="text-sm">
+                        <span className="inline-flex items-center gap-2">
+                          <DeltaChip movement={m} />
+                          <span>{m.phrase.replace(/^[^:]+:\s*/, "")}</span>
+                          <span className="body">{engineLabel(m.key)}</span>
+                        </span>
+                        {m.flat_reason && (
+                          <span className="body block text-xs">{m.flat_reason}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
       {/* §1 Scorecard — four tiles, every one COUNTED or MEASURED.
           No letter grade and no composite score. See ScorecardPayload in
           src/api/reports.py for why that stays true. */}
@@ -457,6 +645,7 @@ export function ReportView({
           <MetricCard
             icon={<Target className="h-3.5 w-3.5" />}
             label="AI visibility"
+            delta={overall && <DeltaChip movement={overall} />}
             muted={!visibility || visibility.n === 0}
             value={
               visibility && visibility.n > 0
@@ -568,7 +757,7 @@ export function ReportView({
               <CardTitle className="text-base">Visibility leaderboard</CardTitle>
             </CardHeader>
             <CardContent>
-              <LeaderboardChart rows={report.leaderboard} />
+              <LeaderboardChart rows={report.leaderboard} prior={priorShares} />
             </CardContent>
           </Card>
         </div>
@@ -698,12 +887,61 @@ export function ReportView({
             What the models get wrong
           </SectionTitle>
 
-          <SeveritySummaryBar counts={bySeverity} />
+          <div className="no-print flex flex-wrap items-center gap-2">
+            <span className="label">Filter</span>
+            <select
+              className="rounded border px-2 py-1 text-sm"
+              style={{ borderColor: "var(--rule)" }}
+              value={engineFilter}
+              onChange={(e) => setEngineFilter(e.target.value)}
+            >
+              <option value="all">All surfaces</option>
+              {report.engines.map((e) => (
+                <option key={e} value={e}>
+                  {engineLabel(e)}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded border px-2 py-1 text-sm"
+              style={{ borderColor: "var(--rule)" }}
+              value={intentFilter}
+              onChange={(e) => setIntentFilter(e.target.value)}
+            >
+              <option value="all">All intents</option>
+              {intentOptions.map((i) => (
+                <option key={i} value={i}>
+                  {i.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+            {isFiltered && (
+              <button
+                type="button"
+                className="text-sm underline"
+                style={{ color: "var(--blue)" }}
+                onClick={() => {
+                  setEngineFilter("all");
+                  setIntentFilter("all");
+                }}
+              >
+                Clear
+              </button>
+            )}
+            {isFiltered && (
+              <span className="body text-xs">
+                Showing {visibleGroups.length} of {groups.length} findings
+              </span>
+            )}
+          </div>
 
-          {groups.length === 0 ? (
+          <SeveritySummaryBar counts={visibleBySeverity} />
+
+          {visibleGroups.length === 0 ? (
             <p className="body text-sm">
-              No findings are open — every claim the models made about {report.client_name} that
-              your fact sheet covers checked out.
+              {isFiltered
+                ? "No findings match this filter."
+                : `No findings are open — every claim the models made about ${report.client_name} that your fact sheet covers checked out.`}
             </p>
           ) : (
             <>
@@ -842,11 +1080,11 @@ export function ReportView({
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <TrendingDown className="h-4 w-4 text-destructive" />
-                Losing queries ({report.losing_queries.length})
+                Losing queries ({visibleLosing.length}{isFiltered ? ` of ${report.losing_queries.length}` : ""})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {report.losing_queries.length === 0 ? (
+              {visibleLosing.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   None — the client appears wherever a competitor does.
                 </p>
@@ -863,7 +1101,7 @@ export function ReportView({
                     {/* The VERBATIM question, never `l.query_id`. `cmp-05` is
                         the most actionable data in the report made unreadable;
                         the id stays in the payload as a join key only. */}
-                    {report.losing_queries.map((l, i) => (
+                    {visibleLosing.map((l, i) => (
                       <TableRow key={i}>
                         <TableCell>
                           <span className="font-medium">
@@ -927,6 +1165,12 @@ export function ReportView({
                 <strong>Low</strong> — imprecise phrasing, unverifiable but not contradicted.
               </p>
             </div>
+            {report.judge_agreement && (
+              <div>
+                <p className="label mb-1">How the grading was checked</p>
+                <p className="body text-sm">{report.judge_agreement}</p>
+              </div>
+            )}
             {report.independence_disclaimer && (
               <p className="body text-xs">{report.independence_disclaimer}</p>
             )}

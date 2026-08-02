@@ -793,3 +793,128 @@ def test_the_evidence_names_the_model_that_answered_not_the_current_pin() -> Non
     evidence = built["finding_groups"][0]["evidence"][0]
     assert evidence["model_id"] == "claude-sonnet-4-5-20250929"
     assert evidence["observed_at"], "the date must come from the query_results row"
+
+
+# --- what changed (P2-T5) -----------------------------------------------------
+
+
+def _cycle(run_id: str, date: str, themes: set[str], coverage: float = 1.0):  # type: ignore[no-untyped-def]
+    from src.pipeline.lifecycle import CycleObservation, RunMeta
+
+    return CycleObservation(
+        run=RunMeta(run_id, date, "done", coverage, "csv-2026-06-03"),
+        themes=frozenset(themes),
+    )
+
+
+def _report_with(prior_cycles, prior_engine_counts=None, report_fixture=None):  # type: ignore[no-untyped-def]
+    """Rebuild the standard fixture with a history behind it."""
+    results = [
+        _result("cmp-02", "comparison", "perplexity", run, "Fort vs Whoop?", "…")
+        for run in range(3)
+    ]
+    judgments = [
+        AnswerJudgment(
+            query_id="cmp-02",
+            engine_name="perplexity",
+            intent="comparison",
+            run_index=r["run_index"],
+            assessed=True,
+            brands=[
+                BrandJudgment(brand="Fort", present=True, prominence="mid_pack", framing="neutral")
+            ],
+            accuracy_flags=[
+                _flag(
+                    "wrong_pricing",
+                    PRICING_CLAIM,
+                    "$289 pre-order.",
+                    "high",
+                    "cmp-02",
+                    "perplexity",
+                    "comparison",
+                    r["run_index"],
+                )
+            ],
+        )
+        for r in results
+    ]
+    return build_report(
+        AuditOutcome(
+            run_id="current",
+            client_name="Fort",
+            client_domains=[],
+            competitors=[],
+            query_set_version="csv-2026-06-03",
+            runs_per_query=3,
+            results=results,
+            engine_models={"perplexity": "sonar"},
+        ),
+        judgments=judgments,
+        fact_sheet_present=True,
+        run_date="2026-06-20",
+        prior_run=("prior", "csv-2026-06-03"),
+        prior_cycles=prior_cycles,
+        prior_engine_counts=prior_engine_counts,
+    )
+
+
+def test_no_prior_run_shows_no_comparison_rather_than_an_empty_one(report: ReportPayload) -> None:
+    assert report["what_changed"]["available"] is False
+    assert report["comparison_blocked_reason"] == "no_prior_run"
+
+
+def test_a_persisting_finding_is_labelled_as_such() -> None:
+    built = _report_with([_cycle("prior", "2026-06-13", {"pricing_offer"})])
+    assert built["what_changed"]["available"] is True
+    group = next(g for g in built["finding_groups"] if g["theme"] == "pricing_offer")
+    assert group["lifecycle_status"] == "persisting"
+    assert group["cycles_open"] == 2
+
+
+def test_a_regression_outranks_a_same_severity_new_finding() -> None:
+    """A fix that did not hold is worse news than a fresh problem."""
+    history = [
+        _cycle("c1", "2026-06-01", {"pricing_offer"}),
+        _cycle("c2", "2026-06-08", set()),
+        _cycle("c3", "2026-06-13", set()),
+    ]
+    built = _report_with(history)
+    group = next(g for g in built["finding_groups"] if g["theme"] == "pricing_offer")
+    assert group["lifecycle_status"] == "regressed"
+    assert group["cycles_open"] == 1
+    # And it sorts first among the cards.
+    assert built["finding_groups"][0]["theme"] == "pricing_offer"
+
+
+def test_the_accountability_arithmetic_closes_in_the_payload() -> None:
+    built = _report_with([_cycle("prior", "2026-06-13", {"pricing_offer", "company_facts"})])
+    changed = built["what_changed"]
+    assert changed["opening"] == changed["resolved"] + changed["still_open"]
+    assert changed["closing"] == changed["still_open"] + changed["new"] + changed["regressed"]
+    assert changed["accountability"]
+
+
+def test_a_flat_cycle_still_says_something() -> None:
+    """A weekly product that reports nothing in a flat week loses its reader."""
+    built = _report_with(
+        [_cycle("prior", "2026-06-13", {"pricing_offer"})],
+        prior_engine_counts={"perplexity": (3, 3)},
+    )
+    movements = built["what_changed"]["movements"]
+    assert movements, "flat surfaces must be listed, not omitted"
+    assert all(m["phrase"] for m in movements)
+    flat = [m for m in movements if m["direction"] == "flat"]
+    assert all(m["flat_reason"] for m in flat), "a flat cell must explain itself"
+
+
+def test_a_thin_prior_cycle_is_not_evidence() -> None:
+    """The coverage gate: half a run's cells is not a cycle to compare against."""
+    built = _report_with([_cycle("prior", "2026-06-13", set(), coverage=0.4)])
+    assert built["what_changed"]["available"] is False
+    group = next(g for g in built["finding_groups"] if g["theme"] == "pricing_offer")
+    assert group["lifecycle_status"] == "new", "a gated-out cycle cannot make this persisting"
+
+
+def test_the_theme_rules_version_rides_in_the_payload(report: ReportPayload) -> None:
+    assert report["theme_rules_version"]
+    assert len(report["theme_rules_version"]) == 16

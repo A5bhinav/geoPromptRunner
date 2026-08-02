@@ -46,6 +46,7 @@ __all__ = [
     "effective_n",
     "icc_one_way",
     "minimum_detectable_effect",
+    "two_proportion_p_value",
     "benjamini_hochberg",
     "format_rate",
 ]
@@ -269,6 +270,42 @@ def minimum_detectable_effect(
     nd = NormalDist()
     p = min(max(baseline_p, 0.0), 1.0)
     return (nd.inv_cdf(1 - alpha / 2) + nd.inv_cdf(power)) * math.sqrt(2 * p * (1 - p) / n)
+
+
+def two_proportion_p_value(
+    x1: int,
+    n1: int,
+    x2: int,
+    n2: int,
+    runs_per_query: int = 1,
+    icc: float = DEFAULT_ICC,
+) -> float:
+    """Two-sided p for "these two rates differ", on design-corrected samples.
+
+    Exists ONLY to rank cells for :func:`benjamini_hochberg`, which needs ordered
+    p-values and does not interpret their magnitude. The interval from
+    :func:`newcombe_diff_interval` remains what the report shows — this is never
+    rendered.
+
+    It replaced a fudge that mapped "how far the interval sits from zero" onto a
+    pseudo-p capped at 0.05. That cap made BH a NO-OP: at rank m the threshold is
+    exactly ``fdr``, so a p that can never exceed 0.05 always survives, and the
+    multiple-comparison correction silently corrected nothing.
+
+    Uses ``n_eff`` on both sides, like everything else here, so twenty correlated
+    repeat runs cannot buy significance they did not earn.
+    """
+    if n1 <= 0 or n2 <= 0:
+        return 1.0
+    e1 = effective_n(n1, runs_per_query, icc)
+    e2 = effective_n(n2, runs_per_query, icc)
+    p1, p2 = x1 / n1, x2 / n2
+    pooled = (p1 * e1 + p2 * e2) / (e1 + e2)
+    variance = pooled * (1 - pooled) * (1 / e1 + 1 / e2)
+    if variance <= 0:
+        return 1.0
+    z = abs(p1 - p2) / math.sqrt(variance)
+    return 2 * (1 - NormalDist().cdf(z))
 
 
 def benjamini_hochberg(p_values: Sequence[float], fdr: float = 0.05) -> list[bool]:
