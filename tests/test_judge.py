@@ -308,7 +308,7 @@ def test_prejudge_workflow_js_enums_match_the_python_types() -> None:
     import re
     from pathlib import Path
 
-    from src.storage.models import AccuracyFlagType, Framing, Prominence, Severity
+    from src.storage.models import JUDGE_SEVERITIES, AccuracyFlagType, Framing, Prominence
 
     js = (Path(__file__).resolve().parents[1] / "scripts" / "prejudge_workflow.js").read_text()
 
@@ -323,4 +323,9 @@ def test_prejudge_workflow_js_enums_match_the_python_types() -> None:
     assert js_enum("prominence:") == {p.value for p in Prominence}
     assert js_enum("framing:") == {f.value for f in Framing}
     assert js_enum("client_accuracy_flags:") == {t.value for t in AccuracyFlagType}
-    assert js_enum("severity:") == {s.value for s in Severity}
+    # JUDGE_SEVERITIES, not the full `Severity` enum. `critical` is a REPORT tier
+    # derived in Python (`src/pipeline/severity.escalate`); offering it to the
+    # prejudge subagent would widen the judge's contract and re-key the cache —
+    # the exact failure `test_judge_prompt_fingerprint_is_pinned` guards. This
+    # assertion is what keeps the JS pinned to the judge's three, not to four.
+    assert js_enum("severity:") == set(JUDGE_SEVERITIES)

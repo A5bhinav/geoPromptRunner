@@ -95,6 +95,11 @@ class _RunState:
     # feed it to the judge and to mention_rate (src/engines/local_pack.py).
     local_pack: list[LocalPackCapture] = field(default_factory=list)
     active_engines: list[str] = field(default_factory=list)
+    # engine name -> the exact model string it sent, captured once the engines are
+    # built. Every client-facing finding names the model that produced it, and
+    # after a repin, re-deriving the pin at render time would attribute a months-
+    # old answer to a model that never saw the question.
+    engine_models: dict[str, str] = field(default_factory=dict)
     skipped_engines: list[tuple[str, str]] = field(default_factory=list)
     cancel_requested: bool = False
 
@@ -219,6 +224,7 @@ def _outcome(state: _RunState) -> AuditOutcome:
         query_set_version=state.audit.query_set.version,
         runs_per_query=cfg.runs_per_query,
         results=list(state.results),
+        engine_models=dict(state.engine_models),
     )
 
 
@@ -449,6 +455,12 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
             )
             _persist_state(state, state.error)
             return
+
+    # Record which model each SURVIVING engine will send, after preflight has
+    # dropped the dead ones. Captured here rather than re-derived at render time:
+    # a repin between the run and the report would otherwise attribute a stored
+    # answer to a model that never saw the question, on every finding.
+    state.engine_models = engine_models(engines)
 
     qs = state.audit.query_set
 
@@ -853,6 +865,7 @@ def _str_list(value: object) -> list[str]:
 
 
 def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> AuditOutcome:
+    raw_models = row.get("engine_models")
     return AuditOutcome(
         run_id=str(row.get("id", "")),
         client_name=str(row.get("client_name", "")),
@@ -861,7 +874,46 @@ def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> Aud
         query_set_version=str(row.get("query_set_version", "")),
         runs_per_query=int(str(row.get("runs_per_query") or 1)),
         results=results,
+        # Which model actually answered, as recorded at run time. Re-deriving the
+        # pin here would name whatever is pinned TODAY — after a repin that is a
+        # false attribution on every finding in a months-old run.
+        engine_models=(
+            {str(k): str(v) for k, v in raw_models.items()} if isinstance(raw_models, dict) else {}
+        ),
     )
+
+
+def _prior_comparable_run(run_id: str, client_name: str, created_at: str) -> tuple[str, str] | None:
+    """The most recent EARLIER run for this client, and its query-set version.
+
+    Returns the candidate regardless of whether the version matches — deciding
+    comparability is `build_report`'s job, and it needs to know the difference
+    between "there is no prior run" and "there is one but the instrument
+    changed". Those are different sentences to a client.
+
+    Storage is create-only, so the history already exists; this is a query, not a
+    schema change. Degrades to None on a storage failure: a missing comparison
+    reads as a first cycle, which is conservative, whereas raising would take out
+    a report that is otherwise complete.
+    """
+    try:
+        runs = db.list_audit_runs(client_name)
+    except db.StorageError:
+        return None
+    earlier = [
+        r
+        for r in runs
+        if str(r.get("id", "")) != run_id
+        and str(r.get("created_at", "")) < created_at
+        # A run that never finished measured a different (smaller) thing. Comparing
+        # against it would report the shortfall as a drop in the client's
+        # visibility, which is the single most damaging false claim available here.
+        and str(r.get("status") or "") == "done"
+    ]
+    if not earlier:
+        return None
+    latest = earlier[-1]  # list_audit_runs is oldest-first
+    return str(latest.get("id", "")), str(latest.get("query_set_version", ""))
 
 
 def _status_from_db(run_id: str) -> RunStatus | None:
@@ -1014,6 +1066,9 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         run_date=str(row.get("created_at", ""))[:10],
         site_audit=site_audit,
         local_pack=local_pack,
+        prior_run=_prior_comparable_run(
+            run_id, str(row.get("client_name", "")), str(row.get("created_at", ""))
+        ),
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -1108,6 +1163,9 @@ def get_report(run_id: str) -> ReportPayload | None:
             state.local_pack,
             state.audit.config.client_name,
             (state.audit.config.location or "").strip(),
+        ),
+        prior_run=_prior_comparable_run(
+            state.db_run_id or "", state.audit.config.client_name, state.created_at
         ),
     )
     if state.state == "done":

@@ -21,6 +21,7 @@ from anthropic.types import (
 from src.config import settings
 from src.pipeline.judge_cache import JudgeCache, Verdict
 from src.storage.models import (
+    JUDGE_SEVERITIES,
     AccuracyFlag,
     AccuracyFlagType,
     AnswerJudgment,
@@ -114,6 +115,7 @@ def _call_flags(model: str) -> tuple[bool, bool]:
             model,
         )
     return send_temperature, send_thinking_disabled
+
 
 _BASE_INSTRUCTIONS = """Question asked: {query}
 
@@ -344,7 +346,7 @@ def _judgment_tool() -> ToolParam:
                             "type": {"type": "string", "enum": [t.value for t in AccuracyFlagType]},
                             "claim": {"type": "string"},
                             "reality": {"type": "string"},
-                            "severity": {"type": "string", "enum": [s.value for s in Severity]},
+                            "severity": {"type": "string", "enum": list(JUDGE_SEVERITIES)},
                         },
                         "required": ["type", "claim", "reality", "severity"],
                     },
@@ -492,7 +494,7 @@ def _accuracy_tool() -> ToolParam:
                             "type": {"type": "string", "enum": [t.value for t in AccuracyFlagType]},
                             "claim": {"type": "string"},
                             "reality": {"type": "string"},
-                            "severity": {"type": "string", "enum": [s.value for s in Severity]},
+                            "severity": {"type": "string", "enum": list(JUDGE_SEVERITIES)},
                         },
                         "required": ["type", "claim", "reality", "severity"],
                     },
@@ -1042,6 +1044,11 @@ class Judge:
                             engine_name=r["engine_name"],
                             intent=r["intent"],
                             run_index=r["run_index"],
+                            # `.get` because a QueryResult assembled in a test or
+                            # by an older caller may predate the field, and a
+                            # missing timestamp must degrade to "undated", never
+                            # crash a judged run.
+                            observed_at=str(r.get("timestamp", "")),
                         )
                         for f in flags
                     ],

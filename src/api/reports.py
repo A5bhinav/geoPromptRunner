@@ -1,20 +1,29 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TypedDict
 
 from src.engines.local_pack import LocalPackCapture
-from src.pipeline import judge_metrics, metrics
+from src.pipeline import findings as findings_mod
+from src.pipeline import judge_metrics, metrics, stats
 from src.pipeline.orchestrator import AuditOutcome
+from src.pipeline.severity import SEVERITY_ORDER
 from src.storage.models import AccuracyFlag, AnswerJudgment
 
 __all__ = [
     "GradePayload",
+    "RatePayload",
     "ScorecardPayload",
     "LeaderRow",
     "BucketRow",
     "StabilityRow",
+    "EngineCellRow",
     "FlagRow",
+    "OccurrenceRow",
+    "EvidenceRow",
+    "FindingGroupRow",
+    "OpenFindingsPayload",
     "SourceRow",
     "LosingRow",
     "SiteCheckRow",
@@ -22,8 +31,35 @@ __all__ = [
     "RoadmapRow",
     "SiteAuditPayload",
     "ReportPayload",
+    "NON_REPRODUCIBILITY_DISCLOSURE",
+    "INDEPENDENCE_DISCLAIMER",
     "build_report",
 ]
+
+#: Shipped once per report, in the methodology section, VERBATIM.
+#:
+#: A client will re-run a prompt, get a different answer, and doubt the report.
+#: Pre-empt it; never let them discover it. This wording has been written to be
+#: honest without being self-undermining — **do not paraphrase it**, and do not
+#: "tighten" it in a copy pass. Standing rule:
+#: ``.claude/skills/audit-packaging/SKILL.md``.
+NON_REPRODUCIBILITY_DISCLOSURE = (
+    "We do not claim these errors are permanent or that they will reproduce on demand. "
+    "AI models are updated frequently and produce different answers to identical prompts "
+    "even when nothing about your brand has changed — a documented property of how these "
+    "systems are served, not a flaw in our testing. Each finding states how many "
+    "independent attempts we made, how many produced the error, the exact date and time, "
+    "and the exact prompt used. Our claims are about what we observed, when — not a "
+    "guarantee of what you will see if you ask right now."
+)
+
+#: Also once per report. Nominative fair use covers plain-text vendor names; it
+#: does not cover logos, and it does not cover an implication of endorsement.
+INDEPENDENCE_DISCLAIMER = (
+    "Not affiliated with, sponsored by, or endorsed by OpenAI, Anthropic, Google or "
+    "Perplexity. Product names are used solely to identify which system produced the "
+    "observed output."
+)
 
 
 class GradePayload(TypedDict):
@@ -33,6 +69,27 @@ class GradePayload(TypedDict):
     accuracy_penalty: float
     n_flags: int
     rationale: str
+
+
+class RatePayload(TypedDict):
+    """A rate WITH its denominator and its interval. The only shape a rate ships in.
+
+    ``successes``/``n`` are what the report renders — "7 of 12 runs" — and ``rate``
+    is secondary. ``ci_low``/``ci_high`` are Wilson bounds computed on the
+    design-corrected effective sample (``n_eff``), so the interval reflects that
+    repeat runs of one prompt are correlated rather than independent.
+
+    ``n == 0`` means insufficient data. It does NOT mean 0%, and a consumer that
+    renders it as 0% is asserting the opposite of what was measured.
+    """
+
+    successes: int
+    n: int
+    n_eff: float
+    rate: float
+    ci_low: float
+    ci_high: float
+    label: str  # "7 of 12 runs (58%)" — pre-formatted so every surface agrees
 
 
 class LeaderRow(TypedDict):
@@ -78,8 +135,11 @@ class StabilityRow(TypedDict):
 
 
 class FlagRow(TypedDict):
+    """One raw flag. Kept for CSV/JSON export and the appendix — **not** the thing
+    the report renders. ``finding_groups`` is what a client reads."""
+
     type: str
-    severity: str
+    severity: str  # the FOUR-level scale; `critical` is derived, see severity.py
     claim: str
     reality: str
     # Provenance: which cell produced this flag (P0-T1). Empty strings when the
@@ -90,6 +150,94 @@ class FlagRow(TypedDict):
     engine_name: str
     intent: str
     run_index: int
+    observed_at: str
+    # Identity + root cause, derived at build time (P0-T1/T3).
+    cluster_id: str
+    theme: str
+
+
+class OccurrenceRow(TypedDict):
+    """How reproducibly a finding appeared. Both numbers or neither."""
+
+    observed: int
+    total: int
+    first_seen_date: str
+    last_seen_date: str
+    # "observed in 4 of 5 runs across 06-11 → 06-13" — the per-finding short form
+    # of the non-reproducibility disclosure. Pre-formatted so the wording cannot
+    # drift between the web report, the digest and the PDF.
+    phrase: str
+
+
+class EvidenceRow(TypedDict):
+    """What makes a finding checkable. Every field is required to ship one."""
+
+    prompt: str  # VERBATIM question. Never the query id.
+    engine_name: str
+    model_id: str  # the pinned model that answered; "" when the run predates it
+    intent: str
+    observed_at: str
+    excerpt: str  # the model's own words
+    reality: str  # the fact-sheet line, verbatim
+
+
+class FindingGroupRow(TypedDict):
+    """One root cause, one card, one action. The unit the report is built from.
+
+    Keyed on ``theme``, not on a claim cluster: "confused with Fitbit" and "not a
+    recognized brand" cluster apart and are one root cause with one fix. Grouping
+    on the cluster produced 54 cards from the real Fort run.
+    """
+
+    theme: str
+    theme_label: str
+    title: str
+    severity: str
+    instance_count: int  # SECONDARY. Headline counts are themes, not instances.
+    engines: list[str]
+    intents: list[str]
+    occurrence: OccurrenceRow
+    representative_claims: list[str]
+    # Every distinct claim-cluster folded in. The lifecycle engine tracks THESE
+    # across weeks (P2-T2); the card tracks the theme.
+    member_cluster_ids: list[str]
+    reality: str
+    evidence: list[EvidenceRow]
+    # Observations this finding HAS, vs the capped set above. A card that shows 4
+    # of 94 must say so; one that implies it showed all 94 is overstating.
+    evidence_total: int
+    fix_channel: str
+    owner: str
+    effort: str  # S | M | L
+    action: str
+    verification: str
+    priority: float
+    flag_types: list[str]
+
+
+class EngineCellRow(TypedDict):
+    """One brand's presence on one engine, as a count with its denominator."""
+
+    brand: str
+    engine_name: str
+    present: int  # cells where the brand appeared
+    cells: int  # cells that returned an answer at all — 0 means NOT MEASURED
+    rate: float
+
+
+class OpenFindingsPayload(TypedDict):
+    """The open-findings tile. Counted, never scored.
+
+    ``themes`` is the client-facing number. ``instances`` is the observation count
+    behind it and appears only as a secondary figure — one counting unit per view.
+    """
+
+    themes: int
+    critical: int
+    instances: int
+    # Theme counts per severity, in SEVERITY_ORDER. This is what the count bar
+    # renders: "3 Critical · 12 High · 40 Medium · 180 Low", before any card.
+    by_severity: dict[str, int]
 
 
 class SourceRow(TypedDict):
@@ -98,6 +246,12 @@ class SourceRow(TypedDict):
 
 
 class LosingRow(TypedDict):
+    # The verbatim question, which is what renders (P1-T3). `query_id` stays in
+    # the payload as a join key and MUST NOT be shown: `cmp-05` is the most
+    # actionable data in the report rendered unreadable. Every credible tool in
+    # the category shows the real thing — Lighthouse the resource, axe the
+    # selector, Semrush the URL.
+    prompt: str
     query_id: str
     intent: str
     engine_name: str
@@ -190,7 +344,35 @@ class LocalPackPayload(TypedDict):
 
 
 class ScorecardPayload(TypedDict):
+    """Four measured tiles. **No letter grade, no composite score.**
+
+    Every headline number here is either *counted* (findings, cycles open) or
+    *measured* (sampled rate, share of model). That is a hard rule and the one
+    most likely to be quietly re-litigated — an earlier draft compromised to
+    "split the grade into two subscores", which smuggled a `B−` straight back onto
+    page 1 (P1-T6).
+
+    Why it stays dead: a static score is the hero metric of a ONE-OFF audit, and
+    this is a recurring product whose hero is the delta and the closing backlog —
+    both already on the page. A grade over our own rubric is opaque, unauditable,
+    and unmovable by the client; nobody can act on a `B−`. And grading a
+    pre-launch brand on visibility it structurally cannot have is a category
+    error: a thin file, not a bad score.
+
+    ``visibility_grade`` survives in the payload for back-compat with stored
+    deliverables and the CSV export. **Nothing renders it.**
+    """
+
     visibility_grade: GradePayload | None
+    # Tile 1 — AI visibility, as a count with its denominator.
+    ai_visibility: RatePayload
+    # Tile 3 — open findings, counted in THEMES.
+    open_findings: OpenFindingsPayload
+    # Tile 4 — the oldest still-open finding, which replaces the grade and does
+    # its job better: SLA-style aging is what creates pressure to act, and it is
+    # a count rather than an opinion. None until the lifecycle lands (P2-T2); the
+    # tile renders "—" rather than inventing an age.
+    oldest_open: FindingGroupRow | None
     share_of_model_client: float
     top_competitor: str | None
     top_competitor_share: float | None
@@ -229,6 +411,33 @@ class ReportPayload(TypedDict):
     # Per-engine reproducibility of the client's verdict across repeat runs. Empty on a
     # single-run cycle (nothing to compare), which is itself the honest answer.
     stability: list[StabilityRow]
+    # Brand x engine presence, every cell carrying its own denominator. Engine
+    # divergence is the most decision-relevant split in this data and nothing
+    # showed it before. Empty on the regex path (no per-brand cell structure).
+    engine_matrix: list[EngineCellRow]
+    # --- the deliverable ---------------------------------------------------
+    # One bold sentence a CMO can act on, generated DETERMINISTICALLY from
+    # structured fields. No LLM: narrative generation is P4-T4 and must not land
+    # before the grounding post-check exists. A hallucinating summary in a
+    # hallucination-detection product is the worst failure mode available.
+    exec_summary: str
+    # ≤15 themed findings, ordered Critical → High → Medium → Low then by
+    # priority. THIS is what renders; `accuracy_flags` is the appendix.
+    finding_groups: list[FindingGroupRow]
+    # The 3–7 highest-priority actions, a subset of `finding_groups` in the same
+    # order. Pre-sliced so every surface shows the same shortlist.
+    priority_actions: list[FindingGroupRow]
+    # How the theme classifier coped this run: rule / type-default / unclassified.
+    # A rising type_default share is the leading indicator the rule set has
+    # stopped keeping up. Reported, never averaged away.
+    theme_coverage: dict[str, float]
+    # Why no week-over-week comparison is shown, when there isn't one:
+    # "no_prior_run" | "query_set_changed" | "" (a comparison IS available).
+    # Rendered as an honest explanation rather than a silent absence.
+    comparison_blocked_reason: str
+    # Verbatim, once per report. See the module constants.
+    methodology_disclosure: str
+    independence_disclaimer: str
     accuracy_flags: list[FlagRow]
     # The WEAKEST verification across the fact sheet this run was judged against
     # (a `Verification` value), or None when no sheet was used. Consumers that
@@ -254,6 +463,120 @@ def _grade_payload(grade: judge_metrics.VisibilityGrade) -> GradePayload:
         accuracy_penalty=grade.accuracy_penalty,
         n_flags=grade.n_flags,
         rationale=grade.rationale,
+    )
+
+
+def _rate_payload(successes: int, n: int, runs_per_query: int, unit: str = "runs") -> RatePayload:
+    """Wrap a count into the only shape a rate is allowed to ship in."""
+    iv = stats.interval(successes, n, runs_per_query=max(1, runs_per_query))
+    return RatePayload(
+        successes=successes,
+        n=n,
+        n_eff=round(iv.n_eff, 2),
+        rate=iv.point,
+        ci_low=iv.lower,
+        ci_high=iv.upper,
+        label=stats.format_rate(successes, n, unit),
+    )
+
+
+def _group_row(g: findings_mod.FindingGroup) -> FindingGroupRow:
+    return FindingGroupRow(
+        theme=g.theme,
+        theme_label=g.theme_label,
+        title=g.title,
+        severity=g.severity,
+        instance_count=g.instance_count,
+        engines=g.engines,
+        intents=g.intents,
+        occurrence=OccurrenceRow(
+            observed=g.occurrence.observed,
+            total=g.occurrence.total,
+            first_seen_date=g.occurrence.first_seen_date,
+            last_seen_date=g.occurrence.last_seen_date,
+            phrase=g.occurrence.phrase(),
+        ),
+        representative_claims=g.representative_claims,
+        member_cluster_ids=g.member_cluster_ids,
+        reality=g.reality,
+        evidence=[
+            EvidenceRow(
+                prompt=e.prompt,
+                engine_name=e.engine_name,
+                model_id=e.model_id,
+                intent=e.intent,
+                observed_at=e.observed_at,
+                excerpt=e.excerpt,
+                reality=e.reality,
+            )
+            for e in g.evidence
+        ],
+        evidence_total=g.evidence_total,
+        fix_channel=g.fix_channel,
+        owner=g.owner,
+        effort=g.effort,
+        action=g.action,
+        verification=g.verification,
+        priority=round(g.priority, 4),
+        flag_types=g.flag_types,
+    )
+
+
+def _exec_summary(
+    client: str,
+    visibility: RatePayload,
+    engine_count: int,
+    open_findings: OpenFindingsPayload,
+    top_action: FindingGroupRow | None,
+    comparison_blocked_reason: str,
+    accuracy_assessed: bool,
+) -> str:
+    """The BLUF sentence. Deterministic; assembled from fields, never generated.
+
+    Degrades rather than lies. With no measurement it says so; with no prior run
+    it omits the direction rather than implying one; with no findings it says the
+    models described the client accurately instead of manufacturing an action.
+    """
+    if not visibility["n"]:
+        return (
+            f"{client} could not be measured this cycle — no surface returned an "
+            f"answer, so there is no visibility figure and no finding to act on."
+        )
+
+    surfaces = f"{engine_count} engine{'s' if engine_count != 1 else ''}"
+    first = f"{client} appears in {visibility['label']} across {surfaces}."
+
+    if comparison_blocked_reason == "query_set_changed":
+        first += " The query set changed this cycle, so no comparison to the prior cycle is shown."
+    elif comparison_blocked_reason == "no_prior_run":
+        first += " This is the first cycle, so there is no prior figure to compare against."
+
+    # "Nothing was checked" and "everything checked out" are opposite claims, and
+    # zero findings is what BOTH look like from here. Without a fact sheet there
+    # is no ground truth to contradict, so the honest sentence names the gap
+    # rather than congratulating the client on an audit that never ran.
+    if not accuracy_assessed:
+        return (
+            f"{first} Accuracy was not assessed this cycle — without a fact sheet there is no "
+            f"ground truth to check the models' claims about {client} against."
+        )
+
+    themes_open = open_findings["themes"]
+    if themes_open == 0:
+        return f"{first} No findings are open — the models described {client} accurately."
+
+    critical = open_findings["critical"]
+    second = (
+        f"{themes_open} finding{'s' if themes_open != 1 else ''} "
+        f"{'are' if themes_open != 1 else 'is'} open"
+    )
+    second += f", {critical} of them Critical." if critical else "."
+
+    if top_action is None:
+        return f"{first} {second}"
+    return (
+        f"{first} {second} The highest-leverage fix this cycle is: "
+        f"{top_action['action']} (Owner: {top_action['owner']} · Effort: {top_action['effort']})"
     )
 
 
@@ -338,6 +661,7 @@ def build_report(
     site_audit: SiteAuditPayload | None = None,
     local_pack: LocalPackPayload | None = None,
     fact_sheet_verification: str | None = None,
+    prior_run: tuple[str, str] | None = None,
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -361,6 +685,19 @@ def build_report(
     dead_engines = sorted(name for name, c in engine_coverage.items() if not c.is_measured)
     run_date = run_date or datetime.now(UTC).date().isoformat()
     has_judge = bool(judgments) and any(j.assessed for j in (judgments or []))
+
+    # --- Is a week-over-week comparison even legitimate? (P2-T1) ---
+    # Only compare like instruments. A run is comparable only to a run with the
+    # SAME query_set_version; `trend.compare_runs` says validity depends on that
+    # and calls it the caller's job. This is the caller doing that job. When the
+    # version changed we show NO comparison and say why — never a silent
+    # comparison across a changed instrument, which would read as movement in the
+    # client's visibility when the only thing that moved was the ruler.
+    comparison_blocked_reason = ""
+    if prior_run is None:
+        comparison_blocked_reason = "no_prior_run"
+    elif prior_run[1] != outcome.query_set_version:
+        comparison_blocked_reason = "query_set_changed"
 
     # Compute every brand's cells and the accuracy flags ONCE on the judge path,
     # then reuse them across mention/visibility/grade/losing — instead of each
@@ -443,20 +780,107 @@ def build_report(
         if s.is_measured
     ]
 
-    # --- Accuracy flags (judge only) ---
+    # --- Brand x engine matrix (the heatmap's data) ---
+    # Counted per (brand, engine) rather than rate-only, because a cell with no
+    # answers and a cell where the brand is absent look identical as "0%" and are
+    # opposite facts. `cells == 0` renders as "not measured", never as a zero.
+    engine_matrix: list[EngineCellRow] = []
+    if has_judge:
+        for brand in brands:
+            per_engine: dict[str, tuple[int, int]] = {}
+            for cell in cells_map.get(brand, []):
+                present, total = per_engine.get(cell.engine_name, (0, 0))
+                per_engine[cell.engine_name] = (present + (1 if cell.present else 0), total + 1)
+            for engine_name in engines:
+                present, total = per_engine.get(engine_name, (0, 0))
+                engine_matrix.append(
+                    EngineCellRow(
+                        brand=brand,
+                        engine_name=engine_name,
+                        present=present,
+                        cells=total,
+                        rate=(present / total if total else 0.0),
+                    )
+                )
+
+    # --- Findings: identity -> theme -> group -> evidence -> rank (P0-T1/T3, P1-T1/T4) ---
+    #
+    # Built from the PER-CELL flags, not `judge_metrics.collect_accuracy_flags`,
+    # which dedups by (type, claim) for display. Feeding the deduped list here
+    # would report every finding as having occurred exactly once, which is the
+    # opposite of what the occurrence line is for.
+    # The honest denominator for "N of M runs": how many runs of each cell
+    # RETURNED AN ANSWER. A cell that errored contributes to neither numerator nor
+    # denominator — "not measured" is not "not found".
+    runs_by_cell: dict[tuple[str, str], int] = {}
+    prompts_by_query: dict[str, str] = {}
+    observed_at_by_cell: dict[tuple[str, str, int], str] = {}
+    for r in results:
+        prompts_by_query.setdefault(r["query_id"], r["prompt"])
+        observed_at_by_cell[(r["query_id"], r["engine_name"], r["run_index"])] = r.get(
+            "timestamp", ""
+        )
+        if r["response"] is not None:
+            key = (r["query_id"], r["engine_name"])
+            runs_by_cell[key] = runs_by_cell.get(key, 0) + 1
+
+    per_cell_flags: list[AccuracyFlag] = []
+    if has_judge:
+        assert judgments is not None
+        for j in judgments:
+            if not j.assessed:
+                continue
+            for f in j.accuracy_flags:
+                # WHEN the engine said it. The judgments table has no per-cell
+                # timestamp, so on the stored path this is the only place the date
+                # can come from — and a finding without one is not shippable.
+                # Idempotent: the live path already stamped it identically.
+                per_cell_flags.append(
+                    f
+                    if f.observed_at
+                    else replace(
+                        f,
+                        observed_at=observed_at_by_cell.get(
+                            (f.query_id, f.engine_name, f.run_index), ""
+                        ),
+                    )
+                )
+
+    grouping = findings_mod.build_finding_groups(
+        per_cell_flags,
+        client=client,
+        prompts_by_query=prompts_by_query,
+        runs_by_cell=runs_by_cell,
+        engine_models=outcome.engine_models,
+        total_engines=len(engines),
+    )
+    finding_groups = [_group_row(g) for g in grouping.groups]
+    # 3–7 rows: enough to be a plan, few enough to be done before the next cycle.
+    # A 40-row "priority" list is a backlog wearing a plan's clothes.
+    priority_actions = finding_groups[:7]
+
+    # --- Accuracy flags (judge only) — the appendix / export list ---
+    # Identity is READ BACK from the grouping rather than recomputed. Re-running
+    # the clustering per flag would mint ids that disagree with the cards, and a
+    # CSV whose finding ids don't match the report is worse than no CSV.
+    identity_by_claim = grouping.identity_by_claim()
     accuracy_flags: list[FlagRow] = []
     if has_judge:
         for f in judge_flags:
+            identity = identity_by_claim.get((f.type, f.claim))
             accuracy_flags.append(
                 FlagRow(
                     type=f.type,
-                    severity=f.severity,
+                    severity=identity.severity if identity else f.severity,
                     claim=f.claim,
                     reality=f.reality,
                     query_id=f.query_id,
                     engine_name=f.engine_name,
                     intent=f.intent,
                     run_index=f.run_index,
+                    observed_at=f.observed_at,
+                    cluster_id=identity.cluster_id if identity else "",
+                    theme=identity.theme if identity else "",
                 )
             )
 
@@ -473,6 +897,7 @@ def build_report(
         for cell in judge_metrics.losing_cells(judgments, client, competitors, cells_map=cells_map):
             losing_queries.append(
                 LosingRow(
+                    prompt=prompts_by_query.get(cell.query_id, ""),
                     query_id=cell.query_id,
                     intent=cell.intent,
                     engine_name=cell.engine_name,
@@ -484,6 +909,7 @@ def build_report(
         for loss in metrics.losing_queries(results, client, competitors):
             losing_queries.append(
                 LosingRow(
+                    prompt=prompts_by_query.get(loss.query_id, ""),
                     query_id=loss.query_id,
                     intent=loss.intent,
                     engine_name=loss.engine_name,
@@ -512,8 +938,51 @@ def build_report(
     # unset reads as "not assessed" — conservative, and gone once the row is set.
     accuracy_assessed = has_judge and (fact_sheet_present or bool(accuracy_flags))
 
+    # --- The four measured tiles (P1-T6) ---
+    #
+    # AI visibility as a COUNT with its denominator, never a bare percentage. The
+    # numerator is the client's answered cells that mentioned it; the denominator
+    # is the answered cells, read off the run rather than from RUNS_PER_QUERY
+    # (which defaults to 5 while stored runs vary).
+    answered_cells = sum(c.answered_cells for c in engine_coverage.values())
+    client_mentions = round(mention_by_brand.get(client, 0.0) * answered_cells)
+    ai_visibility = _rate_payload(
+        client_mentions, answered_cells, outcome.runs_per_query, unit="sampled answers"
+    )
+
+    # Counted in THEMES — one counting unit per client-facing view. `instances` is
+    # the observation count and stays secondary; a strip counting instances beside
+    # a tile counting themes invites a reader to do the subtraction and catch a
+    # contradiction, after which every number on the page is suspect.
+    by_severity = {level: 0 for level in SEVERITY_ORDER}
+    for row in finding_groups:
+        by_severity[row["severity"]] = by_severity.get(row["severity"], 0) + 1
+    open_findings = OpenFindingsPayload(
+        themes=len(finding_groups),
+        critical=by_severity.get("critical", 0),
+        instances=grouping.total_instances,
+        by_severity=by_severity,
+    )
+
+    exec_summary = _exec_summary(
+        client=client,
+        visibility=ai_visibility,
+        engine_count=len(engines),
+        open_findings=open_findings,
+        top_action=priority_actions[0] if priority_actions else None,
+        comparison_blocked_reason=comparison_blocked_reason,
+        accuracy_assessed=accuracy_assessed,
+    )
+
     scorecard = ScorecardPayload(
         visibility_grade=grade_payload,
+        ai_visibility=ai_visibility,
+        open_findings=open_findings,
+        # Needs `first_seen` from the lifecycle engine (P2-T2). Until that lands
+        # the tile renders "—": an age we cannot compute is not an age we may
+        # guess, and storage is create-only so the history is already there to
+        # compute it from once the engine exists.
+        oldest_open=None,
         share_of_model_client=share_by_brand.get(client, 0.0),
         top_competitor=top_competitor,
         top_competitor_share=(share_by_brand.get(top_competitor) if top_competitor else None),
@@ -524,7 +993,7 @@ def build_report(
         citation_rate_client=citation_rate_client,
         accuracy_assessed=accuracy_assessed,
         accuracy_flag_count=(len(accuracy_flags) if accuracy_assessed else None),
-        answered_cells=sum(c.answered_cells for c in engine_coverage.values()),
+        answered_cells=answered_cells,
         attempted_cells=sum(c.total_cells for c in engine_coverage.values()),
     )
 
@@ -542,6 +1011,21 @@ def build_report(
         leaderboard=leaderboard,
         by_bucket=by_bucket,
         stability=stability,
+        engine_matrix=engine_matrix,
+        exec_summary=exec_summary,
+        finding_groups=finding_groups,
+        priority_actions=priority_actions,
+        theme_coverage={
+            "total": float(grouping.coverage.total),
+            "by_rule": float(grouping.coverage.by_rule),
+            "by_type_default": float(grouping.coverage.by_type_default),
+            "unclassified": float(grouping.coverage.unclassified),
+            "unclassified_rate": grouping.coverage.unclassified_rate,
+            "type_default_rate": grouping.coverage.type_default_rate,
+        },
+        comparison_blocked_reason=comparison_blocked_reason,
+        methodology_disclosure=NON_REPRODUCIBILITY_DISCLOSURE,
+        independence_disclaimer=INDEPENDENCE_DISCLAIMER,
         accuracy_flags=accuracy_flags,
         fact_sheet_verification=fact_sheet_verification,
         sources=sources,

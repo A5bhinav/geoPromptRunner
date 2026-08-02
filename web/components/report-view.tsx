@@ -30,16 +30,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { IntentBadge, SeverityBadge } from "@/components/badges";
+import { IntentBadge, SeverityBadge, SeveritySummaryBar } from "@/components/badges";
 import { SiteAuditSection } from "@/components/site-audit-section";
+import { DEFAULT_BRAND, type BrandConfig } from "@/lib/brand";
+import { useIsPrint } from "@/lib/render-mode";
 // Charts pull in recharts (the heaviest dependency). Load them lazily on the
 // client so recharts ships in a report-only chunk, not the shared bundle.
 const chartFallback = <div className="h-40 animate-pulse rounded-lg bg-secondary/40" />;
+// `ssr: false` + a loading fallback is right for the screen — recharts is the
+// heaviest dependency in the bundle and belongs in a report-only chunk. It is
+// WRONG for print, where the chunk may still be resolving when the capture runs.
+// The readiness gate in RenderModeProvider covers the race (it requires two
+// quiet frames after the last chart registers), which is why the dynamic import
+// can stay: nothing captures until every chart has actually laid out.
 const LeaderboardChart = dynamic(
   () => import("@/components/charts").then((m) => m.LeaderboardChart),
   { ssr: false, loading: () => chartFallback },
 );
-const ShareDonut = dynamic(() => import("@/components/charts").then((m) => m.ShareDonut), {
+const ShareStackedBar = dynamic(
+  () => import("@/components/charts").then((m) => m.ShareStackedBar),
+  { ssr: false, loading: () => chartFallback },
+);
+const EngineHeatmap = dynamic(() => import("@/components/charts").then((m) => m.EngineHeatmap), {
   ssr: false,
   loading: () => chartFallback,
 });
@@ -56,6 +68,7 @@ import {
   downloadAudit,
   fetchJudgeStatus,
   judgeAudit,
+  type FindingGroupRow,
   type JudgeStatus,
   type ReportPayload,
 } from "@/lib/api";
@@ -65,48 +78,155 @@ function MetricCard({
   label,
   value,
   sub,
+  delta,
   muted,
 }: {
   icon: React.ReactNode;
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
+  /** On a recurring report the delta is the SECOND-LARGEST element on a tile,
+   * after the value. Absent until the lifecycle engine lands (P2-T2) — an absent
+   * chip is honest; a "—" chip pretending to be a comparison is not. */
+  delta?: React.ReactNode;
   muted?: boolean;
 }) {
   return (
-    <Card>
+    <Card className="card">
       <CardContent className="pt-6">
-        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="label mb-2 flex items-center gap-2">
           {icon}
           {label}
         </div>
-        <div
-          className={
-            muted
-              ? "text-lg font-medium text-muted-foreground"
-              : "text-3xl font-semibold tabular-nums"
-          }
-        >
-          {value}
-        </div>
-        {sub && <div className="mt-1 text-sm text-muted-foreground">{sub}</div>}
+        <div className={muted ? "body text-lg font-medium" : "display-value"}>{value}</div>
+        {delta && <div className="mt-1.5 text-sm font-medium">{delta}</div>}
+        {sub && <div className="body mt-1 text-sm">{sub}</div>}
       </CardContent>
     </Card>
   );
 }
 
-function gradeColor(letter: string): string {
-  if (letter === "A" || letter === "B") return "text-[hsl(var(--success))]";
-  if (letter === "C") return "text-[hsl(var(--warning))]";
-  return "text-destructive";
-}
-
 function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <h2 className="label flex items-center gap-2">
       {icon}
       {children}
     </h2>
+  );
+}
+
+/** Client-facing surface names. Never a raw engine key or a bare model id. */
+const ENGINE_LABELS: Record<string, string> = {
+  openai: "ChatGPT",
+  openai_search: "ChatGPT (web search)",
+  anthropic: "Claude",
+  anthropic_search: "Claude (web search)",
+  gemini: "Gemini",
+  gemini_grounded: "Gemini (grounded)",
+  perplexity: "Perplexity",
+  google_ai_overviews: "Google AI Overviews",
+  google_ai_mode: "Google AI Mode",
+  mock: "Mock",
+};
+
+const engineLabel = (name: string) => ENGINE_LABELS[name] ?? name;
+
+/** A full finding card. Critical and High only — Medium and Low collapse into a
+ * compact table, because a report where every finding looks identical gives the
+ * reader no triage signal and they stop reading.
+ *
+ * Voice is flat and factual, third person: the engine "states", it does not
+ * "falsely claim" or "hallucinate". Severity carries the alarm; the prose does
+ * not. Anthropomorphising a named vendor's model is both imprecise and legally
+ * careless. */
+function FindingCard({ group }: { group: FindingGroupRow }) {
+  const isPrint = useIsPrint();
+  // Expanded by default when printing. A collapsed disclosure is exactly the
+  // "silently drops content" failure — the live page looks complete while the
+  // PDF loses the evidence trail, which is the part that makes a finding
+  // checkable rather than assertable.
+  const [open, setOpen] = React.useState(isPrint);
+  const lead = group.evidence[0];
+
+  return (
+    <div className="report-card card rounded-lg p-4">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <SeverityBadge severity={group.severity} />
+        <span className="font-medium">{group.title}</span>
+        <span className="body ml-auto text-xs">{group.theme_label}</span>
+      </div>
+
+      {lead && (
+        <p className="body mb-2 text-sm">
+          {engineLabel(lead.engine_name)}
+          {lead.model_id ? ` (${lead.model_id})` : ""} — checked{" "}
+          {lead.observed_at.slice(0, 10) || "date not recorded"}, {group.occurrence.phrase} —
+          states:
+        </p>
+      )}
+
+      <blockquote
+        className="mb-2 border-l-2 pl-3 text-sm italic"
+        style={{ borderColor: "var(--mist)" }}
+      >
+        “{group.representative_claims[0]}”
+      </blockquote>
+      {group.reality && (
+        <p className="mb-3 text-sm">
+          <span className="label">From your fact sheet</span>
+          <br />
+          {group.reality}
+        </p>
+      )}
+
+      <p className="mb-1 text-sm">
+        <span className="font-medium">Fix:</span> {group.action}
+      </p>
+      <p className="body text-xs">
+        Owner: {group.owner} · Effort: {group.effort} · Appears on{" "}
+        {group.engines.map(engineLabel).join(", ") || "no recorded surface"} ·{" "}
+        {group.instance_count} observation{group.instance_count === 1 ? "" : "s"}
+      </p>
+
+      {group.evidence.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="no-print mt-3 text-xs underline"
+            style={{ color: "var(--blue)" }}
+          >
+            {open ? "Hide evidence" : `Show evidence (${group.evidence.length})`}
+          </button>
+          {/* Always rendered for print: print never scrolls, and a collapsed
+              details element would silently drop the evidence trail from the PDF
+              while the live page looks complete. */}
+          <div className={open ? "mt-3 space-y-3" : "hidden mt-3 space-y-3 print:block"}>
+            {/* The card evidences a few observations, not all of them — say so
+                rather than letting the reader infer this is everything. */}
+            {group.evidence_total > group.evidence.length && (
+              <p className="body text-xs">
+                Showing {group.evidence.length} of {group.evidence_total} observations, one per
+                surface. The full set is in the answers export.
+              </p>
+            )}
+            {group.evidence.map((e, i) => (
+              <div key={i} className="rounded border p-2 text-xs" style={{ borderColor: "var(--rule)" }}>
+                <p className="body mb-1">
+                  <span className="label">Prompt</span> “{e.prompt}”
+                </p>
+                <p className="body mb-1">
+                  {engineLabel(e.engine_name)}
+                  {e.model_id ? ` · ${e.model_id}` : " · model not recorded"} ·{" "}
+                  {e.observed_at || "no timestamp"}
+                </p>
+                <p className="italic">“{e.excerpt}”</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -114,14 +234,28 @@ export function ReportView({
   report,
   runId,
   onJudged,
+  brand = DEFAULT_BRAND,
 }: {
   report: ReportPayload;
   runId?: string;
   // Lets the parent swap in the refreshed report after an on-demand judge pass.
   onJudged?: (report: ReportPayload) => void;
+  /** The client-facing skin. One object, so an agency white-label replaces the
+   * entire brand rather than an accent colour. */
+  brand?: BrandConfig;
 }) {
   const s = report.scorecard;
   const topComp = s.top_competitor;
+
+  // Findings, grouped. Optional in the payload so runs stored before P1-T1 still
+  // render — they fall back to no cards, and the appendix still lists the flags.
+  const groups = report.finding_groups ?? [];
+  const actions = report.priority_actions ?? [];
+  const open = s.open_findings;
+  const visibility = s.ai_visibility;
+  const bySeverity = open?.by_severity ?? {};
+  const criticalAndHigh = groups.filter((g) => g.severity === "critical" || g.severity === "high");
+  const mediumAndLow = groups.filter((g) => g.severity === "med" || g.severity === "low");
 
   const [judging, setJudging] = React.useState(false);
   const [judgeError, setJudgeError] = React.useState<string | null>(null);
@@ -180,16 +314,34 @@ export function ReportView({
   };
 
   return (
-    <div className="space-y-8">
+    <div className={`${brand.themeClass} space-y-8 p-4 sm:p-6`}>
+      {/* Masthead — a full-bleed navy band, which is the ONLY place Sky is legal
+          in the whole report. `--on-navy-accent` exists only inside `.on-navy`,
+          so using it anywhere else is a missing-variable bug rather than a
+          design-review argument. */}
+      <div className="on-navy report-section -mx-4 -mt-4 px-4 py-5 sm:-mx-6 sm:-mt-6 sm:px-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h1 className="display-lg">{report.client_name}</h1>
+            <p className="label mt-1" style={{ color: "var(--on-navy-accent)" }}>
+              AI visibility report
+            </p>
+          </div>
+          {brand.showMark && (
+            <span className="wordmark text-lg" style={{ color: "var(--on-navy-accent)" }}>
+              {brand.name}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {report.client_name} — GEO Audit
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="body text-sm">
             {report.run_date} · query set {report.query_set_version} · {report.runs_per_query}{" "}
-            run(s)/query · engines: {report.engines.join(", ") || "none"}
+            run(s)/query · surfaces:{" "}
+            {report.engines.map(engineLabel).join(", ") || "none"}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant={report.detection === "judge" ? "default" : "secondary"}>
@@ -282,24 +434,42 @@ export function ReportView({
         </div>
       )}
 
-      {/* §1 Scorecard */}
+      {/* §0 Executive summary — the one sentence a CMO acts on. Generated
+          deterministically from structured fields; no model wrote it. */}
+      {report.exec_summary && (
+        <section className="report-section">
+          <p className="display text-xl leading-snug">{report.exec_summary}</p>
+          {report.comparison_blocked_reason === "query_set_changed" && (
+            <p className="body mt-2 text-sm">
+              The question set changed since the last cycle, so the two are not comparable
+              instruments and no week-over-week figures are shown. Comparison resumes next cycle.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* §1 Scorecard — four tiles, every one COUNTED or MEASURED.
+          No letter grade and no composite score. See ScorecardPayload in
+          src/api/reports.py for why that stays true. */}
       <section className="space-y-3">
         <SectionTitle icon={<Trophy className="h-3.5 w-3.5" />}>Scorecard</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            icon={<Trophy className="h-3.5 w-3.5" />}
-            label="AI Visibility Grade"
-            muted={!s.visibility_grade}
+            icon={<Target className="h-3.5 w-3.5" />}
+            label="AI visibility"
+            muted={!visibility || visibility.n === 0}
             value={
-              s.visibility_grade ? (
-                <span className={gradeColor(s.visibility_grade.letter)}>
-                  {s.visibility_grade.letter}
-                </span>
-              ) : (
-                "Not assessed"
-              )
+              visibility && visibility.n > 0
+                ? `${visibility.successes} of ${visibility.n}`
+                : "Insufficient data"
             }
-            sub={s.visibility_grade ? s.visibility_grade.rationale : "needs the LLM judge"}
+            sub={
+              visibility && visibility.n > 0
+                ? `sampled answers across ${report.engines.length} surfaces · 95% CI ${pct(
+                    visibility.ci_low,
+                  )}–${pct(visibility.ci_high)}`
+                : "no surface returned an answer"
+            }
           />
           <MetricCard
             icon={<PieIcon className="h-3.5 w-3.5" />}
@@ -310,49 +480,90 @@ export function ReportView({
             }
           />
           <MetricCard
-            icon={<Target className="h-3.5 w-3.5" />}
-            label="Mention rate"
-            value={pct(s.mention_rate_client)}
-            sub={topComp ? `vs ${topComp} ${pct(s.mention_rate_top_competitor)}` : undefined}
-          />
-          <MetricCard
-            icon={<Quote className="h-3.5 w-3.5" />}
-            label="Citation rate"
-            muted={s.citation_rate_client === null}
-            value={s.citation_rate_client === null ? "Not assessed" : pct(s.citation_rate_client)}
-            sub={
-              s.citation_rate_client === null ? "no client domain provided" : "of cells cite client"
-            }
-          />
-          <MetricCard
             icon={<ShieldCheck className="h-3.5 w-3.5" />}
-            label="Accuracy flags"
+            label="Open findings"
             muted={!s.accuracy_assessed}
-            value={s.accuracy_assessed ? (s.accuracy_flag_count ?? 0) : "Not assessed"}
+            value={s.accuracy_assessed ? (open?.themes ?? 0) : "Not assessed"}
             sub={
               s.accuracy_assessed
-                ? "claims the models got wrong"
+                ? `${open?.critical ?? 0} critical · ${open?.instances ?? 0} observations`
                 : report.detection === "judge"
                   ? "needs a fact sheet"
                   : "needs the LLM judge"
             }
           />
+          {/* Replaces the grade, and does its job better: SLA-style aging is what
+              creates pressure to act, and it is a count rather than an opinion.
+              Renders "—" until the lifecycle engine lands (P2-T2) — an age we
+              cannot compute is not one we may guess. */}
+          <MetricCard
+            icon={<Repeat2 className="h-3.5 w-3.5" />}
+            label="Oldest still open"
+            muted={!s.oldest_open}
+            value={s.oldest_open ? s.oldest_open.title : "—"}
+            sub={
+              s.oldest_open
+                ? s.oldest_open.occurrence.phrase
+                : "needs a prior cycle to measure against"
+            }
+          />
         </div>
       </section>
+
+      {/* §1b This cycle's priority actions — above the findings, because a
+          reader who stops after one section should stop after the plan. 3–7
+          rows: more than that is a backlog wearing a plan's clothes. */}
+      {actions.length > 0 && (
+        <section className="report-section space-y-3">
+          <SectionTitle icon={<Target className="h-3.5 w-3.5" />}>
+            This cycle&rsquo;s priority actions
+          </SectionTitle>
+          <Card className="card">
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Effort</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {actions.map((a) => (
+                    <TableRow key={a.theme}>
+                      <TableCell>
+                        <span className="font-medium">{a.title}</span>
+                        <br />
+                        <span className="body text-sm">{a.action}</span>
+                      </TableCell>
+                      <TableCell>
+                        <SeverityBadge severity={a.severity} />
+                      </TableCell>
+                      <TableCell>{a.owner}</TableCell>
+                      <TableCell className="tabular-nums">{a.effort}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       {/* §2 Competitive position — donut + bars */}
       <section className="space-y-3">
         <SectionTitle icon={<PieIcon className="h-3.5 w-3.5" />}>Competitive position</SectionTitle>
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card className="card">
             <CardHeader>
               <CardTitle className="text-base">Share of model</CardTitle>
             </CardHeader>
             <CardContent>
-              <ShareDonut rows={report.leaderboard} />
+              <ShareStackedBar rows={report.leaderboard} />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="card">
             <CardHeader>
               <CardTitle className="text-base">Visibility leaderboard</CardTitle>
             </CardHeader>
@@ -361,6 +572,23 @@ export function ReportView({
             </CardContent>
           </Card>
         </div>
+
+        {/* Brand x surface. The most decision-relevant split in the data, and
+            nothing showed it before. */}
+        {(report.engine_matrix?.length ?? 0) > 0 && (
+          <Card className="card">
+            <CardHeader>
+              <CardTitle className="text-base">Where each brand appears, by surface</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EngineHeatmap
+                rows={report.engine_matrix ?? []}
+                engines={report.engines}
+                clientName={report.client_name}
+              />
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardContent className="pt-6">
             <Table>
@@ -441,44 +669,97 @@ export function ReportView({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="card">
             <CardHeader>
-              <CardTitle className="text-base">
-                Accuracy flags ({report.accuracy_flags.length})
-              </CardTitle>
+              <CardTitle className="text-base">Accuracy at a glance</CardTitle>
             </CardHeader>
             <CardContent>
-              {report.accuracy_flags.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {s.accuracy_assessed
-                    ? "None flagged — the models described the client accurately."
-                    : report.detection === "judge"
-                      ? "Not assessed — add a fact sheet (fact rows in the CSV) so the judge can check claims."
-                      : "Not assessed — enable the LLM judge (config,judge,true)."}
+              {!s.accuracy_assessed ? (
+                <p className="body text-sm">
+                  {report.detection === "judge"
+                    ? "Not assessed — add a fact sheet (fact rows in the CSV) so the judge can check claims against ground truth."
+                    : "Not assessed — enable the LLM judge (config,judge,true)."}
                 </p>
               ) : (
-                <ul className="space-y-3">
-                  {report.accuracy_flags.map((f, i) => (
-                    <li key={i} className="rounded-lg border p-3">
-                      <div className="mb-1 flex items-center gap-2">
-                        <SeverityBadge severity={f.severity} />
-                        <span className="text-sm font-medium capitalize">
-                          {f.type.replace(/_/g, " ")}
-                        </span>
-                      </div>
-                      <p className="text-sm">
-                        <span className="text-destructive">{f.claim}</span>
-                        <span className="text-muted-foreground"> → </span>
-                        <span>{f.reality}</span>
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                <SeveritySummaryBar counts={bySeverity} />
               )}
             </CardContent>
           </Card>
         </div>
       </section>
+
+      {/* §3c Findings — the deliverable.
+          Count bar FIRST, before any individual finding: most readers stop
+          there, and that is the design intent rather than a failure. Full cards
+          for Critical and High only; Medium and Low collapse into a table. */}
+      {s.accuracy_assessed && (
+        <section className="report-section space-y-4">
+          <SectionTitle icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+            What the models get wrong
+          </SectionTitle>
+
+          <SeveritySummaryBar counts={bySeverity} />
+
+          {groups.length === 0 ? (
+            <p className="body text-sm">
+              No findings are open — every claim the models made about {report.client_name} that
+              your fact sheet covers checked out.
+            </p>
+          ) : (
+            <>
+              {criticalAndHigh.length > 0 && (
+                <div className="space-y-3">
+                  {criticalAndHigh.map((g) => (
+                    <FindingCard key={g.theme} group={g} />
+                  ))}
+                </div>
+              )}
+
+              {mediumAndLow.length > 0 && (
+                <Card className="card">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Medium and low findings ({mediumAndLow.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Finding</TableHead>
+                          <TableHead>Severity</TableHead>
+                          <TableHead>Surfaces</TableHead>
+                          <TableHead>Observed</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mediumAndLow.map((g) => (
+                          <TableRow key={g.theme}>
+                            <TableCell>
+                              <span className="font-medium">{g.title}</span>
+                              <br />
+                              <span className="body text-xs">{g.theme_label}</span>
+                            </TableCell>
+                            <TableCell>
+                              <SeverityBadge severity={g.severity} />
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {g.engines.map(engineLabel).join(", ") || "—"}
+                            </TableCell>
+                            <TableCell className="tabular-nums text-sm">
+                              {g.occurrence.observed} of {g.occurrence.total}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       {/* §3b How reproducible the verdicts were across repeat runs */}
       {(report.stability?.length ?? 0) > 0 && (
@@ -579,10 +860,22 @@ export function ReportView({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* The VERBATIM question, never `l.query_id`. `cmp-05` is
+                        the most actionable data in the report made unreadable;
+                        the id stays in the payload as a join key only. */}
                     {report.losing_queries.map((l, i) => (
                       <TableRow key={i}>
-                        <TableCell className="font-medium">{l.query_id}</TableCell>
-                        <TableCell>{l.engine_name}</TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {l.prompt ? `“${l.prompt}”` : "(question text not recorded)"}
+                          </span>
+                          {l.intent && (
+                            <div className="mt-1">
+                              <IntentBadge intent={l.intent} />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{engineLabel(l.engine_name)}</TableCell>
                         <TableCell>{l.competitor}</TableCell>
                       </TableRow>
                     ))}
@@ -596,6 +889,53 @@ export function ReportView({
 
       {/* §5 On-site & off-site audit (technique checklist Cat 1–6) */}
       {report.site_audit?.present && <SiteAuditSection siteAudit={report.site_audit} />}
+
+      {/* §6 Methodology — the disclosures, VERBATIM and exactly once.
+          A client WILL re-run a prompt, get a different answer, and doubt the
+          report. Pre-empt it here; never let them discover it. Do not paraphrase
+          either string — both are worded to be honest without self-undermining,
+          and both are supplied by the backend so every surface says the same
+          thing. */}
+      <section className="report-section space-y-3">
+        <SectionTitle icon={<ShieldCheck className="h-3.5 w-3.5" />}>Methodology</SectionTitle>
+        <Card className="card">
+          <CardContent className="space-y-3 pt-6">
+            <div>
+              <p className="label mb-1">How we measured</p>
+              <p className="body text-sm">
+                We asked {report.engines.length} AI surfaces (
+                {report.engines.map(engineLabel).join(", ") || "none"}) the{" "}
+                {report.query_set_version} question set, {report.runs_per_query} independent times
+                per question, and graded each answer against your fact sheet. Every rate in this
+                report is shown as a count with its denominator; percentages are secondary because
+                at this sample size a bare percentage is misleading.
+              </p>
+            </div>
+            {report.methodology_disclosure && (
+              <div>
+                <p className="label mb-1">On reproducing these results</p>
+                <p className="body text-sm">{report.methodology_disclosure}</p>
+              </div>
+            )}
+            <div>
+              <p className="label mb-1">Severity</p>
+              <p className="body text-sm">
+                <strong>Critical</strong> — a category or identity error, or a claim that materially
+                changes a purchase decision. <strong>High</strong> — an invented or materially
+                misstated capability, or a competitor&rsquo;s attributes applied to you.{" "}
+                <strong>Medium</strong> — a real capability omitted or understated.{" "}
+                <strong>Low</strong> — imprecise phrasing, unverifiable but not contradicted.
+              </p>
+            </div>
+            {report.independence_disclaimer && (
+              <p className="body text-xs">{report.independence_disclaimer}</p>
+            )}
+            {brand.poweredBy && (
+              <p className="body text-xs">Measurement by {brand.name}.</p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

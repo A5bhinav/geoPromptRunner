@@ -91,8 +91,9 @@ MAX_ENGINES: int = int(os.getenv("MAX_ENGINES", "8"))
 MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
 # Default repeats per (query, engine), to average out nondeterminism.
 #
-# K=3 as of 2026-08-01. This is a DECISION, not a finding — the measurements that argued
-# for K=5 still stand and are not refuted:
+# K=5 as of 2026-08-01. This restores the value the measurements actually argue for,
+# reversing a same-day K=3 cost/breadth trade (kept below, since the trade is still the
+# thing being weighed and may be taken again). The measurements:
 #   - 2026-06-19 determinism baseline (docs/isolation-determinism-plan.md): the brand
 #     READ is 100% stable on openai/anthropic but wobbles to ~60% worst-brand on
 #     gemini + perplexity.
@@ -104,15 +105,20 @@ MAX_RUNS_PER_QUERY: int = int(os.getenv("MAX_RUNS_PER_QUERY", "5"))
 #     shows the same 60% worst-brand floor, so the wobble is not an artifact of the
 #     repin. One query is a probe, not a baseline.
 #
-# What K=3 buys and what it costs. The six-surface set is entirely RETRIEVAL surfaces,
-# where the retrieved document set varies run to run independently of the model — so the
-# noise K exists to average is higher here, not lower. At K=3 one flipped run moves a
-# query's reading by 33 points instead of 20, and 2-of-3 vs 3-of-3 is not meaningfully
-# distinguishable. It was taken as a deliberate cost/breadth trade: 25 queries x 3 rather
+# Why K=5 and not K=3. The six-surface set is entirely RETRIEVAL surfaces, where the
+# retrieved document set varies run to run independently of the model — so the noise K
+# exists to average is higher here, not lower. At K=3 one flipped run moves a query's
+# reading by 33 points instead of 20, and 2-of-3 vs 3-of-3 is not meaningfully
+# distinguishable. The K=3 argument was a cost/breadth trade — 25 queries x 3 rather
 # than 15 x 5 at an identical cell count, on the view that question coverage buys more
-# than a third repeat of the same question. Revisit it against a widened determinism run,
-# not against intuition.
-DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "3"))
+# than a third repeat. That trade is real but was not taken: a 60% worst-brand floor
+# means a 3-run reading can be wrong, and breadth does not fix a per-query reading that
+# is noise. Revisit against a widened determinism run, not against intuition.
+#
+# Note K=5 sits AT ``MAX_RUNS_PER_QUERY`` (5), so there is no headroom left for a
+# measured local band above it — such a band will clamp and set ``exceeds_cap``
+# (see ``pipeline/local_sampling.runs_for_trade``).
+DEFAULT_RUNS_PER_QUERY: int = int(os.getenv("RUNS_PER_QUERY", "5"))
 # Spend guard (rough estimated USD, engines + judge). A single audit estimated
 # above MAX_AUDIT_COST_USD is rejected; once the running total of accepted audits
 # this process would exceed MAX_TOTAL_SPEND_USD, further audits are rejected.

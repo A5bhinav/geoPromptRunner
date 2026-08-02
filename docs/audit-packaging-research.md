@@ -49,7 +49,7 @@
 
 6. **There is a live ToS risk that could threaten the collection pipeline.** Consumer-facing terms at OpenAI and Perplexity contain language prohibiting automated/programmatic querying of the web products. API terms are materially more permissive and silent on benchmarking. **Confirm which surface the pipeline actually hits.** See [§11](#11-evidence-reproducibility-and-defensibility).
 
-7. **Weekly cadence is cheap on compute and expensive on credibility.** ~$17–20 raw LLM cost per full 100-prompt audit run; ~$70–80/month per client at weekly. The binding constraint is judge QA labor and the risk of manufacturing news in flat weeks — not API spend.
+7. **Weekly cadence is cheap on compute and expensive on credibility.** *(Superseded by measured data — see `audit-packaging-implementation.md` §3.0. Measured: $0.0736/call across 6 surfaces, $5.52 per 25-query run at K=3. The estimate below was ~4× high on a per-query basis.)* The binding constraint is judge QA labor and the risk of manufacturing news in flat weeks — not API spend.
 
 ---
 
@@ -872,7 +872,7 @@ The market has already moved: First Page Sage runs distinct "Top Healthcare GEO/
 
 - Engine calls: 4 engines × 100 prompts × 3 runs = 1,200 calls at ~$0.008/call (≈300 in / ≈600 out tokens, blended across current frontier pricing) → **≈$10/run**.
 - Judge pass: 1,200 verdicts × ~$0.006 (Sonnet-class, ~1,500 in / 300 out grading against a fact sheet) → **≈$7/run**.
-- **≈$17–20 raw LLM cost per full 100-prompt audit.** Weekly ≈ **$70–80/month per client** vs a $899 list price.
+- ~~≈$17–20 raw LLM cost per full 100-prompt audit.~~ **Superseded by measurement — see `audit-packaging-implementation.md` §3.0.** Measured: $0.0736/call, 6 surfaces, $5.52 per 25-query run at K=3 (≈$24/month weekly). The conclusion is unchanged and stronger: cost is not the constraint.
 
 **Weekly is not economically risky on API cost.** It's risky on credibility (nothing-changed reports) and judge-QA labor, which don't scale down the way API cost does.
 
@@ -1004,7 +1004,7 @@ Gap Selling layered with Challenger's "teach for differentiation":
 | Conflict | Call |
 |---|---|
 | Wave 1: *accuracy tracking is wide-open white space.* Wave 2: *Profound already shipped **FactCheck** for exactly this.* | **The category is contested, not empty — adjust the pitch.** The defensible position is no longer "we measure accuracy" but "we run accuracy as a governed remediation program": a signed ground-truth document, a published severity rubric, human QA with a stated agreement rate, a four-state closing backlog, and a drift/methodology changelog. That's a workflow and credibility claim Profound's measurement surface doesn't make. Verify FactCheck's actual depth before finalizing positioning. |
-| Wave 1 competitor agent: *keep the letter grade — Am I On AI and Mangools validate it.* Wave 1 structure + visual agents: *kill the F.* | **Keep a graded score; kill the bare F.** Split into Foundation Readiness (winnable today) + Current AI Visibility (labeled "Baseline"). Moz DA, Nutri-Score and HubSpot Grader are all cautionary tales of an unexplained, unearnable, un-actionable score. Credit bureaus distinguish "thin file" from "bad score" for exactly this reason. |
+| Wave 1 competitor agent: *keep the letter grade — Am I On AI and Mangools validate it.* Wave 1 structure + visual agents: *kill the F.* | ~~Keep a graded score; kill the bare F.~~ **REVISED 2026-08-02 — kill the grade entirely.** The compromise below contradicted this doc's own §7.1 kill-list ("the hero letter grade") and reintroduced a `B−` on a second tile. A static score is the hero of a one-off audit; this product's hero is the delta and the closing backlog. See `audit-packaging-spec.md` P1-T6. Original reasoning retained:  Split into Foundation Readiness (winnable today) + Current AI Visibility (labeled "Baseline"). Moz DA, Nutri-Score and HubSpot Grader are all cautionary tales of an unexplained, unearnable, un-actionable score. Credit bureaus distinguish "thin file" from "bad score" for exactly this reason. |
 | Wave 1 competitor agent: *PDF-primary is legacy; go dashboard-first.* Wave 1 delivery agent: *35% of clients still prefer static reports.* | **Both.** Dashboard is the product; PDF is the forwardable artifact generated from the same data. The PDF's sin isn't being a PDF — it's being the only thing. |
 | Wave 1 competitor agent: *weekly is the credible minimum.* Delivery agent: *only 11% of agencies report weekly.* Recurring-design agent: *report one cadence coarser than you collect.* | **Collect weekly, digest weekly (thin, significance-gated), deep-dive monthly.** Weekly collection is cheap and builds the rolling window statistical honesty requires. A thin honest weekly that often says "Flat" beats a fat weekly that manufactures news. |
 | Wave 1: *3 runs/query validated by Arcalea's consistency research.* Wave 2 (MaxAEO): *ICC ~0.57 means added runs buy almost nothing; breadth is what buys power.* | **Not actually in conflict — both are right about different axes.** 3 runs is the floor needed to detect inconsistency at all (Arcalea's point). Beyond 3, marginal runs are near-worthless (MaxAEO's point). **Hold runs at 3 and invest the budget in going from ~50 prompts to 60–120.** |

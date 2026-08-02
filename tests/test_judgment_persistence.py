@@ -46,6 +46,16 @@ def test_query_citation_rows_dedupe_repeated_url_across_runs() -> None:
 
 
 def test_judgment_row_round_trip() -> None:
+    """A judged answer survives storage intact — flag provenance included.
+
+    The flags carry their cell here because that is what `judge_results` produces;
+    an un-stamped flag is not a shape a real judgment has. `flag_to_dict` drops
+    the provenance on the way out (the judge cache is keyed per ANSWER and must
+    stay byte-identical), so `_row_to_judgment` re-derives it from the row's own
+    columns. Round-tripping to something LESS than the original is the bug this
+    now guards: it left every stored run with anonymous flags, which stripped the
+    evidence bundle off every card in the report.
+    """
     original = AnswerJudgment(
         query_id="cat-01",
         engine_name="openai",
@@ -56,13 +66,28 @@ def test_judgment_row_round_trip() -> None:
             BrandJudgment("Centsible", True, "buried", "negative"),
             BrandJudgment("YNAB", True, "recommended_first", "positive"),
         ],
-        accuracy_flags=[AccuracyFlag("wrong_pricing", "$20/mo", "free + $5/mo", "high")],
+        accuracy_flags=[
+            AccuracyFlag(
+                "wrong_pricing",
+                "$20/mo",
+                "free + $5/mo",
+                "high",
+                query_id="cat-01",
+                engine_name="openai",
+                intent="category",
+                run_index=0,
+            )
+        ],
     )
     row = _judgment_to_row("run-123", original)
     assert row["run_id"] == "run-123"
+    # The stored flag dict stays at FOUR keys — widening it would re-key the
+    # judge cache and invalidate every cached verdict.
+    assert set(row["accuracy_flags"][0]) == {"type", "claim", "reality", "severity"}  # type: ignore[index]  # JSONB list
     # JSONB columns survive a Supabase round-trip as plain lists/dicts.
     restored = _row_to_judgment(row)
     assert restored == original
+    assert restored.accuracy_flags[0].has_provenance
 
 
 def test_row_to_judgment_tolerates_missing_fields() -> None:
@@ -161,6 +186,7 @@ def test_failing_to_record_the_judge_does_not_fail_the_save(monkeypatch) -> None
         def table(self, name: str) -> _FakeTable:
             table = super().table(name)
             if name == "audit_runs":
+
                 def _boom(_values: object) -> _FakeTable:
                     raise RuntimeError("column audit_runs.judge_model does not exist")
 

@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ProgressView } from "@/components/progress-view";
 import { ReportView } from "@/components/report-view";
+import { RenderModeProvider } from "@/lib/render-mode";
 import {
   cancelAudit,
   getReport,
@@ -16,8 +18,17 @@ import {
 const POLL_MIN_MS = 1200;
 const POLL_MAX_MS = 8000;
 
-export default function AuditPage({ params }: { params: { id: string } }) {
-  const runId = params.id;
+export default function AuditPage({ params }: { params: Promise<{ id: string }> }) {
+  // `params` is a Promise from Next 15 onward. Reading `params.id` directly gave
+  // `undefined` at runtime — the page polled `/audits/undefined/status`, 404'd,
+  // and sat on "Loading…" forever. `tsc` did not catch it because the old
+  // annotation asserted the wrong shape; only running the page did.
+  const runId = React.use(params).id;
+  // `?mode=print` is what the PDF worker passes. ONE flag drives every print
+  // fork — fixed chart dimensions, animation off, disclosures expanded — so a
+  // fork that forgets to check it is a bug you can grep for rather than one you
+  // discover when a client asks where their data went.
+  const isPrint = useSearchParams().get("mode") === "print";
   const [status, setStatus] = React.useState<RunStatus | null>(null);
   const [report, setReport] = React.useState<ReportPayload | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -79,6 +90,7 @@ export default function AuditPage({ params }: { params: { id: string } }) {
   };
 
   return (
+    <RenderModeProvider mode={isPrint ? "print" : "screen"}>
     <div className="space-y-6">
       <Link
         href="/"
@@ -113,5 +125,6 @@ export default function AuditPage({ params }: { params: { id: string } }) {
         <ProgressView status={status} elapsed={elapsed} onCancel={onCancel} />
       )}
     </div>
+    </RenderModeProvider>
   );
 }

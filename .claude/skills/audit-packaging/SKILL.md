@@ -74,17 +74,36 @@ has been written to be honest without being self-undermining:
 
 Per-finding, the short form is the occurrence line: *"observed in 4 of 5 runs across 06-11 → 06-13."*
 
-## Scores and grades
+## No invented scores
 
-- **Never render a bare letter grade a client cannot earn.** A pre-launch brand has no visibility to
-  grade; that is a thin file, not an F. Render **"Baseline"** with the sampled rate.
-- Split the score: **Foundation Readiness** (fact sheet, schema, PR footprint — winnable today) vs
-  **Current AI Visibility** (measured). One is actionable now; conflating them produces a number
-  nobody can move.
-- Any score shown to a client must have its rubric published in the methodology section. Publish the
-  *rubric and inputs*; keep the *prompt library and detection heuristics* private, so brands fix
-  underlying data rather than teaching the test. (Moz DA and Klout are the cautionary tales in both
-  directions.)
+**The report has no letter grade and no composite score.** Every headline number is either
+*counted* (findings, resolved, cycles open) or *measured* (sampled rate, share of model).
+This is a hard rule, and it is the one most likely to be quietly re-litigated — an earlier
+draft compromised to "split the grade into two subscores," which smuggled a `B−` straight
+back onto page 1.
+
+Why it stays dead:
+
+- A static score is the hero metric of a **one-off** audit. This is a recurring product, and
+  its hero is the delta and the closing backlog — which the page already carries twice
+  (accountability strip, per-engine deltas). A grade is redundant on top of them.
+- A grade over our own rubric is opaque, unauditable and unmovable by the client. Moz DA,
+  Klout, Nutri-Score and HubSpot Grader are the cautionary tales. Nobody can act on a `B−`.
+- Grading a pre-launch brand on visibility it structurally cannot have is a category error —
+  a thin file, not a bad score. Credit bureaus distinguish the two for exactly this reason.
+
+**Instead, the scorecard row carries four measured tiles:** AI visibility ("8 of 24",
+delta) · share of model (vs named competitor) · open findings (themes · critical count ·
+instances) · **oldest still open** (cycles, naming the finding). The last one replaces the
+grade and does the job better — SLA-style aging is what creates pressure to act, and it's a
+count, not an opinion.
+
+**Foundation readiness survives as a checklist, not a letter** — fact sheet ✓ · schema ✗ ·
+PR footprint partial — placed later in the report where it is directly actionable.
+
+If a score is ever reintroduced, its full rubric must be published in the methodology
+section. Publish the *rubric and inputs*; keep the *prompt library and detection heuristics*
+private, so brands fix underlying data rather than teaching the test.
 
 ## Severity
 
@@ -100,9 +119,39 @@ never alphabetical.
 
 - **Lead with the count bar** — "3 Critical · 12 High · 40 Medium · 180 Low" — *before* any
   individual finding. Most readers stop there; that is the design intent, not a failure.
-- Red family for Critical only. **Icon + label on every chip, never color alone** — it fails
-  accessibility, colorblind rendering, and grayscale printing.
+- **Severity is a monochrome navy ramp — darkest is most severe.** Critical `#0E2340` ·
+  High `#12325C` · Medium `#697585` · Low `#B2B7BC`. There is no red and no gold in Sable;
+  the palette has no alert hue at all, and "no colours outside the palette" is an explicit
+  Don't. The ramp mirrors the mark's own logic — the plumes step tone with height so the eye
+  lands on the tallest, darkest form.
+- **Icon + label on every tier, never colour alone.** Load-bearing here, not
+  belt-and-braces: with a single-hue ramp colour genuinely cannot carry the distinction.
+  It also fixes colourblind rendering and grayscale printing.
 - Full cards for Critical/High only. Medium/Low collapse into a compact table.
+
+## Brand — non-negotiable
+
+The report wears **Sable** (Identity Guide, Berkeley v1.0). **This supersedes the "weir"
+system in `geoWebsite`** — different typefaces, a different navy, and Sable has no gold.
+Never mix tokens between them. Full spec: `docs/audit-packaging-implementation.md` §4.9.
+
+- **Cormorant Garamond is display only** (headlines 32px+, tracked +0.01–0.04em, italic for
+  emphasis only). **Libre Franklin is text and UI** (body 15/1.7, label 10/0.36em).
+  The wordmark always stays Garamond.
+- **Sentence case everywhere. The only uppercase in the system is the tracked label.**
+  Chips read "Up from 1 of 6", never "UP FROM 1 OF 6".
+- Palette: Berkeley Navy `#0E2340` (ink) · Sable Blue `#12325C` (links, active) ·
+  Harbour `#697585` (body) · Mist `#B2B7BC` (rules) · Paper `#F2F1EC` (ground).
+- **Sky `#7FA6D9` is legal on navy only, never on paper.** It is the one bright note in the
+  system and loses its job if used twice on a page. In the report that means the masthead
+  band — and nowhere else.
+- The mark is three rising plumes (teardrop, three rounded corners, one square heel, shared
+  baseline, tone stepping with height). Clearspace one plume-width. Never rotate, stretch,
+  squash, or recolour it.
+- Client-facing brand lives behind **one config object** — an agency white-label replaces
+  the entire Sable skin, not just an accent colour, so build both skins from the abstraction.
+- Both faces are metrically unlike `system-ui`: **re-measure every print layout after fonts
+  land.**
 
 ## Charts
 

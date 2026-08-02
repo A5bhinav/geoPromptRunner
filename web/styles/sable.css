@@ -1,0 +1,252 @@
+/* Sable — the report's design tokens.
+ *
+ * Source of truth: the Sable Identity Guide, Berkeley v1.0 ("Direction 7d Plume ·
+ * Berkeley 8a"), transcribed in docs/audit-packaging-implementation.md §4.9.
+ *
+ * THIS SUPERSEDES THE "weir" SYSTEM (geoWebsite/app/globals.css: Poppins,
+ * #003262, California gold #fdb515) for the report. They are unrelated systems —
+ * different typefaces, a different navy, and Sable has no gold at all. Never mix
+ * tokens between them.
+ *
+ * Scope: everything here lives under `.sable`, not `:root`. The app chrome
+ * (upload, projects, teaser) keeps its existing indigo shadcn theme; only the
+ * client-facing report wears Sable. One class is also the seam a white-label
+ * skin replaces (see web/lib/brand.ts).
+ *
+ * The one rule encoded structurally rather than in a reviewer's head: Sky is
+ * legal on navy and nowhere else. It is not defined here. It exists only inside
+ * `.on-navy`, so `var(--on-navy-accent)` on a paper ground resolves to nothing
+ * and fails visibly, instead of passing review and shipping.
+ */
+
+.sable {
+  /* --- palette (locked; no colours outside it) --- */
+  --navy: #0e2340; /* Berkeley Navy — ink, tallest plume */
+  --blue: #12325c; /* Sable Blue — links, active states */
+  --harbour: #697585; /* middle plume, body text */
+  --mist: #b2b7bc; /* first plume, rules */
+  --paper: #f2f1ec; /* ground */
+  --white: #ffffff; /* cards */
+
+  /* Rules, as navy at low alpha rather than a separate grey — a grey rule beside
+   * a navy one reads as a mistake at print resolution. */
+  --rule: rgba(14, 35, 64, 0.12);
+  --rule-soft: rgba(14, 35, 64, 0.07);
+
+  /* --- severity ramp: monochrome navy, darkest = most severe ---
+   * Not a compromise — it is the mark's own logic. The plumes step tone with
+   * height "so the eye lands on the tallest, darkest form"; severity does the
+   * same. There is no red and no gold in this palette and no alert hue at all,
+   * which is why an ICON AND A LABEL on every tier are load-bearing: with a
+   * single-hue ramp, colour genuinely cannot carry the distinction alone. */
+  --sev-critical: var(--navy);
+  --sev-high: var(--blue);
+  --sev-medium: var(--harbour);
+  --sev-low: var(--mist);
+
+  /* --- type --- */
+  --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+  --font-text: var(--font-libre-franklin), ui-sans-serif, system-ui, sans-serif;
+
+  background-color: var(--paper);
+  color: var(--navy);
+  font-family: var(--font-text);
+}
+
+/* Sky lives HERE and only here. Defining it at the root would make misuse a
+ * design-review problem; defining it in scope makes it a missing-variable bug.
+ * In the report that scope is the masthead band, and nowhere else — Sky "is the
+ * one bright note in the system and loses its job if it is used twice on a
+ * page." */
+.sable .on-navy,
+.sable.on-navy {
+  --on-navy-accent: #7fa6d9; /* Sky */
+  background-color: var(--navy);
+  color: var(--white);
+}
+
+/* --- typography ----------------------------------------------------------
+ * Cormorant Garamond is DISPLAY ONLY: headlines from 32px up, tracked, italic
+ * for emphasis only. Libre Franklin is text and UI. The wordmark always stays
+ * Garamond even where the UI is Libre Franklin.
+ *
+ * Sentence case everywhere. The ONLY uppercase in the system is the tracked
+ * label — chips read "Up from 1 of 6", never "UP FROM 1 OF 6". */
+
+.sable .display,
+.sable .wordmark {
+  font-family: var(--font-display);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.sable .display-lg {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 2.25rem; /* 36px — above the 32px floor for display use */
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
+.sable .display-value {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sable .body {
+  font-family: var(--font-text);
+  font-size: 0.9375rem; /* 15 */
+  line-height: 1.7;
+  color: var(--harbour);
+}
+
+/* The one legitimate uppercase: section eyebrows and column heads. */
+.sable .label {
+  font-family: var(--font-text);
+  font-size: 0.625rem; /* 10 */
+  font-weight: 600;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--harbour);
+}
+
+.sable a {
+  color: var(--blue);
+}
+
+.sable .rule {
+  border-color: var(--rule);
+}
+
+.sable .card {
+  background-color: var(--white);
+  border: 1px solid var(--rule);
+}
+
+/* --- severity chips ------------------------------------------------------
+ * The 2px gap between stacked bar segments is deliberate: on a single-hue ramp
+ * adjacent segments would otherwise merge into one block. */
+
+.sable .sev-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-family: var(--font-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--white);
+}
+
+.sable .sev-chip[data-severity="critical"] {
+  background-color: var(--sev-critical);
+}
+.sable .sev-chip[data-severity="high"] {
+  background-color: var(--sev-high);
+}
+.sable .sev-chip[data-severity="med"] {
+  background-color: var(--sev-medium);
+}
+/* Mist is too light to carry white text; the low tier inverts to navy ink. */
+.sable .sev-chip[data-severity="low"] {
+  background-color: var(--sev-low);
+  color: var(--navy);
+}
+
+.sable .sev-bar {
+  display: flex;
+  gap: 2px;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 9999px;
+}
+
+/* --- print ---------------------------------------------------------------
+ * Ground is Paper and cards are white, matching the guide's business-card
+ * treatment rather than inventing a report-only ground. Backgrounds must be
+ * forced: Chromium strips them by default, which would erase the entire
+ * severity ramp — the one encoding the report cannot lose. */
+
+@media print {
+  /* Chromium strips backgrounds by default, which would erase the entire
+   * severity ramp — the one encoding the report cannot lose, since the palette
+   * has no alert hue and the tiers are distinguished by tone. */
+  .sable,
+  .sable * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sable {
+    background-color: var(--paper);
+  }
+
+  /* EXACTLY ONE margin source. `@page { margin: 0 }` here, real margins in
+   * `page.pdf()` — mixing the two is an open Playwright bug with unpredictable
+   * results, and the failure mode is a header clipped off the top of page 1.
+   * If you change these, change `render-report-pdf.mjs` in the same commit. */
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* shadcn `Card` sets an overflow, and a nested overflow CLIPS instead of
+   * paginating — the card's tail simply disappears rather than continuing on the
+   * next page. */
+  [class*="overflow-"] {
+    overflow: visible !important;
+  }
+
+  /* `break-inside: avoid` does NOT work on a flex or grid container. Both of
+   * these are plain block wrappers for exactly that reason; putting the rule on
+   * the flex element instead silently does nothing. An element taller than one
+   * page cannot honour it either, which is why Medium/Low collapse to a table. */
+  .report-card {
+    break-inside: avoid;
+  }
+  .report-section {
+    break-before: page;
+  }
+  /* The masthead is the first section; a page break before it would emit a
+   * blank first page. */
+  .report-section:first-child {
+    break-before: auto;
+  }
+
+  /* A table split across pages must repeat its head, or rows 40+ arrive with no
+   * column labels and the numbers stop meaning anything. */
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Numeric columns must align across rows. Caveat: not every font ships a
+   * `tnum` table and the property silently no-ops when it is missing — Libre
+   * Franklin does ship one (verified by eye, `1111` vs `8888`). */
+  .tabular-nums,
+  .display-value {
+    font-variant-numeric: tabular-nums;
+  }
+}

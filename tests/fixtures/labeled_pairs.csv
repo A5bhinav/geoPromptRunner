@@ -1,0 +1,92 @@
+claim_a,claim_b,is_duplicate
+# Hand-labeled claim pairs for tuning src/pipeline/finding_id.DUP_THRESHOLD.
+#
+# Provenance: phrasings drawn from the Fort and Albert Nahman runs
+# (docs/fort-labeling-sheet.md, docs/local-labeling-sheet.md) and from the
+# paraphrase patterns those runs actually produce across engines — the same
+# finding restated with a synonym, a reordered clause, or a hedge added.
+#
+# is_duplicate = 1 means "one card in the report", NOT "similar wording". The
+# hard negatives are deliberate: pairs that share almost every token but are
+# different findings with opposite fixes (7 days vs 2 days; iOS-only vs
+# Android-only). A threshold that merges those hides a finding inside another,
+# which a reader cannot see and cannot act on.
+#
+# The spec asks for 150-300 rows. This is a smaller starter set (see the
+# build-log entry); grow it from real runs and re-run the sweep in
+# tests/test_finding_id.py, which gates on it.
+#
+# --- duplicates: the same finding, restated -------------------------------
+Fort is a relatively new player in the fitness tracking market.,Fort is a relatively new entrant in the fitness tracking space.,1
+There isn't a widely recognized brand called Fort.,There is no widely recognized brand named Fort.,1
+The Fort band costs $349.,Fort's band is priced at $349.,1
+The Fort band costs $349.,The Fort band costs $349!,1
+Fort ships in 2026.,Fort will ship in 2026.,1
+Fort is already shipping to customers.,Fort is already shipping to its customers.,1
+The device has a 2-day battery life.,Battery life on the device is 2 days.,1
+Fort tracks blood pressure.,Fort can track blood pressure.,1
+Fort measures blood pressure and ECG.,Fort measures ECG and blood pressure.,1
+The app is only available on iOS.,The app is available on iOS only.,1
+Fort is a clip-on barbell sensor.,Fort is a barbell clip-on sensor.,1
+Fort does not track heart rate.,Fort doesn't track heart rate.,1
+Fort is essentially a Whoop competitor.,Fort is essentially a competitor to Whoop.,1
+Albert Nahman Plumbing serves the entire Bay Area.,Albert Nahman Plumbing services the whole Bay Area.,1
+Albert Nahman is open 24/7 for emergencies.,Albert Nahman is open 24/7 for emergency calls.,1
+The company is based in Oakland.,The company is based out of Oakland.,1
+They do not offer same-day service.,They don't offer same-day service.,1
+Their phone number is 510-843-6904.,The phone number listed is 510-843-6904.,1
+The business appears to be permanently closed.,The business appears permanently closed.,1
+It is unclear whether they are licensed and bonded.,It is not clear whether they are licensed and bonded.,1
+Fort was founded in 2019.,Fort was founded back in 2019.,1
+Fort raised a Series A round.,Fort has raised a Series A.,1
+I don't have specific information about Fort.,I do not have specific information about Fort.,1
+Fort appears to be a fictional product.,Fort seems to be a fictional product.,1
+The subscription costs $79.99 per year.,The subscription is $79.99 annually.,1
+Fort is a pickleball scoring app.,Fort is an app for scoring pickleball.,1
+"Assuming you mean Fitbit, it tracks sleep.","If by Fort you mean Fitbit, it tracks sleep.",1
+Fort does not have an Android app.,There is no Android app for Fort.,1
+Fort is a wrist-worn wearable for strength training.,Fort is a wrist-worn strength-training wearable.,1
+The band retails for $319 plus a yearly fee.,Retail is $319 plus an annual fee.,1
+Fort is best known for VBT.,Fort is best known for velocity-based training.,1
+They are closed on weekends.,They are closed at weekends.,1
+Fort integrates with Apple Health.,Fort has Apple Health integration.,1
+Fort's battery lasts about seven days.,Fort's battery lasts roughly 7 days.,1
+Fort has no GPS.,Fort does not have GPS.,1
+Fort competes directly with Oura and Whoop.,Fort competes directly with Whoop and Oura.,1
+# --- not duplicates: same subject, different finding -----------------------
+The device has a 7-day battery life.,The device has a 2-day battery life.,0
+The Fort band costs $349.,The Fort band costs $289.,0
+The app is only available on iOS.,The app is only available on Android.,0
+Fort tracks blood pressure.,Fort tracks blood oxygen.,0
+Fort ships in 2026.,Fort shipped in 2024.,0
+Fort is already shipping to customers.,Fort is not yet shipping to customers.,0
+Fort does not track heart rate.,Fort does not track sleep.,0
+Albert Nahman serves Berkeley.,Albert Nahman serves San Jose.,0
+Albert Nahman is open 24/7 for emergencies.,Albert Nahman is open weekdays 8am to 5pm.,0
+Their phone number is 510-843-6904.,Their phone number is 510-234-9981.,0
+Fort was founded in 2019.,Fort was founded in 2023.,0
+Fort raised a Series A round.,Fort raised a seed round.,0
+The company is based in Oakland.,The company is based in Berkeley.,0
+Fort is a pickleball scoring app.,Fort is a budgeting app.,0
+Fort measures blood pressure and ECG.,Fort measures rep count and bar speed.,0
+The subscription costs $79.99 per year.,The subscription costs $9.99 per month.,0
+There isn't a widely recognized brand called Fort.,Fort is a well-known fitness brand.,0
+Fort is a clip-on barbell sensor.,Fort is a wrist-worn wearable.,0
+Fort integrates with Apple Health.,Fort integrates with Google Fit.,0
+They do not offer same-day service.,They do not offer weekend service.,0
+It is unclear whether they are licensed and bonded.,They hold a valid C-36 plumbing licence.,0
+The business appears to be permanently closed.,The business has been operating since 1981.,0
+Fort competes directly with Oura and Whoop.,Fort has no direct competitors.,0
+Fort is essentially a Whoop competitor.,Fort is essentially a Garmin competitor.,0
+The band retails for $319 plus a yearly fee.,The band retails for $289 with no fee.,0
+Fort has no GPS.,Fort has no altimeter.,0
+Fort is a wrist-worn wearable for strength training.,Fort is a wrist-worn wearable for sleep tracking.,0
+They are closed on weekends.,They are open on weekends.,0
+I don't have specific information about Fort.,Fort is a strength-training wearable from Berkeley.,0
+Fort appears to be a fictional product.,Fort is a real pre-launch product.,0
+Battery life on the device is 2 days.,Battery life on the device is 10 days.,0
+Fort's app requires a subscription.,Fort's app is free to use.,0
+The device is water resistant to 50m.,The device is not water resistant.,0
+Fort is sold direct to consumer only.,Fort is sold through retail partners.,0
+Fort's founder previously worked at Apple.,Fort's founder previously worked at Google.,0
+Albert Nahman does not do HVAC work.,Albert Nahman does not do electrical work.,0

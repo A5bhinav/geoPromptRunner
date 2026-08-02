@@ -1,10 +1,31 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter, Libre_Franklin } from "next/font/google";
 import Link from "next/link";
 import { Activity } from "lucide-react";
 import "./globals.css";
+import "../styles/sable.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+// Sable's two faces, self-hosted at build by next/font. Deliberately NOT a CDN
+// <link>: that breaks static export, and the PDF worker's header/footer
+// templates render in an isolated iframe that cannot reach a relative webfont
+// either. Both faces are metrically unlike system-ui — re-measure every print
+// layout after a font change rather than assuming the spacing held.
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  style: ["normal", "italic"], // italic is for EMPHASIS ONLY, never body copy
+  variable: "--font-cormorant",
+  display: "swap",
+});
+
+const libreFranklin = Libre_Franklin({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-libre-franklin",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "GEO Audit",
@@ -13,7 +34,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${cormorant.variable} ${libreFranklin.variable}`}
+    >
       <body className="min-h-screen font-sans antialiased">
         <header className="no-print sticky top-0 z-30 border-b bg-card/80 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">

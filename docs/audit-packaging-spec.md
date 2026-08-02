@@ -38,6 +38,7 @@ there are no recommendations. **P0-T1 is the keystone; almost everything else is
 
 ```
 P0-T0 (API surface check — do first, no code)
+P0-T4 (Sable tokens + fonts) ──► blocks EVERY render task (P1-T2, T5, T6, P2-T6, P3-T5)
 P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
                                       ├── P0-T3 (root-cause taxonomy)
                                       └── P2-T1 (prior-run resolution)
@@ -45,7 +46,8 @@ P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
                                           └► P1-T4 (priority) ──► P1-T5 (exec summary)
    P1-T3 (verbatim queries) — independent, do early, high visible win
    P1-T6 (grade split) — independent
-   P1-T7 (print CSS) — independent, do last in Phase 1
+   P1-T7 (print pipeline) — independent, do last in Phase 1
+   P1-T8 (lazy/virtualization audit) — independent; pairs with P1-T7, same RenderModeContext
    P2-T1 ──► P2-T2 (lifecycle) ──► P2-T5 (what changed)
    P2-T3 (Wilson CIs) ──► P2-T4 (significance gating) ──► P2-T5
    P0-T1 ──► P2-T7 (evidence bundle) ──► P3-T1 (drill-down)
@@ -56,7 +58,7 @@ P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
 
 # Phase 0 — Foundation
 
-## P0-T0 — [BLOCKER, no code] Confirm which API surface the pipeline queries
+## P0-T0 — ✅ DONE 2026-08-02 — Confirm which API surface the pipeline queries
 **Problem:** Consumer-facing terms at OpenAI (*"automatically or programmatically extract data or
 Output"*) and Perplexity (ToS §5.2(i), *"robot, spider, crawlers, scraper… or queries that… mines,
 scrapes, extracts"*) contain language prohibiting automated querying of the **consumer web
@@ -72,40 +74,71 @@ verdict. **No code changes.** If any engine drives a consumer UI, stop and escal
 before continuing this spec.
 **Test:** none (documentation task). Acceptance = the table exists and every engine has a verdict.
 
-## P0-T1 — [KEYSTONE] Give accuracy flags identity and provenance
-**Problem:** `AccuracyFlag` = `{type, claim, reality, severity}`. It is not addressable. Two
-identical Fitbit-confusion flags from different engines are indistinguishable from one flag counted
-twice; nothing can be tracked, cited, or closed.
-**Change:**
-1. Extend `AccuracyFlag` (`src/storage/models.py`) with: `finding_id: str` (stable content
-   fingerprint — see below), `query_id: str`, `engine_name: str`, `intent: str`, `run_index: int`,
-   `observed_at: str` (ISO-8601 UTC).
-2. **Fingerprint rule:** `finding_id = sha256(client + flag_type + normalized_claim_stem)[:12]`,
-   where `normalized_claim_stem` is lowercased, whitespace-collapsed, punctuation-stripped, and
-   truncated to the first 12 tokens. It must be **stable across runs for the same underlying error**
-   and **independent of engine and run_index** — that is what makes lifecycle tracking possible.
-   Put this in a new `src/pipeline/finding_id.py` as a pure function with its own unit tests.
-3. `AnswerJudgment` already carries `query_id`/`engine_name`/`intent`/`run_index`
-   (`models.py:185`) — populate the flag fields from the parent judgment at construction time in
-   `src/pipeline/judge.py`. **Do not ask the judge model for these fields**; derive them in code.
-4. Update `flag_to_dict` / `flag_from_dict` (`models.py:221`) with defensive defaults so legacy rows
-   still parse (existing convention — keep it).
-5. Storage: add the columns in `data/schema_*.sql`, write them in `src/storage/db.py`. Create-only;
-   no migration deletes anything.
-6. Surface them: `src/api/reports.py` → `FlagRow` in `web/lib/api.ts`.
+> **✅ Completed 2026-08-02 — findings in `docs/gtm-legal-readiness.md`, section "Data-source &
+> API-surface audit".** Verdict: **cleared.** All ten surfaces call official, key-authenticated APIs
+> via official SDKs or documented endpoints; no headless-browser automation and no scripted consumer
+> UI anywhere in `src/engines/`. Secrets hygiene confirmed (`os.getenv` appears nowhere outside
+> `src/config/settings.py`). Two follow-ups moved out of this task and into the doc: **(a) Perplexity
+> ToS §1.1(b) requires citing the Services when Output is published** — needs a line in the report
+> methodology template that survives white-labelling; **(b) DataForSEO and Serper are scraping
+> intermediaries** whose risk is contractual/continuity, not code, and DataForSEO's indemnity
+> currently runs against us. Also corrected: the "Anthropic barred external paying customers on a
+> shared key" flag was a misread of a consumer-OAuth restriction — Commercial Terms §A.1 expressly
+> permit powering products for your own customers.
 
-> ⚠ **Judge invariant.** If — and only if — you change judge prompt text, the tool schema, or the
-> message layout, you must bump `_PROMPT_LAYOUT` in `src/pipeline/judge.py`, keep the HEAD/RUBRIC
-> parity with `scripts/judge_via_workflow.py`, keep `tests/test_judge.py` green, and tell the user
-> stored runs need re-prejudging. **The intended implementation does NOT touch the judge prompt** —
-> these fields are derived in Python from data the judge already returns. If you find yourself
-> editing the tool schema, you have taken a wrong turn; re-read this task.
+## P0-T1 — [KEYSTONE] Give findings identity and provenance
+**Problem:** `AccuracyFlag` = `{type, claim, reality, severity}`. It is not addressable. Two identical
+Fitbit-confusion flags from different engines are indistinguishable from one flag counted twice;
+nothing can be tracked, cited, or closed.
 
-**Test:** `tests/test_finding_id.py` — same claim from two engines → same `finding_id`; a materially
-different claim → different id; punctuation/casing/whitespace variants collapse. Plus a
-`tests/test_judge.py` case asserting flags inherit the parent judgment's query/engine/intent/run.
-Plus a round-trip test through `flag_to_dict`/`flag_from_dict` including a legacy dict with the new
-keys absent.
+> **Revised 2026-08-02.** This task previously specified a single content hash
+> (`sha256(client + type + claim_stem)`). **That design breaks the lifecycle** and must not be built:
+> "Fort is a relatively new **player**" and "…new **entrant**" hash to unrelated values, so next
+> week's report shows a fixed finding plus a new one when nothing changed. Any pure hash is brittle
+> by construction. Use the two-layer design below. Rationale and sources:
+> `audit-packaging-implementation.md` §1.
+
+**Change — two layers, not one:**
+
+| Layer | What | Purpose |
+|---|---|---|
+| `row_hash` | `sha256(normalize(claim))[:16]`, recomputed every run | **Idempotency only** — "did I already ingest this exact row this run?" |
+| `cluster_id` | UUID, **persisted**, assigned by matching against previously-seen findings | The stable, client-facing finding ID. This is what survives across weeks. |
+
+1. Extend `AccuracyFlag` (`src/storage/models.py`) with: `cluster_id: str`, `row_hash: str`,
+   `query_id: str`, `engine_name: str`, `intent: str`, `run_index: int`, `observed_at: str` (ISO-8601 UTC).
+2. New `findings_registry` table: `cluster_id uuid PK`, `representative text`, `normalized_text text`,
+   `theme text`, `first_seen_run uuid`, `occurrence_count int`. Index
+   `USING GIN (normalized_text gin_trgm_ops)` (`CREATE EXTENSION IF NOT EXISTS pg_trgm`).
+3. Assignment, in `src/pipeline/finding_id.py`:
+   - normalize (lowercase, collapse whitespace, strip punctuation) → exact-match dict lookup first (O(1));
+   - else block via `pg_trgm` (`normalized_text % $1`, `similarity_threshold = 0.25`, `LIMIT 20`);
+   - re-score candidates with **`rapidfuzz.fuzz.token_set_ratio`** (already a dependency, C++-backed,
+     deterministic, robust to reordering and subset phrasing);
+   - best match ≥ threshold → attach existing `cluster_id`; else mint a new UUID.
+4. `DUP_THRESHOLD = 85.0` is a **starting point, not a constant to ship**. Build
+   `tests/fixtures/labeled_pairs.csv` (~150–300 hand-labeled `claim_a, claim_b, is_duplicate` rows),
+   sweep 70→95, pick the knee. Record the chosen value and its precision/recall in the docstring.
+5. **Do not use SimHash, MinHash/LSH, embeddings or pgvector.** SimHash/MinHash are document-scale
+   techniques that lose their guarantees on 10–40 word sentences; embeddings break the determinism
+   requirement (BLAS/hardware float variance). Semantic-only near-matches are caught by the *theme*
+   classifier (P0-T3), not by this layer — do not make similarity solve semantic equivalence.
+6. `AnswerJudgment` already carries `query_id`/`engine_name`/`intent`/`run_index` (`models.py:185`) —
+   populate the provenance fields from the parent judgment in `src/pipeline/judge.py`.
+7. Update `flag_to_dict` / `flag_from_dict` with defensive defaults so legacy rows parse.
+8. Storage: columns in `data/schema_*.sql`, writes in `src/storage/db.py`. Create-only.
+9. Surface through `src/api/reports.py` → `FlagRow` in `web/lib/api.ts`.
+
+> ⚠ **Judge invariant.** The intended implementation derives every new field in Python from data the
+> judge already returns. **Do not touch the judge prompt, tool schema, or message layout.** If you
+> find yourself editing them, re-read this task. If it genuinely requires it: bump `_PROMPT_LAYOUT`,
+> keep `tests/test_judge.py` parity green, and tell the user stored runs need re-prejudging.
+
+**Test:** `tests/test_finding_id.py` — same claim from two engines → same `cluster_id`; a paraphrase
+above threshold → same `cluster_id`; a materially different claim → new one; punctuation/casing/
+whitespace variants collapse; **assignment is deterministic under input reordering** (sort by
+`row_hash` then index before iterating). Plus a `tests/test_judge.py` case asserting flags inherit the
+parent judgment's provenance, and a `flag_to_dict`/`from_dict` round-trip including a legacy dict.
 
 ## P0-T2 — [Depends: P0-T1] Move to a 4-level severity scale
 **Problem:** `Severity` is `HIGH|MED|LOW` (`models.py:158`). Research (Snyk's proven 4 tiers; 5+ blur
@@ -123,10 +156,20 @@ a pricing error among 40 mediums. Today HIGH covers both "AI thinks you're a pic
 
 Existing rows: map `high → critical` **only** where `type ∈ {identity, wrong_pricing}`, else
 `high → high`. Do this as a pure classifier function so it is testable and re-runnable, not a
-one-shot SQL update. `SeverityBadge` (`web/components/badges.tsx`) needs a 4th variant — **icon +
-label on every chip, never color alone**, and reserve the red family for Critical only.
+one-shot SQL update. `SeverityBadge` (`web/components/badges.tsx`) needs a 4th variant.
+
+> **Colour, corrected 2026-08-02.** An earlier draft said "reserve the red family for Critical only."
+> **There is no red in Sable, and no gold either** — the palette is entirely cool and has no alert
+> hue, and "no colours outside the palette" is an explicit brand Don't. Severity is a **monochrome
+> navy ramp, darkest = most severe**: Critical `--sev-critical` (`#0E2340`) · High `--sev-high`
+> (`#12325C`) · Medium `--sev-medium` (`#697585`) · Low `--sev-low` (`#B2B7BC`), all read from the
+> tokens created in **P0-T4**. This mirrors the mark's own logic — the plumes step tone with height so
+> the eye lands on the tallest, darkest form. **Icon + label on every chip is therefore load-bearing,
+> not belt-and-braces:** with a single-hue ramp, colour cannot carry the distinction alone.
+
 **Test:** classifier unit tests over the mapping matrix; a `badges.tsx` render test that every
-severity renders a distinct icon+label pair and that Medium/Low do not use the destructive color.
+severity renders a distinct icon+label pair, that every fill comes from a `--sev-*` token (no raw
+hex), and that no component references a red or gold value.
 
 ## P0-T3 — [Depends: P0-T1] Add the root-cause theme taxonomy
 **Problem:** `AccuracyFlagType` (`models.py:131`) has 9 members that describe *what kind of fact* was
@@ -148,21 +191,66 @@ maps to at least one theme, and no flag can produce `None`.
 
 ---
 
+## P0-T4 — [Blocks every render task] Sable design tokens and fonts
+**Problem:** The brand exists only in `docs/audit-packaging-implementation.md` §4.9 and a mockup.
+There is no token file in this repo and no brand fonts in `web/package.json`, so any agent building
+report UI has nothing to import and will invent near-miss colours.
+
+**Change:**
+1. `web/styles/sable.css` (or a `@theme` block) defining the locked palette as CSS custom properties:
+   `--navy #0E2340` (ink) · `--blue #12325C` (links, active) · `--sky #7FA6D9` · `--harbour #697585`
+   (body) · `--mist #B2B7BC` (rules) · `--paper #F2F1EC` (ground) · `--white #FFFFFF`, plus
+   `--rule rgba(14,35,64,.12)` / `--rule-soft rgba(14,35,64,.07)`.
+2. **Encode the Sky constraint in the token layer, not in reviewers' heads.** `--sky` is legal on navy
+   only, never on paper. Expose it as `--on-navy-accent` and only reference it inside a
+   `.on-navy` scope, so misuse is a missing-variable error rather than a design review.
+3. Severity ramp as named tokens: `--sev-critical: var(--navy)` · `--sev-high: var(--blue)` ·
+   `--sev-medium: var(--harbour)` · `--sev-low: var(--mist)`.
+4. Fonts via `next/font/google`, self-hosted at build (never a CDN `<link>` — it breaks static
+   export): **Cormorant Garamond** 300/400 + 400 italic (display only) and **Libre Franklin**
+   400/500/600 (text and UI). Expose as `--font-display` / `--font-text`.
+5. A single `brandConfig` object — name, wordmark, mark, accent — that the cover, masthead, footer and
+   chart highlight all read from. Sable is its default tenant; the agency white-label replaces the
+   whole object (`licensing-implementation.md` §4.1). Build the indirection now; it is free today and
+   a rewrite later.
+
+**Test:** a render test asserting no raw hex literal appears in report components (all colour comes
+from tokens), and that `--sky` is unreachable outside `.on-navy`.
+
+
 # Phase 1 — Restructure the deliverable
 
 ## P1-T1 — [Depends: P0-T1,T3] Collapse findings into themed groups
 **Problem:** `report.accuracy_flags.map(...)` (`report-view.tsx:461`) renders one card per flag —
 235 cards, ~30 pages, no hierarchy.
-**Change:** In `src/api/reports.py`, group flags by `(theme, finding_id)` and emit a new
-`finding_groups: FindingGroup[]` alongside the raw list (**keep `accuracy_flags` in the payload** —
-the CSV/JSON export and the appendix still need it). Each group carries: `theme`, `title` (human,
-~8 words, generated deterministically from the theme + dominant claim — no LLM), `severity` (max of
-members), `instance_count`, `engines: string[]`, `intents: string[]`, `occurrence: {observed: int,
-total: int}` (how many of the sampled cells produced it), `representative_claims: string[]` (2–3
-verbatim), `reality: string`, `member_finding_ids: string[]`.
-**Test:** fixture with the real Fort flag set → assert ≤15 groups, that every input flag lands in
-exactly one group, that `instance_count` sums to the input length, and that the Fitbit/pickleball/
-"not a recognized brand" flags all land in `identity_disambiguation`.
+
+**Change:** In `src/api/reports.py`, group by `(theme, cluster_id)` and emit `finding_groups:
+FindingGroup[]` alongside the raw list (**keep `accuracy_flags`** — CSV/JSON export and the appendix
+need it). Each group carries: `theme`, `title`, `severity` (max of members), `instance_count`,
+`engines[]`, `intents[]`, `occurrence: {observed, total}`, `representative_claims[]` (2–3 verbatim),
+`reality`, `member_cluster_ids[]`.
+
+**Clustering within a run: Union-Find over the similarity graph, then registry assignment.**
+Do **not** use HDBSCAN or `scipy.fcluster` — both recompute from the whole dataset and return
+arbitrary integer labels, so adding item #236 can reshuffle which integer means which real finding.
+That instability is exactly what would make the weekly diff lie. Union-Find with path compression and
+a deterministic tie-break (lower index becomes root) is single-linkage clustering computed
+incrementally, and it composes with the persisted registry without relabelling anything.
+
+> **Determinism requires sorting the input** by `(row_hash, original_index)` before iterating.
+> Union-Find on an unsorted list can produce different components near the threshold.
+
+**Representative and title:** pick the **medoid** (min total distance to other members), ties broken
+by shortest → lexicographically first. Generate the title from a **template keyed off the classifying
+rule**, not from the text.
+
+**Unit rule (see Global acceptance):** `instance_count` counts individual observations;
+**every client-facing count on page 1 counts themes.** Do not mix the two in one view.
+
+**Test:** fixture with the real Fort flag set → ≤15 groups, every input flag in exactly one group,
+`instance_count` sums to input length, and the Fitbit / pickleball / "not a recognized brand" flags
+all land in `identity_disambiguation`. Plus a determinism test: shuffle the input, assert identical
+group membership and identical `cluster_id`s.
 
 ## P1-T2 — [Depends: P1-T1, P0-T2] Severity summary bar; collapse Medium/Low
 **Problem:** All findings look visually identical, so the reader has no triage signal and stops
@@ -218,38 +306,100 @@ generation is P4-T4, and it must not land before the grounding guard exists). Te
 sentence is well-formed, contains no placeholder tokens, and degrades gracefully when there is no
 prior run.
 
-## P1-T6 — [Independent] Split the grade; never render a bare F
+## P1-T6 — [Independent] Remove the grade entirely; replace the scorecard row
 **Problem:** `gradeColor` (`report-view.tsx:98`) puts a large red **F** at the top of the report for
-a pre-launch startup. The grade is structurally unearnable (Fort hasn't shipped) and therefore
-unactionable — the Moz DA / Nutri-Score / HubSpot Grader failure mode. Credit bureaus distinguish
-"thin file" from "bad score" for exactly this reason.
-**Change:** Replace the single `visibility_grade` tile with two:
-- **Foundation Readiness** — graded from the site audit and fact-sheet/schema/PR signals already
-  computed in `src/audit/` (`rubric.py`, `synthesize.py`). Winnable today, pre-launch or not.
-- **Current AI Visibility** — the existing measurement, but when the client has no market presence
-  yet, render the label **"Baseline"** with the sampled rate, not a letter.
+a pre-launch startup. The grade is structurally unearnable and therefore unactionable — the Moz DA /
+Klout / Nutri-Score / HubSpot Grader failure mode.
 
-Add a `is_baseline: boolean` to the scorecard payload, set when the client is pre-launch (drive it
-from a fact-sheet field, not a heuristic). Keep `visibility_grade` in the payload for
-back-compat.
-**Test:** payload+render test — a pre-launch fixture renders "Baseline" and no letter grade
-anywhere; a shipped-client fixture still renders a letter; `gradeColor` is never called with a
-baseline client.
+> **Revised 2026-08-02.** This task previously said *"split the grade into Foundation Readiness +
+> Current AI Visibility."* That compromise smuggled the letter grade straight back in as a `B−` on
+> a different tile, and it does not survive the recurring model: a static score is the hero of a
+> **one-off** audit, whereas this product's hero is the delta and the closing backlog — both already
+> on page 1. A grade over our own rubric is also opaque and unmovable; nobody can act on a `B−`.
+> **The report now carries no letter grade and no composite score.**
 
-## P1-T7 — [Independent, last in phase] Print CSS for headless Chromium
-**Problem:** The PDF is produced by printing the browser page. Chromium strips backgrounds by
-default, cards break across pages, table headers don't repeat, and any `position: fixed` header
-appears once rather than per page.
-**Change:** In the web print stylesheet: `print-color-adjust: exact` (and `-webkit-` prefix);
-`break-inside: avoid` on cards, chart containers and table rows; `break-before: page` on section
-dividers; `thead { display: table-header-group }`; `orphans/widows: 3`; `@page` margins; running
-header/footer via `position: running()` + `@top-center`/`@bottom-right` — **not** `position: fixed`.
-Keep the existing `.no-print` class working.
-**Test:** a Playwright test that prints a fixture report to PDF and asserts page count is within an
-expected band and that no finding card is split across a page boundary (assert via the PDF text
-extraction that no card's title and its body land on different pages).
+**Change:** Delete `gradeColor` and the `visibility_grade` tile. Replace the scorecard row with four
+tiles that are each **counted or measured, never invented**:
 
----
+| Tile | Value | Sub | Delta chip |
+|---|---|---|---|
+| AI visibility | `8 of 24` | sampled answers, all six surfaces | `Up from 5 of 24` |
+| Share of model | `19%` | named competitors | significance-gated |
+| Open findings | `10` | themes · N critical · N instances | `3 fewer` |
+| **Oldest still open** | `4 cycles` | the finding, quoted, + engine | `Open since edition N` |
+
+The fourth tile replaces the grade and does its job better: SLA-style aging is what creates pressure
+to act, and it is a count rather than an opinion. It depends on `first_seen` from P2-T2, so ship it
+with a `—` placeholder until the lifecycle lands.
+
+**Foundation readiness survives as a checklist, not a letter** — fact sheet ✓ / schema ✗ / PR
+footprint partial — rendered later in the report from `src/audit/rubric.py` + `synthesize.py`, where
+it is directly actionable. Do **not** roll those signals into a score.
+
+Keep `visibility_grade` in the payload for back-compat; simply stop rendering it.
+**Test:** render test asserting no `/^[A-F][+-]?$/` string appears anywhere in the report output for
+any fixture, and that `gradeColor` has no call sites.
+
+## P1-T7 — [Independent, last in phase] Print pipeline for headless Chromium
+**Problem:** The PDF is produced by a human pressing `window.print()`. Chromium strips backgrounds by
+default, cards break across pages, and table headers don't repeat.
+
+> **Revised 2026-08-02.** This task previously specified running headers via `position: running()` +
+> `@page` margin boxes. **That does not work.** Chrome 131 shipped `@page` margin boxes with
+> `counter(page)`, but `position: running()` and `string-set()` were explicitly out of scope and are
+> **not implemented in Chromium** (`string-set()` is an open unresolved issue). Only Paged.js, Prince
+> and WeasyPrint implement them. Dynamic, section-aware running headers are impossible in headless
+> Chromium — use Playwright's `headerTemplate`/`footerTemplate`.
+
+**Change:**
+1. Print stylesheet: `print-color-adjust: exact` (+ `-webkit-`) · `break-inside: avoid` on cards,
+   chart containers and table rows · `break-before: page` on section dividers ·
+   `thead { display: table-header-group }` · `orphans/widows: 3` · `[class*="overflow-"] { overflow: visible !important }`
+   (shadcn `Card` clips otherwise).
+2. Header/footer via `page.pdf({ displayHeaderFooter: true, headerTemplate, footerTemplate })`.
+   Templates render in an **isolated iframe** — no external stylesheet, no webfonts by relative path,
+   images must be base64, and **default font-size is effectively 0 so set it inline**. Recognized
+   classes: `date`, `title`, `url`, `pageNumber`, `totalPages`.
+3. **Pick exactly one margin source.** Either `@page { margin }` or Playwright's `margin` option,
+   never both — mixing them is an open Playwright bug with unpredictable results. Recommended:
+   `@page { margin: 0 }` + margins in `page.pdf()`, with `margin.top/bottom` reserving space for the
+   templates or the header is clipped.
+4. Headless Chrome **silently refuses to fetch `url()` resources inside `@page` CSS** — a logo in a
+   margin box will simply not appear. Base64 data-URIs work.
+5. `break-inside: avoid` fails on flex/grid containers — put it on a plain `display:block` wrapper
+   *around* the flex content, not on the flex element.
+
+**Test:** Playwright test printing a fixture to PDF asserting page count is in an expected band, and
+a DOM-level pagination test under `emulateMedia({media:'print'})` asserting each card's top and
+bottom fall in the same page-height multiple (`Math.floor(top/pageH) === Math.floor(bottom/pageH)`) —
+catches the failure earlier than parsing the PDF.
+
+## P1-T8 — [Independent] Lazy-loading and virtualization audit for print
+**Problem:** **Print never scrolls the viewport, so `IntersectionObserver` never fires.** Anything
+below the fold that depends on it silently drops out of the PDF while the live page looks perfect:
+`loading="lazy"` images render blank · `next/dynamic(..., {ssr:false})` sections vanish · a
+virtualized/windowed table renders only its visible slice, so a 200-row appendix becomes 20 rows.
+This is invisible until a client asks where their data went.
+
+**Change:** Introduce one `RenderModeContext` (`'screen' | 'print'`) set from a `?mode=print` query
+param that the PDF worker passes. One flag drives every print fork:
+- `ResponsiveContainer` → fixed pixel dimensions matching the `@page` content box
+  (`ResponsiveContainer` does not resize for print — it sizes via `ResizeObserver`, which print
+  doesn't trigger);
+- `isAnimationActive={false}` on every chart;
+- lazy sections eager, `ssr:false` dynamics forced in;
+- virtualized tables fully rendered.
+
+Then gate capture on three signals, not `networkidle` alone (which only means HTTP quiesced while
+client-rendered SVG finishes on later frames): `document.fonts.ready`, animations off, and an
+app-emitted `document.body.dataset.reportReady` flag from a per-chart `useLayoutEffect` counter.
+
+**Note:** Recharts is client-only permanently — it still ships legacy class components and throws in
+a Server Component. Plan `'use client'` boundaries as permanent, not a workaround.
+
+**Test:** a Playwright test that prints a fixture containing a below-the-fold lazy image and a
+200-row table, then asserts via PDF text extraction that the last row is present.
+
 
 # Phase 2 — Make it recurring
 
@@ -267,42 +417,102 @@ change.
 returns None with the reason; (c) a first-ever run → returns None with reason `"no_prior_run"`.
 
 ## P2-T2 — [Depends: P2-T1] Finding lifecycle state machine
-**Problem:** Every edition would restate the same 235 findings from scratch. There is no way to say
-what got fixed — which is the question that determines renewal.
-**Change:** New `src/pipeline/lifecycle.py`. Given current and prior `finding_id` sets, assign each
-finding one of: `new` (absent prior, present now), `persisting` (present both — carry `first_seen`
-and an age in cycles), `resolved` (present prior, absent now), `regressed` (resolved in an earlier
-cycle, present again — requires walking back more than one run, so resolve the full history chain,
-not just N-1). Add `status`, `first_seen`, `cycles_open` to `FindingGroup`. Regressed must be
-visually distinct and rank above a same-severity new finding in P1-T4 ordering.
-**Test:** `tests/test_lifecycle.py` over a synthetic 4-cycle history exercising all four states,
-including the regression case that requires looking back 3 cycles. Assert resolved findings do not
-appear in the active card list but do count toward the accountability line.
+**Problem:** Every edition would restate the same findings from scratch. There is no way to say what
+got fixed — the question that determines renewal.
+
+**Change:** New `src/pipeline/lifecycle.py` assigning `new` / `persisting` / `resolved` / `regressed`,
+with `first_seen`, `cycles_open`, `consecutive_absences` on `FindingGroup`.
+
+**Two guardrails, both normative — this is the highest-risk correctness bug in the product.**
+Telling a client something is fixed when an engine timed out is the worst failure available.
+
+- **A — run coverage gate.** A run counts as evidence only if
+  `status == 'COMPLETE' AND coverage_ratio >= 0.95 AND query_set_version_id == current`.
+  Failing runs are stored immutably but **skipped entirely** by the state machine — they never
+  trigger `resolved` and never break an absence streak. This is the answer to "not found vs not
+  measured."
+- **B — confirmation count.** `resolved` only after **N=2 consecutive comparable-run absences**
+  (per-org configurable). A single missed week stays `persisting`.
+
+Together these make the cutoff **state-based, not time-based**: a finding absent 3 weeks then
+returning is `regressed` only if it actually reached confirmed `resolved`; otherwise it is
+continuation (`persisting`). `new` is assigned once, on the run where the `cluster_id` was first
+minted, and is never reassigned. `regressed` outranks a same-severity `new` in P1-T4 ordering.
+
+Vendor precedent (Tenable, Qualys) marks Fixed after **one** absent scan — do not copy it. That works
+for deterministic scanners, not an LLM-judged pipeline. The confirmation rule is borrowed from
+monitoring flapping-detection instead.
+
+**Merges/splits** when clustering changes: never rewrite a `cluster_id`. Append to a
+`finding_identities` ledger — `MERGED_INTO` (canonicalize via recursive CTE for historical queries) or
+`SPLIT_FROM` (pre-split history stays with the old id; new ids start fresh, annotated).
+
+**Test:** `tests/test_lifecycle.py` — table-driven over presence sequences: `[T]`→new ·
+`[T,F,T]`→new,persisting,persisting (guardrail) · `[T,F,F,T]`→new,persisting,resolved,regressed ·
+a 4-cycle regression requiring a 3-cycle look-back. Hypothesis property tests: exactly one status per
+(finding, run); first fact always `new`; `resolved` only after ≥N falses; `regressed` only
+immediately after `resolved`; `cycles_open` resets to 1 exactly on `regressed`. Assert a
+`PARTIAL`/`FAILED` run never produces a `resolved`.
 
 ## P2-T3 — [Independent within phase] Wilson intervals and sampled-rate copy
-**Problem:** `pct()` renders bare percentages from tiny samples. At 3 runs × 4 engines = 12 samples,
-a 50% mention rate has a Wilson 95% CI of roughly 25–75%. The report currently presents that as
-"50%".
-**Change:** Add Wilson score interval (not Wald — it is unreliable near 0/100% at small n) to
-`src/pipeline/metrics.py`. Add `n` (denominator) to every rate in the payload. In the UI, render
-rates as **"7 of 12 runs"** with the percentage secondary, and expose the interval on hover/in the
-methodology block. Note `RUNS_PER_QUERY` defaults to 5 (`settings.py`) though the Fort run used 3 —
-the copy must read the actual denominator, never assume.
-**Test:** `tests/test_metrics.py` — Wilson bounds against known reference values; a render test that
-no rate is displayed without its denominator.
+**Problem:** `pct()` renders bare percentages from tiny samples. At 3 runs × 6 surfaces on a
+42-query set, per-engine weekly n is small enough that a 50% rate has a Wilson 95% CI of roughly
+25–75%. The report presents that as "50%".
+
+**Change:**
+1. New `src/pipeline/stats.py`. **Hand-roll it — add no new dependency.**
+   `statistics.NormalDist().inv_cdf()` is stdlib; every formula needed is a dozen lines of closed-form
+   arithmetic, which means the module can be fully typed and exhaustively property-tested.
+   **Do not add statsmodels** (heavyweight, pulls pandas+scipy+patsy, no official type stubs).
+   If scipy is already a hard dependency, `scipy.stats.binomtest(...).proportion_ci(method="wilson")`
+   is acceptable for the base CI only — Newcombe, ICC/DEFF and MDE must still be hand-written.
+2. **Wilson score interval with continuity correction.** Never Wald (unreliable near 0/100% at small
+   n). Edge cases are normative: `n == 0` returns `(0.0, 1.0)` — full uncertainty, which signals the
+   report layer to say *"insufficient data"*, **not "0%"**. `successes == 0` and `successes == n` must
+   return non-degenerate intervals inside [0,1].
+3. **Design-effect correction — plug `n_eff`, never raw n, into every interval.**
+   `DEFF = 1 + (m − 1)·ICC`, `n_eff = n / DEFF`, where m is runs-per-query. Compute ICC(1) from your
+   own run-level data via one-way random-effects ANOVA (hand-rolled; do not add pingouin). Published
+   LLM-eval work reports ICC 0.48–0.86 (mean 0.68), so this is a large correction, and it is a strict
+   widening — it can never make an interval falsely narrow.
+4. Add `n` (the real denominator) to every rate in the payload. Render as **"7 of 12 runs"** with the
+   percentage secondary. Read the denominator from the payload — `RUNS_PER_QUERY` defaults to 5 but
+   stored runs vary.
+
+**Test:** golden values hardcoded from a reference implementation (so tests carry no runtime dep);
+Hypothesis properties — bounds in [0,1] and ordered, symmetry (`wilson(n−x,n)` mirrors `wilson(x,n)`),
+width shrinks as n grows at fixed rate; a `@pytest.mark.slow` Monte-Carlo coverage simulation
+asserting empirical coverage lands in 0.93–0.98 for nominal 95%.
 
 ## P2-T4 — [Depends: P2-T3] Two-gate significance and rolling averages
 **Problem:** Without gating, most week-over-week movement is noise reported as news — the fastest way
-to destroy credibility in a weekly product. `trend.py:is_real_move()` exists but uses a single
-noise-floor threshold and isn't wired into the report.
-**Change:** Extend `is_real_move` into a two-gate test: label a delta Up/Down only if it clears
-**both** (a) statistical significance — non-overlapping Wilson intervals per engine, or a
-two-proportion z-test at p<.05 on the all-engine aggregate — **and** (b) a minimum absolute
-threshold: ~15pp per-engine at n≈12, ~5pp on the aggregate. Compare **3–4 week rolling averages**,
-not raw consecutive points. Everything else renders **"Flat"** — and Flat is a claim, not a blank:
-*"Held steady at 8 of 12 runs on ChatGPT for the 3rd straight week."*
-**Test:** table-driven test over (before, after, n) tuples asserting the label; explicitly assert
-that a 12→50% swing at n=12 does **not** earn an Up label but the same swing at n=240 does.
+to destroy credibility in a weekly product. `trend.py:is_real_move()` uses a single noise-floor
+threshold and isn't wired into the report.
+
+**Change:**
+1. **Compare via the CI of the *difference*, not CI overlap.** Non-overlapping CIs is a conservative
+   but invalid test (effectively ~√2 too wide). Implement **Newcombe's hybrid score interval** for
+   `p1 − p2` and check whether it excludes zero. This replaces `is_real_move`'s single threshold and
+   self-adjusts to each cell's actual n.
+2. **Two gates, both must pass:** statistical (Newcombe CI excludes 0) **and** practical (magnitude
+   ≥ a business floor).
+3. **Replace the fixed 15pp threshold with a computed MDE:**
+   `MDE = (z_{α/2} + z_β)·√(2·p̄(1−p̄)/n_eff)` at 80% power. Compute per cell so a well-sampled engine
+   gets a more sensitive test than a thin one.
+4. **Multiple comparisons: Benjamini–Hochberg FDR, not Bonferroni.** ~20+ simultaneous tests per
+   report (6 surfaces × buckets); for an exploratory weekly scan where under-flagging real movement is
+   worse than a self-correcting false positive, controlling false *discovery* rate is correct.
+5. Compare **3–4 week rolling averages**, not raw consecutive points.
+6. Everything else renders **"Flat" — and Flat is a claim, not a blank**:
+   *"Held steady at 8 of 12 runs on ChatGPT for the 3rd straight week."*
+
+**Do not implement** McNemar's test (per-run verdicts are themselves noisy aggregates; the ICC
+correction already captures the correlation), change-point detection (CUSUM/BOCPD need far more data
+than a weekly series has), or a from-scratch Laney p′-chart (reuse DEFF to inflate control limits if
+a p-chart is wanted at all).
+
+**Test:** table-driven over `(before, after, n)` asserting the label. Explicitly assert a 12%→50%
+swing at n=12 does **not** earn an "Up" label but the same swing at n=240 does.
 
 ## P2-T5 — [Depends: P2-T2, P2-T4] "What changed" section and the accountability line
 **Problem:** No delta anywhere. A recurring report with no comparison is a status update.
@@ -414,19 +624,33 @@ tracker for ~5% of the benefit.
 
 ## P4-T1 — Calibration set and published agreement rate
 **Problem:** "The judge said so" cannot be the evidentiary standard for a Critical finding shown to a
-CMO. Adversarial benchmarks show frontier judges failing over half of bias probes; the honest
-ceiling is MT-Bench's finding that strong judges reach ~80% agreement with humans — the same level as
-human-human agreement.
-**Change:** Extend the existing calibration tooling (`src/pipeline/calibration.py`,
-`grade_calibration.py`, `scripts/run_calibration.py`, `docs/grade-calibration-guide.md`) to a
-findings-level gold set of 50–100 hand-labeled (query, answer, verdict) triples. Report accuracy,
-precision, recall, a confusion matrix **by severity**, and Cohen's κ. Publish the agreement rate in
-the report's methodology section.
-> ⚠ Calibration must keep using the held-constant API judge with `isolated_cache()` — never
-> subscription/prejudge verdicts, never the shared Supabase cache. This is an existing hard
-> invariant; do not relax it for convenience.
+CMO. Adversarial benchmarks show frontier judges failing over half of bias probes.
 
-**Test:** extend existing calibration tests with the severity-stratified confusion matrix.
+**Change:** Extend `src/pipeline/calibration.py` / `grade_calibration.py` / `scripts/run_calibration.py`
+to a findings-level gold set.
+
+1. **Size the gold set by the rare class, not the total.** At a ~6% Critical/High base rate, 50 traces
+   gives ~3 minority examples (useless). For ~20 stable minority examples you need roughly
+   `20 / base_rate` total. Stratify deliberately across "judge said Critical/High", "judge said
+   no-flag", and boundary cases — random sampling under-represents exactly what breaks judges.
+2. **Report Gwet's AC1 as the headline metric, not Cohen's kappa.** Kappa penalizes agreement in
+   proportion to class imbalance; with rare Criticals it reads as mediocre at near-perfect real
+   agreement (a documented case: 97.5% raw agreement → kappa 0.747, AC1 0.972). Report AC1 **alongside**
+   raw agreement, kappa, and the full confusion matrix — never one number alone. Use `irrCAC`.
+3. **The production gate is per-class recall on Critical/High, not aggregate accuracy.** A judge that
+   answers "no flag" to everything scores 95%+ against a 5%-prevalence set with zero recall on the
+   class that matters. Gate at ≥0.90 recall for both tiers.
+4. **Blind independent labelling before reconciliation.** Record both labels and route disagreements
+   to a documented tie-break — for a client-facing product, escalate to Critical when in doubt.
+5. Record every override durably with the `prompt_fingerprint` at judge time, so "the judge feels off
+   lately" becomes a queryable regression.
+6. Publish the agreement rate in the report's methodology section.
+
+> ⚠ Calibration keeps using the held-constant API judge with `isolated_cache()` — never
+> subscription/prejudge verdicts, never the shared Supabase cache. Existing hard invariant.
+
+**Test:** severity-stratified confusion matrix; a gate test that an all-negative judge **fails** the
+Critical/High recall floor despite high aggregate accuracy.
 
 ## P4-T2 — [Depends: P4-T1] QA sampling queue
 **Change:** A review queue implementing the sampling policy: **100% of Critical/High**, 100% of
@@ -532,7 +756,27 @@ refresh frequency.
 
 ## Global acceptance
 
-- **Order:** P0-T0 → P0-T1 → P0-T2/T3 → Phase 1 → Phase 2 → Phase 3. Phases 4 and 5 are independent
+### Two standing rules added 2026-08-02
+
+**1. Structure is code; content is data.** The point of this work is that the *shape* of the report
+stops changing once it is built, so the *content* can change weekly without touching components. That
+means: severity triggers, theme rules, priority weights, significance thresholds, copy strings and
+section templates all live in data or config, never hardcoded in a component. If changing a sentence
+requires editing `report-view.tsx`, the abstraction is wrong.
+
+**2. One counting unit per view.** Page 1 mixes units at your peril: an accountability strip counting
+individual findings beside a tile counting themes invites a client to do the subtraction and catch a
+contradiction — after which every number on the page is suspect. **Client-facing counts are themes.**
+`instance_count` (individual observations) may appear as a secondary figure inside a theme, never as a
+headline. The accountability arithmetic must close exactly:
+`opening = resolved + still_open` and `closing = still_open + new + regressed`. P2-T5's test asserts
+this; do not ship a view that violates it.
+
+
+- **Order:** ~~P0-T0~~ (done) → **P0-T1** → P0-T2/T3 → **P0-T4** → Phase 1 → Phase 2 → Phase 3.
+  P0-T1 is the keystone (nothing downstream works without stable finding identity) and **P0-T4
+  blocks every render task** — do not start P1-T2/T5/T6 before tokens and fonts exist, or an
+  agent will invent near-miss colours you then have to unpick. Phases 4 and 5 are independent
   of each other and can interleave once Phase 2 lands. P1-T3 (verbatim queries) is independent and
   worth doing first for morale — it is a one-session, visibly large win.
 - **One task per session.** Each ends with `mypy src/` → `ruff check src/` → `pytest tests/` green
@@ -559,6 +803,9 @@ The Phase 1–2 slice is done when a second run of the same client produces a re
 4. Ranks 3–7 concrete actions with an owner and an effort estimate.
 5. Quotes the verbatim query and verbatim model text behind every Critical/High finding, with a
    timestamp, a pinned model id, and an honest "observed in N of M runs" statement.
-6. Contains no bare percentage without a denominator, and no letter grade a pre-launch client cannot
-   earn.
+6. Contains **no letter grade and no composite score at all** — every headline number is counted
+   (findings, resolved, cycles open) or measured (sampled rate, share of model) — and no bare
+   percentage without its denominator.
+8. Uses **one counting unit** in client-facing views (themes), with the accountability arithmetic
+   closing exactly: `opening = resolved + still_open`, `closing = still_open + new + regressed`.
 7. Fits in roughly 13–18 pages with the appendix moved to CSV.

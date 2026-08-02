@@ -26,20 +26,50 @@ entry when this is done.
 surfaces. This is a change from the current default of 5 and needs an explicit edit — see
 §4.
 
+> ⚠️ **CORRECTED 2026-08-01, post-implementation.** The table below now carries the
+> **measured** figures. The pre-implementation estimates were **~80% low** — see
+> "What the estimates got wrong" underneath. `docs/build-log.md` has the full record.
+
 | Surface | $/call | Share | 75 cells |
 |---|---|---|---|
-| `anthropic_search` (`claude-sonnet-5`) | $0.0372 | 50.5% | $2.79 |
-| `openai_search` (`gpt-5.6-luna` + `web_search`) | $0.0140 | 19.0% | $1.05 |
-| `gemini_grounded` (`gemini-3.6-flash`) | $0.0104 | 14.1% | $0.78 |
-| `perplexity` (`sonar`) | $0.0054 | 7.4% | $0.41 |
-| `google_ai_mode` | $0.0040 | 5.4% | $0.30 |
-| `google_ai_overviews` | $0.0026 | 3.5% | $0.19 |
-| **Total engine spend** | **$0.0736** | | **$5.52** |
+| `anthropic_search` (`claude-sonnet-5`) | $0.0640 | 47.9% | $4.80 |
+| `openai_search` (`gpt-5.6-luna` + `web_search`) | $0.0410 | 30.7% | $3.08 |
+| `gemini_grounded` (`gemini-3.6-flash`) | $0.0160 | 12.0% | $1.20 |
+| `perplexity` (`sonar`) | $0.0060 | 4.5% | $0.45 |
+| `google_ai_mode` | $0.0040 | 3.0% | $0.30 |
+| `google_ai_overviews` | $0.0026 | 1.9% | $0.19 |
+| **Total engine spend** | **$0.1336** | | **$10.02** |
 
-**$5.52/audit through Aug 31; $6.54 from Sep 1** when Sonnet 5's introductory pricing
-ends and `anthropic_search` returns to $0.0508/call. Judge excluded — §6 covers how that
-interacts with the spend guard, which is not optional reading. Add ~$0.15 if the flag
-verifier runs over the API. Basis: `docs/search-set-costs-25q.md`.
+**$10.02/audit through Aug 31; ~$11.75 from Sep 1** when Sonnet 5's introductory pricing
+ends and `anthropic_search` goes to ~$0.088/call. Judge excluded — §6 covers how that
+interacts with the spend guard, which is not optional reading.
+
+Measured 2026-08-01, n=3 per surface, against the real APIs on three query shapes
+(consumer / local / product). Per-unit rates verified against the pricing pages the same
+day. Superseded basis: `docs/search-set-costs-25q.md`.
+
+### What the estimates got wrong
+
+Both errors were structural, not arithmetic — worth knowing because the same mistakes are
+easy to repeat on the next repin.
+
+- **The hosted-tool fee is per CALL, not per request.** OpenAI bills
+  "$10.00 / 1k calls" and one `openai_search` answer makes **2–5** of them (measured mean
+  3.3). The estimate assumed one. That fee alone is **81%** of the surface's cost, which is
+  why `openai_search` came in at 2.9x its estimate. Gemini has the same shape — Google's
+  own note is "A customer-submitted request to Gemini may result in one or more queries to
+  Google Search. You will be charged for each individual search query performed."
+- **The n=1 `anthropic_search` figure was flagged as a floor and was one.** The 2026-07-30
+  measurement (10,928 in / 534 out / 1 search) sat on an unusually cheap query; the n=3
+  mean is 66% higher on input and 2x on output. Repinning to Sonnet 5 cut the per-token
+  rate by a third and the real token profile more than ate the saving.
+- **Thinking bills as output on `gemini_grounded`.** 3.6-flash's 1,171-token answer carries
+  another ~875 thinking tokens, so billable output is ~2,046 — not the 1,385 assumed from
+  2.5-flash.
+
+`gemini_grounded`'s free grounding allowance is **5,000 search queries/month shared across
+all Gemini 3.x models**. At the measured 2.7 queries/answer a 75-cell audit burns ~200 —
+so **~25 audits/month** before that line becomes ~$0.053/call.
 
 Order: §1 and §3 are ~5 lines each and can land immediately. §2 is the real work.
 
@@ -403,10 +433,13 @@ strictly worse:
 | | free allowance (paid tier) | $/call inside it | billing unit |
 |---|---|---|---|
 | `gemini-2.5-flash` | 1,500 **per day** | $0.0035 | per **prompt** |
-| `gemini-3.6-flash` | 5,000 **per month** | $0.0104 | per **search executed** |
+| `gemini-3.6-flash` | 5,000 **per month** | ~~$0.0104~~ **$0.0160** (measured) | per **search executed** |
 
-+$0.52/audit at 75 cells. Grounding on 3.x is **not available on the free tier** — Tier 1
-billing is required (confirmed present on this account).
+**+$0.94/audit at 75 cells** (measured; the estimate said +$0.52). Grounding on 3.x is
+**not available on the free tier** — Tier 1 billing is required (confirmed present on this
+account). The allowance is also **shared across all Gemini 3.x models** and counts search
+*queries*, not prompts: at the measured 2.7 queries/answer, 75 cells burns ~200 of the
+5,000, so ~25 audits/month before the surface starts costing ~$0.053/call.
 
 ### Edit — `src/engines/gemini_grounded_engine.py:23`
 
@@ -496,23 +529,33 @@ because `ROUGH_COST_PER_CALL` feeds `MAX_AUDIT_COST_USD`; two are over-estimates
 corrected downward. Cite the **pricing page, not the model page**, in every comment — an
 OpenAI model page carried a two-day-stale Luna price on 2026-08-01.
 
-| Key | Line | Current | Set to | Direction | Basis |
+> ⚠️ **CORRECTED 2026-08-01.** The "Set to" column now carries the **measured** values.
+> The struck estimates are kept so the size and direction of the miss stay visible.
+
+| Key | Line | Current | ~~Estimated~~ → **Set to** | Direction | Basis |
 |---|---|---|---|---|---|
-| `openai_search` | 29 | 0.030 | **0.014** | over → down | 16,700 in @ $0.20 + 530 out @ $1.20 + $10/1k tool fee |
-| `anthropic_search` | 36 | 0.051 | **0.037** | over → down | 10,928 in @ $2 + 534 out @ $10 + $10/1k search fee (Sonnet 5, Aug price) |
-| `gemini_grounded` | 37 | 0.010 | **0.011** | **UNDER → up** | 3.6-flash tokens only, inside the 5,000/mo allowance |
+| `openai_search` | 29 | 0.030 | ~~0.014~~ → **0.041** | **UNDER → up** | 31,098 in @ $0.20 + 1,199 out @ $1.20 + **3.3 ×** $10/1k tool fee |
+| `anthropic_search` | 36 | 0.051 | ~~0.037~~ → **0.064** | **UNDER → up** | 18,171 in @ $2 + 1,123 out @ $10 + 1.7 × $10/1k search fee (Sonnet 5, Aug price) |
+| `gemini_grounded` | 37 | 0.010 | ~~0.011~~ → **0.016** | **UNDER → up** | 267 in @ $1.50 + 2,046 out @ $7.50 (thinking bills as output), inside the allowance |
 | `JUDGE_COST_PER_CALL` | 65 | 0.003 | **0.0098** | **UNDER → up** | cached single-Sonnet judge + verifier at the observed flag rate |
+
+**All four moved UP.** The estimate had two of them as over-estimates being corrected
+downward; measurement reversed both. That is the direction that actually hurts, because
+`ROUGH_COST_PER_CALL` feeds `MAX_AUDIT_COST_USD`. Cite the **pricing page, not the model
+page**, in every comment — an OpenAI model page carried a two-day-stale Luna price on
+2026-08-01.
 
 Three caveats to write into the comments rather than leave implicit:
 
-- **`anthropic_search` is a FLOOR.** The 10,928/534 profile is n=1 on a query that
-  triggered one web search; a question that searches three times costs more. It is ~50% of
-  *engine* spend on this set. Say so.
-- **`anthropic_search` reverts to ~0.051 on 2026-09-01** when Sonnet 5's introductory
-  pricing ends. Note the date inline so the next reader knows the number has an expiry.
-- **`gemini_grounded` is tiered.** $0.011 inside the monthly allowance; **add $0.014 per
-  search executed** beyond it. A flat figure cannot express that — put the beyond-quota
-  number in the comment.
+- **`anthropic_search` is still a FLOOR**, even at n=3: search count varies by question
+  (measured 1–2 across three queries). It is ~48% of *engine* spend on this set. Say so.
+- **`anthropic_search` rises to ~0.088 on 2026-09-01** when Sonnet 5's introductory pricing
+  ends. Note the date inline so the next reader knows the number has an expiry. (The
+  estimate said "reverts to ~0.051" — that was the old n=1 profile at the new rate; the
+  measured profile at $3/$15 is considerably worse.)
+- **`gemini_grounded` is tiered.** $0.016 inside the allowance; beyond it **add $14 per
+  1,000 search queries executed** — ~$0.037/call at the measured 2.7 queries/answer. A flat
+  figure cannot express that — put the beyond-quota number in the comment.
 
 No test asserts these constants, so this section breaks nothing.
 
@@ -524,18 +567,26 @@ No test asserts these constants, so this section breaks nothing.
 to the number checked against `MAX_AUDIT_COST_USD` (default $25, `settings.py:107-111`).
 
 On this set — 6 surfaces × 25 queries × K=3 = **450 cells** — raising the judge rate from
-$0.003 to $0.0098 takes the judge component from $1.35 to **$4.41**. Added to $5.52 of
-engine spend, the guard will see **~$9.93** where it previously saw ~$6.87. Both sit well
-under the $25 cap at this size, but the margin narrows as query count or K rises.
+$0.003 to $0.0098 takes the judge component from $1.35 to **$4.41**. Added to the
+**measured** $10.02 of engine spend, an API-judged run makes the guard see **~$14.43**.
+Still under the $25 cap, but the margin is **1.7x, not the 3.6x the estimate projected** —
+and it narrows further as query count or K rises. At 25 queries the cap binds around K=5.
 
 That is correct behaviour for an API-judged run. **But if the run is prejudged on the
-subscription, the real judge cost is $0** and $4.41 of phantom spend is being charged
-against the cap. `estimate_total_cost_for_queries` already takes a `judge: bool` — make
-sure the prejudge path passes `judge=False`, and check whether the API/CLI callers do.
-Otherwise this correction moves the guard closer to rejecting audits that are in fact
-cheaper than before.
+subscription, the real judge cost is $0** and $4.41 of phantom spend would be charged
+against the cap.
 
-Verify the interaction before shipping §5, and record the outcome in the build-log entry.
+### ✅ Verified 2026-08-01 — no code change needed
+
+`estimate_total_cost_for_queries` has **exactly one caller**: `src/api/runner.py:313`,
+which passes `cfg.judge`. That comes from the uploaded CSV's `judge` row and
+`csv_loader.py:437` defaults it to **False** (an absent row is falsy). The CLI path never
+reaches this function at all — `orchestrator.py:121` uses `estimate_cost_for_queries`,
+which has no judge component.
+
+So a run headed for prejudge sees **$10.02**, not $14.43. The phantom-spend risk does not
+exist on either path. Confirm with
+`grep -rn "estimate_total_cost_for_queries\|estimate_total_cost(" src/`.
 
 ---
 
@@ -558,23 +609,28 @@ Run one query at K=1 across all six surfaces and confirm **every** one returns t
 `openai_search` must return non-empty text **and** citations — the whole point of the
 rewrite.
 
-### Instrument the first real run — five estimates are unmeasured
+### ✅ Instrumentation — DONE 2026-08-01, all five measured
 
-Set `PAYLOAD_LOG_PATH` and capture, for at least one call per surface:
+All five open questions were answered by an n=3 run against the real APIs (three query
+shapes: consumer / local / product). Results are in `cost.py`'s comments and the build-log
+entry; the corrected figures are in §Run configuration and §5 above.
 
-1. **`openai_search` token usage.** The 16,700-in / 530-out profile was measured on
-   `gpt-5-search-api`, not on Luna + the tool, and the tool's `return_token_budget`
-   default is undisclosed. Log `response.usage` and correct `cost.py` from it.
-2. **`openai_search` reasoning tokens.** Luna is a reasoning model; reasoning bills as
-   output and is not in the 530 estimate.
-3. **`gemini_grounded` search count.** Log `groundingMetadata` — 3.x bills per search
-   executed, so one-vs-three searches is the difference between 40 and 13 audits/month
-   inside the free allowance.
-4. **`gemini-3.6-flash` answer length.** The cost model assumes it matches 2.5-flash's
-   1,385-token mean; output dominates and 3.6's output rate is 3× higher.
-5. **`anthropic_search`'s real token profile** across the query set, not n=1.
+1. **`openai_search` token usage** — mean **31,098 in / 1,199 out**, not the 16,700/530
+   carried over from `gpt-5-search-api`. Retrieved content is inside that input count
+   ("search content tokens billed at model rates"), so it is not billed twice.
+2. **`openai_search` reasoning tokens** — 339–695 per call, **inside** the measured output
+   count above. Real but not the dominant term.
+3. **`gemini_grounded` search count** — **2.7 queries/answer** (range 2–4). At 75 cells
+   that is ~200 of the 5,000/month allowance → **~25 audits/month**, and the allowance is
+   shared across all Gemini 3.x models.
+4. **`gemini-3.6-flash` answer length** — 1,171 answer tokens **plus ~875 thinking**, which
+   bills as output. Billable output ~2,046, not the assumed 1,385.
+5. **`anthropic_search` token profile** — mean **18,171 in / 1,123 out / 1.7 searches**
+   across the query set. The n=1 floor was real: 66% higher input, 2x output.
 
-Write the measured numbers back into `cost.py` and note them in the build-log entry.
+**The dominant finding was none of the five:** OpenAI's hosted-tool fee is billed
+**per call**, and one answer makes 2–5 calls. That single misreading accounts for most of
+the estimate's error. Re-measure this whenever a tool version or model changes.
 
 ---
 

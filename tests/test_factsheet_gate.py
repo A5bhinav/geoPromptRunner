@@ -60,16 +60,30 @@ def test_every_tier_has_a_policy() -> None:
 # --- the ways it could over-permit --------------------------------------------
 
 
-@pytest.mark.parametrize("severity", ["critical", "CRITICAL", "", "urgent", "high ", "None"])
+@pytest.mark.parametrize("severity", ["CRITICAL", "", "urgent", "high ", "None", "sev1"])
 def test_an_unrecognised_severity_is_refused_everywhere(severity: str) -> None:
-    """Refuse rather than coerce — including for the CRITICAL tier P0-T2 adds.
+    """Refuse rather than coerce.
 
-    An unknown severity is not evidence a flag is harmless. If this ever returns
-    True for "critical", the audit-packaging spec's new top tier ships to
-    strangers off an unconfirmed sheet on the day it lands.
+    An unknown severity is not evidence a flag is harmless. This default is what
+    made P0-T2 safe to land: escalated flags were suppressed until the policy
+    table below had a deliberate answer for them, never leaked while it didn't.
     """
     for tier in Verification:
         assert not may_send_flag(tier, severity)
+
+
+def test_critical_is_refused_on_an_unconfirmed_sheet() -> None:
+    """The loudest claim in the product needs the strongest sheet behind it.
+
+    `critical` is now a RECOGNISED severity (P0-T2), so the unknown-value default
+    above no longer covers it — this is the assertion that keeps it off a
+    one-public-source sheet. Telling a stranger their pricing is wrong everywhere,
+    off a sheet nobody confirmed, is the claim most likely to be wrong and most
+    expensive when it is.
+    """
+    assert not may_send_flag(Verification.PUBLIC_SOURCE_ONLY, "critical")
+    assert may_send_flag(Verification.CROSS_CONFIRMED, "critical")
+    assert may_send_flag(Verification.CLIENT_CONFIRMED, "critical")
 
 
 def test_severity_matching_is_not_case_insensitive_by_accident() -> None:

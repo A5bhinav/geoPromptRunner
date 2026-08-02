@@ -149,3 +149,153 @@ when-you-have-revenue move.
 _Reminder: general information, not legal/tax advice. Confirm the §17511.1 bond question,
 your Berkeley license trigger, and entity/tax choices with a CA attorney and CPA before
 scaling._
+
+---
+
+# Data-source & API-surface audit (spec task P0-T0)
+
+> **Completed 2026-08-02.** Not legal advice. Terms quoted were retrieved on that date and
+> change without notice; re-verify before the agency licence goes live. Prompted by
+> `docs/audit-packaging-spec.md` P0-T0, which flagged automated querying of *consumer* AI
+> products as the one finding that could threaten the business model rather than just the
+> deliverable.
+
+## Verdict: **cleared.** No engine drives a consumer UI.
+
+Every one of the six measurement surfaces calls an official, documented, key-authenticated
+API. There is no headless-browser automation, no scripted login, and no scraping of
+ChatGPT/Claude/Gemini/Perplexity web products anywhere in `src/engines/`. This is the
+distinction that matters: consumer terms at OpenAI and Perplexity contain language
+prohibiting automated/programmatic access, and **none of it applies here.**
+
+| # | Surface | Module | Transport | Auth | Verdict |
+|---|---|---|---|---|---|
+| 1 | Anthropic (parametric) | `anthropic_engine.py` | official `anthropic` SDK → `messages.create` | `ANTHROPIC_API_KEY` | ✅ Clear |
+| 2 | Anthropic (search) | `anthropic_search_engine.py` | official SDK + `web_search` tool | `ANTHROPIC_API_KEY` | ✅ Clear |
+| 3 | OpenAI (parametric) | `openai_engine.py` | official `openai` SDK → `chat.completions.create` | `OPENAI_API_KEY` | ✅ Clear |
+| 4 | OpenAI (search) | `openai_search_engine.py` | official SDK → `responses.create` + web_search | `OPENAI_API_KEY` | ✅ Clear |
+| 5 | Gemini (parametric) | `gemini_engine.py` | official `google.genai` SDK → `models.generate_content` | `GEMINI_API_KEY` | ✅ Clear |
+| 6 | Gemini (grounded) | `gemini_grounded_engine.py` | official SDK + grounding | `GEMINI_API_KEY` | ✅ Clear — see note |
+| 7 | Perplexity | `perplexity_engine.py` | `https://api.perplexity.ai` (the **API**, not the consumer product) | Bearer `PERPLEXITY_API_KEY` | ✅ Clear — attribution owed, see below |
+| 8 | Google AI Overviews | `dataforseo_ai_overviews.py` | `POST api.dataforseo.com/v3/serp/google/organic/live/advanced` | HTTP Basic | ⚠️ Vendor risk, not code risk |
+| 9 | Google AI Mode | `dataforseo_ai_mode.py` | `POST api.dataforseo.com/v3/serp/google/ai_mode/live/advanced` | HTTP Basic | ⚠️ Vendor risk — highest attention |
+| 10 | Google local pack (SMB path) | `local_pack.py` | `https://google.serper.dev/places` | `X-API-KEY` | ⚠️ Vendor risk + continuity risk |
+
+**Secrets hygiene confirmed.** `grep` for `os.getenv`/`os.environ` outside
+`src/config/settings.py` returns nothing — the repo's single-source-of-truth invariant holds
+across all ten surfaces.
+
+**Note on the grounded Gemini engine.** It runs an `httpx` client to follow grounding-citation
+redirects so citation analytics aren't all bucketed under Google's redirector. It only
+resolves URLs on `vertexaisearch.cloud.google.com`, `follow_redirects` is off, and every hop
+is re-validated through `src/net_guard.py::safe_get` (SSRF guard rejecting private/loopback/
+link-local/metadata addresses). This is redirect resolution on URLs the API itself returned —
+not crawling. No action.
+
+## Correction to a flag raised earlier in the packaging docs
+
+Earlier research flagged reports that **Anthropic tightened its terms in 2026 to bar serving
+external paying customers on a shared company key**, and treated it as a possible threat to
+the licensing model. **Verified: the story is real but was misread, and it does not apply.**
+
+- What actually changed (~Feb 2026) was a restriction on **OAuth tokens tied to Claude
+  Pro/Max consumer subscriptions**, shutting down tools that piggybacked third-party agent
+  traffic onto a personal flat-rate subscription. **Standard pay-per-token API-key usage was
+  untouched.**
+- Anthropic's Commercial Terms §A.1 affirmatively permit the exact pattern here: Anthropic
+  "gives Customer permission to use the Services, **including to power products and services
+  Customer makes available to its own customers and end users**."
+- §D.4 bars reselling *the Services* — i.e. raw API access — which is a different thing.
+
+The same shape holds across all four AI vendors: **selling a derived report product built on
+your own server-side keys is the intended commercial pattern and needs nothing extra.**
+OpenAI's Services Agreement §2.2 grants the right to "integrate the Services into Customer
+Applications and to make Customer Applications available to End Users"; §3.1 separately bars
+reselling account access or sharing credentials.
+
+**The one line not to cross, and it becomes live with the agency deal:** never hand the
+agency (or its clients) a raw API key, and never let their developers author their own
+prompts against your key as if it were their account. As long as they only ever see finished
+reports or your software's output, you are inside standard terms and do not need BYOK or a
+reseller agreement. Revisit only if the agency wants to pay its own inference costs directly.
+
+## ⚠️ Action required: Perplexity attribution
+
+Perplexity's Terms of Service §1.1(b) is explicit and binding:
+
+> "You may not (i) publish any Output generated by the Services without clearly citing the
+> Services, or (ii) misrepresent the source of any Output or the fact that it was generated
+> by artificial intelligence."
+
+The audit publishes Perplexity Output — verbatim excerpts of what `sonar` said about a
+client's brand — in a document sold to a client and, under the licensing model, **white-labelled
+under an agency's brand**. Attribution is owed regardless of whose logo is on the cover.
+
+**Do:** add a permanent line to the methodology template naming Perplexity as a source, and
+carry the engine attribution on every finding sourced from it (the report already attributes
+each finding to a named engine, so this is satisfied by construction on finding cards — the
+gap is the methodology page and any executive summary that quotes without naming the engine).
+No other vendor requires attribution: nothing found for Anthropic or OpenAI; Gemini has only a
+pass-through "comply with applicable law" clause. DataForSEO and Serper require no
+"powered by" branding.
+
+## ⚠️ Vendor risk: the two SERP intermediaries
+
+This is where the real exposure sits — and it is **contractual and operational, not a code
+problem**. DataForSEO and Serper scrape Google on your behalf.
+
+**Does that risk flow down to you?** Less than the vendor's, but not zero, and it changes
+shape rather than disappearing:
+
+- **Direct liability is low.** You never accessed Google directly and never accepted Google's
+  ToS, so you're not in privity. Post-*hiQ*/*Van Buren* the CFAA effectively doesn't reach
+  public, unauthenticated data regardless of who fetches it; contract claims run against the
+  scraper.
+- **The category's legal terrain just improved.** Google sued SerpApi (Dec 2025) on DMCA
+  §1201 anti-circumvention grounds. On **20 July 2026** the court **dismissed the DMCA claims
+  for ordinary search results outright**, holding public search results aren't copyrighted
+  material, with a narrow window to re-plead limited to **Knowledge Panels** (which may embed
+  licensed third-party content).
+- **But that carve-out points straight at our most exposed surface.** The unresolved
+  Knowledge-Panel theory is the closest analogue to AI Overviews / AI Mode content — exactly
+  what `dataforseo_ai_mode.py` pulls. Watch it.
+- **The realistic risks are spillover and continuity**, not being a defendant: discovery
+  naming downstream users, and a vendor being blocked or forced to change methods, breaking
+  the pipeline with no notice.
+
+**DataForSEO's indemnity runs one way — against you.** §7.2 requires *you* to indemnify
+*them* for any use of SERP data that violates a search engine's terms; there is no
+vendor→customer indemnity. §7.1 bars using SERP data "to compete with or adversely affect the
+business interests of the search engine providers." Live-mode results are **not retained by
+them at all** — you must store what you fetch. Nothing in their terms addresses agency
+resale either way.
+
+**Serper's terms are notably thin** — no data-use section, no retention clause, no reseller
+carve-out. Indemnity is *mutual* (better than DataForSEO on paper, untested in practice), but
+the licence is terminable **"at any time, with or without cause, with or without notice."**
+That is a genuine continuity risk to hand an agency licensee.
+
+**Industry practice, for calibration:** Semrush, Ahrefs and seoClarity do not publicly
+disclose SERP sourcing or its legal basis anywhere in their customer terms. The absence is
+itself informative — the category has collectively decided not to surface this. That's a
+pattern, not a safe harbour.
+
+## Do next
+
+1. **Add the Perplexity attribution line** to the report methodology template. Smallest item,
+   only one that's a hard requirement today, and it must survive white-labelling.
+2. **Get written confirmation from DataForSEO and Serper** that licensing the product —
+   including their returned data — to a marketing agency serving its own end clients is
+   permitted. Email is a start; an addendum is better.
+3. **Ask both about *Google v. SerpApi*** and whether it changes their terms or their AI
+   Overviews / AI Mode products specifically.
+4. **Push DataForSEO for a reciprocal indemnity**, or at minimum a data-sourcing warranty.
+   Right now the risk is contractually parked entirely on you.
+5. **Ask Serper for an advance-notice commitment** before termination or material change,
+   given an agency will be depending on it.
+6. **Never share an API key** with the agency or its clients. Add this to the licence terms
+   as an explicit restriction, not an assumption.
+7. Revisit whether a formal reseller/partner agreement is needed with Anthropic/OpenAI once
+   volume is known — neither publishes a bright-line threshold, so it's a direct question to
+   their sales teams.
+

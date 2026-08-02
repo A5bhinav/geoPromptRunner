@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+from dataclasses import field
 
 from src.config import settings
 from src.engines.base import BaseEngine
@@ -76,6 +77,12 @@ class AuditOutcome:
     query_set_version: str
     runs_per_query: int
     results: list[QueryResult]
+    #: engine name -> the exact model string it sent. Carried through to the
+    #: report because every client-facing finding names the model that produced
+    #: it, and re-deriving the pin at render time would name whatever is pinned
+    #: TODAY rather than what answered. Empty for runs stored before it existed;
+    #: the report says "model not recorded" rather than inventing one.
+    engine_models: dict[str, str] = field(default_factory=dict)
 
 
 def run_audit(
@@ -216,6 +223,7 @@ def run_audit(
         query_set_version=query_set.version,
         runs_per_query=runs_per_query,
         results=results,
+        engine_models=engine_models(engines),
     )
 
 

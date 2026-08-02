@@ -16,6 +16,7 @@ __all__ = [
     "Framing",
     "AccuracyFlagType",
     "Severity",
+    "JUDGE_SEVERITIES",
     "BrandJudgment",
     "AccuracyFlag",
     "AnswerJudgment",
@@ -156,9 +157,46 @@ class AccuracyFlagType(StrEnum):
 
 
 class Severity(StrEnum):
+    """Four tiers, ordered CRITICAL -> HIGH -> MED -> LOW.
+
+    ``CRITICAL`` is APPENDED for the packaged report (audit-packaging-spec P0-T2)
+    and is never emitted by the judge: the judge's tool schema still offers three
+    values, and widening it would bump ``_PROMPT_LAYOUT`` and invalidate every
+    cached verdict. It is derived in Python by
+    :func:`src.pipeline.severity.escalate` instead, which is also why it is
+    re-runnable over already-stored runs.
+
+    Triggers (mirrored in the client-facing methodology copy):
+
+    - **critical** — a category/identity error, or a factual claim that materially
+      changes a purchase decision (wrong price, wrong availability, confusion with
+      a different company).
+    - **high** — an invented or materially misstated capability, or a competitor's
+      attributes applied to the client.
+    - **med** — omission or understatement of a real capability; stale-but-
+      becoming-true claims.
+    - **low** — imprecise phrasing; unverifiable but not contradicted; cosmetic.
+    """
+
+    CRITICAL = "critical"
     HIGH = "high"
     MED = "med"
     LOW = "low"
+
+
+#: The severities the JUDGE is allowed to emit — frozen, and deliberately not
+#: derived from :class:`Severity`.
+#:
+#: The judge's tool schema is part of the prompt fingerprint, so widening it
+#: invalidates every cached verdict in Supabase. It did exactly that the first
+#: time ``CRITICAL`` was appended above and the schema was still built with
+#: ``[s.value for s in Severity]``. This tuple is the seam that lets the packaged
+#: report have four tiers while the judge keeps the three it has always had.
+#:
+#: **Never add to this list to give the judge a new severity.** Deriving the tier
+#: in Python (``src/pipeline/severity.escalate``) is free, testable and re-runnable
+#: over stored runs; asking the model costs the entire cache.
+JUDGE_SEVERITIES: tuple[str, ...] = ("high", "med", "low")
 
 
 @dataclass(frozen=True)
@@ -203,6 +241,18 @@ class AccuracyFlag:
     engine_name: str = ""
     intent: str = ""
     run_index: int = 0
+    # ISO-8601 UTC of the CELL, copied from `QueryResult.timestamp` — when the
+    # engine said this, not when we judged it. Every client-facing finding is
+    # attributed to a named model AND a date; this is the date.
+    observed_at: str = ""
+    # --- identity (derived at report build, see src/pipeline/finding_id.py) ---
+    # Empty everywhere upstream of the report layer. `row_hash` is idempotency
+    # only; `cluster_id` is the stable, client-facing finding id that survives
+    # across weeks. Neither is stored in `flag_to_dict` — both are pure functions
+    # of the claim plus the findings registry, so persisting them would create a
+    # second copy that can disagree with the text it names.
+    row_hash: str = ""
+    cluster_id: str = ""
 
     @property
     def has_provenance(self) -> bool:
@@ -288,4 +338,5 @@ def flag_from_dict(d: dict[str, object]) -> AccuracyFlag:
         engine_name=str(d.get("engine_name", "")),
         intent=str(d.get("intent", "")),
         run_index=run_index,
+        observed_at=str(d.get("observed_at", "")),
     )

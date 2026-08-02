@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, TypeVar
@@ -812,23 +813,51 @@ def _judgment_to_row(run_id: str, j: AnswerJudgment) -> dict[str, Any]:
 
 
 def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
+    """Rebuild one judged answer, RE-STAMPING each flag with the row's own cell.
+
+    ``flag_to_dict`` stores four keys deliberately (it is shared with the judge
+    cache, which is keyed per answer and must stay byte-identical), so the stored
+    flag dicts carry no provenance. The row does — ``query_id``/``engine_name``/
+    ``intent``/``run_index`` are columns right here.
+
+    Stamping them back on is not optional. Without it every run READ FROM STORAGE
+    has anonymous flags forever, whatever it looked like live: no verbatim prompt,
+    no named model, no date, so `findings.build_finding_groups` correctly refuses
+    to build an evidence bundle and every card loses its evidence trail. That is
+    the whole deliverable, and it looked like a "legacy run" problem until a
+    freshly-judged run was read back and had the same gap.
+
+    ``observed_at`` is NOT set here — this table has no per-cell timestamp. It is
+    stamped in ``src/api/reports.build_report``, which has the ``query_results``
+    rows the timestamps actually live on.
+    """
     raw_brands = row.get("brands")
     brands = [
         brand_from_dict(b)
         for b in (raw_brands if isinstance(raw_brands, list) else [])
         if isinstance(b, dict)
     ]
+    query_id = str(row.get("query_id", ""))
+    engine_name = str(row.get("engine_name", ""))
+    intent = str(row.get("intent", ""))
+    run_index = int(str(row.get("run_index") or 0))
     raw_flags = row.get("accuracy_flags")
     flags = [
-        flag_from_dict(f)
+        replace(
+            flag_from_dict(f),
+            query_id=query_id,
+            engine_name=engine_name,
+            intent=intent,
+            run_index=run_index,
+        )
         for f in (raw_flags if isinstance(raw_flags, list) else [])
         if isinstance(f, dict)
     ]
     return AnswerJudgment(
-        query_id=str(row.get("query_id", "")),
-        engine_name=str(row.get("engine_name", "")),
-        intent=str(row.get("intent", "")),
-        run_index=int(str(row.get("run_index") or 0)),
+        query_id=query_id,
+        engine_name=engine_name,
+        intent=intent,
+        run_index=run_index,
         assessed=bool(row.get("assessed", False)),
         brands=brands,
         accuracy_flags=flags,

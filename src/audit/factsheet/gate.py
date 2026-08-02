@@ -58,10 +58,20 @@ def _severity_attr(flag: Any) -> str:
 # HIGH is absent from the unconfirmed tier deliberately, and it is SUPPRESSED
 # rather than downgraded: re-labelling a high-severity claim as medium would put
 # it in front of a stranger wearing a softer label, which is worse than silence.
+#
+# CRITICAL (audit-packaging P0-T2) sits exactly where HIGH does, and for the same
+# reason: it is an identity, pricing or availability error, which is the loudest
+# thing this product can say about a company. Telling a stranger their pricing is
+# wrong everywhere, off a sheet nobody confirmed, is the claim most likely to be
+# wrong and most expensive when it is.
 SENDABLE_SEVERITIES: dict[Verification, frozenset[Severity]] = {
     Verification.PUBLIC_SOURCE_ONLY: frozenset({Severity.LOW, Severity.MED}),
-    Verification.CROSS_CONFIRMED: frozenset({Severity.LOW, Severity.MED, Severity.HIGH}),
-    Verification.CLIENT_CONFIRMED: frozenset({Severity.LOW, Severity.MED, Severity.HIGH}),
+    Verification.CROSS_CONFIRMED: frozenset(
+        {Severity.LOW, Severity.MED, Severity.HIGH, Severity.CRITICAL}
+    ),
+    Verification.CLIENT_CONFIRMED: frozenset(
+        {Severity.LOW, Severity.MED, Severity.HIGH, Severity.CRITICAL}
+    ),
 }
 
 
@@ -71,9 +81,9 @@ def may_send_flag(tier: Verification, severity: str) -> bool:
     ``severity`` is the raw string off :class:`~src.storage.models.AccuracyFlag`,
     which is a value not an enum — an unrecognised one is refused rather than
     coerced. A severity this code does not understand is not evidence that the
-    flag is harmless, and the audit-packaging spec (P0-T2) intends to add a
-    CRITICAL tier: until it is in :class:`Severity` and in the table above, a
-    flag carrying it must not slip through as "not in the deny list".
+    flag is harmless: it must not slip through as "not in the deny list". That
+    default is what made adding CRITICAL (P0-T2) safe — an escalated flag was
+    suppressed until the table above was updated, never leaked.
     """
     try:
         parsed = Severity(severity)

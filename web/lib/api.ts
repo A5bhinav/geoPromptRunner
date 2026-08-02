@@ -167,11 +167,113 @@ export interface StabilityRow {
   mean_agreement: number;
 }
 
+/** One raw flag. The appendix and the CSV export — NOT what the report renders.
+ * `finding_groups` is what a client reads. */
 export interface FlagRow {
   type: string;
+  /** The four-level scale: critical | high | med | low. `critical` is derived in
+   * Python (src/pipeline/severity.py), never emitted by the judge. */
   severity: string;
   claim: string;
   reality: string;
+  query_id?: string;
+  engine_name?: string;
+  intent?: string;
+  run_index?: number;
+  observed_at?: string;
+  cluster_id?: string;
+  theme?: string;
+}
+
+/** A rate WITH its denominator and interval. The only shape a rate ships in.
+ *
+ * Render `label` ("7 of 12 runs (58%)"), not `rate`. A bare percentage off a
+ * sample this size is the single most misleading thing this report could print,
+ * which is why the backend pre-formats the string rather than trusting each
+ * surface to remember. `n === 0` means insufficient data — never 0%. */
+export interface RatePayload {
+  successes: number;
+  n: number;
+  n_eff: number;
+  rate: number;
+  ci_low: number;
+  ci_high: number;
+  label: string;
+}
+
+/** How reproducibly a finding appeared. Both numbers or neither. */
+export interface OccurrenceRow {
+  observed: number;
+  total: number;
+  first_seen_date: string;
+  last_seen_date: string;
+  /** "observed in 4 of 5 runs across 06-11 → 06-13" — pre-formatted so the
+   * wording cannot drift between the web report, the digest and the PDF. */
+  phrase: string;
+}
+
+/** What makes a finding checkable rather than assertable. */
+export interface EvidenceRow {
+  /** The VERBATIM question. Never the query id. */
+  prompt: string;
+  engine_name: string;
+  /** The pinned model that answered; "" on runs stored before it was recorded. */
+  model_id: string;
+  intent: string;
+  observed_at: string;
+  /** The model's own words. Quote it; never paraphrase. */
+  excerpt: string;
+  /** The fact-sheet line it contradicts, verbatim. */
+  reality: string;
+}
+
+/** One root cause, one card, one action. The unit the report is built from. */
+export interface FindingGroupRow {
+  /** The group's stable id IS the theme. Cards are themes, not claim clusters:
+   * "confused with Fitbit" and "not a recognized brand" share no words and are
+   * one root cause with one fix. */
+  theme: string;
+  theme_label: string;
+  title: string;
+  severity: string;
+  /** Individual observations. SECONDARY — headline counts are themes. */
+  instance_count: number;
+  engines: string[];
+  intents: string[];
+  occurrence: OccurrenceRow;
+  representative_claims: string[];
+  /** Every distinct claim-cluster folded in — the lifecycle engine's unit. */
+  member_cluster_ids: string[];
+  reality: string;
+  evidence: EvidenceRow[];
+  /** How many observations this finding has. `evidence` is capped — a card that
+   * shows 4 of 94 must say so. */
+  evidence_total: number;
+  fix_channel: string;
+  owner: string;
+  effort: string; // S | M | L
+  action: string;
+  verification: string;
+  priority: number;
+  flag_types: string[];
+}
+
+/** One brand's presence on one engine, as a count with its denominator. */
+export interface EngineCellRow {
+  brand: string;
+  engine_name: string;
+  present: number;
+  /** Cells that returned an answer. 0 means NOT MEASURED, not 0% presence. */
+  cells: number;
+  rate: number;
+}
+
+export interface OpenFindingsPayload {
+  /** The client-facing count. Themes, not instances. */
+  themes: number;
+  critical: number;
+  instances: number;
+  by_severity: Record<string, number>;
 }
 
 export interface SourceRow {
@@ -180,6 +282,11 @@ export interface SourceRow {
 }
 
 export interface LosingRow {
+  /** The verbatim question — this is what renders. Optional so runs stored
+   * before P1-T3 still parse; falls back to nothing rather than to the id. */
+  prompt?: string;
+  /** A JOIN KEY. Never render it: `cmp-05` is the most actionable data in the
+   * report made unreadable. */
   query_id: string;
   intent: string;
   engine_name: string;
@@ -188,8 +295,20 @@ export interface LosingRow {
   prominence?: string | null;
 }
 
+/** Four measured tiles. No letter grade, no composite score.
+ *
+ * `visibility_grade` survives for back-compat with stored deliverables and the
+ * CSV export. NOTHING RENDERS IT — see src/api/reports.py ScorecardPayload for
+ * why the grade is dead and stays dead. */
 export interface ScorecardPayload {
   visibility_grade: GradePayload | null;
+  /** Tile 1. Optional so pre-P1-T6 stored runs parse. */
+  ai_visibility?: RatePayload;
+  /** Tile 3, counted in themes. */
+  open_findings?: OpenFindingsPayload;
+  /** Tile 4 — replaces the grade. Null until the lifecycle engine lands (P2-T2);
+   * the tile renders "—" rather than guessing an age. */
+  oldest_open?: FindingGroupRow | null;
   share_of_model_client: number;
   top_competitor: string | null;
   top_competitor_share: number | null;
@@ -254,6 +373,33 @@ export interface ReportPayload {
   /** Per-engine reproducibility of the client's verdict across repeat runs. Optional
    * so runs stored before it existed still parse; empty on a single-run cycle. */
   stability?: StabilityRow[];
+  /** Brand × engine presence, every cell carrying its own denominator. Empty on
+   * the regex path. `cells === 0` is NOT MEASURED, which is a different fact
+   * from 0% presence — render "—", never a zero. */
+  engine_matrix?: EngineCellRow[];
+  /** One bold sentence a CMO can act on. Generated DETERMINISTICALLY from
+   * structured fields — no LLM. A hallucinating summary in a
+   * hallucination-detection product is the worst failure mode available. */
+  exec_summary?: string;
+  /** ≤15 themed findings, Critical → High → Medium → Low then by priority.
+   * THIS renders; `accuracy_flags` is the appendix. Optional so runs stored
+   * before P1-T1 still parse and fall back to the flat flag list. */
+  finding_groups?: FindingGroupRow[];
+  /** The 3–7 highest-priority actions — a pre-sliced subset of `finding_groups`
+   * in the same order, so every surface shows the same shortlist. */
+  priority_actions?: FindingGroupRow[];
+  /** Classifier health: rule / type-default / unclassified shares. Reported so a
+   * rising type_default share is visible, never averaged away. */
+  theme_coverage?: Record<string, number>;
+  /** Why no week-over-week comparison is shown: "no_prior_run" |
+   * "query_set_changed" | "". Render the honest explanation, never a comparison
+   * across a changed query set. */
+  comparison_blocked_reason?: string;
+  /** The non-reproducibility disclosure. Render VERBATIM, once per report. Do
+   * not paraphrase it — it is worded to be honest without self-undermining. */
+  methodology_disclosure?: string;
+  /** Vendor-independence disclaimer. Verbatim, once per report. */
+  independence_disclaimer?: string;
   accuracy_flags: FlagRow[];
   sources: SourceRow[];
   losing_queries: LosingRow[];

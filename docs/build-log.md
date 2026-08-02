@@ -1,3 +1,281 @@
+## P1-T7 + P1-T8: the PDF is reproducible, and 15 pages shorter — Completed 2026-08-02
+
+The client PDF was a human pressing `window.print()`. It is now
+`npm run report-pdf <run-id>` — headless Chromium, one margin source, real
+running headers and page numbers, gated on a readiness signal the app raises
+itself. Verified against run `ff231808` end to end.
+
+    32 pages  ->  17 pages   (the spec's 13-18 band)
+    Page 1 of 17 · running header · both disclosures · verbatim prompts
+    every finding card's title and its Fix line on the SAME page
+
+### One flag, because three bugs are really one bug
+
+`web/lib/render-mode.tsx` holds a single `screen | print` context set from
+`?mode=print`. Print never scrolls the viewport, so `IntersectionObserver` never
+fires — a spec-level property of paged media, not a Chromium bug — and the
+consequences all look identical from the live page, which is perfect:
+`loading="lazy"` images blank, `ssr:false` sections gone, a windowed table
+emitting 20 of 200 rows. One flag makes a missed fork greppable instead of
+something a client finds.
+
+`ResponsiveContainer` fails differently and needs its own fix: it sizes through
+`ResizeObserver`, which print never triggers, so charts print at whatever the
+last on-screen size was. `ChartFrame` swaps it for a fixed box matching the
+`@page` content width when printing.
+
+### The readiness gate is quiescence, not a chart count
+
+`networkidle` only means HTTP quiesced; client-rendered SVG finishes on later
+animation frames. The gate requires three things: no chart still laying out,
+`document.fonts.ready` (font metrics decide axis-label layout, and both Sable
+faces are metrically unlike system-ui), and **two frames with no new
+registration** — so a chart whose `next/dynamic` chunk resolves late cannot let
+the counter transiently hit zero and declare the page done.
+
+Quiescence rather than an expected-chart count on purpose. A count couples the
+gate to how many charts the report happens to render today and would fail
+*silently, as ready-too-early*, the first time someone adds one.
+
+### 16 of the first PDF's 32 pages were one finding's evidence
+
+The lifecycle finding printed all **94** of its observations. That is the
+235-identical-cards blob rebuilt one level down, inside a card.
+
+Evidence is now capped at four per finding, chosen **one per surface first**:
+four excerpts from four engines show the error is not one model's quirk, which is
+the question a reader actually has; four from one engine show nothing extra.
+`evidence_total` carries the real count and the card says "Showing 4 of 94
+observations, one per surface" rather than implying it showed everything. The
+full set stays in `accuracy_flags` and the answers export.
+
+That one change is the whole 32 -> 17.
+
+### Two checks that were confidently wrong before they were right
+
+`check-print-layout.mjs` reported **"2 of 5 charts have no size"** on its first
+real run. Both were recharts *legend icons* — recharts reuses the
+`recharts-surface` class for the 14x14 SVG inside each legend item. Selector
+tightened to `.recharts-wrapper > svg.recharts-surface`.
+
+Then it reported **three cards straddling a page boundary**, also wrong, and this
+one matters more because it is a limit of the technique rather than a typo:
+`emulateMedia({media:'print'})` applies print STYLES but does not paginate.
+Layout stays continuous, so `getBoundingClientRect()` reports where a card would
+fall under naive slicing and cannot see Chromium honouring `break-inside: avoid`
+at actual print time. The heuristic the implementation guide recommends is only
+valid for elements that are *taller than a page* — which genuinely cannot honour
+the rule — so that is what it checks now. Real pagination is verified against the
+produced PDF, where it is real: the three Critical cards each have their title
+and their Fix line on one page.
+
+### The traps that fail silently, all guarded
+
+`@page { margin: 0 }` with the real margins in `page.pdf()` — mixing the two is
+an open Playwright bug whose usual symptom is a clipped header. Templates are
+ignored entirely without `displayHeaderFooter: true`, render in an isolated
+iframe (no stylesheet, no relative webfont, images must be base64), and default
+to an effectively-zero font size. `printBackground: true`, or the severity ramp
+prints as four identical empty chips — Sable has no alert hue, so tone is the
+only thing carrying the tiers.
+
+`position: running()` and `string-set()` are **not implemented in Chromium** and
+are not coming, so a section-aware running header ("Findings — continued") is
+impossible here in any mode. The header is static, and the file says so.
+
+### Tests
+
+`tests/test_print_pipeline.py` — 14 always-on source assertions for the invariants
+that fail silently, plus an opt-in end-to-end pass
+(`RUN_PRINT_CHECK=1 PRINT_CHECK_RUN_ID=<id>`) that prints a stored run and reads
+the PDF back: page-count band, running header, page numbers, both disclosures.
+The margin assertion strips CSS comments first — the file necessarily quotes
+`@page { margin: 0 }` in the prose explaining the rule, and matching the
+explanation is how a source guard passes while the rule is wrong.
+
+### Gate
+
+`mypy src/` 99 files · `ruff check src/` clean · `pytest tests/` 829 passed,
+3 skipped · `tsc --noEmit` clean · `next build` clean · e2e print pass green
+against `ff231808`.
+
+---
+
+## Patch — flag provenance did not survive storage — Completed 2026-08-02
+
+Found by asking a plain question of the work above: *does a NEW audit get the
+full packaging, or only the degraded version the Fort run showed?* The answer was
+"neither" — and the Fort run's missing evidence was never a legacy-run problem.
+
+`flag_to_dict` writes four keys on purpose: it is shared with the judge cache,
+which is keyed per ANSWER, so a cell's `engine_name` written into it would be
+served back to a different cell whose answer text happened to match. Correct. But
+`_row_to_judgment` then read those four-key dicts straight through
+`flag_from_dict`, which defaults provenance to empty — while the judgments ROW
+sitting around them has `query_id`, `engine_name`, `intent` and `run_index` as
+actual columns.
+
+So every run **read back from storage** had anonymous flags, permanently,
+however it looked live. `build_finding_groups` then did exactly what it was told
+and refused to build an evidence bundle without a cell, which stripped the
+verbatim prompt, the named model and the date off every card in the report. The
+one part of the deliverable that makes a finding checkable rather than
+assertable, gone on the only path a client ever sees.
+
+Two stamps, both derivations of data already stored, neither touching the cache:
+
+- `db._row_to_judgment` re-stamps each flag from the row's own columns.
+- `reports.build_report` adds `observed_at` from the `query_results` rows, which
+  is where the per-cell timestamp lives — the judgments table has none.
+
+Run `ff231808`, unchanged in the database, before and after:
+
+    before   evidence: 0 · engines: (none) · "observed 94 times; predates provenance"
+    after    evidence: 94 · 4 surfaces  · "observed in 82 of 104 runs on 2026-06-14"
+             anthropic_search / claude-sonnet-4-5-20250929 / 2026-06-14T02:49:35
+             prompt: "is the Fort wearable worth it?"
+
+The named models are the **June pins** — `claude-sonnet-4-5-20250929`,
+`gemini-2.5-flash` — not the `claude-sonnet-5` / `gemini-3.6-flash` those
+surfaces run today. That is `engine_models` off the run row doing its job; a
+report that re-derived the pin at render time would have told a client their
+answer came from a model that never saw the question.
+
+`test_judgment_row_round_trip` asserted the round trip against an original whose
+flags had EMPTY provenance — a shape `judge_results` never produces — so it
+passed while the data was being silently narrowed. It now round-trips a
+realistic judgment, asserts provenance survives, and separately pins the stored
+flag dict at four keys so the cache-safety property stays explicit.
+
+### Gate
+
+`mypy src/` 99 files · `ruff check src/` clean · `pytest tests/` 815 passed,
+1 skipped.
+
+---
+
+## Audit packaging Phase 0 + Phase 1: 115 flags become 5 cards — Completed 2026-08-02
+
+The spec's keystone through the end of Phase 1, plus P2-T1 and P2-T3 because the
+Phase-1 render needed honest denominators and an honest reason for having no
+comparison. Spec: `docs/audit-packaging-spec.md`. Standing rules:
+`.claude/skills/audit-packaging/SKILL.md`.
+
+On the real Fort run `ff231808` (115 stored flags, 30 pages of identical cards):
+
+    5 themed findings · 4 Critical · 144 observations
+    exec summary a CMO can act on · 4 priority actions with owner + effort
+    no letter grade anywhere · every rate as "51 of 180", CI 19-40%
+
+### Adding CRITICAL to `Severity` invalidated the entire judge cache
+
+`judge.py` built its tool schema with `[s.value for s in Severity]`, so appending
+a fourth tier changed the prompt fingerprint and every cached verdict became a
+miss. `test_judge_prompt_fingerprint_is_pinned` caught it on the first full run.
+
+The fix is a seam, not a revert: `JUDGE_SEVERITIES = ("high", "med", "low")` in
+`models.py` is now what the schema reads, frozen and deliberately NOT derived
+from the enum. The report has four tiers; the judge keeps its three. `critical`
+is derived in `src/pipeline/severity.py` from `(flag_type, claim)` — which is
+free, testable, and re-runnable over already-stored runs, none of which is true
+of asking the model. `tests/test_judge.py` now pins the prejudge JS to
+`JUDGE_SEVERITIES` rather than to `Severity`, so the two can't drift back.
+
+Two downstream tests changed and both got *stronger*: `factsheet/gate.py` gained
+a deliberate policy row for `critical` (sendable on a confirmed sheet, suppressed
+on `public_source_only`), and the "unrecognised severity is refused" test lost
+`critical` from its list but gained an explicit assertion that it is refused on
+an unconfirmed sheet. The refuse-by-default that made the transition safe is the
+behaviour that test was protecting.
+
+### Cards are THEMES, and that was worth 49 cards
+
+Grouping on `(theme, cluster_id)` as first written produced **54 cards** from the
+Fort run — the blob the work exists to remove. The spec's own acceptance settles
+it: the Fitbit / pickleball / "not a recognized brand" flags must land in ONE
+group, and they cluster apart because they share almost no tokens. So the card is
+the theme; `member_cluster_ids` keeps the per-claim identity one level down for
+the lifecycle engine. That also fixes the counting unit — the number of cards IS
+the number of themes, which is what page 1 counts.
+
+### The similarity threshold is 88, and the numbers in the docstring are measured
+
+`token_set_ratio` alone scored **P=0.57** on `tests/fixtures/labeled_pairs.csv`
+(72 hand-labeled pairs): "costs $349" vs "costs $289" share every token but one
+and score 93. Two wrong prices are two findings, and merging them hides the
+second from the client where they cannot see it happened.
+
+`numeric_discriminators` fixes it — claims whose numbers disagree score 0.0
+regardless of how alike they read, worth **+11 points of precision** and costing
+no recall by construction. At the precision knee (86 → 88 buys 0.07 of precision
+for 0.08 of recall) the shipped numbers are **P=0.800 / R=0.667**, and those are
+the numbers in the docstring rather than aspirational ones. Read the precision as
+a floor: the fixture's negatives are adversarial minimal pairs, and a real run's
+non-duplicates are about different subjects entirely. `test_finding_id.py`
+re-runs the sweep as a gate.
+
+The fixture is 72 rows against the spec's 150–300. It should grow from real runs.
+
+### Three bugs the tests didn't find but the real data did
+
+**"The models described Fort accurately"** — on a run with no fact sheet. Zero
+findings looks identical whether nothing was checked or everything checked out,
+and they are opposite claims. The summary now names the gap.
+
+**"Observed in 4 of 4 runs"** — on legacy flags that carry no provenance at all.
+Rounding `total` up to `observed` asserted perfect reproducibility off a run that
+recorded no cells. It now says "observed 4 times; this run predates per-answer
+provenance", and ranking treats unknown breadth as one surface rather than zero
+so a real Critical doesn't sort below a Low.
+
+**A stale ship date filed under "weak sources"** because the sentence said
+"according to". The rule set had no ship-date pattern at all — the single most
+common lifecycle error the engines make about a pre-launch product — so 94
+observations fell through to whichever general rule matched the surrounding
+prose. Adding it and moving `source.citation_quality` last dropped the
+type-default rate from **0.40 to 0.042**.
+
+### `n_eff`, not raw n — and scale both sides or you get nonsense
+
+`src/pipeline/stats.py` is hand-rolled on `statistics.NormalDist`, zero new
+dependencies. The first version deflated `n` by DEFF without deflating the
+numerator, which drove `p_hat` above 1 and produced "50% is between 47% and
+100%". `wilson_interval` now raises on `successes > n` rather than clamping, and
+`newcombe_diff_interval` takes raw counts and applies the correction itself so
+the misuse isn't available. At K=3 and ICC 0.68 a 51/180 rate is **19–40%**, not
+28%.
+
+### Also landed
+
+`--sky` exists only inside `.on-navy`, verified in the browser: `#7fa6d9` on the
+masthead, **the empty string** on paper. The constraint is a missing-variable bug
+rather than a design-review argument. Severity is the monochrome navy ramp with
+an icon and a label on every tier, which is load-bearing on a single-hue ramp.
+
+`web/app/audits/[id]/page.tsx` read `params.id` directly. Under Next 16 `params`
+is a Promise, so `runId` was `undefined`, the page polled `/audits/undefined/status`,
+404'd and sat on "Loading…" forever — the report was unreachable in the running
+app. `tsc` passed because the annotation asserted the wrong shape; only loading
+the page found it.
+
+### Not built, deliberately
+
+**P1-T7/T8 (print pipeline, lazy-load audit)** — needs the Playwright worker;
+`break-inside` and the print forks are stubbed in `sable.css` and the evidence
+block already renders eagerly under `print:`. **P2-T2 (lifecycle)** — the
+"oldest still open" tile renders `—` and says why; `member_cluster_ids` is the
+unit it will track. **P2-T5/T6 remainder** — the accountability line, bump chart,
+paired bars and Pareto all need a prior comparable cycle, which no stored client
+has yet. **Phases 3–5** untouched.
+
+### Gate
+
+`mypy src/` 99 files · `ruff check src/` clean · `pytest tests/` 813 passed,
+1 skipped · `tsc --noEmit` clean · `next build` clean · report verified rendering
+against run `ff231808` in the browser.
+
+---
+
 ## Engine repin: the six-surface search set — Completed 2026-08-01
 
 Three surfaces repinned, one adapter rewritten, `runs_per_query` cut to 3, and the cost
