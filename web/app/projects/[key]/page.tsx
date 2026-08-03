@@ -15,17 +15,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/notice";
+import { INPUT_CLS } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import { StateBadge } from "@/components/badges";
 import { deleteProject, getProject, type ProjectDetail } from "@/lib/api";
 
-const TEASER_STATUS_VARIANT: Record<
-  string,
-  "secondary" | "success" | "destructive" | "default"
-> = {
-  draft: "secondary",
-  approved: "success",
-  rejected: "destructive",
-  exported: "default",
+// Monochrome: weight carries state, the label carries the meaning. Sable has
+// no alert hue, so `rejected` is not red — it is an outline chip.
+const TEASER_STATUS_VARIANT: Record<string, "quiet" | "muted" | "outline" | "solid"> = {
+  draft: "quiet",
+  approved: "solid",
+  rejected: "outline",
+  exported: "muted",
 };
 
 export default function ProjectDetailPage() {
@@ -79,35 +81,39 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* --ink-secondary, not Harbour: on the PAPER ground Harbour is 4.14:1. */}
       <Link
         href="/projects"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-1.5 text-[13px] text-[color:var(--ink-secondary)] transition-colors hover:text-navy"
       >
         <ArrowLeft className="h-4 w-4" /> All projects
       </Link>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <Notice tone="problem">{error}</Notice>}
 
       {project === null ? (
-        !error && <p className="text-sm text-muted-foreground">Loading…</p>
+        !error && <p className="text-[13px] text-[color:var(--ink-secondary)]">Loading…</p>
       ) : (
         <>
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{project.label}</h1>
+            <div className="space-y-1">
+              <p className="label">Project</p>
+              <h1 className="display text-[34px] leading-tight">{project.label}</h1>
               {project.domain && (
                 <a
                   href={`https://${project.domain}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-block text-muted-foreground transition-colors hover:text-foreground hover:underline"
+                  className="mt-1 inline-block text-[13px] text-blue transition-colors hover:underline"
                 >
                   {project.domain}
                 </a>
               )}
             </div>
+            {/* `outline`, not a red button: the typed-confirmation dialog below
+                is the real guard, and Sable has no alert hue. */}
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
               className="shrink-0"
               onClick={() => setConfirmOpen(true)}
@@ -120,32 +126,32 @@ export default function ProjectDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <FileText className="h-4 w-4 text-muted-foreground" /> Audits
-                <span className="text-sm font-normal text-muted-foreground">
+                <FileText className="h-4 w-4 text-harbour" /> Audits
+                <span className="text-[13px] font-normal tabular-nums text-harbour">
                   ({project.audits.length})
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {project.audits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No audits for this project yet.</p>
+                <p className="text-[13px] text-harbour">No audits for this project yet.</p>
               ) : (
-                <ul className="divide-y">
+                <ul className="divide-y divide-[var(--rule)]">
                   {project.audits.map((a) => (
                     <li key={a.run_id}>
                       <Link
                         href={`/audits/${a.run_id}`}
-                        className="flex items-center gap-3 py-2.5 hover:opacity-80"
+                        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 hover:bg-navy/[0.03]"
                       >
-                        <span className="font-medium">{a.client_name}</span>
+                        <span className="text-[13px] font-medium text-navy">{a.client_name}</span>
                         <StateBadge state={a.state} />
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-[13px] text-harbour">
                           {a.n_queries} queries · {a.engines.join(", ") || "no engines"}
                         </span>
-                        <span className="ml-auto text-xs text-muted-foreground">
+                        <span className="ml-auto text-[11px] tabular-nums text-harbour">
                           {new Date(a.created_at).toLocaleString()}
                         </span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <ChevronRight className="h-4 w-4 text-harbour" />
                       </Link>
                     </li>
                   ))}
@@ -158,34 +164,34 @@ export default function ProjectDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-4 w-4 text-muted-foreground" /> Teasers
-                <span className="text-sm font-normal text-muted-foreground">
+                <Sparkles className="h-4 w-4 text-harbour" /> Teasers
+                <span className="text-[13px] font-normal tabular-nums text-harbour">
                   ({project.teasers.length})
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {project.teasers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No teasers for this project yet.</p>
+                <p className="text-[13px] text-harbour">No teasers for this project yet.</p>
               ) : (
-                <ul className="divide-y">
+                <ul className="divide-y divide-[var(--rule)]">
                   {project.teasers.map((t) => (
                     <li key={t.id}>
                       <Link
                         href={`/teaser?teaser=${encodeURIComponent(t.id)}`}
-                        className="flex items-center gap-3 py-2.5 hover:opacity-80"
+                        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 hover:bg-navy/[0.03]"
                       >
-                        <span className="font-medium">{t.company_name || "Untitled teaser"}</span>
+                        <span className="text-[13px] font-medium text-navy">{t.company_name || "Untitled teaser"}</span>
                         <Badge
-                          variant={TEASER_STATUS_VARIANT[t.status] ?? "secondary"}
+                          variant={TEASER_STATUS_VARIANT[t.status] ?? "quiet"}
                           className="capitalize"
                         >
                           {t.status}
                         </Badge>
-                        <span className="ml-auto text-xs text-muted-foreground">
+                        <span className="ml-auto text-[11px] tabular-nums text-harbour">
                           {new Date(t.created_at).toLocaleString()}
                         </span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <ChevronRight className="h-4 w-4 text-harbour" />
                       </Link>
                     </li>
                   ))}
@@ -201,46 +207,46 @@ export default function ProjectDetailPage() {
               onClick={onBackdrop}
             >
               <div
-                className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg"
+                className="w-full max-w-md rounded-lg border border-[var(--rule)] bg-white p-6 shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center gap-2 text-destructive">
+                <div className="flex items-center gap-2 text-navy">
                   <TriangleAlert className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Delete this project?</h2>
+                  <h2 className="text-lg font-medium">Delete this project?</h2>
                 </div>
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-[13px] text-harbour">
                   This permanently deletes{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium text-navy">
                     {project.audits.length} audit{project.audits.length === 1 ? "" : "s"}
                   </span>{" "}
                   and{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium text-navy">
                     {project.teasers.length} teaser{project.teasers.length === 1 ? "" : "s"}
                   </span>{" "}
-                  for <span className="font-medium text-foreground">{project.label}</span>, including
+                  for <span className="font-medium text-navy">{project.label}</span>, including
                   every answer, citation, judgment, and site-audit result. This cannot be undone.
                 </p>
-                <label className="mt-4 block text-sm">
-                  <span className="text-muted-foreground">
+                <label className="mt-4 block text-[13px]">
+                  <span className="text-harbour">
                     Type{" "}
-                    <span className="font-mono font-medium text-foreground">{project.label}</span> to
+                    <span className="font-mono font-medium text-navy">{project.label}</span> to
                     confirm:
                   </span>
                   <input
                     autoFocus
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
-                    className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    className={cn(INPUT_CLS, "mt-1 h-10")}
                     placeholder={project.label}
                   />
                 </label>
-                {deleteError && <p className="mt-2 text-sm text-destructive">{deleteError}</p>}
+                {deleteError && <Notice tone="problem" className="mt-2">{deleteError}</Notice>}
                 <div className="mt-5 flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={closeConfirm} disabled={deleting}>
                     Cancel
                   </Button>
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
                     onClick={onDelete}
                     disabled={deleting || confirmText.trim() !== project.label}

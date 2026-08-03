@@ -427,4 +427,58 @@ def test_the_pdf_endpoint_delegates_to_the_p1_t7_worker() -> None:
     assert "render-report-pdf.mjs" in app_src
     # Exit 2 is "Chromium missing" — an environment problem, not a failed render.
     assert "returncode == 2" in app_src
-    assert "status_code=503" in app_src
+
+
+def test_a_missing_browser_degrades_to_the_print_ready_page() -> None:
+    """The repo's convention: a missing browser costs you the PDF, not the
+    deliverable. A 503 leaves an operator with nothing while a perfectly good
+    printable page sits one URL away."""
+    from pathlib import Path
+
+    app_src = (Path(__file__).resolve().parents[1] / "src" / "api" / "app.py").read_text()
+    assert "X-PDF-Fallback" in app_src
+    assert "?mode=print" in app_src
+    assert "status_code=302" in app_src
+
+
+# --- P3-T1 / P3-T4: the pieces a human actually touches -----------------------
+
+
+def test_the_finding_card_can_fetch_the_full_answer() -> None:
+    """The endpoint alone is not the feature — it needs a caller.
+
+    A client who doubts an excerpt needs the sentence IN CONTEXT, and the
+    alternative was downloading the whole answers export.
+    """
+    from pathlib import Path
+
+    view = (
+        Path(__file__).resolve().parents[1] / "web" / "components" / "report-view.tsx"
+    ).read_text()
+    assert "function AnswerPanel" in view
+    assert "getAnswerCell(" in view
+    assert "<mark" in view, "the flagged claim must be highlighted in context"
+
+
+def test_the_shared_link_has_a_page_a_human_can_open() -> None:
+    """A shareable link nobody can click is not a shareable link."""
+    from pathlib import Path
+
+    page = Path(__file__).resolve().parents[1] / "web" / "app" / "shared" / "[token]" / "page.tsx"
+    assert page.exists(), "there is no /shared/[token] route"
+    source = page.read_text()
+    assert "getSharedReport(" in source
+    # No `runId` PROP: the Judge / re-judge / export controls are gated on it, so
+    # a shared viewer cannot reach anything that spends money. Asserted on the
+    # JSX prop rather than the word, which appears in the comment explaining it.
+    assert "<ReportView report={report} />" in source
+    assert "runId={" not in source
+
+
+def test_the_shared_client_sends_no_api_key() -> None:
+    """The token IS the auth — attaching a key would make it a login wall."""
+    from pathlib import Path
+
+    api = (Path(__file__).resolve().parents[1] / "web" / "lib" / "api.ts").read_text()
+    shared = api.split("export async function getSharedReport")[1].split("export async function")[0]
+    assert "authHeaders" not in shared

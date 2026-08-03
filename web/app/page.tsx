@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Notice } from "@/components/notice";
+import { INPUT_CLS, FIELD_LABEL_CLS, FIELD_HINT_CLS } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { AssembleFromLead } from "@/components/assemble-from-lead";
 import { PreviewPanels } from "@/components/preview-panels";
@@ -85,15 +88,15 @@ export default function UploadPage() {
 
   const sheetPicker =
     sheets.length > 0 ? (
-      <div className="rounded-lg border p-4">
-        <p className="text-sm font-medium">Fact sheet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
+      <div className="rounded-lg border border-[var(--rule)] bg-white p-4">
+        <p className={FIELD_LABEL_CLS}>Fact sheet</p>
+        <p className={cn(FIELD_HINT_CLS, "mt-1")}>
           Judge this run&apos;s accuracy against an approved sheet instead of{" "}
           <code>fact</code> rows in the CSV. Only approved sheets appear here, and a
           run cannot use both.
         </p>
         <select
-          className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-sm"
+          className={cn(INPUT_CLS, "mt-3")}
           value={factSheetId ?? ""}
           onChange={(e) => setFactSheetId(e.target.value || null)}
         >
@@ -109,9 +112,10 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New audit</h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className="space-y-1">
+        <p className="label">Run</p>
+        <h1 className="display text-[34px] leading-tight">Upload your prompts</h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
           Upload your prompts, fact sheet, and run config as CSV. Review the merged set, then run
           it across the engines.
         </p>
@@ -137,14 +141,10 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Notice tone="problem">{error}</Notice>}
 
       {previewing && !preview && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" /> Parsing…
         </div>
       )}
@@ -152,8 +152,8 @@ export default function UploadPage() {
       {preview && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Preview &amp; validate</h2>
-            <Button onClick={runAudit} disabled={!preview.ok || creating} size="lg">
+            <h2 className="text-lg font-medium">Preview &amp; validate</h2>
+            <Button onClick={runAudit} disabled={!preview.ok || creating} variant="hero" size="lg">
               {creating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

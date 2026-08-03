@@ -11,8 +11,9 @@
  */
 
 import * as React from "react";
-import { Loader2, Wand2, AlertTriangle } from "lucide-react";
+import { Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/notice";
 import {
   assembleAudit,
   getFactSheet,
@@ -124,7 +125,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
     <div className="space-y-4 rounded-lg border p-4">
       <div>
         <p className="text-sm font-medium">Start from a lead</p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-[11px] text-harbour">
           Builds the whole audit CSV: the trade&apos;s local questions, the config, and
           competitors from Google&apos;s local pack. Attach the fact sheet after, below.
         </p>
@@ -132,7 +133,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
 
       {sheets.length > 0 && (
         <label className="block space-y-1">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-harbour">
             Start from an approved fact sheet
           </span>
           <select
@@ -158,7 +159,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1">
-          <span className="text-xs text-muted-foreground">Business name</span>
+          <span className="text-[11px] text-harbour">Business name</span>
           <input
             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             value={business}
@@ -167,7 +168,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
           />
         </label>
         <label className="space-y-1">
-          <span className="text-xs text-muted-foreground">Website</span>
+          <span className="text-[11px] text-harbour">Website</span>
           <input
             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             value={website}
@@ -176,7 +177,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
           />
         </label>
         <label className="space-y-1">
-          <span className="text-xs text-muted-foreground">Trade</span>
+          <span className="text-[11px] text-harbour">Trade</span>
           <select
             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             value={trade}
@@ -190,7 +191,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
           </select>
         </label>
         <label className="space-y-1">
-          <span className="text-xs text-muted-foreground">City</span>
+          <span className="text-[11px] text-harbour">City</span>
           <input
             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             value={city}
@@ -199,7 +200,7 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
           />
         </label>
         <label className="space-y-1 sm:col-span-2">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-harbour">
             State, spelled in full — &ldquo;California&rdquo;, not &ldquo;CA&rdquo;
           </span>
           <input
@@ -223,37 +224,29 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-sm text-muted-foreground hover:underline"
+          className="text-[13px] text-harbour hover:underline"
         >
           Cancel
         </button>
       </div>
 
-      {error && (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <Notice tone="problem">{error}</Notice>}
 
       {result && (
         <div className="space-y-2 text-sm">
           <p>
             Added <code>{result.competitors.length}</code> competitor
             {result.competitors.length === 1 ? "" : "s"} from{" "}
-            <span className="text-muted-foreground">{result.competitor_source}</span>:{" "}
+            <span className="text-harbour">{result.competitor_source}</span>:{" "}
             {result.competitors.join(", ") || "none"}
           </p>
           {result.warning && (
-            <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              {result.warning}
-            </p>
+            <Notice tone="info">{result.warning}</Notice>
           )}
           {result.excluded.length > 0 && (
             /* Shown, not hidden: a list that silently dropped the obvious local name
                looks complete and is not. */
-            <details className="text-xs text-muted-foreground">
+            <details className="text-[11px] text-harbour">
               <summary className="cursor-pointer">
                 {result.excluded.length} listing{result.excluded.length === 1 ? "" : "s"} excluded
               </summary>

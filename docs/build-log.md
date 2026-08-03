@@ -1,3 +1,324 @@
+## Patch — Phase 3 was not done when I said it was — Completed 2026-08-02
+
+Asked to confirm, and it wasn't. Three gaps, all the same shape: **the backend
+half of a feature built, the half a human touches missing.** Each would have
+passed any test I had written, because I had written tests for the half that
+existed.
+
+**P3-T1 had an endpoint with no caller.** The spec asks for "an expandable inline
+panel on each finding card showing the full answer with the flagged claim
+highlighted". The card showed the stored excerpt; nothing fetched the answer.
+`AnswerPanel` now does, on expand, cached per cell. Verified in the browser: it
+pulls the full 1,924-character answer and highlights *"Batch 1 ships Q3 2026"*
+inside it.
+
+Highlighting is a plain substring match, and when it misses — the judge can quote
+across a line break — the answer still renders unhighlighted. Showing the
+evidence beats refusing to show it because a marker failed.
+
+**P3-T4's link could not be opened.** `/shared/{token}/report` returned JSON;
+there was no page. A shareable link nobody can click is not a shareable link.
+`web/app/shared/[token]` now renders the report with **no `runId`**, so the
+Judge, re-judge and export controls never mount — read-only by construction
+rather than by permission, with no privileged action on the page to guard.
+Verified: renders 4 cards with no API key in the browser at all, and a tampered
+token shows *"this link is not valid"* rather than a stack trace.
+
+**P3-T5 returned 503 where the spec says degrade.** A missing Chromium now
+302s to `?mode=print` with an `X-PDF-Fallback` header. The repo's existing
+convention (`teaser/render/audit/pdf.ts`) is that a missing browser costs you the
+PDF, not the deliverable — a 503 leaves an operator with nothing while a
+perfectly good printable page sits one URL away.
+
+### Two test bugs of the same family, again
+
+`"runId" not in source` matched the COMMENT explaining why there is no runId.
+Fixed by asserting on the JSX prop (`runId={`) instead of the word. That is the
+third time this session a source-level guard matched prose about the rule rather
+than the rule — the pattern is now: assert on syntax, never on vocabulary.
+
+### A local-setup consequence worth knowing
+
+Share minting needs `GEO_API_KEY`; the dev UI currently needs none. Setting the
+key made the web app 401 mid-verification, because `NEXT_PUBLIC_GEO_API_KEY` in
+`web/.env.local` is unset. Set both together or neither.
+
+### Gate
+
+`mypy src/` 110 files · `ruff check src/` clean · `pytest tests/` 1088 passed,
+3 skipped · `tsc --noEmit` clean · `next build` clean (`/shared/[token]` listed) ·
+shared page and drill-down both verified in a browser.
+
+---
+
+## Sable P0 + the deferred gates — Completed 2026-08-02
+
+Closes the two things the P1–P4 entry below left open: the Python phase, and the
+client-facing gates that needed a live API.
+
+### P0 — a CLI run now always reaches a terminal status
+
+`run_audit()`'s measurement loop is wrapped in `try/finally`; the terminal write
+is derived from a `completed` flag set *inside* the `try` after the loop, so an
+exception from the final iteration cannot mark a run done. The standalone
+`status="done"` line is gone. Ctrl-C / crash → **`cancelled`** immediately,
+instead of sitting at `running` until the API's next startup scan relabelled it
+`interrupted`. Deliberately NOT fixed by storing the CLI's query set — that would
+make aborted runs auto-resume at API startup and spend engine money nobody asked
+for. Also corrected the stale reason string and docstring in
+`resume_interrupted_runs()`, which described legacy pre-resume rows rather than
+what actually reaches it.
+
+**The test I wrote first was wrong, and the reason matters.** It raised
+`RuntimeError` from a fake engine to simulate an abort — and the run completed
+normally. `run_query_set` catches `Exception` and turns a failed cell into a
+`None` response; that IS the "engines never raise, the pipeline never crashes
+because one engine failed" invariant. So an ordinary engine error can never
+exercise this path. The abort that actually propagates is `KeyboardInterrupt`,
+a `BaseException` — i.e. the literal Ctrl-C case. Three tests now cover it:
+abort → `cancelled` with prior work still counted; loop-completed-then-died →
+`done`; and a storage failure in the `finally` must not mask the original
+exception. All fake `db`, make no engine calls, cost nothing.
+
+Note `update_audit_run_progress` is now called with `error=`, which broke the
+existing resume test's 3-arg fake — widened, not worked around.
+
+### The gates that needed a live API
+
+- **`report-pdf`: 15 pages — inside the 13–18 band.** `print-check` passes
+  (cards=5, charts=3, longest table 21 rows). So the `Card` padding/shadow and
+  `--radius` changes did not cost the deliverable a page.
+- **No valid before/after baseline exists.** I built a HEAD worktree to compare
+  page counts; it rendered 1 page of font data. `HEAD` (e9baf3b) predates the
+  current report entirely — the working tree carries substantial uncommitted
+  report work. The 15-page figure is therefore an absolute check against the
+  band, not a delta.
+- **The band is unverifiable on most stored runs.** Across all 24 runs in the
+  DB, `themes`, `findings` and `accuracy_findings` are **zero everywhere** — no
+  stored run exercises the findings-heavy sections. The first run I tried
+  produced 8 pages for exactly this reason, not because of any CSS change.
+
+### Two real contrast bugs, both the same trap
+
+Measured in-browser rather than assumed, and the spec's own §10 predicted both:
+**Harbour on the Paper ground is 4.14:1 and fails AA.**
+
+- `.label` (the page eyebrow) shipped as Harbour, and every use is on Paper —
+  10px failing text on all seven routes. Now `--ink-secondary` (5.59:1), which
+  is also correct on white, so the class is safe in both contexts. The report's
+  `.sable .label` is more specific and is untouched.
+- The back-links on `/audits/[id]` and `/projects/[key]` sit outside any card.
+  Same fix.
+
+After both: **0 contrast failures and 0 missing focus rings** across `/`,
+`/projects`, `/fact-sheets`, `/teaser`, `/audit`.
+
+### Pre-existing, reported not fixed: the client report fails AA
+
+With the report mounted, 41 elements measure below AA — **all inside `.sable`,
+none of them mine.** `sable.css` is untouched (clean in git) and sets both
+`.body` and `.sable .label` to Harbour on the Paper report ground: 4.14:1. This
+is the paid deliverable, so it is worth a decision, but it belongs to the
+audit-packaging spec and to whoever owns the identity guide — the fix is a token
+change in `sable.css`, which this spec explicitly forbids touching.
+
+Gate: `mypy` clean · `ruff check src/` clean · **1084 passed, 3 skipped** ·
+`npm run typecheck && npm run build` green.
+
+---
+
+## Sable app chrome — P1–P4 — Completed 2026-08-02
+
+`docs/ui-redesign-sable-spec.md` P1–P4. The app chrome now wears Sable at
+`:root`; the indigo shadcn theme is retired. **P0 (Python) was deliberately not
+done** — the correction-run work is still uncommitted in `orchestrator.py` /
+`runner.py` / `cli.py` / `db.py` / `cost.py`, so nothing under `src/` was
+touched. Scope was `web/` only.
+
+New: `styles/tokens.css`, `components/plume.tsx`, `components/app-header.tsx`,
+`components/notice.tsx`, `lib/ui.ts`. Rewritten: `globals.css`,
+`tailwind.config.ts`, `layout.tsx`, `icon.svg`, `ui/{button,card,badge}.tsx`,
+`badges.tsx`. Class-level edits across all seven routes and the six
+supporting components. Inter deleted; Libre Franklin is the UI face.
+
+### The spec's P1 exit criterion is wrong, and it mattered
+
+The spec says deleting `destructive`/`success`/`warning` from the Tailwind
+config makes `npm run build` "fail, loudly," and that the failure list *is* the
+P3/P4 worklist. **It does not fail.** Tailwind v3 does not error on unknown
+utilities — `text-destructive` simply emits no CSS. The build was green before
+a single call site had been migrated, which is the exact silent-success failure
+the spec was trying to design against.
+
+The real worklist came from `grep` plus `tsc`: TypeScript *does* catch the
+removed `cva` variants, and that caught 14 call sites. Anything expressed as a
+bare class string was invisible to both and had to be grepped. If a future
+phase relies on "the build will tell me," it won't.
+
+### Two things the spec did not know were in scope
+
+- **`charts.tsx` — declared untouchable (§7.6), actually broken by P1.** It
+  reads `hsl(var(--muted-foreground))`, `--border`, `--card`, `--primary`,
+  `--secondary`, `--foreground` — the shadcn HSL triplets P1 deletes. Left
+  alone, every axis tick, tooltip and bar fill in the **client report** would
+  have resolved to an invalid colour. Repointed to `var(--navy)` /
+  `var(--harbour)` / `var(--rule)` / `var(--white)`, which are defined in both
+  `:root` and `.sable`, so charts render identically in app and PDF.
+- **`report-view.tsx` needed six edits, not the sanctioned two (§6.4).** The
+  file grew since the spec was written. Lines 419/432 are now 567/580; on top
+  of them, two `Badge` variants were hard type errors, and two `text-destructive`
+  sites (`split_cells`, the losing-queries `TrendingDown`) are *not* `no-print`
+  and would have shipped colourless to a client. Both moved to the monochrome
+  navy ramp per the audit-packaging skill.
+
+### Still open
+
+- `charts.tsx` keeps a 7-hue categorical `PALETTE` (indigo/emerald/amber/…) for
+  source domains, and a hardcoded `hsl(199 89% 48%)` citation bar. Both are
+  pre-existing, both violate "no colours outside the palette," and both are a
+  design decision rather than a migration step — **not** changed here.
+- `npm run report-pdf` / `print-check` not run: both need a live API and a known
+  run id. The 13–18 page band is **unverified**, and P3 changed `Card` padding
+  (`p-6` → `p-5 pb-3`) and dropped `shadow-sm`, plus `--radius` 0.75→0.875rem.
+  Re-run before the next client send.
+- `/audit` still renders `grade {a.grade_letter}` in the saved-audits list,
+  which contradicts the packaging skill's no-letter-grade rule. Left alone —
+  it is stored data, not styling.
+
+Verified in-browser: three plumes in the header, exactly one Sky in the DOM,
+app ground and report ground both `#f2f1ec`, `--sky` undefined in both scopes,
+h1 Cormorant at 34px, controls 36px. `npm run typecheck && npm run build` green.
+
+---
+
+## Phases 4 and 3 complete — Completed 2026-08-02
+
+Six operations modules and six delivery surfaces. Live status:
+`docs/audit-packaging-status.md`.
+
+    review.py      sampling + reconciliation      drift.py       engine canaries
+    narrative.py   the grounding verifier         versioning.py  frozen core + config
+    digest.py      the weekly email               sharing.py     signed links
+    fixpack.py     pasteable briefs               + 3 new endpoints
+
+### Benjamini-Hochberg's cousin: two more "looks right, does nothing"
+
+**The narrative verifier passed its own honest fixture as a FAILURE.** "Mention
+rate fell 8 percentage points" against a fact of −8 was rejected on sign — but
+natural prose puts direction in the VERB, and comparing signed values rejects
+correct writing. Worse, it would have *passed* "rose −8 percentage points".
+
+Deltas now match on magnitude and direction is checked properly by
+`_direction_ok`, which catches the failure a numeric comparison structurally
+cannot: **"improved" beside a −8 fact contains no wrong number at all.** That is
+the qualitative-overclaim case the implementation guide flags, and it needed its
+own check rather than a stricter version of the numeric one.
+
+### The stratum everyone leaves out
+
+The QA queue samples a random 5% of cells where the judge found **nothing**.
+Without it the queue can only ever discover over-flagging — and the expensive
+error here is the miss. Two more properties that are easy to get wrong:
+
+- **A 5% rate over 12 cells rounds to zero.** A stratum that silently samples
+  nothing is a stratum that does not exist, so a non-empty population always
+  contributes at least one item.
+- **The cap never cuts into a mandatory stratum.** Dropping a Critical from
+  review to make room for a routine sample is exactly backwards, and truncation
+  is *reported* (`SampleResult.dropped`) because a silently-capped queue reads as
+  full coverage.
+
+Coverage guarantees are asserted over 100 randomized inputs, not one fixture.
+
+### Drift says nothing rather than guessing
+
+Three of six surfaces publish no dated model pin at all, so drift there is
+invisible in metadata — hence a behavioural fingerprint (length, refusal rate,
+citations). Two deliberate silences: a first cycle is **not** drift (otherwise
+every new client's first report warns about an engine update that did not
+happen), and fewer than five answered cells produces no verdict. A spurious
+annotation trains people to ignore annotations.
+
+And it annotates, never re-baselines. The annotation is asserted to contain no
+claim about the client — no "improved", no "declined", no "visibility".
+
+### Discovery churn must not break the trend
+
+`comparability_version` is derived from the **frozen core only**. A version over
+the whole set would break the trend every single week, which is the opposite of
+what tiering is for. A core change with no bridge cycle raises rather than warns:
+a warning is ignored exactly once, and then the trend is silently broken for a
+quarter.
+
+`config_fingerprint` deliberately excludes `notes` and `revision` — tidying a
+comment must not force a spurious incomparability — and includes the fact sheet,
+because the judge cache already keys on it.
+
+### Delivery
+
+**The digest subject differs in all four states** and always carries a number.
+"Your Weekly GEO Report" trains the reader to skip it, and for a format nobody
+has to visit the open rate is the product. **Every digest has a "what we're
+doing" line, including when the answer is "nothing"** — that is precisely where
+recurring reports lose readers. And it reads every figure from the payload rather
+than recomputing: the first thing a client notices is the email disagreeing with
+the report.
+
+**Share links** verify signature → revocation → expiry → password, in that order.
+Checking expiry first would let a visitor enumerate which run ids exist from the
+different error messages. Every failure is 403 with the reason in the body, for
+the same reason. Revocation is per-token, or "revoke" would mean "revoke every
+link anyone was ever sent". Verified end to end: valid 200, tampered 403,
+password-missing 403, password-correct 200, revoked 403 — and the shared route
+takes **no API key**, since a login wall is what kills forwardability.
+
+**Filters are `no-print`** and the visible count is stated. A filtered PDF that
+looks complete is the same class of bug as a lazy-loaded section that silently
+vanishes. The severity bar counts what is VISIBLE, so the bar and the cards below
+it cannot disagree.
+
+**The PDF endpoint delegates to the P1-T7 worker** rather than rendering again —
+one renderer, and the worker owns every Chromium trap. Exit code 2 (Chromium
+missing) becomes a 503 with the install hint, not a 500: an environment problem
+must not read as a failed render.
+
+### Verified against the real Fort run
+
+    fix-pack.md   5 findings, worst first, each block self-contained
+    digest        "Fort appears in 51 of 180 answers this cycle (new question set)"
+    drill-down    the verbatim prompt and full answer for one cell
+
+The fix-pack's ban on outcome promises is scoped to the Fix and How-we'll-check
+sections — the standing disclaimer uses "guarantee" in a NEGATION, and a
+whole-document scan would have forbidden the sentence that keeps it honest.
+
+### What code cannot finish
+
+**P4-T1 needs a gold SET.** The metrics, sampler, reconciliation and gate are all
+built. What is missing is labelled data — ~60 items with the stratified sampler,
+or 334 randomly sampled. Until then the report says "not yet measured at a sample
+size that would support quoting a figure", which is true.
+
+**P4-T4 has a verifier but no generator**, deliberately and in the safe order:
+the guard is what makes a generator safe to switch on. `fallback_narrative` runs
+until then.
+
+**Persistence is not wired** for review records, drift fingerprints or
+`ClientConfig` — each needs a table before it accrues history. Share revocation
+is in-process and forgets on restart.
+
+`GEO_API_KEY` is empty in `.env`, so the API is open (its own startup warning
+says so) and share links cannot be signed — `mint_share_token` refuses rather
+than signing with an empty key.
+
+### Gate
+
+`mypy src/` 110 files · `ruff check src/` clean · `pytest tests/` 1081 passed,
+3 skipped · `tsc --noEmit` clean · `next build` clean · endpoints exercised
+against run `ff231808`.
+
+---
+
 ## Migration applied; P4-T1 agreement metrics and the production gate — Completed 2026-08-02
 
 ### The migration

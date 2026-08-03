@@ -3,20 +3,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary/10 text-primary",
-        secondary: "border-transparent bg-secondary text-secondary-foreground",
-        outline: "text-foreground",
-        success: "border-transparent bg-[hsl(var(--success))]/12 text-[hsl(var(--success))]",
-        warning: "border-transparent bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))]",
-        destructive:
-          "border-transparent bg-destructive/10 text-destructive",
+        // Fill = navy family. Outline = categorical. Nothing else exists.
+        // There is no success/warning/destructive: Sable has no alert hue, and
+        // every state chip carries a glyph or a label as its second channel.
+        solid: "bg-navy text-white",
+        muted: "bg-navy/[0.06] text-navy",
+        outline: "border border-navy/20 text-navy",
+        quiet: "border border-[var(--rule)] text-harbour",
       },
     },
-    defaultVariants: { variant: "default" },
+    defaultVariants: { variant: "muted" },
   },
 );
 

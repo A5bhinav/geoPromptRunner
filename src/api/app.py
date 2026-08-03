@@ -640,10 +640,20 @@ def audit_report_pdf(run_id: str, base_url: str = "http://localhost:3000") -> Re
             text=True,
             timeout=300,
         )
-        # Exit 2 is the worker's "Chromium missing" code — an environment problem,
-        # not a bad request, so it must not read as a failed render.
+        # Exit 2 is the worker's "Chromium missing" code. DEGRADE rather than
+        # fail: redirect to the print-ready route, which is the same document
+        # one Cmd-P away. The repo's existing convention (teaser/render/audit/
+        # pdf.ts) is that a missing browser costs you the PDF, not the
+        # deliverable — a 503 would leave an operator with nothing while a
+        # perfectly good printable page sits one URL away.
         if result.returncode == 2:
-            raise HTTPException(status_code=503, detail=result.stderr.strip())
+            return Response(
+                status_code=302,
+                headers={
+                    "Location": f"{base_url.rstrip('/')}/audits/{run_id}?mode=print",
+                    "X-PDF-Fallback": "chromium-unavailable",
+                },
+            )
         if result.returncode != 0 or not out.exists():
             raise HTTPException(
                 status_code=500, detail=f"PDF render failed: {result.stderr.strip()[:300]}"

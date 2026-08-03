@@ -280,29 +280,60 @@ def run_audit(
     # The outcome carries prior + new results so a resumed run renders/judges the
     # whole run, not just the cells it happened to fill this pass.
     results: list[QueryResult] = list(prior_results)
-    for index, query in enumerate(queries, start=1):
-        cell = run_query_set([query], engines, runs_per_query, done_cells=done_cells)
-        if not cell:
+    # Terminal status is derived from what actually landed, not from reaching the
+    # happy path. Two bugs close here:
+    #   1. A Ctrl-C / crash used to leave the row at "running", so the API's next
+    #      startup scan flipped it to "interrupted" — a status that means "we could
+    #      not rebuild this at startup", which was never what happened.
+    #   2. A process that died between the last result write and the old success
+    #      line left a COMPLETE run stuck at "running", and _prior_comparable_run
+    #      (runner.py, `status == "done"`) then excluded a perfectly good cycle from
+    #      the trend comparison permanently.
+    # "cancelled" rather than "failed": an operator aborting is not an error, and the
+    # UI, _prior_comparable_run and the engine-state rollup already treat cancelled
+    # as terminal.
+    #
+    # Deliberately NOT fixed by storing the CLI's query set so its runs auto-resume:
+    # resume_interrupted_runs() runs unattended at API startup, so an operator who
+    # Ctrl-Cs a 25-query audit because they spotted a bad config would have it
+    # silently relaunched — real money on engine calls nobody asked for. An abort is
+    # a decision; auto-resume would quietly overrule it.
+    completed = False
+    try:
+        for index, query in enumerate(queries, start=1):
+            cell = run_query_set([query], engines, runs_per_query, done_cells=done_cells)
+            if not cell:
+                if progress:
+                    print(f"  [{index}/{len(queries)}] {query.query_id}: skipped (already stored)")
+                continue
+            results.extend(cell)
+            if run_id is not None:
+                try:
+                    db.save_query_results(run_id, cell)
+                except StorageError as exc:
+                    logger.warning("Failed to persist results for %s: %s", query.query_id, exc)
             if progress:
-                print(f"  [{index}/{len(queries)}] {query.query_id}: skipped (already stored)")
-            continue
-        results.extend(cell)
+                answered = sum(1 for r in cell if r["response"] is not None)
+                print(
+                    f"  [{index}/{len(queries)}] {query.query_id}: "
+                    f"{answered}/{len(cell)} answered"
+                )
+        # Inside the `try`, after the loop: an exception from the final iteration
+        # must not be able to mark the run done.
+        completed = True
+    finally:
         if run_id is not None:
             try:
-                db.save_query_results(run_id, cell)
+                db.update_audit_run_progress(
+                    run_id,
+                    completed_calls=len(results),
+                    status="done" if completed else "cancelled",
+                    error=None if completed else "aborted before all queries ran",
+                )
             except StorageError as exc:
-                logger.warning("Failed to persist results for %s: %s", query.query_id, exc)
-        if progress:
-            answered = sum(1 for r in cell if r["response"] is not None)
-            print(f"  [{index}/{len(queries)}] {query.query_id}: {answered}/{len(cell)} answered")
-
-    # Mark the run terminal so a finished CLI run isn't later mistaken for an
-    # interrupted one (the API resumes anything left in a non-terminal state).
-    if run_id is not None:
-        try:
-            db.update_audit_run_progress(run_id, completed_calls=len(results), status="done")
-        except StorageError as exc:
-            logger.warning("Could not mark run %s done: %s", run_id, exc)
+                # Best-effort, exactly like every other progress write here: a
+                # storage failure must not mask the original exception.
+                logger.warning("Could not write terminal status for run %s: %s", run_id, exc)
 
     if progress:
         print(f"Done. {len(results)} results collected" + (f" (run {run_id})." if run_id else "."))

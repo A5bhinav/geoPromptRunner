@@ -195,6 +195,11 @@ class EvidenceRow(TypedDict):
     """What makes a finding checkable. Every field is required to ship one."""
 
     prompt: str  # VERBATIM question. Never the query id.
+    # Join keys for the drill-down endpoint (P3-T1). Carried so the card can
+    # fetch the full answer; NEVER rendered — `cmp-05` is the most actionable
+    # data in the report made unreadable.
+    query_id: str
+    run_index: int
     engine_name: str
     model_id: str  # the pinned model that answered; "" when the run predates it
     intent: str
@@ -587,6 +592,8 @@ def _group_row(g: findings_mod.FindingGroup) -> FindingGroupRow:
         evidence=[
             EvidenceRow(
                 prompt=e.prompt,
+                query_id=e.query_id,
+                run_index=e.run_index,
                 engine_name=e.engine_name,
                 model_id=e.model_id,
                 intent=e.intent,

@@ -51,10 +51,10 @@ instead of re-running the whole audit.
 | P4-T4 narrative verifier | `src/pipeline/narrative.py` |
 | P4-T5 query-set versioning | `src/prompts/versioning.py` |
 | P4-T6 per-client config | `versioning.ClientConfig` |
-| P3-T1 answer drill-down | `GET /audits/{id}/answers/{q}/{engine}/{run}` |
+| P3-T1 answer drill-down | endpoint + `AnswerPanel` in `report-view.tsx` |
 | P3-T2 engine + intent filters | `web/components/report-view.tsx` |
 | P3-T3 weekly digest | `src/api/digest.py` |
-| P3-T4 shareable links | `src/api/sharing.py` |
+| P3-T4 shareable links | `src/api/sharing.py` + `web/app/shared/[token]` |
 | P3-T5 server-side PDF | `GET /audits/{id}/report.pdf` |
 | P3-T6 fix-pack export | `src/pipeline/fixpack.py` |
 
@@ -106,6 +106,10 @@ P5-T5 tier enforcement.
   startup warning says so) and share links cannot be signed — `mint_share_token`
   refuses rather than signing with an empty key. Fine on localhost; set it before
   anything is exposed.
+
+  Note the local consequence: with a key set, the web app 401s unless
+  `NEXT_PUBLIC_GEO_API_KEY` in `web/.env.local` matches. Share minting needs a
+  key; the dev UI currently needs none. Set both together or neither.
 - ~~`data/schema_run_corrections.sql` is NOT applied.~~ **Applied 2026-08-02**;
   `supports_run_lineage()` returns True and `--correct` is live.
 

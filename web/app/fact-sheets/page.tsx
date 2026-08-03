@@ -16,10 +16,13 @@
  */
 
 import * as React from "react";
-import { Check, X, Loader2, ExternalLink, AlertTriangle, HelpCircle } from "lucide-react";
+import { Check, X, Loader2, ExternalLink, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/notice";
+import { INPUT_CLS } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import {
   listFactSheets,
   getFactSheet,
@@ -47,11 +50,14 @@ const STATE_TABS: { value: FactSheetState; label: string }[] = [
   { value: "superseded", label: "Superseded" },
 ];
 
-function stateTone(state: FactSheetState): string {
-  if (state === "active") return "border-[hsl(var(--success))] text-[hsl(var(--success))]";
-  if (state === "rejected") return "border-destructive text-destructive";
-  return "";
-}
+// Weight, not hue: active is the heaviest chip, rejected an outline, the rest
+// quiet. Sable has no alert hue and the label already carries the meaning.
+const STATE_VARIANT: Record<FactSheetState, "quiet" | "muted" | "outline" | "solid"> = {
+  active: "solid",
+  rejected: "outline",
+  draft: "muted",
+  superseded: "quiet",
+};
 
 export default function FactSheetQueuePage() {
   const [tab, setTab] = React.useState<FactSheetState>("draft");
@@ -95,10 +101,13 @@ export default function FactSheetQueuePage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Fact sheets</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    // Was a <main> nested inside the layout's <main> — an a11y bug as well as a
+    // duplicated container.
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <p className="label">Fact sheets</p>
+        <h1 className="display text-[34px] leading-tight">Ground truth for the judge</h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
           Generated sheets are drafts. Approving one makes it the reference every accuracy
           finding for that domain is measured against — check the quotes before you do.
         </p>
@@ -120,21 +129,16 @@ export default function FactSheetQueuePage() {
         ))}
       </div>
 
-      {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <Notice tone="problem">{error}</Notice>}
 
       {loading && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </p>
       )}
 
       {!loading && rows.length === 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[13px] text-[color:var(--ink-secondary)]">
           Nothing here. Sheets arrive from the worker (<code>geo factsheet-worker</code>) or the
           CLI (<code>geo factsheet</code>).
         </p>
@@ -147,25 +151,25 @@ export default function FactSheetQueuePage() {
               <div>
                 <CardTitle className="text-base">
                   {row.business_name || row.domain}{" "}
-                  <span className="font-normal text-muted-foreground">v{row.version}</span>
+                  <span className="font-normal text-harbour">v{row.version}</span>
                 </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[11px] text-harbour">
                   {row.domain} · generated {row.generated_at?.slice(0, 10)}
                   {row.lead_ref ? " · from a lead" : ""}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <Badge variant="outline" className={stateTone(row.state)}>
+                <Badge variant={STATE_VARIANT[row.state] ?? "quiet"} className="capitalize">
                   {row.state}
                 </Badge>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[11px] text-harbour">
                   {VERIFICATION_LABEL[row.verification_tier]}
                 </span>
               </div>
             </CardHeader>
             {row.questions && row.questions.length > 0 && (
               <CardContent className="pt-0">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5 text-[11px] text-harbour">
                   <HelpCircle className="h-3.5 w-3.5" />
                   {row.questions.length} open question
                   {row.questions.length === 1 ? "" : "s"} to resolve
@@ -174,7 +178,7 @@ export default function FactSheetQueuePage() {
             )}
             {row.reject_reason && (
               <CardContent className="pt-0">
-                <p className="text-xs text-muted-foreground">Rejected: {row.reject_reason}</p>
+                <p className="text-[11px] text-harbour">Rejected: {row.reject_reason}</p>
               </CardContent>
             )}
           </Card>
@@ -182,14 +186,14 @@ export default function FactSheetQueuePage() {
       </div>
 
       {selected && (
-        <Card className="border-2">
+        <Card className="border-navy/40">
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <CardTitle>
                   {selected.business_name} — v{selected.version}
                 </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[11px] text-harbour">
                   {selected.domain} · {selected.claims.length} claim
                   {selected.claims.length === 1 ? "" : "s"} ·{" "}
                   {VERIFICATION_LABEL[selected.verification_tier]}
@@ -203,42 +207,41 @@ export default function FactSheetQueuePage() {
 
           <CardContent className="space-y-6">
             {selected.questions.length > 0 && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-                <p className="text-sm font-medium">Open questions — ask before approving</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+              <Notice tone="info" title="Open questions — ask before approving">
+                <p>
                   Sources disagreed, or the answer is not derivable from a closed enumeration.
                   Nothing below is a fact yet.
                 </p>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
+                <ol className="mt-2 list-decimal space-y-1 pl-5">
                   {selected.questions.map((q, i) => (
                     <li key={i}>{q}</li>
                   ))}
                 </ol>
-              </div>
+              </Notice>
             )}
 
             <div className="space-y-3">
               {selected.claims.map((c) => (
-                <div key={c.claim_id} className="rounded-lg border p-3">
+                <div key={c.claim_id} className="rounded-md border border-[var(--rule)] p-3">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-sm">
+                    <p className="text-[13px]">
                       <span className="font-medium">{c.key}:</span> {c.value}
                     </p>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-harbour">
                       {c.claim_id} · {c.polarity}
                     </span>
                   </div>
                   {/* The evidence, not a paraphrase. A reviewer who cannot check a
                       claim cannot approve it. */}
-                  <blockquote className="mt-2 border-l-2 pl-3 text-xs text-muted-foreground">
+                  <blockquote className="mt-2 border-l-2 border-[var(--rule)] pl-3 text-[11px] text-harbour">
                     “{c.verbatim_quote}”
                   </blockquote>
-                  <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-harbour">
                     <a
                       href={c.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 underline"
+                      className="inline-flex items-center gap-1 text-blue underline"
                     >
                       {c.source_url} <ExternalLink className="h-3 w-3" />
                     </a>
@@ -259,7 +262,7 @@ export default function FactSheetQueuePage() {
                 Approve — make this the reference
               </Button>
               <input
-                className="min-w-48 flex-1 rounded-md border px-3 py-2 text-sm"
+                className={cn(INPUT_CLS, "min-w-48 flex-1")}
                 placeholder="Why is it wrong? (optional, but it tunes the extractor)"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
@@ -275,6 +278,6 @@ export default function FactSheetQueuePage() {
           </CardContent>
         </Card>
       )}
-    </main>
+    </div>
   );
 }

@@ -3,22 +3,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:pointer-events-none disabled:opacity-50",
+  // Pill, per the guide. Sentence case — the tracked-uppercase treatment the
+  // guide shows on its Primary/Secondary chips is reserved for the ONE hero
+  // action per page (`variant="hero"`); applying it to "Add file" and "Cancel"
+  // makes a dense tool unreadable and is the one sanctioned deviation.
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-paper disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-        outline:
-          "border border-input bg-card hover:bg-secondary hover:text-secondary-foreground",
-        ghost: "hover:bg-secondary hover:text-secondary-foreground",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+        default: "bg-navy text-white hover:bg-blue",
+        outline: "border border-navy/25 bg-transparent text-navy hover:bg-navy/[0.04]",
+        ghost: "text-harbour hover:bg-navy/[0.04] hover:text-navy",
+        // The one action a page exists for. Tracked uppercase, per the guide.
+        hero: "bg-navy px-6 text-[11px] uppercase tracking-[0.14em] text-white hover:bg-blue",
+        // No `destructive`. Sable has no alert hue. Destructive actions use
+        // `outline` and are gated by a typed confirmation, which is the safety
+        // mechanism that actually works.
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-lg px-8",
-        icon: "h-10 w-10",
+        default: "h-9 px-4",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-10 px-6",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

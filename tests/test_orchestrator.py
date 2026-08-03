@@ -111,7 +111,10 @@ def test_run_audit_resume_fills_only_missing_cells(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(
         orchestrator.db,
         "update_audit_run_progress",
-        lambda rid, completed_calls, status: progress_calls.append((completed_calls, status)),
+        # `error` is passed by the terminal-status write in run_audit's `finally`.
+        lambda rid, completed_calls, status, error=None: progress_calls.append(
+            (completed_calls, status)
+        ),
     )
 
     openai, gemini = _Counter("openai"), _Counter("gemini")
@@ -178,3 +181,142 @@ def test_run_teaser_raises_rather_than_running_an_empty_query_set() -> None:
     # Running a LOCAL set through the CONSUMER buckets matches nothing.
     with pytest.raises(ValueError, match="no queries match the product teaser buckets"):
         run_teaser(local_set, engines=[], business_kind="product")
+
+
+# --- P0: a CLI run must always reach a TERMINAL status ----------------------------
+# Before this, `status="done"` was written on one line on the happy path only, so a
+# Ctrl-C / crash left the row at "running" forever. The API's next startup scan then
+# relabelled it "interrupted" — a status that actually means "we could not rebuild
+# this at startup", which was never what happened. Worse, a process that died between
+# its last result write and that success line left a COMPLETE run stuck at "running",
+# and _prior_comparable_run (runner.py, `status == "done"`) then excluded a perfectly
+# good cycle from trend comparison permanently.
+#
+# Both tests fake the db module outright: they must make no engine calls and cost
+# nothing.
+
+
+class _Boom(BaseEngine):
+    """Engine that aborts the run partway through the query set.
+
+    It raises KeyboardInterrupt on purpose, not a plain Exception: `run_query_set`
+    catches `Exception` and turns a failed cell into a None response (the "engines
+    never raise, the pipeline never crashes because one engine failed" invariant),
+    so an ordinary engine error does NOT abort the loop and cannot exercise this
+    path. KeyboardInterrupt is a BaseException, so it propagates — which is exactly
+    the Ctrl-C case this P0 fix exists for.
+    """
+
+    ENGINE_NAME = "boom"
+
+    def __init__(self, fail_on: str) -> None:
+        self.fail_on = fail_on
+        self.seen: list[str] = []
+
+    def query(self, prompt: str) -> str | None:
+        self.seen.append(prompt)
+        if self.fail_on in prompt:
+            raise KeyboardInterrupt("operator pressed Ctrl-C")
+        return "answer"
+
+
+def _fake_storage(
+    monkeypatch: pytest.MonkeyPatch, progress_calls: list[tuple[int, str, str | None]]
+) -> None:
+    monkeypatch.setattr(orchestrator.db, "create_audit_run", lambda **kw: "run-p0")
+    monkeypatch.setattr(orchestrator.db, "save_query_results", lambda rid, cell: None)
+    monkeypatch.setattr(
+        orchestrator.db,
+        "update_audit_run_progress",
+        lambda rid, completed_calls, status, error=None: progress_calls.append(
+            (completed_calls, status, error)
+        ),
+    )
+
+
+def test_run_audit_marks_cancelled_when_a_query_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Ctrl-C mid-loop leaves the row terminal as `cancelled` — never `running`.
+
+    "cancelled" rather than "failed": an operator aborting is not an error, and the
+    UI, _prior_comparable_run and the engine-state rollup already treat cancelled as
+    terminal.
+    """
+    progress_calls: list[tuple[int, str, str | None]] = []
+    _fake_storage(monkeypatch, progress_calls)
+
+    with pytest.raises(KeyboardInterrupt):
+        run_audit(
+            _query_set(),
+            [_Boom(fail_on="best budgeting app")],  # aborts on query 2 of 3
+            runs_per_query=1,
+            progress=False,
+        )
+
+    assert progress_calls, "the terminal-status write must run even when the loop dies"
+    completed_calls, status, error = progress_calls[-1]
+    assert status == "cancelled"
+    assert error == "aborted before all queries ran"
+    # Whatever landed before the abort is still counted, not zeroed.
+    assert completed_calls == 1
+
+
+def test_run_audit_marks_done_when_the_loop_finished_then_something_raised(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run whose loop COMPLETED stays `done` even if the process then dies.
+
+    This is the silent one: complete data, but the old code's success line was never
+    reached, so the run sat at "running" -> "interrupted" and was dropped from trend
+    comparison forever, recoverable only by editing the row by hand.
+    """
+    progress_calls: list[tuple[int, str, str | None]] = []
+    _fake_storage(monkeypatch, progress_calls)
+
+    # engine_models() is called once while creating the run and again after the
+    # measurement loop, when the outcome is assembled — i.e. after the terminal-status
+    # write. Failing the second call simulates dying just past the finish line.
+    real = orchestrator.engine_models
+    calls = {"n": 0}
+
+    def _die_after_the_loop(engines: list[BaseEngine]) -> dict[str, str]:
+        calls["n"] += 1
+        if calls["n"] > 1:
+            raise RuntimeError("process died after the last write")
+        return real(engines)
+
+    monkeypatch.setattr(orchestrator, "engine_models", _die_after_the_loop)
+
+    with pytest.raises(RuntimeError):
+        run_audit(_query_set(), [_Echo()], runs_per_query=1, progress=False)
+
+    assert progress_calls, "the terminal-status write must run"
+    completed_calls, status, error = progress_calls[-1]
+    assert status == "done", "a completed loop must never be downgraded"
+    assert error is None
+    assert completed_calls == 3
+
+
+def test_run_audit_terminal_write_failure_does_not_mask_the_real_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A storage failure in the `finally` must not replace the original exception."""
+    monkeypatch.setattr(orchestrator.db, "create_audit_run", lambda **kw: "run-p0")
+    monkeypatch.setattr(orchestrator.db, "save_query_results", lambda rid, cell: None)
+
+    def _storage_down(
+        rid: str, completed_calls: int, status: str, error: str | None = None
+    ) -> None:
+        raise orchestrator.StorageError("supabase unreachable")
+
+    monkeypatch.setattr(orchestrator.db, "update_audit_run_progress", _storage_down)
+
+    # The operator's Ctrl-C must surface, not the StorageError from the finally.
+    with pytest.raises(KeyboardInterrupt):
+        run_audit(
+            _query_set(),
+            [_Boom(fail_on="best budgeting app")],
+            runs_per_query=1,
+            progress=False,
+        )

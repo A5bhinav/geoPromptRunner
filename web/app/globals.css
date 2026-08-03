@@ -3,62 +3,42 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 243 75% 59%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 243 75% 59%;
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --primary: 243 75% 66%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 243 75% 66%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 63% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 243 75% 66%;
-  }
-
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--rule);
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--paper);
+    color: var(--navy);
+    font-family: var(--font-text);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Tabular figures for all the metrics. */
+  /* Cormorant is DISPLAY ONLY (32px+ per the guide). In the app that is: the
+   * wordmark, the page <h1>, and hero numbers. Everything else is Franklin. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  /* The one legitimate uppercase in the system.
+   *
+   * --ink-secondary, NOT --harbour. Every use of this class in the app is a page
+   * eyebrow sitting on the PAPER ground, and Harbour on Paper measures 4.14:1 —
+   * it fails WCAG AA, at 10px, which is the worst place to be wrong. Harbour is
+   * only safe on a white card. --ink-secondary is the same hue family and clears
+   * at 5.59:1 on Paper (and higher on white), so it is correct in both contexts.
+   * The report's own `.sable .label` is more specific and is unaffected. */
+  .label {
+    font-family: var(--font-text);
+    font-size: 0.625rem; /* 10 */
+    font-weight: 600;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    color: var(--ink-secondary);
+  }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }

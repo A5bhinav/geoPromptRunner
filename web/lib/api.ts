@@ -216,6 +216,10 @@ export interface OccurrenceRow {
 export interface EvidenceRow {
   /** The VERBATIM question. Never the query id. */
   prompt: string;
+  /** Join keys for the drill-down fetch. NEVER rendered — `cmp-05` is the most
+   * actionable data in the report made unreadable. */
+  query_id?: string;
+  run_index?: number;
   engine_name: string;
   /** The pinned model that answered; "" on runs stored before it was recorded. */
   model_id: string;
@@ -662,6 +666,57 @@ export async function getReport(runId: string): Promise<ReportPayload> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`report failed (${res.status})`);
+  return res.json();
+}
+
+/** One cell's full stored answer (P3-T1).
+ *
+ * The card quotes an EXCERPT; this is the whole thing. A client who wants to see
+ * the sentence in context should not have to download the entire answers export
+ * to do it — a finding they cannot check is one they have to take on trust. */
+export async function getAnswerCell(
+  runId: string,
+  queryId: string,
+  engine: string,
+  runIndex: number,
+): Promise<{ prompt: string; response: string | null; timestamp: string }> {
+  const path =
+    `${API_BASE}/audits/${encodeURIComponent(runId)}/answers/` +
+    `${encodeURIComponent(queryId)}/${encodeURIComponent(engine)}/${runIndex}`;
+  const res = await fetch(path, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) throw new Error(`answer failed (${res.status})`);
+  return res.json();
+}
+
+/** Read-only report behind a signed link. Deliberately sends NO API key — the
+ * token is the auth, and a login wall is what kills forwardability. */
+export async function getSharedReport(
+  token: string,
+  password = "",
+): Promise<ReportPayload> {
+  const query = password ? `?password=${encodeURIComponent(password)}` : "";
+  const res = await fetch(
+    `${API_BASE}/shared/${encodeURIComponent(token)}/report${query}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({ detail: "this link is not valid" }));
+    throw new Error(detail.detail ?? `shared report failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createShareLink(
+  runId: string,
+  ttlSeconds?: number,
+  password?: string,
+): Promise<{ token: string; path: string; expires_in: number }> {
+  const res = await fetch(`${API_BASE}/audits/${encodeURIComponent(runId)}/share`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ ttl_seconds: ttlSeconds, password: password ?? "" }),
+  });
+  if (!res.ok) throw new Error(`share failed (${res.status})`);
   return res.json();
 }
 

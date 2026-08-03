@@ -1,3 +1,12 @@
+import {
+  AlertTriangle,
+  Circle,
+  CheckCircle2,
+  Loader2,
+  MinusCircle,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -9,24 +18,34 @@ const INTENT_LABELS: Record<string, string> = {
   adjacent_authority: "Adjacent",
 };
 
-const INTENT_CLASSES: Record<string, string> = {
-  problem_aware: "bg-sky-100 text-sky-700",
-  category: "bg-indigo-100 text-indigo-700",
-  comparison: "bg-violet-100 text-violet-700",
-  brand: "bg-emerald-100 text-emerald-700",
-  adjacent_authority: "bg-amber-100 text-amber-700",
+/** Funnel order, cold → warm. The tone ramp is legal here (and only here)
+ * because this axis is ORDINAL: a prospect moves problem-aware → category →
+ * comparison → brand. `adjacent_authority` sits off the funnel and gets a
+ * hollow dot rather than a rung on the ramp.
+ *
+ * This replaced five hues (sky, indigo, violet, emerald, amber) — the single
+ * largest brand violation in the tree. */
+const INTENT_TONE: Record<string, string> = {
+  problem_aware: "var(--mist)",
+  category: "var(--harbour)",
+  comparison: "var(--blue)",
+  brand: "var(--navy)",
 };
 
 export function IntentBadge({ intent }: { intent: string }) {
   const label = INTENT_LABELS[intent] ?? intent;
-  const klass = INTENT_CLASSES[intent] ?? "bg-secondary text-secondary-foreground";
+  const tone = INTENT_TONE[intent];
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        klass,
-      )}
-    >
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rule)] px-2.5 py-0.5 text-[11px] font-medium text-navy">
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 rounded-full"
+        style={
+          tone
+            ? { backgroundColor: tone }
+            : { border: "1px solid var(--harbour)" } /* off-funnel: hollow */
+        }
+      />
       {label}
     </span>
   );
@@ -133,23 +152,39 @@ export function SeveritySummaryBar({ counts }: { counts: Record<string, number> 
   );
 }
 
+/** Site-audit check status, mapped onto the report's monochrome ramp rather than
+ * onto new tokens. Weight carries severity (solid = worst); the glyph carries
+ * the distinction, because with a single-hue ramp colour cannot. */
+const CHECK_STATUS: Record<
+  string,
+  { variant: "solid" | "muted" | "outline" | "quiet"; Icon?: LucideIcon; glyph?: string }
+> = {
+  pass: { variant: "quiet", Icon: CheckCircle2 },
+  partial: { variant: "muted", Icon: MinusCircle },
+  fail: { variant: "solid", Icon: XCircle },
+  // Not assessable is not a failure — it gets the em-dash, never a severity fill.
+  ungradeable: { variant: "quiet", glyph: "—" },
+  unknown: { variant: "quiet", glyph: "—" },
+};
+
 export function CheckStatusBadge({ status }: { status: string }) {
-  const map: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
-    pass: "success",
-    partial: "warning",
-    fail: "destructive",
-    ungradeable: "secondary",
-    unknown: "secondary",
-  };
+  const spec = CHECK_STATUS[status] ?? CHECK_STATUS.unknown;
+  const { variant, Icon, glyph } = spec;
   return (
-    <Badge variant={map[status] ?? "secondary"} className="capitalize">
+    <Badge variant={variant} className="capitalize">
+      {Icon ? <Icon className="h-3 w-3 shrink-0" aria-hidden /> : null}
+      {glyph ? (
+        <span aria-hidden className="leading-none">
+          {glyph}
+        </span>
+      ) : null}
       {status}
     </Badge>
   );
 }
 
 export function ImpactBadge({ impact }: { impact: string }) {
-  const variant = impact === "High" ? "destructive" : impact === "Medium" ? "warning" : "secondary";
+  const variant = impact === "High" ? "solid" : impact === "Medium" ? "muted" : "quiet";
   return (
     <Badge variant={variant} className="capitalize">
       {impact}
@@ -157,17 +192,43 @@ export function ImpactBadge({ impact }: { impact: string }) {
   );
 }
 
+/** Run states. Distinguished by FILL WEIGHT + GLYPH, never hue.
+ *
+ * `done` and `failed` sharing a fill is deliberate: both are *finished*, which
+ * is the property a scanner is actually filtering on, and the glyph splits them
+ * instantly. If that proves unreadable in a 40-row list, the fix is a column
+ * (sort/group by state), not a colour. */
+const STATE: Record<
+  string,
+  { variant: "solid" | "muted" | "outline" | "quiet"; Icon: LucideIcon; spin?: boolean }
+> = {
+  done: { variant: "solid", Icon: CheckCircle2 },
+  failed: { variant: "solid", Icon: XCircle },
+  running: { variant: "muted", Icon: Loader2, spin: true },
+  queued: { variant: "quiet", Icon: Circle },
+  cancelled: { variant: "quiet", Icon: MinusCircle },
+  // The only chip carrying the warning glyph — and it is TERMINAL and
+  // unrecoverable ("we found this row non-terminal at startup and could not
+  // rebuild it"), not paused.
+  interrupted: { variant: "muted", Icon: AlertTriangle },
+};
+
 export function StateBadge({ state }: { state: string }) {
-  const map: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
-    done: "success",
-    running: "default",
-    queued: "secondary",
-    cancelled: "warning",
-    interrupted: "warning",
-    failed: "destructive",
-  };
+  const spec = STATE[state];
+  if (!spec) {
+    return (
+      <Badge variant="quiet" className="capitalize">
+        {state}
+      </Badge>
+    );
+  }
+  const { variant, Icon, spin } = spec;
   return (
-    <Badge variant={map[state] ?? "secondary"} className="capitalize">
+    <Badge
+      variant={variant}
+      className={cn("capitalize", state === "interrupted" && "bg-mist text-navy")}
+    >
+      <Icon className={cn("h-3 w-3 shrink-0", spin && "animate-spin")} aria-hidden />
       {state}
     </Badge>
   );

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -69,6 +70,8 @@ import {
   fetchJudgeStatus,
   judgeAudit,
   type FindingGroupRow,
+  getAnswerCell,
+  type EvidenceRow,
   type JudgeStatus,
   type MovementRow,
   type ReportPayload,
@@ -188,6 +191,78 @@ function LifecycleBadge({ status, cycles }: { status?: string; cycles?: number }
   );
 }
 
+/** The full stored answer behind one observation, with the flagged sentence
+ * highlighted (P3-T1).
+ *
+ * The card quotes an excerpt; a reader who doubts it needs the sentence IN
+ * CONTEXT, and the alternative was downloading the whole answers export. Fetched
+ * on expand and cached per cell — the answers are already stored, so this is
+ * retrieval, never a re-measurement.
+ *
+ * Highlighting is a plain substring match on the excerpt. When it does not match
+ * (the judge may quote across a line break) the answer still renders, unhighlighted
+ * — showing the evidence beats refusing to show it because a marker missed. */
+function AnswerPanel({
+  runId,
+  evidence,
+}: {
+  runId: string;
+  evidence: EvidenceRow;
+}) {
+  // Discrete members, not `{status: "idle" | "loading"}` — a combined member
+  // cannot be narrowed away by the early returns below, so `state.text` stops
+  // typechecking in the branch where it is provably present.
+  type PanelState =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "error"; message: string }
+    | { status: "ok"; text: string };
+  const [state, setState] = React.useState<PanelState>({ status: "idle" });
+
+  const load = React.useCallback(() => {
+    if (state.status !== "idle") return;
+    setState({ status: "loading" });
+    getAnswerCell(runId, evidence.query_id ?? "", evidence.engine_name, evidence.run_index ?? 0)
+      .then((cell) => setState({ status: "ok", text: cell.response ?? "" }))
+      .catch(() => setState({ status: "error", message: "Could not load the full answer." }));
+  }, [runId, evidence, state.status]);
+
+  if (state.status === "idle") {
+    return (
+      <button
+        type="button"
+        onClick={load}
+        className="no-print text-xs underline"
+        style={{ color: "var(--blue)" }}
+      >
+        Show the full answer
+      </button>
+    );
+  }
+  if (state.status === "loading") return <span className="body text-xs">Loading…</span>;
+  if (state.status === "error") return <span className="body text-xs">{state.message}</span>;
+
+  const at = state.text.indexOf(evidence.excerpt);
+  return (
+    <div
+      className="mt-2 max-h-80 overflow-auto rounded border p-2 text-xs"
+      style={{ borderColor: "var(--rule)", whiteSpace: "pre-wrap" }}
+    >
+      {at >= 0 ? (
+        <>
+          {state.text.slice(0, at)}
+          <mark style={{ backgroundColor: "var(--mist)", color: "var(--navy)" }}>
+            {evidence.excerpt}
+          </mark>
+          {state.text.slice(at + evidence.excerpt.length)}
+        </>
+      ) : (
+        state.text
+      )}
+    </div>
+  );
+}
+
 /** A full finding card. Critical and High only — Medium and Low collapse into a
  * compact table, because a report where every finding looks identical gives the
  * reader no triage signal and they stop reading.
@@ -196,7 +271,7 @@ function LifecycleBadge({ status, cycles }: { status?: string; cycles?: number }
  * "falsely claim" or "hallucinate". Severity carries the alarm; the prose does
  * not. Anthropomorphising a named vendor's model is both imprecise and legally
  * careless. */
-function FindingCard({ group }: { group: FindingGroupRow }) {
+function FindingCard({ group, runId }: { group: FindingGroupRow; runId?: string }) {
   const isPrint = useIsPrint();
   // Expanded by default when printing. A collapsed disclosure is exactly the
   // "silently drops content" failure — the live page looks complete while the
@@ -279,6 +354,7 @@ function FindingCard({ group }: { group: FindingGroupRow }) {
                   {e.observed_at || "no timestamp"}
                 </p>
                 <p className="italic">“{e.excerpt}”</p>
+                {runId && e.query_id && <AnswerPanel runId={runId} evidence={e} />}
               </div>
             ))}
           </div>
@@ -492,7 +568,7 @@ export function ReportView({
             {report.engines.map(engineLabel).join(", ") || "none"}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant={report.detection === "judge" ? "default" : "secondary"}>
+            <Badge variant={report.detection === "judge" ? "muted" : "quiet"}>
               {report.detection === "judge" ? "LLM judge" : "regex detection"}
             </Badge>
             {report.competitors.map((c) => (
@@ -564,7 +640,7 @@ export function ReportView({
               ) : null}
               {" — "}
               {allWarm ? (
-                <span className="text-[hsl(var(--success))]">warm, Judge is $0</span>
+                <span className="font-medium text-blue">warm, Judge is $0</span>
               ) : (
                 <>
                   not fully warm; <code>/prejudge {runId.slice(0, 8)}</code> in Claude Code to make
@@ -577,9 +653,9 @@ export function ReportView({
       </div>
 
       {judgeError && (
-        <div className="no-print rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        <Notice tone="problem" className="no-print">
           {judgeError}
-        </div>
+        </Notice>
       )}
 
       {/* §0 Executive summary — the one sentence a CMO acts on. Generated
@@ -795,7 +871,7 @@ export function ReportView({
                     <TableCell className="font-medium">
                       {r.brand}
                       {r.is_client && (
-                        <Badge variant="default" className="ml-2">
+                        <Badge variant="solid" className="ml-2">
                           client
                         </Badge>
                       )}
@@ -948,7 +1024,7 @@ export function ReportView({
               {criticalAndHigh.length > 0 && (
                 <div className="space-y-3">
                   {criticalAndHigh.map((g) => (
-                    <FindingCard key={g.theme} group={g} />
+                    <FindingCard key={g.theme} group={g} runId={runId} />
                   ))}
                 </div>
               )}
@@ -1024,7 +1100,7 @@ export function ReportView({
                       <TableCell className="tabular-nums">{row.repeated_cells}</TableCell>
                       <TableCell className="tabular-nums">
                         {row.split_cells > 0 ? (
-                          <span className="text-destructive">{row.split_cells}</span>
+                          <span className="font-medium text-navy">{row.split_cells}</span>
                         ) : (
                           row.split_cells
                         )}
@@ -1079,7 +1155,7 @@ export function ReportView({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingDown className="h-4 w-4 text-destructive" />
+                <TrendingDown className="h-4 w-4 text-navy" />
                 Losing queries ({visibleLosing.length}{isFiltered ? ` of ${report.losing_queries.length}` : ""})
               </CardTitle>
             </CardHeader>

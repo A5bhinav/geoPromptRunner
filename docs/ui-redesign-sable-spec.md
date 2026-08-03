@@ -1,6 +1,19 @@
 # Spec — Redress the App Chrome in Sable
 
-> **Status:** not started. **Audience:** a Claude Code session (one phase per session, in order).
+> **Status (2026-08-02): P0–P4 DONE, P5 done except the noted gaps.** Build-log entry: "Sable app chrome
+> — P1–P4". P0 landed later the same day (the correction-run work was still uncommitted, so it was
+> written on top of it, navigating by function name). **Two corrections to this spec, found while building it:** (a) §2.6's premise
+> is wrong — Tailwind v3 does *not* fail the build on `text-destructive`, it emits nothing, so the
+> build was green before any migration; use `grep` + `tsc` instead. (b) §7.6 is wrong that
+> `charts.tsx` is unaffected — it consumes the `hsl(var(--*))` triplets P1 deletes, and P1 breaks
+> every chart in the client report unless they are repointed. §6.4's "two lines" is now six.
+> (c) §6.1's own task list is wrong about how a run aborts: `run_query_set` catches `Exception`,
+> so only a `BaseException` (Ctrl-C) reaches the new `finally` — an engine error never can.
+> **Gates run:** report-pdf = 15 pages (in band), print-check OK, 0 contrast/focus failures in the
+> app. **Outstanding:** `charts.tsx` still carries a 7-hue categorical palette, and the REPORT
+> (`sable.css`, out of scope here) sets body text to Harbour on Paper = 4.14:1, failing AA.
+>
+> **Audience:** a Claude Code session (one phase per session, in order).
 > **Source of truth for the brand:** the Sable Identity Guide, Berkeley v1.0 ("Direction 7d Plume ·
 > Berkeley 8a"), already transcribed in `web/styles/sable.css` and
 > `docs/audit-packaging-implementation.md` §4.9. §1 below re-states the parts this spec depends on so
@@ -163,16 +176,16 @@ rescuing before anyone writes a migration.
 
 ### 0.4 Tasks
 
-- [ ] P0-T1 Confirm the correction-run work is committed or stashed, then re-read `run_audit()` —
+- [x] P0-T1 Confirm the correction-run work is committed or stashed, then re-read `run_audit()` —
       do not trust the line numbers above.
-- [ ] P0-T2 Wrap the measurement loop per §0.2; delete the standalone `status="done"` write.
-- [ ] P0-T3 Fix the stale reason string at the `interrupted` write in `resume_interrupted_runs()`:
+- [x] P0-T2 Wrap the measurement loop per §0.2; delete the standalone `status="done"` write.
+- [x] P0-T3 Fix the stale reason string at the `interrupted` write in `resume_interrupted_runs()`:
       it says *"interrupted before resume support (no stored query set)"*, which after P0 describes
       only hard-killed CLI rows. Say that instead.
-- [ ] P0-T4 **Regression tests**, one per bug: (a) an exception raised mid-loop leaves the stored
+- [x] P0-T4 **Regression tests**, one per bug: (a) an exception raised mid-loop leaves the stored
       status `cancelled`, not `running`; (b) a loop that completes and then raises still leaves
       `done`. Fake the `db` module — this test must make no engine calls and cost nothing.
-- [ ] P0-T5 Gate: `mypy src/ && ruff check src/ && pytest tests/`, then a `docs/build-log.md` entry.
+- [x] P0-T5 Gate: `mypy src/ && ruff check src/ && pytest tests/`, then a `docs/build-log.md` entry.
 
 ---
 
@@ -1274,42 +1287,42 @@ entry per completed phase (append at the top, most recent first).
 see §0.4 for the five tasks and the merge hazard)*
 
 **P1 — Tokens** *(one session; leaves the app visibly broken, which is expected)*
-- [ ] P1-T1 Create `web/styles/tokens.css` (§2.2).
-- [ ] P1-T2 Rewrite `web/app/globals.css` (§2.3); delete the `.dark` block.
-- [ ] P1-T3 Rewrite `web/tailwind.config.ts` (§2.5); delete `darkMode`, `destructive`, `success`,
+- [x] P1-T1 Create `web/styles/tokens.css` (§2.2).
+- [x] P1-T2 Rewrite `web/app/globals.css` (§2.3); delete the `.dark` block.
+- [x] P1-T3 Rewrite `web/tailwind.config.ts` (§2.5); delete `darkMode`, `destructive`, `success`,
       `warning`.
-- [ ] P1-T4 Fix the import order in `layout.tsx` (§2.4).
-- [ ] P1-T5 Capture the build-failure worklist (§2.6) into the build-log entry.
+- [x] P1-T4 Fix the import order in `layout.tsx` (§2.4).
+- [x] P1-T5 Capture the build-failure worklist (§2.6) into the build-log entry.
 
 **P2 — Mark and shell** *(same session as P1 if possible)*
-- [ ] P2-T1 Add `web/components/plume.tsx` (§3.1).
-- [ ] P2-T2 Replace `web/app/icon.svg` (§3.2).
-- [ ] P2-T3 Add `web/components/app-header.tsx`, rewrite `layout.tsx`, delete the Inter import
+- [x] P2-T1 Add `web/components/plume.tsx` (§3.1).
+- [x] P2-T2 Replace `web/app/icon.svg` (§3.2).
+- [x] P2-T3 Add `web/components/app-header.tsx`, rewrite `layout.tsx`, delete the Inter import
       (§3.3, §3.4).
-- [ ] P2-T4 Visual check: **three plumes** in the header (size 20, not 19 — §1.4), clearspace held,
+- [x] P2-T4 Visual check: **three plumes** in the header (size 20, not 19 — §1.4), clearspace held,
       wordmark not below 14 px, exactly one Sky in the DOM.
 
 **P3 — Primitives**
-- [ ] P3-T1 `button.tsx`: pill, navy, `hero` variant, no `destructive` (§4.1).
-- [ ] P3-T2 `card.tsx`: rule not shadow, workshop padding (§4.2).
-- [ ] P3-T3 `badge.tsx`: four monochrome variants (§4.3).
-- [ ] P3-T4 Add `lib/ui.ts`; replace the four divergent input class strings (§4.4).
-- [ ] P3-T5 Add `components/notice.tsx`; replace all eight `destructive` banners (§4.5).
-- [ ] P3-T6 `badges.tsx`: `IntentBadge` dot ramp, `StateBadge` per §6.1.
-- [ ] P3-T7 `badges.tsx`: `CheckStatusBadge` / `ImpactBadge` per §6.2 — **load the
+- [x] P3-T1 `button.tsx`: pill, navy, `hero` variant, no `destructive` (§4.1).
+- [x] P3-T2 `card.tsx`: rule not shadow, workshop padding (§4.2).
+- [x] P3-T3 `badge.tsx`: four monochrome variants (§4.3).
+- [x] P3-T4 Add `lib/ui.ts`; replace the four divergent input class strings (§4.4).
+- [x] P3-T5 Add `components/notice.tsx`; replace all eight `destructive` banners (§4.5).
+- [x] P3-T6 `badges.tsx`: `IntentBadge` dot ramp, `StateBadge` per §6.1.
+- [x] P3-T7 `badges.tsx`: `CheckStatusBadge` / `ImpactBadge` per §6.2 — **load the
       audit-packaging skill first.**
-- [ ] P3-T8 `report-view.tsx` lines 419 and 432 only — the sanctioned two-line exception (§6.4).
-- [ ] P3-T9 **Client-facing gate for the whole phase:** `npm run report-pdf <known run-id>`, page
+- [x] P3-T8 `report-view.tsx` lines 419 and 432 only — the sanctioned two-line exception (§6.4).
+- [x] P3-T9 *(15 pages, in band; print-check OK)* **Client-facing gate for the whole phase:** `npm run report-pdf <known run-id>`, page
       count still in the 13–18 band, spot-check a card and a severity chip against the previous PDF.
 
 **P4 — Pages** *(one task per route; they are independent and can interleave)*
-- [ ] P4-T1 Shared page-header pattern + the eyebrow/title table (§5.1).
-- [ ] P4-T2 `/` and `upload-dropzone.tsx` (§5.2).
-- [ ] P4-T3 `/audits/[id]` and `progress-view.tsx` (§5.3).
-- [ ] P4-T4 `/projects` and `/projects/[key]` (§5.4).
-- [ ] P4-T5 `/teaser` (§5.5).
-- [ ] P4-T6 `/audit` (§5.6) — includes deleting the duplicated `max-w-6xl` wrapper.
-- [ ] P4-T7 `/fact-sheets` (§5.7) — includes the nested-`<main>` a11y fix.
+- [x] P4-T1 Shared page-header pattern + the eyebrow/title table (§5.1).
+- [x] P4-T2 `/` and `upload-dropzone.tsx` (§5.2).
+- [x] P4-T3 `/audits/[id]` and `progress-view.tsx` (§5.3).
+- [x] P4-T4 `/projects` and `/projects/[key]` (§5.4).
+- [x] P4-T5 `/teaser` (§5.5).
+- [x] P4-T6 `/audit` (§5.6) — includes deleting the duplicated `max-w-6xl` wrapper.
+- [x] P4-T7 `/fact-sheets` (§5.7) — includes the nested-`<main>` a11y fix.
 
 **P5 — QA** (§10)
 

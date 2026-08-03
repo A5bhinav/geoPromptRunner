@@ -14,6 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/notice";
+import { INPUT_CLS, FIELD_LABEL_CLS } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import {
   saveTeaser,
   listTeasers,
@@ -72,11 +75,12 @@ function slugify(name: string): string {
 }
 
 // The status badge variants line up with the lifecycle in schema_teasers.sql.
-const STATUS_VARIANT: Record<TeaserStatus, "secondary" | "success" | "destructive" | "default"> = {
-  draft: "secondary",
-  approved: "success",
-  rejected: "destructive",
-  exported: "default",
+// Monochrome: weight carries state, the label carries the meaning.
+const STATUS_VARIANT: Record<TeaserStatus, "quiet" | "muted" | "outline" | "solid"> = {
+  draft: "quiet",
+  approved: "solid",
+  rejected: "outline",
+  exported: "muted",
 };
 
 function StatusBadge({ status }: { status: TeaserStatus }) {
@@ -172,14 +176,14 @@ export default function TeaserPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const inputCls =
-    "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
+  const inputCls = INPUT_CLS;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Teaser generator</h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className="space-y-1">
+        <p className="label">Teaser</p>
+        <h1 className="display text-[34px] leading-tight">Generate a prospect teaser</h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
           Turn a prospect URL into a one-page teaser showing where AI recommends a competitor and
           leaves them out. Runs a small, real audit through the platform.
         </p>
@@ -191,7 +195,7 @@ export default function TeaserPage() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor="url">
+            <label className={FIELD_LABEL_CLS} htmlFor="url">
               Website URL
             </label>
             <input
@@ -205,7 +209,7 @@ export default function TeaserPage() {
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-sm font-medium">Engines</span>
+            <span className={FIELD_LABEL_CLS}>Engines</span>
             <div className="flex flex-wrap gap-2">
               {ENGINE_OPTIONS.map((opt) => {
                 const on = engines.includes(opt.id);
@@ -215,10 +219,10 @@ export default function TeaserPage() {
                     type="button"
                     onClick={() => toggleEngine(opt.id)}
                     className={
-                      "rounded-full border px-3 py-1 text-sm transition-colors " +
+                      "rounded-full border px-3 py-1 text-[13px] transition-colors " +
                       (on
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-input bg-background text-muted-foreground hover:bg-accent")
+                        ? "border-navy bg-navy text-white"
+                        : "border-navy/20 bg-white text-navy hover:bg-navy/[0.04]")
                     }
                   >
                     {opt.label}
@@ -226,7 +230,7 @@ export default function TeaserPage() {
                 );
               })}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-harbour">
               Real engines need provider keys on the platform. No keys? Pick{" "}
               <span className="font-medium">Mock</span> to run the full flow keyless.
             </p>
@@ -234,8 +238,8 @@ export default function TeaserPage() {
 
           <div className="flex flex-wrap gap-6">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="maxq">
-                Queries <span className="text-muted-foreground">(smaller = faster)</span>
+              <label className={FIELD_LABEL_CLS} htmlFor="maxq">
+                Queries <span className="text-harbour">(smaller = faster)</span>
               </label>
               <input
                 id="maxq"
@@ -248,7 +252,7 @@ export default function TeaserPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="runs">
+              <label className={FIELD_LABEL_CLS} htmlFor="runs">
                 Runs / query
               </label>
               <input
@@ -264,12 +268,12 @@ export default function TeaserPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button onClick={generate} disabled={!url || engines.length === 0 || loading} size="lg">
+            <Button onClick={generate} disabled={!url || engines.length === 0 || loading} variant="hero" size="lg">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               Generate teaser
             </Button>
             {loading && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-[13px] text-harbour">
                 Running the audit — a real run can take a few minutes…
               </span>
             )}
@@ -277,26 +281,18 @@ export default function TeaserPage() {
         </CardContent>
       </Card>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Notice tone="problem">{error}</Notice>}
 
       {result && !result.ok && (
-        <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-          <div>
-            <p className="font-medium text-destructive">Teaser not produced (stage: {result.stage})</p>
-            <p className="mt-1 text-muted-foreground">{result.reason}</p>
-            {result.stage === "select" && (
-              <p className="mt-2 text-muted-foreground">
-                A printable teaser needs judge-mode detection — make sure the platform has a judge
-                key configured and that the prospect actually loses on a query.
-              </p>
-            )}
-          </div>
-        </div>
+        <Notice tone="problem" title={`Teaser not produced (stage: ${result.stage})`}>
+          <p>{result.reason}</p>
+          {result.stage === "select" && (
+            <p className="mt-2">
+              A printable teaser needs judge-mode detection — make sure the platform has a judge
+              key configured and that the prospect actually loses on a query.
+            </p>
+          )}
+        </Notice>
       )}
 
       {result && result.ok && (
@@ -431,20 +427,14 @@ function TeaserResultView({
   return (
     <div className="space-y-4">
       {mockedAdapters.length > 0 && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <div>
-            <p className="font-medium text-amber-700">
-              Demo data — built on mock {mockedAdapters.join(", ")}
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              {mockedAdapters.includes("resolver") && "The company profile is fabricated. "}
-              {mockedAdapters.includes("platform") && "The audit findings are synthetic. "}
-              Not a real audit — configure the live services (crawl4ai, GEO_PLATFORM_URL) before
-              sending this to a prospect.
-            </p>
-          </div>
-        </div>
+        <Notice tone="problem" title={`Demo data — built on mock ${mockedAdapters.join(", ")}`}>
+          <p>
+            {mockedAdapters.includes("resolver") && "The company profile is fabricated. "}
+            {mockedAdapters.includes("platform") && "The audit findings are synthetic. "}
+            Not a real audit — configure the live services (crawl4ai, GEO_PLATFORM_URL) before
+            sending this to a prospect.
+          </p>
+        </Notice>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -452,7 +442,7 @@ function TeaserResultView({
             <h2 className="text-lg font-semibold">{draft.companyName}</h2>
             {status && <StatusBadge status={status} />}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[13px] text-harbour">
             {draft.companyName} {h.companyAppears}/{h.n} vs {h.competitorName} {h.competitorAppears}/
             {h.n} · hero: {draft.heroEngine} · lead: “{draft.lead.verbatimQuery}”
           </p>
@@ -512,7 +502,7 @@ function TeaserResultView({
                 <Pencil className="h-4 w-4" /> Edit copy
               </Button>
               <Button
-                variant="destructive"
+                variant="outline"
                 onClick={() => {
                   setRejecting((v) => !v);
                   setEditing(false);
@@ -526,13 +516,13 @@ function TeaserResultView({
             {rejecting && (
               <div className="space-y-2">
                 <textarea
-                  className="min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={cn(INPUT_CLS, "min-h-[72px] py-2")}
                   placeholder="Why is this teaser being rejected? (optional)"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={() =>
                     run("reject", () => rejectTeaser(record.id, reason)).then(() =>
@@ -564,15 +554,15 @@ function TeaserResultView({
             )}
 
             {status === "rejected" && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[13px] text-harbour">
                 Reject reason: {record.reject_reason || "(none given)"}
               </p>
             )}
-            {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+            {actionError && <Notice tone="problem">{actionError}</Notice>}
           </CardContent>
         </Card>
       ) : (
-        savedError && <p className="text-sm text-muted-foreground">{savedError}</p>
+        savedError && <p className="text-[13px] text-harbour">{savedError}</p>
       )}
 
       {/* Saved copy edits, surfaced above the preview. The printable HTML is
@@ -631,17 +621,16 @@ function EditCopy({
   const [stakesLine, setStakesLine] = React.useState(initial.stakesLine ?? "");
   const [cta, setCta] = React.useState(initial.cta ?? "");
 
-  const cls =
-    "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
+  const cls = INPUT_CLS;
 
   return (
-    <div className="space-y-3 rounded-md border border-input p-4">
+    <div className="space-y-3 rounded-md border border-[var(--rule)] p-4">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Headline</label>
+        <label className={FIELD_LABEL_CLS}>Headline</label>
         <input className={cls} value={headline} onChange={(e) => setHeadline(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Lead sentence</label>
+        <label className={FIELD_LABEL_CLS}>Lead sentence</label>
         <input
           className={cls}
           value={leadSentence}
@@ -649,11 +638,11 @@ function EditCopy({
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Stakes line</label>
+        <label className={FIELD_LABEL_CLS}>Stakes line</label>
         <input className={cls} value={stakesLine} onChange={(e) => setStakesLine(e.target.value)} />
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Call to action</label>
+        <label className={FIELD_LABEL_CLS}>Call to action</label>
         <input className={cls} value={cta} onChange={(e) => setCta(e.target.value)} />
       </div>
       <Button
@@ -696,9 +685,9 @@ function SavedTeasers({
       </CardHeader>
       <CardContent>
         {error && saved.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <p className="text-[13px] text-harbour">{error}</p>
         ) : saved.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[13px] text-harbour">
             No saved teasers yet — generate one above to review and approve it.
           </p>
         ) : (
@@ -709,7 +698,7 @@ function SavedTeasers({
                   <p className="truncate text-sm font-medium">
                     {t.company_name || "(untitled)"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[11px] text-harbour">
                     {new Date(t.created_at).toLocaleString()}
                   </p>
                 </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Loader2, Download, Printer, AlertTriangle, Check, X } from "lucide-react";
+import { FileText, Loader2, Download, Printer, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Notice } from "@/components/notice";
+import { INPUT_CLS, FIELD_LABEL_CLS } from "@/lib/ui";
 import {
   listAudits,
   generateAudit,
@@ -43,11 +45,12 @@ function printHtml(html: string) {
   setTimeout(() => w.print(), 400);
 }
 
-const STATUS_VARIANT: Record<AuditStatus, "secondary" | "success" | "destructive" | "default"> = {
-  draft: "secondary",
-  approved: "success",
-  rejected: "destructive",
-  exported: "default",
+// Monochrome: weight carries state, the label carries the meaning.
+const STATUS_VARIANT: Record<AuditStatus, "quiet" | "muted" | "outline" | "solid"> = {
+  draft: "quiet",
+  approved: "solid",
+  rejected: "outline",
+  exported: "muted",
 };
 
 function StatusBadge({ status }: { status: AuditStatus }) {
@@ -155,14 +158,16 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <div className="flex items-center gap-3">
-        <FileText className="h-6 w-6" />
-        <h1 className="text-2xl font-semibold">AI Visibility Audit</h1>
+    // The layout's <main> already supplies mx-auto/max-w-6xl/padding; repeating
+    // them here nested a container inside itself.
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <p className="label">Deliverable</p>
+        <h1 className="display text-[34px] leading-tight">Assemble the visibility audit</h1>
+        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
+          Turn a completed audit run into a client-ready AI Visibility Audit — review, approve, and download the PDF leave-behind.
+        </p>
       </div>
-      <p className="text-muted-foreground">
-        Turn a completed audit run into a client-ready AI Visibility Audit — review, approve, and download the PDF leave-behind.
-      </p>
 
       <Card>
         <CardHeader>
@@ -171,9 +176,9 @@ export default function AuditPage() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1">
-              <span className="text-sm font-medium">Completed run</span>
+              <span className={FIELD_LABEL_CLS}>Completed run</span>
               <select
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className={INPUT_CLS}
                 value={runId}
                 onChange={(e) => setRunId(e.target.value)}
               >
@@ -186,24 +191,20 @@ export default function AuditPage() {
               </select>
             </label>
             <label className="block space-y-1">
-              <span className="text-sm font-medium">Category (for the §1 headline)</span>
+              <span className={FIELD_LABEL_CLS}>Category (for the §1 headline)</span>
               <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className={INPUT_CLS}
                 placeholder='e.g. "budgeting app"'
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               />
             </label>
           </div>
-          <Button onClick={generate} disabled={!runId || loading}>
+          <Button onClick={generate} disabled={!runId || loading} variant="hero">
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
             {loading ? "Generating…" : "Generate audit"}
           </Button>
-          {error && (
-            <p className="flex items-center gap-2 text-sm text-destructive">
-              <AlertTriangle className="h-4 w-4" /> {error}
-            </p>
-          )}
+          {error && <Notice tone="problem">{error}</Notice>}
         </CardContent>
       </Card>
 
@@ -223,19 +224,20 @@ export default function AuditPage() {
               <Button size="sm" onClick={doApprove} disabled={!deliverableId || status === "approved"}>
                 <Check className="mr-2 h-4 w-4" /> Approve
               </Button>
-              <Button variant="destructive" size="sm" onClick={doReject} disabled={!deliverableId || status === "rejected"}>
+              <Button variant="outline" size="sm" onClick={doReject} disabled={!deliverableId || status === "rejected"}>
                 <X className="mr-2 h-4 w-4" /> Reject
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             {!deliverableId && (
-              <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" /> Not saved to Supabase — preview &amp; downloads work, but approve/reject need the
+              <Notice tone="info" className="mb-3">
+                Not saved to Supabase — preview &amp; downloads work, but approve/reject need the{" "}
                 <code className="mx-1">audit_deliverables</code> table (run <code>data/schema_audits.sql</code>).
-              </p>
+              </Notice>
             )}
-            <iframe title="audit preview" srcDoc={html} className="h-[80vh] w-full rounded-md border bg-white" />
+            {/* The iframe's CONTENTS are the report — never restyled from here. */}
+            <iframe title="audit preview" srcDoc={html} className="h-[80vh] w-full rounded-lg border border-[var(--rule)] bg-white" />
           </CardContent>
         </Card>
       )}
@@ -246,19 +248,19 @@ export default function AuditPage() {
         </CardHeader>
         <CardContent>
           {savedError ? (
-            <p className="text-sm text-muted-foreground">{savedError}</p>
+            <p className="text-[13px] text-harbour">{savedError}</p>
           ) : saved.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No saved audits yet.</p>
+            <p className="text-[13px] text-harbour">No saved audits yet.</p>
           ) : (
-            <ul className="divide-y">
+            <ul className="divide-y divide-[var(--rule)]">
               {saved.map((a) => (
                 <li key={a.id} className="flex items-center justify-between py-2">
-                  <button className="text-left text-sm hover:underline" onClick={() => reopen(a.id)}>
+                  <button className="text-left text-[13px] text-navy hover:underline" onClick={() => reopen(a.id)}>
                     {a.client_name ?? "—"} · {a.category ?? "—"} · grade {a.grade_letter ?? "—"}
                   </button>
                   <div className="flex items-center gap-3">
                     <StatusBadge status={a.status} />
-                    <span className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</span>
+                    <span className="text-[11px] tabular-nums text-harbour">{new Date(a.created_at).toLocaleDateString()}</span>
                   </div>
                 </li>
               ))}

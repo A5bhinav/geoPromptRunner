@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Notice } from "@/components/notice";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -16,7 +16,7 @@ import { IntentBadge } from "@/components/badges";
 import type { ParsePreview } from "@/lib/api";
 
 function Provenance({ file }: { file: string }) {
-  return <span className="text-xs text-muted-foreground">from {file}</span>;
+  return <span className="text-[11px] text-harbour">from {file}</span>;
 }
 
 export function PreviewPanels({ preview }: { preview: ParsePreview }) {
@@ -24,21 +24,21 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
   return (
     <div className="space-y-4">
       {preview.errors.length > 0 && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <div className="mb-2 flex items-center gap-2 font-medium text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            {preview.errors.length} issue{preview.errors.length === 1 ? "" : "s"} to fix before
-            running
-          </div>
-          <ul className="space-y-1 text-sm text-destructive">
+        <Notice
+          tone="problem"
+          title={`${preview.errors.length} issue${
+            preview.errors.length === 1 ? "" : "s"
+          } to fix before running`}
+        >
+          <ul className="space-y-1">
             {preview.errors.map((e, i) => (
               <li key={i}>
-                • {e.file ? <span className="font-medium">{e.file}: </span> : null}
+                • {e.file ? <span className="font-medium text-navy">{e.file}: </span> : null}
                 {e.message}
               </li>
             ))}
           </ul>
-        </div>
+        </Notice>
       )}
 
       <Tabs defaultValue="config">
@@ -63,7 +63,7 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
                     <div className="flex flex-wrap gap-1.5">
                       {cfg.competitors.length ? (
                         cfg.competitors.map((c) => (
-                          <Badge key={c} variant="secondary">
+                          <Badge key={c} variant="quiet">
                             {c}
                           </Badge>
                         ))
@@ -76,18 +76,18 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
                     <div className="flex flex-wrap gap-1.5">
                       {cfg.engines.length ? (
                         cfg.engines.map((e) => (
-                          <Badge key={e} variant="default">
+                          <Badge key={e} variant="muted">
                             {e}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-muted-foreground">all configured</span>
+                        <span className="text-harbour">all configured</span>
                       )}
                     </div>
                   </Field>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[13px] text-harbour">
                   Config is incomplete — see the issues above.
                 </p>
               )}
@@ -121,18 +121,18 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
           <Card>
             <CardContent className="pt-6">
               {preview.facts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[13px] text-harbour">
                   No fact sheet provided — the run still works, but accuracy will be{" "}
                   <span className="font-medium">not assessed</span>.
                 </p>
               ) : (
                 <dl className="space-y-4">
                   {preview.facts.map((f, i) => (
-                    <div key={i} className="border-l-2 border-primary/30 pl-3">
-                      <dt className="flex items-center gap-2 text-sm font-semibold capitalize">
+                    <div key={i} className="border-l-2 border-navy/25 pl-3">
+                      <dt className="flex items-center gap-2 text-[13px] font-medium capitalize text-navy">
                         {f.key || "fact"} <Provenance file={f.source_file} />
                       </dt>
-                      <dd className="mt-0.5 text-sm text-muted-foreground">{f.value}</dd>
+                      <dd className="mt-0.5 text-[13px] text-harbour">{f.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -162,10 +162,10 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
                         {q.valid_intent ? (
                           <IntentBadge intent={q.intent} />
                         ) : (
-                          <Badge variant="destructive">{q.intent || "missing"}</Badge>
+                          <Badge variant="outline">{q.intent || "missing"}</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-harbour">
                         {q.persona ?? "—"}
                       </TableCell>
                       <TableCell>{q.text}</TableCell>
@@ -187,10 +187,8 @@ export function PreviewPanels({ preview }: { preview: ParsePreview }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-sm">{children}</div>
+      <div className="label">{label}</div>
+      <div className="mt-1 text-[13px]">{children}</div>
     </div>
   );
 }

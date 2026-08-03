@@ -90,14 +90,14 @@ const PALETTE = [
   "hsl(215 20% 65%)", // slate
 ];
 
-const AXIS_TICK = { fontSize: 12, fill: "hsl(var(--muted-foreground))" };
+const AXIS_TICK = { fontSize: 12, fill: "var(--harbour)" };
 
 const tooltipStyle = {
   contentStyle: {
     borderRadius: 8,
-    border: "1px solid hsl(var(--border))",
+    border: "1px solid var(--rule)",
     fontSize: 12,
-    background: "hsl(var(--card))",
+    background: "var(--white)",
   },
 };
 
@@ -139,7 +139,7 @@ export const LeaderboardChart = React.memo(function LeaderboardChart({
           width={120}
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 13, fill: "hsl(var(--foreground))" }}
+          tick={{ fontSize: 13, fill: "var(--navy)" }}
         />
         <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v}%`, "Share of model"]} />
         {hasPrior && (
@@ -400,9 +400,9 @@ export const BucketChart = React.memo(function BucketChart({ rows }: { rows: Buc
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: -16 }}>
         <XAxis dataKey="bucket" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
         <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tick={AXIS_TICK} unit="%" />
-        <Tooltip {...tooltipStyle} formatter={(v: number) => `${v}%`} cursor={{ fill: "hsl(var(--secondary))" }} />
+        <Tooltip {...tooltipStyle} formatter={(v: number) => `${v}%`} cursor={{ fill: "rgb(14 35 64 / 0.06)" }} />
         {hasCitation && <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />}
-        <Bar dataKey="mention" name="Mention" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={hasCitation ? 16 : 28} isAnimationActive={!isPrint} />
+        <Bar dataKey="mention" name="Mention" fill="var(--navy)" radius={[4, 4, 0, 0]} barSize={hasCitation ? 16 : 28} isAnimationActive={!isPrint} />
         {hasCitation && (
           <Bar dataKey="citation" name="Citation" fill="hsl(199 89% 48%)" radius={[4, 4, 0, 0]} barSize={16} isAnimationActive={!isPrint} />
         )}
@@ -438,9 +438,9 @@ export const SourcesChart = React.memo(function SourcesChart({ rows }: { rows: S
           width={140}
           tickLine={false}
           axisLine={false}
-          tick={{ fontSize: 12, fill: "hsl(var(--foreground))" }}
+          tick={{ fontSize: 12, fill: "var(--navy)" }}
         />
-        <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "cells"]} cursor={{ fill: "hsl(var(--secondary))" }} />
+        <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "cells"]} cursor={{ fill: "rgb(14 35 64 / 0.06)" }} />
         <Bar dataKey="count" radius={[4, 4, 4, 4]} barSize={18} isAnimationActive={!isPrint}>
           {data.map((_, i) => (
             <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
@@ -448,7 +448,7 @@ export const SourcesChart = React.memo(function SourcesChart({ rows }: { rows: S
           <LabelList
             dataKey="count"
             position="right"
-            style={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+            style={{ fontSize: 12, fill: "var(--harbour)" }}
           />
         </Bar>
       </BarChart>

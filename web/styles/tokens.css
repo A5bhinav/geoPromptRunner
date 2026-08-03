@@ -1,0 +1,73 @@
+/* Sable — the APP CHROME's design tokens.
+ *
+ * Source of truth: the Sable Identity Guide, Berkeley v1.0 ("Direction 7d Plume ·
+ * Berkeley 8a"). Same guide, same hexes, same two faces as web/styles/sable.css.
+ *
+ * WHY THIS FILE IS SEPARATE FROM sable.css, given the values are identical:
+ * sable.css is the REPORT's skin and is the seam a white-label tenant replaces
+ * (web/lib/brand.ts). If the report inherited its tokens from :root, a neutral
+ * tenant would have to override every variable to avoid leaking Sable into a
+ * resold artifact, and any it missed would leak silently. Two files, one shared
+ * set of hexes, zero inheritance between them. DO NOT "de-duplicate" these.
+ *
+ * Channels, not hex, for the palette: Tailwind's <alpha-value> needs them, and
+ * an HSL round-trip moves Paper by one unit of blue — enough to make the app
+ * ground and the report ground differ in a screenshot.
+ *
+ * SKY IS NOT DEFINED HERE. Same structural guarantee sable.css makes: Sky is
+ * legal on navy and nowhere else, so it lives only inside .on-navy. On a paper
+ * ground var(--sky) resolves to nothing and fails visibly, rather than passing
+ * review and shipping.
+ */
+
+:root {
+  /* --- palette (locked; no colours outside it) --- */
+  --navy: #0e2340;
+  --navy-rgb: 14 35 64;
+  --blue: #12325c;
+  --blue-rgb: 18 50 92;
+  --harbour: #697585;
+  --harbour-rgb: 105 117 133;
+  --mist: #b2b7bc;
+  --mist-rgb: 178 183 188;
+  --paper: #f2f1ec;
+  --paper-rgb: 242 241 236;
+  --white: #ffffff;
+  --white-rgb: 255 255 255;
+
+  /* --- derived surfaces: navy at low alpha, never a separate grey ---
+   * A grey rule beside a navy one reads as a mistake. Same reasoning as
+   * sable.css, same alphas, so app cards and report cards have the same edge. */
+  --rule: rgb(14 35 64 / 0.12);
+  --rule-soft: rgb(14 35 64 / 0.07);
+  --hover: rgb(14 35 64 / 0.04);
+  --selected: rgb(14 35 64 / 0.06);
+
+  /* --- secondary ink, and the reason it is not just Harbour ---
+   * Harbour IS navy at 60% over Paper — #697585 to the byte. That is a nice
+   * property of the palette and also the trap: at 60% it measures 4.14:1 on
+   * the Paper ground, which FAILS WCAG AA for normal text. On a white card it
+   * clears at 4.68:1. So: Harbour on white, --ink-secondary on paper. Same
+   * hue, same family, one passes and one does not, and the difference is
+   * invisible to the eye that has to sign off on it — hence a token. */
+  --ink-secondary: rgb(14 35 64 / 0.7); /* 5.59:1 on Paper */
+
+  /* --- type --- */
+  --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+  --font-text: var(--font-libre-franklin), ui-sans-serif, system-ui, sans-serif;
+
+  /* --- geometry: the guide's card is 14px, its small card 12px, pills 999px --- */
+  --radius: 0.875rem; /* 14 */
+}
+
+/* Sky lives HERE and only here. In the app chrome that scope is the header band
+ * and nothing else — Sky "is the one bright note in the system and loses its job
+ * if it is used twice on a page," and the header's tallest plume already spends
+ * it. Inside .on-navy the ACTIVE NAV ITEM therefore gets white + a white rule,
+ * not Sky. */
+.on-navy {
+  --sky: #7fa6d9;
+  --sky-rgb: 127 166 217;
+  background-color: var(--navy);
+  color: var(--white);
+}

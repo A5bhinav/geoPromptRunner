@@ -118,6 +118,9 @@ class Evidence:
 
     #: The verbatim question asked. NEVER the query id — `cat-01` is a join key.
     prompt: str
+    #: The join keys themselves, for the drill-down fetch. Not for display.
+    query_id: str
+    run_index: int
     engine_name: str
     #: The pinned model that produced it, from the run's `engine_models`. Empty
     #: when the run predates the recording; the report says "model not recorded"
@@ -336,6 +339,8 @@ def build_finding_groups(
         evidence = [
             Evidence(
                 prompt=prompts_by_query.get(f.query_id, ""),
+                query_id=f.query_id,
+                run_index=f.run_index,
                 engine_name=f.engine_name,
                 model_id=engine_models.get(f.engine_name, ""),
                 intent=f.intent,

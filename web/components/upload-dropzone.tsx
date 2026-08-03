@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { UploadCloud, FileText, X, Download } from "lucide-react";
+import { FileText, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Plume } from "@/components/plume";
+import { INPUT_CLS } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { downloadTemplate, listTrades, type FileProvenance } from "@/lib/api";
 
@@ -58,17 +60,21 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
           handleFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+          // A 2px dash at navy reads as a hard box; the guide's own clearspace
+          // diagram uses a 1px dash.
+          "flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 text-center transition-colors",
           dragging
-            ? "border-primary bg-primary/5"
-            : "border-border bg-card hover:border-primary/50 hover:bg-secondary/40",
+            ? "border-blue bg-navy/[0.04]"
+            : "border-navy/25 bg-white hover:border-navy/40 hover:bg-navy/[0.02]",
         )}
       >
-        <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <UploadCloud className="h-6 w-6" />
+        {/* The empty state is the single best place in the app to show the mark
+            at size — and it replaces a stock cloud icon with something ours. */}
+        <span className="mb-3 flex items-center justify-center">
+          <Plume size={34} tone="paper" />
         </span>
-        <p className="text-base font-medium">Drop your audit CSVs</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-base font-medium text-navy">Drop your audit CSVs</p>
+        <p className="mt-1 text-[13px] text-harbour">
           One combined file, or split config / facts / queries — they merge into one audit.
         </p>
         <input
@@ -94,7 +100,7 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
               never hardcodes which trades exist. */}
           {trades.length > 0 && (
             <select
-              className="rounded-md border bg-background px-2 py-1 text-sm"
+              className={cn(INPUT_CLS, "h-8 w-auto px-2")}
               value={trade}
               onChange={(e) => setTrade(e.target.value)}
               aria-label="Template type"
@@ -110,7 +116,7 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
           <button
             type="button"
             onClick={() => void downloadTemplate(trade || null)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue hover:underline"
           >
             <Download className="h-4 w-4" /> Download template
           </button>
@@ -122,16 +128,16 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
           {files.map((f) => (
             <li
               key={f.name}
-              className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
+              className="flex items-center gap-3 rounded-md border border-[var(--rule)] bg-white px-3 py-2.5"
             >
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="font-medium">{f.name}</span>
-              <span className="truncate text-sm text-muted-foreground">
+              <FileText className="h-4 w-4 shrink-0 text-harbour" />
+              <span className="text-[13px] font-medium text-navy">{f.name}</span>
+              <span className="truncate text-[13px] text-harbour">
                 {summaryFor(f.name) ? `— ${summaryFor(f.name)}` : ""}
               </span>
               <button
                 onClick={() => onRemove(f.name)}
-                className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className="ml-auto rounded-md p-1 text-harbour hover:bg-navy/[0.04] hover:text-navy"
                 aria-label={`Remove ${f.name}`}
               >
                 <X className="h-4 w-4" />

@@ -1489,10 +1489,20 @@ def _rebuild_audit_from_row(row: dict[str, object]) -> ParsedAudit | None:
 def resume_interrupted_runs() -> int:
     """Relaunch runs left non-terminal by a previous process (e.g. a restart).
 
-    Each resumed run skips its already-persisted queries and continues. Rows
-    with no stored query set (legacy, pre-resume) can't be rebuilt and are marked
-    ``interrupted`` so they stop showing as active. Returns how many were
-    relaunched. Best-effort — storage problems are swallowed, never fatal."""
+    Each resumed run skips its already-persisted queries and continues. Rows that
+    cannot be rebuilt (no stored query set) are marked ``interrupted`` so they
+    stop showing as active. Returns how many were relaunched. Best-effort —
+    storage problems are swallowed, never fatal.
+
+    ``interrupted`` is written HERE and nowhere else in the codebase, and it does
+    not mean "this run was interrupted" — it means "at startup we found this row
+    non-terminal and could not rebuild it, so it will never resume." That is
+    terminal and unrecoverable, which is why the UI labels it "Audit abandoned".
+
+    Since ``run_audit`` gained its terminal-status ``finally`` block, a CLI run
+    that is merely aborted reaches ``cancelled`` on its own and never enters this
+    scan. What still reaches here is a process killed hard enough to skip that
+    block (``kill -9``, power loss) — the only case the word actually describes."""
     try:
         rows = db.list_resumable_runs()
     except db.StorageError as exc:
@@ -1515,7 +1525,8 @@ def resume_interrupted_runs() -> int:
                     run_id,
                     int(str(row.get("completed_calls") or 0)),
                     "interrupted",
-                    "interrupted before resume support (no stored query set)",
+                    "could not be rebuilt at startup (no stored query set); "
+                    "will not resume",
                 )
             except db.StorageError:
                 pass

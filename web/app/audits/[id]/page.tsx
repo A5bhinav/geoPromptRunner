@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { ProgressView } from "@/components/progress-view";
+import { Notice } from "@/components/notice";
 import { ReportView } from "@/components/report-view";
 import { RenderModeProvider } from "@/lib/render-mode";
 import {
@@ -92,21 +93,19 @@ export default function AuditPage({ params }: { params: Promise<{ id: string }> 
   return (
     <RenderModeProvider mode={isPrint ? "print" : "screen"}>
     <div className="space-y-6">
+      {/* --ink-secondary, not Harbour: this link sits on the PAPER ground, where
+          Harbour measures 4.14:1 and fails AA. Harbour is only safe on a card. */}
       <Link
         href="/"
-        className="no-print inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        className="no-print inline-flex items-center gap-1.5 text-[13px] text-[color:var(--ink-secondary)] hover:text-navy"
       >
-        <ArrowLeft className="h-4 w-4" /> New audit
+        <ArrowLeft className="h-4 w-4" /> Run
       </Link>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Notice tone="problem" className="no-print">{error}</Notice>}
 
       {!error && !status && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </div>
       )}
@@ -116,7 +115,7 @@ export default function AuditPage({ params }: { params: Promise<{ id: string }> 
       )}
 
       {status && status.state === "done" && !report && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
           <Loader2 className="h-4 w-4 animate-spin" /> Assembling report…
         </div>
       )}
