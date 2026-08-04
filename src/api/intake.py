@@ -25,6 +25,7 @@ from fastapi import APIRouter, Body, HTTPException
 
 from src.audit.factsheet.intake import (
     Answer,
+    AnswerKind,
     IntakeQuestion,
     assertions_for,
     build_plan,
@@ -33,13 +34,21 @@ from src.audit.factsheet.intake import (
     run_inputs_from_answers,
     unfalsifiable_terms,
 )
+from src.audit.factsheet.intake.questions import (
+    BASIS_OPTIONS,
+    DAY_LABELS,
+    KEY_LABELS,
+    PartKind,
+)
 from src.audit.factsheet.models import (
     BusinessKind,
     FactSheet,
     Verification,
     assigned_claims,
 )
+from src.pipeline.cost import DEFAULT_COST_PER_CALL, ROUGH_COST_PER_CALL
 from src.prompts.assemble import DEFAULT_LOCAL_ENGINES, assemble_run_csv
+from src.prompts.csv_loader import parse_csv_files
 from src.prompts.generate import generate_query_set
 from src.prompts.intent import LOCAL_BUCKET_ALLOCATION
 from src.prompts.lint import lint_query_set
@@ -57,6 +66,64 @@ __all__ = ["router"]
 #: review screen comparable between the two paths.
 DEFAULT_QUERY_COUNT = 30
 
+#: How many times each question is asked. Repeats are what make a rate
+#: reproducible, and this is the assembler's own default — named rather than
+#: written into the CSV as a bare string, because the review screen quotes it
+#: back as part of the run's cost.
+DEFAULT_RUNS_PER_QUERY = 3
+
+
+def _run_shape(csv_text: str, query_count: int) -> dict[str, Any]:
+    """The run this set would actually produce: surfaces, repeats, calls, cost.
+
+    READ OFF THE GENERATED CSV, never assumed. The review screen used to say
+    "4 assistants · 3 runs each" as literal text, which was already wrong — the
+    assembler emits five surfaces — and would go on being wrong for every run
+    whose config differed. It is the last number a person sees before spending
+    money, so it is parsed from the same bytes `POST /audits` will parse.
+
+    Cost is priced per ENGINE, not per call: `openai_search` is ~27x `openai`
+    because the hosted-tool fee dominates it, so a flat average would understate
+    a search-heavy set by an order of magnitude.
+    """
+    parsed = parse_csv_files([("generated.csv", csv_text)])
+    config = parsed.audit.config if parsed.audit is not None else None
+    engines = list(config.engines) if config else []
+    runs = config.runs_per_query if config else DEFAULT_RUNS_PER_QUERY
+    calls = query_count * len(engines) * runs
+    cost = (
+        sum(ROUGH_COST_PER_CALL.get(name, DEFAULT_COST_PER_CALL) for name in engines)
+        * query_count
+        * runs
+    )
+    return {
+        "questions": query_count,
+        "engines": engines,
+        "surfaces": len(engines),
+        "runs_per_query": runs,
+        "calls": calls,
+        "estimated_usd": round(cost, 2),
+    }
+
+
+def _norm_domain(raw: str) -> str:
+    """Bare host of a URL or a domain string. Same normalisation as the projects
+    view, so a session, a sheet and a run all bucket under one key."""
+    import re
+
+    text = str(raw or "").strip().lower()
+    if not text:
+        return ""
+    text = re.sub(r"^[a-z][a-z0-9+.-]*://", "", text)
+    text = text.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+    text = text.split("@")[-1].split(":", 1)[0]
+    text = text.removeprefix("www.")
+    # A business NAME slugs to a domain-shaped key so a walk-in with no website
+    # still gets its own bucket instead of colliding with every other one.
+    if "." not in text:
+        text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return text
+
 
 def _today() -> str:
     """The ``as_of`` stamp. The ONE clock in the intake stack.
@@ -71,27 +138,73 @@ def _today() -> str:
 # --- serialisation ------------------------------------------------------------
 
 
-def _question_json(q: IntakeQuestion, prefill: dict[str, Any]) -> dict[str, Any]:
+def _question_json(
+    q: IntakeQuestion, prefill: dict[str, Any], kind: BusinessKind | None
+) -> dict[str, Any]:
     """One card, as the UI consumes it.
 
     The UI never hardcodes a question — this is the whole contract. A card that
     exists in the frontend but not in the registry is a card whose answer has
     nowhere to go.
+
+    ``example`` is resolved HERE rather than shipped as a three-way map the
+    client picks from. The for-instance line is the only thing ``business_kind``
+    is allowed to change, and resolving it server-side means the client has no
+    business-kind branch in it at all — which is what stops the fork growing back
+    on the other side of the wire.
     """
     return {
         "id": q.id,
+        "group": q.group,
         "kind": q.kind.value,
         "section": q.section.value if q.section else None,
         "keys": list(q.keys),
+        # What each field of a multi-key card is called. From the registry, so a
+        # label cannot drift from the key it names.
+        "keyLabels": {k: KEY_LABELS.get(k, k) for k in q.keys},
         "prompt": q.prompt,
         "why": q.why,
         "helper": q.helper,
+        "example": q.examples.pick(kind),
         "placeholder": q.placeholder,
         "options": [{"value": o.value, "label": o.label} for o in q.options],
+        # The sub-controls of a composite card, IN THE REGISTRY rather than in
+        # the frontend. Six of the sixteen ask two things — where do you serve
+        # and where don't you — and without this the client would have to know
+        # which card is which, which is the contract this module exists to keep.
+        "parts": [
+            {
+                "key": p.key,
+                "label": p.label,
+                "kind": p.kind.value,
+                "helper": p.helper,
+                "placeholder": p.placeholder,
+                "labels": list(p.labels) if any(p.labels) else None,
+                "options": [{"value": o.value, "label": o.label} for o in p.options],
+                "revealOn": p.reveal_on or None,
+                "showWhen": (
+                    {"part": p.show_when[0], "equals": p.show_when[1]} if p.show_when else None
+                ),
+                "prefill": prefill.get(p.key),
+            }
+            for p in q.parts
+        ],
+        # The basis column's vocabulary, on the one card that has it. A PRICE
+        # WITH NO BASIS IS UNCHECKABLE, so the options travel with the card
+        # rather than being retyped in the composer.
+        "basisOptions": (
+            [{"value": o.value, "label": o.label} for o in BASIS_OPTIONS]
+            if q.kind is AnswerKind.PRICED_ROWS
+            else None
+        ),
+        "dayLabels": (
+            [{"value": v, "label": label} for v, label in DAY_LABELS]
+            if any(p.kind is PartKind.DAYS for p in q.parts)
+            else None
+        ),
         "skippable": q.skippable,
         "negativeFirst": q.negative_first,
         "producesClaims": q.produces_claims,
-        "showIf": ({"questionId": q.show_if[0], "equals": q.show_if[1]} if q.show_if else None),
         # Only the keys this card can actually fill, so the UI does not have to
         # know the shape of the whole prefill map to render one confirm.
         "prefill": {k: prefill[k] for k in q.keys if k in prefill},
@@ -141,20 +254,15 @@ def _kind_of(row: dict[str, Any]) -> BusinessKind:
 
 
 def _plan_for(row: dict[str, Any]) -> list[IntakeQuestion]:
-    """The plan, recomputed from the stored answers on every request.
+    """The plan for this session: all sixteen cards, in registry order.
 
-    Recomputed rather than stored: Q-ID-01 routes the whole tree, so a session
-    that answers it differently on a Back-and-change has a different plan, and a
-    stored plan would be the OLD one. It is a pure function of cheap inputs.
+    Still recomputed rather than stored, even now that it cannot vary by
+    business kind. A stored plan is a second copy of the registry that goes
+    stale the first time a card is reworded, and this is a pure function of two
+    cheap inputs.
     """
     answers = {a.question_id: a.value for a in _answers_from_row(row)}
-    kind = _kind_of(row)
-    # The owner's own answer wins over whatever the crawl guessed.
-    chosen = str(answers.get("Q-ID-01") or "")
-    if chosen in {k.value for k in BusinessKind}:
-        kind = BusinessKind(chosen)
-    prefill = _dict_of(row, "prefill")
-    return build_plan(business_kind=kind, prefill=prefill, answers=answers)
+    return build_plan(prefill=_dict_of(row, "prefill"), answers=answers)
 
 
 def _next_question(row: dict[str, Any]) -> IntakeQuestion | None:
@@ -195,6 +303,7 @@ def _session_json(row: dict[str, Any]) -> dict[str, Any]:
     prefill = _dict_of(row, "prefill")
     plan = _plan_for(row)
     nxt = _next_question(row)
+    kind = _kind_of(row)
     return {
         "session_id": str(row.get("id", "")),
         "domain": str(row.get("domain", "")),
@@ -206,11 +315,11 @@ def _session_json(row: dict[str, Any]) -> dict[str, Any]:
         "state": str(row.get("state", "")),
         "fact_sheet_id": row.get("fact_sheet_id"),
         "approved_fact_sheet_id": row.get("approved_fact_sheet_id"),
-        "plan": [_question_json(q, prefill) for q in plan],
+        "plan": [_question_json(q, prefill, kind) for q in plan],
         "answers": _dict_of(row, "answers"),
         "prefill": prefill,
         "run_inputs": _dict_of(row, "run_inputs"),
-        "next": _question_json(nxt, prefill) if nxt else None,
+        "next": _question_json(nxt, prefill, kind) if nxt else None,
         "progress": _progress(row),
     }
 
@@ -275,6 +384,117 @@ def start_intake(sheet_id: str) -> dict[str, Any]:
     return _session_json(_session_row(session_id))
 
 
+@router.post("/intake/start")
+def start_from_brand(payload: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+    """Open an intake from nothing but a brand. THE COLD-START ENTRY POINT.
+
+    Until this existed the chat could only be reached from a fact-sheet row, and
+    fact-sheet rows only arrived from the lead worker or the CLI — so the one
+    surface that can make a sheet client-confirmed was unreachable for a client
+    who had simply walked in the door.
+
+    NO CRAWL, AND NO SHEET REQUIRED. `fact_sheet_id` is nullable precisely for
+    this: an intake for a domain the crawler has never seen is the case where
+    the owner's answers are the ONLY thing on the sheet, and that sheet is
+    already better than a crawled one because every line of it is
+    client-confirmed. A crawl can only ever add prefill — it is an accelerator,
+    never a gate, which also means a site behind Cloudflare does not stop
+    anybody.
+    """
+    business = str(payload.get("business") or "").strip()
+    website = str(payload.get("website") or "").strip()
+    domain = _norm_domain(website) or _norm_domain(business)
+    if not domain:
+        raise HTTPException(
+            status_code=422,
+            detail="a website or a business name is needed to open an intake",
+        )
+
+    existing = db.live_intake_session(domain)
+    if existing is not None:
+        return _session_json(dict(existing))
+
+    # An existing sheet for this domain becomes prefill, so walking in the front
+    # door and arriving via the worker converge on the same conversation.
+    sheet = db.load_fact_sheet(domain, state=db.FactSheetState.ACTIVE) or db.load_fact_sheet(
+        domain, state=db.FactSheetState.DRAFT
+    )
+    prefill: dict[str, Any] = (
+        {
+            c.key: {
+                "value": c.value,
+                "source_url": c.source_url,
+                "source_kind": c.source_kind.value,
+                "confidence": c.confidence.value,
+            }
+            for c in sheet.claims
+        }
+        if sheet is not None
+        else {}
+    )
+
+    session_id = db.create_intake_session(
+        domain=domain,
+        business_kind=(sheet.business_kind if sheet else BusinessKind.LOCAL_SERVICE).value,
+        fact_sheet_id=None,
+        prefill=prefill,
+    )
+    if session_id is None:
+        resumed = db.live_intake_session(domain)
+        if resumed is None:
+            raise HTTPException(status_code=503, detail="could not open an intake session")
+        return _session_json(dict(resumed))
+
+    # Seed what the starter already asked for into BOTH places, so the first
+    # card is a check-and-move-on rather than a retype of what was just typed.
+    #
+    # run_inputs alone was not enough: the composer seeds its fields from
+    # PREFILL, so a name typed on the Start screen never reached the card and
+    # Q-WHAT-01 asked for it again, blank, one screen later. Same fact, two
+    # stores, and only one of them wired to the thing that renders it.
+    if business or website:
+        patch: dict[str, Any] = {
+            "run_inputs": {"business": business, "website": website or domain}
+        }
+        seeded = dict(prefill)
+        for key, value in (("identity_name", business), ("identity_website", website)):
+            if value and key not in seeded:
+                seeded[key] = {
+                    "value": value,
+                    # Provenance is honest: this came from whoever opened the
+                    # intake, not from a page we read.
+                    "source_url": "",
+                    "source_kind": "client",
+                    "confidence": "high",
+                }
+        patch["prefill"] = seeded
+        db.update_intake_session(session_id, patch)
+    return _session_json(_session_row(session_id))
+
+
+@router.get("/intake")
+def list_open_intakes() -> list[dict[str, Any]]:
+    """Conversations still in flight, newest first — the "pick up where you left
+    off" strip. A session nobody finished is the most likely next click."""
+    out: list[dict[str, Any]] = []
+    for state in ("in_progress", "awaiting_review"):
+        for row in db.list_intake_sessions(state=state, limit=25):
+            data = dict(row)
+            inputs = _dict_of(data, "run_inputs")
+            answers = _dict_of(data, "answers")
+            out.append(
+                {
+                    "session_id": str(data.get("id", "")),
+                    "domain": str(data.get("domain", "")),
+                    "business_name": str(inputs.get("business") or data.get("domain") or ""),
+                    "state": str(data.get("state", "")),
+                    "answered": len(answers),
+                    "updated_at": str(data.get("updated_at", "")),
+                }
+            )
+    return sorted(out, key=lambda r: r["updated_at"], reverse=True)
+
+
 @router.post("/fact-sheets/{sheet_id}/edit")
 def edit_sheet(sheet_id: str) -> dict[str, Any]:
     """A new session pre-filled from an ACTIVE sheet.
@@ -293,6 +513,17 @@ def get_session(session_id: str) -> dict[str, Any]:
 
 
 # --- answering ----------------------------------------------------------------
+
+
+@router.delete("/intake/{session_id}")
+def delete_session(session_id: str) -> dict[str, Any]:
+    """Discard a conversation. Frees the domain so a new one can be started."""
+    row = _session_row(session_id)
+    try:
+        deleted = db.delete_intake_session(session_id)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"session_id": session_id, "domain": str(row.get("domain", "")), "deleted": deleted}
 
 
 @router.post("/intake/{session_id}/answer")
@@ -332,9 +563,34 @@ def answer(session_id: str, payload: Annotated[dict[str, Any], Body()]) -> dict[
         "answered_at": datetime.now(UTC).isoformat(),
     }
 
+    # Run inputs are recomputed on EVERY answer, not only at `complete`.
+    # `_business_name` reads them, and the conversation quotes the business by
+    # name from the card after Q-WHAT-01 onward — computing them once at the end
+    # would leave every preview in between addressing a bare domain.
+    stored = [
+        Answer(
+            question_id=str(qid),
+            value=(data or {}).get("value"),
+            raw=str((data or {}).get("raw", "")),
+            skipped=bool((data or {}).get("skipped", False)),
+        )
+        for qid, data in answers.items()
+        if isinstance(data, dict)
+    ]
     db.update_intake_session(
         session_id,
-        {"answers": answers, "current_question_id": q.id, "state": "in_progress"},
+        {
+            "answers": answers,
+            "current_question_id": q.id,
+            "state": "in_progress",
+            "run_inputs": asdict(
+                run_inputs_from_answers(
+                    stored,
+                    fallback_business=_business_name(row),
+                    fallback_website=str(row.get("domain") or ""),
+                )
+            ),
+        },
     )
     fresh = _session_row(session_id)
     return {
@@ -547,8 +803,14 @@ def _csv_from_generated(
     writer.writerow(("config", "category", category, "", ""))
     if competitors:
         writer.writerow(("config", "competitors", ";".join(competitors), "", ""))
+    # DEFAULT_LOCAL_ENGINES despite this also serving product sets. The NAME is
+    # historical — the tuple is gemini_grounded / perplexity / google_ai_mode /
+    # openai / openai_search, none of which is local-specific, and it was
+    # measured rather than chosen. Referencing the one definition beats copying
+    # five strings into a second list that would drift the first time a surface
+    # was repinned; `src/prompts/assemble.py` owns it.
     writer.writerow(("config", "engines", ";".join(DEFAULT_LOCAL_ENGINES), "", ""))
-    writer.writerow(("config", "runs_per_query", "3", "", ""))
+    writer.writerow(("config", "runs_per_query", str(DEFAULT_RUNS_PER_QUERY), "", ""))
     for q in generated.queries:
         writer.writerow(("query", q.query_id, q.text, q.intent.value, q.persona))
     return buffer.getvalue()
@@ -637,6 +899,7 @@ def review(session_id: str) -> dict[str, Any]:
         "query_set": queries,
         "csv": row.get("csv_text") or "",
         "lint": lint,
+        "run_shape": _run_shape(str(row.get("csv_text") or ""), len(queries)),
         "tier": (
             Verification.CLIENT_CONFIRMED.value
             if claims and not unconfirmed

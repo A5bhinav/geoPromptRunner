@@ -16,20 +16,22 @@
  */
 
 import * as React from "react";
-import { Check, X, Loader2, ExternalLink, HelpCircle } from "lucide-react";
+import { Check, Loader2, ExternalLink, HelpCircle, MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/notice";
 import Link from "next/link";
-import { Page, PageHeader } from "@/components/page";
+import { useRouter } from "next/navigation";
+import { Page, PageHeader, Panel } from "@/components/page";
 import { INPUT_CLS } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import {
   listFactSheets,
+  startIntake,
   getFactSheet,
   approveFactSheet,
-  rejectFactSheet,
+  deleteFactSheet,
   type FactSheetSummary,
   type FactSheetDetail,
   type FactSheetState,
@@ -67,13 +69,15 @@ const STATE_VARIANT: Record<FactSheetState, "quiet" | "muted" | "outline" | "sol
 };
 
 export default function FactSheetQueuePage() {
+  const router = useRouter();
   const [tab, setTab] = React.useState<FactSheetState>("draft");
   const [rows, setRows] = React.useState<FactSheetSummary[]>([]);
   const [selected, setSelected] = React.useState<FactSheetDetail | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [rejectReason, setRejectReason] = React.useState("");
+  // Two-step delete: the second click on the same row is the confirmation.
+  const [confirmDelete, setConfirmDelete] = React.useState<string | null>(null);
 
   const refresh = React.useCallback(() => {
     setLoading(true);
@@ -85,9 +89,21 @@ export default function FactSheetQueuePage() {
   }, [tab]);
   React.useEffect(refresh, [refresh]);
 
+  // The session is what identifies a conversation, so the row starts one and
+  // navigates to it rather than linking at the sheet.
+  const openIntake = async (id: string) => {
+    setError(null);
+    try {
+      const session = await startIntake(id);
+      router.push(`/fact-sheets/intake/${encodeURIComponent(session.session_id)}`);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
   const open = (id: string) => {
     setError(null);
-    setRejectReason("");
+    setConfirmDelete(null);
     getFactSheet(id)
       .then(setSelected)
       .catch((e: Error) => setError(e.message));
@@ -145,11 +161,39 @@ export default function FactSheetQueuePage() {
         </p>
       )}
 
+      {/* The empty state names the ACTION, not the plumbing. It used to point at
+          `geo factsheet-worker` and `geo factsheet` — two commands a person
+          looking at this screen cannot run, describing the path that is no
+          longer the primary one. The intake is how a sheet gets made now, and
+          it is one click from here. */}
       {!loading && rows.length === 0 && (
-        <p className="text-[13px] text-[color:var(--ink-secondary)]">
-          Nothing here. Sheets arrive from the worker (<code>geo factsheet-worker</code>) or the
-          CLI (<code>geo factsheet</code>).
-        </p>
+        <Panel className="flex flex-col items-start gap-3 px-6 py-8">
+          <p className="text-[15px] font-medium">
+            {tab === "active"
+              ? "No sheet is live yet."
+              : "Nothing is waiting on you."}
+          </p>
+          <p className="max-w-[560px] text-[13px] leading-relaxed text-harbour">
+            {tab === "active" ? (
+              <>
+                A sheet goes live when you approve it at the end of an intake. Until one does,
+                every accuracy finding stays capped at low and medium — there is no confirmed
+                ground truth to check an answer against.
+              </>
+            ) : (
+              <>
+                Sheets are written by talking to the business. Nine or so questions, and every
+                answer becomes a line the models can be checked against — in the owner&rsquo;s
+                words, on the record.
+              </>
+            )}
+          </p>
+          <Link href="/">
+            <Button size="sm">
+              <MessageSquare className="h-4 w-4" /> Start a conversation
+            </Button>
+          </Link>
+        </Panel>
       )}
 
       <div className="grid gap-3">
@@ -193,11 +237,9 @@ export default function FactSheetQueuePage() {
                 only thing that can raise its tier, and the tier is what decides
                 whether a serious finding is allowed to appear at all. */}
             <CardContent className="flex flex-wrap items-center gap-2 pt-0">
-              <Link href={`/fact-sheets/${encodeURIComponent(row.id)}/intake`}>
-                <Button size="sm">
-                  {row.state === "active" ? "Edit with the owner" : "Start intake"}
-                </Button>
-              </Link>
+              <Button size="sm" onClick={() => void openIntake(row.id)}>
+                {row.state === "active" ? "Edit with the owner" : "Start intake"}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => open(row.id)}>
                 Read the claims
               </Button>
@@ -280,26 +322,47 @@ export default function FactSheetQueuePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-t pt-4">
-              <Button
-                onClick={() => act(() => approveFactSheet(selected.id))}
-                disabled={busy}
-              >
+              <Button onClick={() => act(() => approveFactSheet(selected.id))} disabled={busy}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Approve — make this the reference
               </Button>
-              <input
-                className={cn(INPUT_CLS, "min-w-48 flex-1")}
-                placeholder="Why is it wrong? (optional, but it tunes the extractor)"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-              />
+
               <Button
                 variant="outline"
-                onClick={() => act(() => rejectFactSheet(selected.id, rejectReason))}
+                onClick={() => void openIntake(selected.id)}
                 disabled={busy}
               >
-                <X className="h-4 w-4" /> Reject
+                <MessageSquare className="h-4 w-4" /> Confirm it with the owner
               </Button>
+
+              {/* DELETE, not reject.
+                  A sheet whose claims are wrong is now remade through the
+                  intake, where the owner confirms every line — so the row has no
+                  second life to preserve and the "why is it wrong" box it used
+                  to carry had nowhere left to be read. Two-step because it
+                  cannot be undone; a typed-name dialog would be heavier than
+                  this deserves, since a past report keeps its own copy of the
+                  sheet and cannot be changed by this. */}
+              <Button
+                variant="outline"
+                className="ml-auto"
+                onClick={() =>
+                  confirmDelete === selected.id
+                    ? act(() => deleteFactSheet(selected.id))
+                    : setConfirmDelete(selected.id)
+                }
+                disabled={busy}
+              >
+                <Trash2 className="h-4 w-4" />
+                {confirmDelete === selected.id ? "Confirm — delete for good" : "Delete"}
+              </Button>
+              {confirmDelete === selected.id ? (
+                <span className="text-[12px] text-harbour">
+                  This removes the sheet and its {selected.claims.length} claim
+                  {selected.claims.length === 1 ? "" : "s"}. Past reports keep the version they
+                  were run against.
+                </span>
+              ) : null}
             </div>
           </CardContent>
         </Card>

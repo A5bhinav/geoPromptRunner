@@ -4,6 +4,10 @@
 document in the system anyone has actually vouched for — then hands them a
 reviewable set of queries and a run they can start with one click.*
 
+**Question set:** `docs/factsheet-questions.md` is the source of truth for the
+sixteen questions — wording, rationale, and the six-audience robustness pass.
+Where it and this document disagree on a prompt, it wins.
+
 **Companion document:** `docs/factsheet-intake-agent-plan.md` (for the coding agent).
 **§1 of both documents is byte-identical.** It is the seam. If you change a
 question id, a state name, a route or a field name, change it in both.
@@ -81,16 +85,47 @@ at `version = N+1` in `draft`, then immediately calls `activate_fact_sheet`,
 which demotes the domain's previous `active` row to `superseded`. One approval,
 one version, one row. Nothing is ever mutated in place and nothing is deleted.
 
-### 1.3 Question id namespace
+### 1.3 One question set, not two branches
 
-| Prefix | Branch | Count |
+There is **no product branch and no local branch.** The judge checks
+*dimensions*, not business types, and every dimension applies to every business.
+A plumber's call-out fee and a SaaS's activation fee are the same question. A
+shop's Sunday closure and a support desk's weekend gap are the same question.
+"What don't you do?" is the same question for a smart-ring maker and a law firm.
+
+Forking the registry by business type buys nothing and costs three things: two
+half-maintained question trees, a `showIf` graph that has to be reasoned about
+every time a card moves, and **no answer at all for the businesses that are
+neither** — an agency, a restaurant, a clinic, a nonprofit, a marketplace, a
+company that sells software *and* sends technicians.
+
+So: **one spine of 16 questions, grouped by dimension.** `business_kind` stops
+being a router. It picks the *example text* inside a question and the query
+allocation afterwards. Nothing structural.
+
+| Group | The dimension it establishes | Cards | Sheet section |
+|---|---|---|---|
+| `Q-WHAT-*` | Who you are and what you're called | 4 | `identity` |
+| `Q-OFFER-*` | What you provide, what you don't, what changed | 3 | `services_pricing`, `features` |
+| `Q-COST-*` | What it costs, and what else it costs | 2 | `services_pricing` |
+| `Q-REACH-*` | How to reach you, where, when | 3 | `contact`, `service_area`, `hours` |
+| `Q-PROOF-*` | What you can prove, who you're up against | 2 | `licensing`, `positioning` |
+| `Q-AI-*` | What AI already gets wrong | 2 | `watchlist` |
+
+Every one of the seven existing `SheetSection` members now has a producer for
+every business, which was not true when the sections were read literally. The
+enum values are immutable (they are inside the claim-ID order, §3 I0-T4), but
+their **meaning generalizes**:
+
+| Section | Read narrowly (before) | Reads now |
 |---|---|---|
-| `Q-ID-*` | Trunk — asked of everyone | 5 |
-| `Q-LOC-*` | Local-service branch | up to 11 |
-| `Q-PRD-*` | Product branch | up to 11 |
-| `Q-END-*` | Shared tail | 2 |
+| `contact` | phone and street address | any channel a customer uses to reach you |
+| `hours` | shop opening times | when you are and are not available |
+| `service_area` | towns a van drives to | where you can and cannot deliver |
+| `licensing` | a contractor's state licence | anything you can prove — licence, SOC 2, insurance, membership |
+| `services_pricing` | services and rates | anything you offer and what it costs |
 
-**Ceiling: 18 cards. Median: 13** when the crawl found JSON-LD, because
+**Ceiling: 16 cards. Median: 11** when the crawl found JSON-LD, because
 pre-filled facts collapse into batch-confirm cards that carry 3–5 facts each.
 A *card* is not a *field*.
 
@@ -101,34 +136,41 @@ never hardcodes a question; the registry is the single source of truth.
 
 ```ts
 type AnswerKind =
-  | "choice"         // 2–4 options, single select
+  | "choice"         // 2–4 options, single select; an option may reveal a sub-input
   | "multi"          // options, multi select, + "add your own"
   | "confirm"        // "I found X. Right?" → yes | fix (reveals an input)
   | "batch_confirm"  // N pre-filled facts, tap the wrong ones
   | "text"           // one line
   | "longtext"       // 2–4 lines
   | "list"           // repeatable chips
-  | "hours"          // 7-day grid, per-day open/closed
-  | "money"          // currency, auto-stamped "as of"
-  | "tiers"          // repeatable {name, price, includes}
+  | "availability"   // Always / Set hours / By arrangement — grid only on "Set hours"
+  | "priced_rows"    // repeatable {what, price, basis, what's included}
   | "links"          // labelled URL fields
-  | "watchlist";     // repeatable {what the AI said, what is actually true}
+  | "pairs";         // repeatable two-field rows (watch-list, credentials)
+
+/** The only thing business kind is allowed to change. Never the question,
+ *  never the keys, never whether a card appears — only the for-instance. */
+interface Examples {
+  neutral: string;               // used when business_kind is unknown. REQUIRED.
+  product?: string;
+  local?: string;
+}
 
 interface IntakeQuestion {
-  id: string;                    // "Q-LOC-04"
+  id: string;                    // "Q-REACH-03"
+  group: "WHAT" | "OFFER" | "COST" | "REACH" | "PROOF" | "AI";
   kind: AnswerKind;
   section: SheetSection;         // routes the resulting claim
   keys: string[];                // fact-row keys this card can produce
-  prompt: string;                // the bot's line
-  helper?: string;               // the smaller line under it
-  placeholder?: string;
-  options?: { value: string; label: string }[];
+  prompt: string;                // the bot's line — identical for every business
+  helper?: string;               // why we're asking. Also identical
+  examples: Examples;            // the ONLY adaptive text on the card
+  options?: { value: string; label: string; reveals?: AnswerKind }[];
   prefill?: unknown;             // from the draft sheet; null when nothing was found
   prefillSourceUrl?: string;     // shown as "found on your pricing page"
-  skippable: boolean;            // false only for Q-ID-01 and Q-LOC-00
-  negativeFirst: boolean;        // true ⇒ "no" is the valuable answer, lead with it
+  skippable: boolean;            // true for all 16. There is no gate question
+  negativeFirst: boolean;        // true ⇒ "no"/"none" is the valuable answer
   assertionPreview: string;      // template with {slots} — see §1.6 rule 4
-  showIf?: { questionId: string; equals: unknown }; // branching
 }
 ```
 
@@ -333,9 +375,9 @@ The current mark breathes: `opacity 0.55 → 1`, 1800ms, `ease-in-out`, alternat
 That is the only looping animation in the feature. Under reduced motion it is a
 static ring instead.
 
-Under the rail, one line at 10px `.label`: `QUESTION 6 OF 14 · ABOUT 3 MIN LEFT`.
-Estimate from a measured median per `AnswerKind`, not from a constant — a `hours`
-card is not a `choice` card.
+Under the rail, one line at 10px `.label`: `QUESTION 6 OF 12 · ABOUT 3 MIN LEFT`.
+Estimate from a measured median per `AnswerKind`, not from a constant — an
+`availability` card is not a `choice` card.
 
 #### The thinking indicator — and when not to use it
 
@@ -357,21 +399,21 @@ there is nothing to wait for, and manufacturing a delay to make a bot feel
 ┌─ app header (navy, 56px, unchanged) ──────────────────────────────┐
 ├───────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│         ●●●●●○○○○○○○○○      ← progress rail, plume marks          │
-│         QUESTION 6 OF 14 · ABOUT 3 MIN LEFT                       │
+│         ●●●●●○○○○○○○      ← progress rail, plume marks          │
+│         QUESTION 6 OF 12 · ABOUT 3 MIN LEFT                       │
 │                                                                   │
 │    ┌───────────────────────────────────────────────────┐          │
-│    │  Q-LOC-02 · You said (510) 555-0100 is current.   │ ← transcript
-│    │  Q-LOC-01 · Confirmed 3 facts                     │   collapsed,
+│    │  Q-REACH-01 · You said (510) 555-0100 is current. │ ← transcript
+│    │  Q-OFFER-02 · Confirmed 3 facts                   │   collapsed,
 │    │  ⌄ show 4 earlier                                 │   max 3 rows
 │    └───────────────────────────────────────────────────┘          │
 │                                                                   │
 │    ┌───────────────────────────────────────────────────┐          │
-│    │  HOURS                                            │ ← eyebrow │
+│    │  WHEN YOU'RE AVAILABLE                            │ ← eyebrow │
 │    │                                                   │          │
-│    │  Which days are you closed?                       │ ← 20px    │
-│    │  Be blunt about it — "closed Sunday" is what      │ ← 13px    │
-│    │  lets us catch an AI telling someone otherwise.   │          │
+│    │  When can people actually get you?                │ ← 20px    │
+│    │  Be blunt about the gaps — "closed Sunday" and    │ ← 13px    │
+│    │  "no weekend support" both count here.            │          │
 │    │                                                   │          │
 │    │  [ the input, per AnswerKind ]                    │          │
 │    │                                                   │          │
@@ -415,20 +457,23 @@ and it is what makes a confirm card checkable rather than a trust exercise.
 
 ### 3.3 Every `AnswerKind`, specified
 
+Eleven kinds cover all sixteen cards for every business type. Each is designed to
+hold a plumber's answer and a SaaS's answer in the same control — that is the
+test to apply before adding a twelfth.
+
 | Kind | Control | Notes |
 |---|---|---|
-| `choice` | 2–4 stacked pill rows, full width, `border-navy/20`; selected = `bg-navy text-white` + `Check` glyph | Numeral hint at left. Never a native `<select>` — this is the most-used kind and it should feel tapped, not chosen |
+| `choice` | 2–4 stacked pill rows, full width, `border-navy/20`; selected = `bg-navy text-white` + `Check` glyph. An option may **reveal** a sub-input beneath it | Numeral hint at left. Never a native `<select>` — this is the most-used kind and it should feel tapped, not chosen |
 | `multi` | Same rows, multi-select, plus an "Add your own" chip that reveals an inline input | |
 | `confirm` | The found value at 15/500 navy in a `--selected` tinted block, with the source line beneath. Two buttons: **That's right** (navy) / **Fix it** (outline) | "Fix it" reveals `INPUT_CLS` pre-filled with the found value, cursor at end |
-| `batch_confirm` | N rows, each `label · value · Check`. All start checked. Tapping a row unchecks it and reveals an inline input | Header copy: *"Tap anything that's wrong."* Unchecking is the interaction, which is why all start checked — the common case is one tap on Continue |
+| `batch_confirm` | N rows, each `label · value · Check` — **only for values that exist**, never a fixed field set. Below them, `+ Add a channel` and any relevant *"we don't have one"* pills. All rows start checked; tapping one unchecks it and reveals an inline input | Header copy: *"Tap anything that's wrong."* Unchecking is the interaction, which is why all start checked — the common case is one tap on Continue |
 | `text` | `INPUT_CLS` | Character budget hint at 11px when there is a real one |
 | `longtext` | `INPUT_CLS` as a 3-row textarea | Marketing-language nudge (§3.5) fires here |
 | `list` | Chip input: type, Enter, chip appears; Backspace on empty removes the last | Pre-filled chips render Harbour-outlined with an × ; owner-added chips render navy-filled. The difference is visible provenance |
-| `hours` | 7 rows: day label · [Open ▾ time range] / [Closed] toggle | Pre-filled from JSON-LD. **Closed is a first-class toggle, never an empty time field** — the negative is the valuable answer here |
-| `money` | `INPUT_CLS` with a `$` prefix, plus a **Free / none** pill that zeroes it | The "as of {today}" stamp renders as static 11px text, not a field |
-| `tiers` | Repeatable 3-column rows (name / price / includes) + **Add a plan** | Max 6 rows before it needs a scroll; if a product has more, that is a call, not a form |
+| `availability` | **A `choice` first** — `Always available` / `Set hours` / `By appointment or arrangement` — and the 7-day grid renders **only** on "Set hours". Beneath it, a second choice: after-hours / out-of-hours cover? | This is the card that makes the spine universal. A 7-row grid asked of a SaaS is a form nobody fills; a "24/7 self-serve" business answers in one tap and a shop still gets its grid. **Closed is a first-class toggle in the grid, never an empty time field** — the negative is the valuable answer |
+| `priced_rows` | Repeatable 4-column rows: **what · price · basis · what's included**, + **Add another**. `basis` is a compact select (one-time / per hour / per seat/mo / per month / per year / per visit / per project / per unit). The price field accepts a number, `Free`, `From $X`, `Varies by scope` or `Quote only` as first-class values | **The basis column is what makes this universal** — a law firm bills hourly, a SaaS per seat per month, a dentist per visit. "450" with no basis is not a checkable claim. Max 6 rows before scroll; more than six prices is a conversation, not a form. `as of {today}` renders as static 11px text, not a field |
 | `links` | Only the *missing* platforms render as labelled URL fields. Found ones render as confirmed chips with the platform name | Keeps a 6-field card down to one or two fields in the common case |
-| `watchlist` | Repeatable pair: *"What did it say?"* / *"What's actually true?"* + **Add another** | Starts with one empty pair. This card is allowed to be the longest one |
+| `pairs` | Repeatable two-field rows with per-card labels, + **Add another** | Reused three times with different labels: watch-list (*what it said / what's true*), credentials (*what you hold / who issued it*), and what-changed (*what / when*). One control, three jobs — do not build three |
 
 ### 3.4 The assertion preview — rule 4, made concrete
 
@@ -452,7 +497,7 @@ too, or a skip feels like a failure instead of a safe default.
 
 ### 3.5 The marketing-language nudge
 
-`Q-ID-03` and the free-text tails. On a hit, a `<Notice tone="info">` slides in
+`Q-WHAT-02` and the free-text tails. On a hit, a `<Notice tone="info">` slides in
 beneath the field:
 
 > *An AI can't be wrong about "the best" — only about what you actually do. Want
@@ -462,7 +507,7 @@ Never blocks. Never a red field. A business owner describing their own business
 in their own words and being refused is a worse outcome than one claim that can
 never fire.
 
-### 3.6 The opening screen (before `Q-ID-01`)
+### 3.6 The opening screen (before `Q-WHAT-01`)
 
 Not a question. One card:
 
@@ -470,7 +515,7 @@ Not a question. One card:
 >
 > **We pulled some facts off albertnahmanplumbing.com. Let's check them.**
 >
-> Fourteen questions, about six minutes. Most are just "is this right?"
+> Sixteen questions, about six minutes. Most are just "is this right?"
 >
 > Anything you're not sure about, hit **Skip** — we'd rather leave a blank than
 > guess. A blank is never wrong; a guess can be.
@@ -481,13 +526,13 @@ The mark renders at 34px, tone `paper`, above the eyebrow. This is the one place
 in the feature the logo appears at size, and it is the same move the run page's
 empty state already makes.
 
-### 3.7 The close screen (after `Q-END-02`)
+### 3.7 The close screen (after `Q-AI-02`)
 
 Not a question. The payoff, and the only place Cormorant is legal here.
 
 > **`DONE`**
 >
-> **14** *(Cormorant 300, 56px, navy)*
+> **26** *(Cormorant 300, 56px, navy)*
 > facts you've confirmed
 >
 > From now on, if ChatGPT, Gemini, Claude or Perplexity says something that
@@ -508,154 +553,239 @@ must never be held hostage to the query set (see agent plan §4.5).
 
 | State | Treatment |
 |---|---|
-| Resumed mid-intake | Open on the last unanswered card with the transcript pre-populated. A `<Notice tone="info">` above it: *"Picking up where you left off — 6 of 14 done."* Dismissible, once |
+| Resumed mid-intake | Open on the last unanswered card with the transcript pre-populated. A `<Notice tone="info">` above it: *"Picking up where you left off — 6 of 12 done."* Dismissible, once |
 | Network error on commit | The card stays, the button shows a spinner, then a `<Notice tone="problem">` with **Try again**. **Never lose the typed answer** — it lives in component state until the POST resolves |
 | Nothing was pre-filled | The batch-confirm cards simply don't appear; the plan is longer and the copy changes from "is this right?" to "what is it?". Do not render an empty confirm card |
 | Sheet already has a live session | The queue row's action reads **Continue** and routes into the existing session. Never offer to start a second one |
 
 ---
 
-## 4 · The script — exact copy, every card
+## 4 · The script — one set of questions, for every business
 
 Tone: a competent person who has done this before, is not going to waste your
 time, and tells you why they're asking when the why isn't obvious. Sentence case.
 No exclamation marks. No emoji. Second person. Short.
 
+**The prompt and the helper are identical for every business.** The only thing
+that changes is the *for-instance* line beneath them, which renders at 12px
+`--ink-secondary` prefixed with **For instance —**. If `business_kind` is
+unknown, use `neutral`; it is written to be true of anyone, so an unknown kind is
+never a broken card.
+
 `{brand}`, `{domain}`, `{city}` are substituted live.
 
-### 4.1 Trunk — everyone
+> **The rule that keeps this robust:** if you find yourself wanting to reword a
+> *prompt* for a business type, the prompt is too narrow — widen it, and put the
+> specificity in the for-instance. A question that needs rewriting for a law firm
+> would also have needed rewriting for the restaurant nobody thought of.
 
-**`Q-ID-01` · business kind** *(not skippable)*
-> Which one is {brand}?
-> *(helper)* This changes what we ask about — and what we check for.
-> `[ Something people buy or subscribe to online ]` `[ A local business people call or visit ]`
->
-> *Pre-filled variant:* Looks like {brand} is a local business people call or visit. Right?
+---
 
-**`Q-ID-02` · identity confirm** *(batch)*
+### `Q-WHAT-01` · what we already found *(batch confirm)*
 > Quick check — tap anything that's wrong.
-> *(rows)* Name · Website · In business since · What you'd call it
+>
+> *(rows, only those the crawl actually found)* Name · Website · In business since · What you'd call it
 
-**`Q-ID-03` · one line**
-> In one sentence, what does {brand} do?
-> *(helper)* Plain and factual. "Family-owned plumbing contractor serving the East Bay since 1998" — not "the most trusted plumber in town."
+**For instance —** *neutral:* "What you'd call it" is the words you'd want an AI to use — "employment law firm", not "professional services company".
 
-**`Q-ID-05` · aliases**
+---
+
+### `Q-WHAT-02` · what it is
+> In one sentence, what does {brand} actually do?
+>
+> *(helper)* Plain and factual. Skip the sales language — an AI can't be wrong about "the best", only about what you do.
+
+**For instance —**
+*local:* "Family-owned plumbing contractor serving the East Bay since 1998."
+*product:* "A smart ring that tracks sleep, recovery and readiness."
+*neutral:* "A two-person design studio doing brand identity for restaurants."
+
+---
+
+### `Q-WHAT-03` · other names
 > Any other ways people write your name?
-> *(helper)* Misspellings, your legal name, "& Sons" vs "and Sons", an old name. We use these to spot a mention we'd otherwise miss — they're not fact-checked.
+>
+> *(helper)* Misspellings, your legal name, an old name. We use these to catch a mention we'd otherwise miss — they aren't fact-checked.
 > *(placeholder)* Type a name and press Enter
 
-**`Q-ID-06` · confused with** *(negativeFirst)*
-> Is there another business people mix you up with?
-> *(helper)* A same-name shop in another town, a franchise you left, a competitor people confuse you with. This is one of the things AI gets wrong most often.
+**For instance —** *neutral:* "& Sons" vs "and Sons", an old trading name, the LLC on your paperwork.
 
-### 4.2 Local branch
+---
 
-**`Q-LOC-00` · trade** *(not skippable)*
-> What kind of work is it?
-> `[ Plumbing ]` `[ HVAC ]` `[ Barbershop ]` `[ Something else ]`
+### `Q-WHAT-04` · who you get confused with *(negativeFirst)*
+> Is there anyone people mix you up with?
+>
+> *(helper)* This is one of the things AI gets wrong most often, and it's one of the easiest to catch.
 
-**`Q-LOC-01` · contact confirm** *(batch)*
-> This is the most important card here — tap anything that's wrong.
-> *(helper)* If an AI gives someone the wrong number, that's a job you never hear about.
-> *(rows)* Phone · Address · Email
+**For instance —**
+*local:* a same-name shop two towns over, a franchise you left.
+*product:* a competitor with a similar name, a parent company you're not part of.
+*neutral:* a company you were spun out of, someone with a near-identical name.
 
-**`Q-LOC-02` · retired contact** *(negativeFirst)*
-> Any old number or address of yours still floating around online?
-> *(helper)* An old listing, a previous location, a disconnected line. Telling us lets us flag an AI still handing it out.
+---
 
-**`Q-LOC-03` · hours**
-> When are you open?
-> *(helper)* Be exact about the days you're **closed** — that's what catches an AI saying you're open seven days.
+### `Q-OFFER-01` · what you offer
+> What do you actually offer?
+>
+> *(helper)* Name the level a customer would ask about — the categories, not every individual item. Ten or so is plenty.
 
-**`Q-LOC-04` · after-hours** *(negativeFirst)*
-> Do you take emergency or after-hours calls?
-> `[ No ]` `[ Yes, same rate ]` `[ Yes, costs more ]`
-> *(secondary)* Appointment only, walk-ins welcome, or both?
-> *(helper)* "No" is worth saying out loud — AIs invent 24/7 emergency service constantly.
+**For instance —**
+*local:* drain cleaning, water heater install, repiping, leak detection.
+*product:* sleep tracking, HRV, readiness score, the iOS app.
+*neutral:* the services, product lines or practice areas you'd put on a menu. If you have a catalogue, name the categories.
 
-**`Q-LOC-06` · service area**
-> Which towns do you actually serve?
-> *(secondary)* Home city · State *(select)*
-> *(helper)* We need the state spelled out — "California", not "CA".
+---
 
-**`Q-LOC-07` · boundary** *(negativeFirst)*
-> Where do you **not** go?
-> *(helper)* Without this, nobody can catch an AI promising a customer in the next county over that you'll come out.
+### `Q-OFFER-02` · what you don't offer *(negativeFirst)*
+> What do people ask for that you **don't** do?
+>
+> *(helper)* This is the most valuable question here. Without it, nobody can catch an AI volunteering you for work you don't take.
 
-**`Q-LOC-08` · licensing**
-> Licence number, and who issued it?
-> *(placeholder)* CSLB 123456
-> *(secondary)* Bonded · Insured · Any certifications
-> *(helper)* An AI claiming a licence you don't hold is a real liability. So is one denying the licence you do hold.
+**For instance —**
+*local:* "No septic work." "No commercial jobs." "We don't do new construction."
+*product:* "No Android app." "No offline mode." "We're not a CRM."
+*neutral:* the thing you turn down every week.
 
-**`Q-LOC-09` · services offered**
-> What do you actually do?
+---
 
-**`Q-LOC-10` · services not offered** *(negativeFirst)*
-> Anything people ask for that you don't do?
-> *(helper)* "No septic work." "No commercial jobs." These stop an AI volunteering you for work you don't take.
+### `Q-OFFER-03` · what's changed *(pairs)*
+> What's new, and what have you stopped doing?
+>
+> *(pair labels)* What changed · When
+> *(helper)* AI training data lags by months. This is the fastest way to catch an AI still describing you as you were last year.
 
-**`Q-LOC-11` · call-out fee**
-> What's the call-out or diagnostic fee?
-> `[ Free estimates ]` or `$ ___`
+**For instance —**
+*local:* "Added emergency water damage, March." "Stopped doing duct cleaning, January."
+*product:* "Ring 5 shipped, May 28." "Retired the Basic plan, February."
+*neutral:* a new location, a new service line, a price change, something you retired.
 
-**`Q-LOC-12` · presence**
-> Anything we're missing?
-> *(helper)* We found your Google and Yelp pages. Paste any others.
+---
 
-### 4.3 Product branch
+### `Q-COST-01` · what it costs *(priced rows)*
+> What does it cost?
+>
+> *(column labels)* What · Price · Basis · What's included
+> *(helper)* Prices are the single most-hallucinated thing about any business. Exact numbers, today's. `Free`, `From $X`, `Varies by scope` and `Quote only` are all real answers.
 
-**`Q-PRD-01` · billing**
-> How do people pay for {brand}?
-> `[ One-time purchase ]` `[ Subscription ]` `[ Per seat ]` `[ Usage-based ]` `[ Hardware plus a subscription ]`
+**For instance —**
+*local:* "Diagnostic visit · $89 · per visit · applied to the repair".
+*product:* "Premium · $499 · one-time · plus membership".
+*neutral:* "Partner time · $450 · per hour". One row per thing that has a price.
 
-**`Q-PRD-02` · plans**
-> What are the plans, and what do they cost?
-> *(helper)* Prices are the single most-hallucinated thing about any product. Exact numbers, today's.
+---
 
-**`Q-PRD-03` · mandatory fee**
+### `Q-COST-02` · what else they pay *(negativeFirst)*
 > Is there anything people have to pay on top of that?
-> *(helper)* A required membership, an activation fee, a mandatory add-on. AIs quote the sticker price and miss this constantly — it's usually the finding that lands hardest.
+>
+> `[ No, that's the full price ]` `[ Yes — ___ ]`
+>
+> *(second question, same card)* Is there a free option — a free tier, a free trial, a free consult, free shipping?
+> `[ No ]` `[ Yes — ___ ]`
+>
+> *(helper)* AI quotes the headline price and misses this constantly. It's usually the finding that lands hardest.
 
-**`Q-PRD-04` · free tier & trial** *(negativeFirst)*
-> Is there a free tier?  `[ No ]` `[ Yes — limits: ___ ]`
-> Is there a free trial? `[ No ]` `[ Yes — ___ days ]`
+**For instance —**
+*local:* a trip charge outside the city, a weekend surcharge, a minimum callout.
+*product:* a required membership, an activation fee, a mandatory add-on.
+*e-commerce:* **shipping** — and "free over $50" is the free-option answer.
+*neutral:* anything that surprises someone at checkout.
 
-**`Q-PRD-05` · current version**
-> What's the newest version, and when did it ship?
-> *(secondary)* Did the price change with it? What was the old one?
-> *(helper)* AI training data lags by months. This is the fastest way to catch an AI still describing last year's product.
+---
 
-**`Q-PRD-06` · core features**
-> What does it actually do?
+### `Q-REACH-01` · how people reach you *(batch confirm + list)*
+> This is the most important card here — tap anything that's wrong.
+>
+> *(rows — only the channels that actually exist)* Phone · Email · Booking or support link · Address
+>
+> `[ + Add a channel ]`  `[ We don't have a phone line ]`  `[ No public address ]`
+>
+> *(second question, same card)* Any old number, address or link of yours still floating around online?
+>
+> *(helper)* If an AI hands someone the wrong way to reach you, that's a customer you never hear about.
 
-**`Q-PRD-07` · recently shipped**
-> Anything you've shipped in the last six to twelve months?
+**For instance —** *neutral:* a disconnected line, a previous office, a support address you retired.
+*software:* "We don't have a phone line" is a real answer and a valuable one — an AI inventing a support number is a common failure, and it can't be caught unless you say so.
 
-**`Q-PRD-08` · do not do** *(negativeFirst)*
-> What do people wrongly assume you do?
-> *(helper)* "No Android app yet." "Not owned by {competitor}." "No offline mode." These are the guardrails — without them an invented feature isn't catchable.
+---
 
-**`Q-PRD-09` · platforms**
-> Where does it run, what does it need, and what does it plug into?
+### `Q-REACH-02` · where you serve
+> Where can people get you?
+>
+> `[ Anywhere ]` `[ Specific places ]`
+> *(reveals on "Specific places")* Which ones? · Home city · State *(select — spelled out, not "CA")*
+>
+> *(second question, same card)* Anywhere you **don't** serve — or aren't licensed to?
+>
+> *(helper)* Without the second answer, nobody can catch an AI promising someone in the next county — or the next country — that you'll cover them.
 
-**`Q-PRD-11` · ICP**
-> Who is it actually for?
+**For instance —**
+*local:* "Berkeley, Oakland, Albany, El Cerrito." Not: "Marin County."
+*product:* "Anywhere." Not: "We don't ship to the EU."
+*professional services:* "Admitted in California and New York. Not admitted in Nevada."
+*neutral:* the boundary you'd have to explain on a phone call.
 
-**`Q-PRD-12` · competitors**
-> Who do you actually compete with?
-> *(helper)* We'll ask the AIs about each of these by name, so this list decides what gets measured.
+---
 
-### 4.4 Tail — everyone
+### `Q-REACH-03` · when you're available *(availability)*
+> When can someone actually reach a person?
+>
+> `[ Any time — round the clock ]` `[ Set hours ]` `[ By appointment or arrangement ]`
+> *(reveals the 7-day grid only on "Set hours")*
+>
+> *(second question, same card)* Anything outside those hours — emergency, on-call, after-hours support?
+> `[ No ]` `[ Yes, same rate ]` `[ Yes, costs more ]`
+>
+> *(helper)* This is about reaching a **person**, not whether the product is up. Be blunt about the gaps — "closed Sunday" and "no weekend support" are the same answer, and they're what catch an AI inventing round-the-clock cover.
 
-**`Q-END-01` · watch-list**
+**For instance —**
+*local:* closed Sunday, no after-hours.
+*product:* self-serve any time, support 9–5 Eastern, weekdays only.
+*neutral:* the day and time someone would try you and get nothing.
+
+---
+
+### `Q-PROOF-01` · what you can prove *(pairs)*
+> Anything you're licensed, certified or accredited for?
+>
+> *(pair labels)* What you hold · Who issued it
+> *(second question, same card)* Anything people assume you hold that you don't?
+>
+> *(helper)* An AI claiming a credential you don't have is a real liability. So is one denying the credential you do have.
+
+**For instance —**
+*local:* "CSLB · licence 123456", "Bonded and insured", "EPA 608".
+*product:* "SOC 2 Type II · 2026", "GDPR", "HIPAA BAA available".
+*neutral:* a licence, an insurance policy, an industry body, a compliance report.
+
+---
+
+### `Q-PROOF-02` · who you're up against
+> If someone didn't pick you, who else would they be looking at?
+>
+> *(second question, same card)* And who is it for?
+>
+> *(helper)* We'll ask the AIs about each of these by name, so this list decides a good chunk of what gets measured.
+
+**For instance —**
+*local:* the three other shops that show up when someone searches your trade in {city}.
+*product:* the names on a buyer's shortlist next to yours.
+*neutral:* who you lose deals to. Never ask this as "who are your competitors" — a nonprofit and a law firm answer "nobody, really", and an empty list leaves the comparison bucket measuring nothing.
+
+---
+
+### `Q-AI-01` · what AI already gets wrong *(pairs)*
 > Have you ever seen ChatGPT or Google's AI say something wrong about you?
-> *(pair)* What did it say? / What's actually true?
+>
+> *(pair labels)* What did it say? · What's actually true?
 > *(helper)* Anything you've already caught. This is usually the first thing we go and check.
 
-**`Q-END-02` · anything else**
+**For instance —** *neutral:* a wrong price, an old address, a service you dropped, a competitor's product credited to you.
+
+---
+
+### `Q-AI-02` · anything else
 > Anything else an AI could get wrong about you?
+>
 > *(helper)* Last one. Skip it if nothing comes to mind.
 
 ---
@@ -668,7 +798,7 @@ Each row is a card:
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  Albert Nahman Plumbing                    ● 6 of 14 answered  │
+│  Albert Nahman Plumbing                    ● 6 of 12 answered  │
 │  albertnahmanplumbing.com · v2 · 3 days ago                    │
 │  ⚠ 2 sources disagreed — we'll ask                             │
 │                                          [ Continue ]  ⋯       │
@@ -680,7 +810,7 @@ Row action by state, one primary button, never two:
 | Row state | Button | Secondary |
 |---|---|---|
 | Crawl draft, no session | **Start intake** | — |
-| `in_progress` | **Continue** | Progress shown as `6 of 14` + a plume mini-rail |
+| `in_progress` | **Continue** | Progress shown as `6 of 12` + a plume mini-rail |
 | `awaiting_review` | **Review** | Lint block count if any |
 
 **Age is visible and it matters.** A draft older than 30 days shows
@@ -918,7 +1048,7 @@ answering it on the same phone they took Josh's call on.
 | `web/components/intake/transcript.tsx` | new | Collapsed list + jump-back |
 | `web/components/intake/progress-rail.tsx` | new | Plume marks + the count line |
 | `web/components/intake/thinking.tsx` | new | Three-mark pulse. Latency-gated |
-| `web/components/intake/answers/*.tsx` | new | One per `AnswerKind`, twelve files. Each takes `{question, value, onChange, onCommit}` and nothing else |
+| `web/components/intake/answers/*.tsx` | new | One per `AnswerKind`, eleven files. Each takes `{question, value, onChange, onCommit}` and nothing else |
 | `web/components/intake/assertion-preview.tsx` | new | Live sentence, `aria-live` |
 | `web/components/review/{sheet-pane,query-pane,tier-meter,approve-bar}.tsx` | new | |
 | `web/components/plume.tsx` | existing | **Reuse. Do not fork.** The rail imports it at `size={8}`, which the component's own degradation ladder already resolves to one plume |
@@ -944,7 +1074,7 @@ answering it on the same phone they took Josh's call on.
 - [ ] The thinking indicator never appears for a wait under 150ms
 
 **Function**
-- [ ] A 14-card intake is completable **keyboard-only**, end to end
+- [ ] A 16-card intake is completable **keyboard-only**, end to end
 - [ ] Refresh at question 8 → resumes at question 8 with nothing lost
 - [ ] A skipped card renders `Nothing will be checked on this.` and produces no claim
 - [ ] Approve is disabled, with a stated reason, while any lint `block` or unconfirmed claim exists

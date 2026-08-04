@@ -11,8 +11,8 @@ can set ``Verification.CLIENT_CONFIRMED``.
 
 Layout mirrors the data's path through it:
 
-    questions.py   the registry — what can be asked
-    plan.py        registry + prefill + branch — what will be asked
+    questions.py   the registry — the sixteen cards asked of every business
+    plan.py        the ordered plan for one session
     assertions.py  an answer → the exact sentence the owner is quoted on
     claims.py      that sentence → a FactClaim, plus the run inputs that aren't
 
@@ -33,18 +33,22 @@ from src.audit.factsheet.intake.assertions import (
 from src.audit.factsheet.intake.claims import (
     RunInputs,
     claims_from_answers,
+    derive_trade,
     run_inputs_from_answers,
     sections_present,
     upgrade_confirmed,
 )
-from src.audit.factsheet.intake.plan import branch_for, build_plan
+from src.audit.factsheet.intake.plan import build_plan
 from src.audit.factsheet.intake.questions import (
     BY_ID,
     MAX_CARDS,
     REGISTRY,
     AnswerKind,
+    Examples,
     IntakeQuestion,
     Option,
+    Part,
+    PartKind,
     question,
 )
 
@@ -52,18 +56,21 @@ __all__ = [
     "Answer",
     "Assertion",
     "AnswerKind",
+    "Examples",
     "IntakeQuestion",
     "Option",
+    "Part",
+    "PartKind",
     "REGISTRY",
     "BY_ID",
     "MAX_CARDS",
     "question",
     "build_plan",
-    "branch_for",
     "assertions_for",
     "to_assertion",
     "unfalsifiable_terms",
     "RunInputs",
+    "derive_trade",
     "claims_from_answers",
     "run_inputs_from_answers",
     "sections_present",

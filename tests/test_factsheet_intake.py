@@ -9,6 +9,12 @@ The adversarial tests (the quote gate, claim-ID stability) guard invariants wher
 the failure is silent and expensive — a false accusation in a document we send a
 stranger, or a renumbering that re-keys every cached verdict for a client. Never
 weaken them to make a change land.
+
+THE SIX-AUDIENCE TEST. The registry is one spine of sixteen asked of every
+business, so the fixtures below deliberately mix archetypes — a plumber's hours,
+a law firm's hourly rate, a SaaS's "we have no phone line", a product's
+discontinued model. A card that only holds one of those is a card that has
+started to fork again, and these tests are where that shows up.
 """
 
 from __future__ import annotations
@@ -24,9 +30,11 @@ from src.audit.factsheet.intake import (
     REGISTRY,
     Answer,
     AnswerKind,
+    PartKind,
     assertions_for,
     build_plan,
     claims_from_answers,
+    derive_trade,
     question,
     run_inputs_from_answers,
     to_assertion,
@@ -51,7 +59,7 @@ AS_OF = "2026-08-04"
 BUSINESS = "Albert Nahman Plumbing"
 SESSION = "11111111-2222-3333-4444-555555555555"
 
-_ID_RE = re.compile(r"^Q-(ID|LOC|PRD|END)-\d\d$")
+_ID_RE = re.compile(r"^Q-(WHAT|OFFER|COST|REACH|PROOF|AI)-\d\d$")
 
 _RUN_CSV = """block,key,value,intent,persona
 config,client_name,Albert Nahman Plumbing,,
@@ -68,7 +76,14 @@ def test_every_question_id_is_unique_and_well_formed() -> None:
     ids = [q.id for q in REGISTRY]
     assert len(ids) == len(set(ids)), "duplicate question id in the registry"
     for qid in ids:
-        assert _ID_RE.match(qid), f"{qid} is not in the Q-(ID|LOC|PRD|END)-nn namespace"
+        assert _ID_RE.match(qid), f"{qid} is not in the Q-(WHAT|OFFER|COST|REACH|PROOF|AI)-nn space"
+
+
+def test_the_spine_is_exactly_sixteen_cards() -> None:
+    """Sixteen is the ceiling AND the floor. A seventeenth would have to displace
+    one of these, and every fix in the last pass was a widening rather than an
+    addition — the for-instance line absorbed all of it."""
+    assert len(REGISTRY) == MAX_CARDS == 16
 
 
 @pytest.mark.parametrize("q", REGISTRY, ids=lambda q: q.id)
@@ -80,8 +95,52 @@ def test_every_question_is_structurally_answerable(q: object) -> None:
         assert key.strip(), "an empty fact-row key is a fact with no dimension attached"
     kind = q.kind
     assert isinstance(kind, AnswerKind)
-    if kind in {AnswerKind.CHOICE, AnswerKind.MULTI}:
-        assert len(getattr(q, "options", ())) >= 2, "a choice needs choices"
+    if kind in {AnswerKind.CHOICE, AnswerKind.MULTI, AnswerKind.AVAILABILITY}:
+        assert q.parts or len(q.options) >= 2, "a choice needs choices"
+
+
+@pytest.mark.parametrize("q", REGISTRY, ids=lambda q: q.id)
+def test_every_part_is_renderable_and_points_at_a_sibling(q: object) -> None:
+    """The composite cards describe their own shape IN THE REGISTRY. Without
+    that the frontend has to know which card is which, and the contract this
+    module exists to keep — the UI hardcodes no question — stops being true."""
+    keys = {p.key for p in q.parts}
+    assert len(keys) == len(q.parts), f"{q.id} has two parts writing the same key"
+    for p in q.parts:
+        assert p.label.strip(), f"{q.id}.{p.key} has no label"
+        assert isinstance(p.kind, PartKind)
+        if p.kind is PartKind.CHOICE:
+            assert len(p.options) >= 2, f"{q.id}.{p.key} is a choice with no choices"
+            if p.reveal_on:
+                assert p.reveal_on in {o.value for o in p.options}
+        if p.kind is PartKind.PAIRS:
+            assert all(p.labels), f"{q.id}.{p.key} is a pairs part with an unlabelled column"
+        if p.show_when is not None:
+            sibling, expected = p.show_when
+            assert sibling in keys, f"{q.id}.{p.key} depends on unknown part {sibling}"
+            other = next(x for x in q.parts if x.key == sibling)
+            assert expected in {o.value for o in other.options}, (
+                f"{q.id}.{p.key} waits on a value {sibling} can never hold"
+            )
+
+
+@pytest.mark.parametrize("q", REGISTRY, ids=lambda q: q.id)
+def test_every_card_has_a_neutral_for_instance(q: object) -> None:
+    """`neutral` is what a business that is neither local nor product sees — an
+    agency, a restaurant, a nonprofit, a marketplace. It is REQUIRED precisely
+    so an unknown business kind is never a broken card."""
+    assert q.examples.neutral.strip(), f"{q.id} has no neutral for-instance"
+    assert q.examples.pick(None) == q.examples.neutral
+    assert q.examples.pick(BusinessKind.PRODUCT).strip()
+    assert q.examples.pick(BusinessKind.LOCAL_SERVICE).strip()
+
+
+def test_every_card_is_skippable() -> None:
+    """There is no gate question and no unskippable card. Rule 2 says a blank is
+    safe, and a router that cannot be skipped is a router that produces guesses —
+    which is what the old branched registry did with "which trade is it?"."""
+    for q in REGISTRY:
+        assert q.skippable, f"{q.id} cannot be skipped; the spine has no gate"
 
 
 def test_a_question_that_produces_claims_has_a_section() -> None:
@@ -92,77 +151,82 @@ def test_a_question_that_produces_claims_has_a_section() -> None:
             assert q.section is not None, f"{q.id} produces claims but has no section"
 
 
-def test_show_if_only_ever_points_backwards() -> None:
-    """A card cannot be conditional on an answer that has not been given yet."""
-    order = {q.id: i for i, q in enumerate(REGISTRY)}
-    for q in REGISTRY:
-        if q.show_if is None:
-            continue
-        other = q.show_if[0]
-        assert other in order, f"{q.id} depends on unknown question {other}"
-        assert order[other] < order[q.id], f"{q.id} depends on a LATER question"
+def test_the_plan_is_the_whole_spine_for_every_business() -> None:
+    """`business_kind` is no longer a router. All sixteen, always — the plan does
+    not vary by kind, by prefill, or by what has been answered so far."""
+    plan = build_plan()
+    assert [q.id for q in plan] == [q.id for q in REGISTRY]
+    assert plan == build_plan(prefill={"identity_name": {"value": BUSINESS}})
+    assert plan == build_plan(answers={"Q-WHAT-01": {"identity_name": BUSINESS}})
 
 
-@pytest.mark.parametrize("kind", list(BusinessKind))
-def test_a_plan_never_exceeds_the_card_ceiling(kind: BusinessKind) -> None:
-    plan = build_plan(business_kind=kind)
-    assert len(plan) <= MAX_CARDS, f"{kind} plan is {len(plan)} cards"
-    assert plan, "a plan with no cards asks nothing"
-
-
-@pytest.mark.parametrize("kind", list(BusinessKind))
-def test_a_plan_only_contains_its_own_branch(kind: BusinessKind) -> None:
-    for q in build_plan(business_kind=kind):
-        assert q.branch in (None, kind), f"{q.id} leaked into the {kind} plan"
-
-
-def test_trimming_never_drops_a_negative_or_an_unskippable_card() -> None:
-    """Negatives are where the value is; dropping one to fit a card budget
-    trades the highest-yield question on the sheet for a cosmetic one."""
-    for kind in BusinessKind:
-        plan = build_plan(business_kind=kind)
-        kept = {q.id for q in plan}
-        for q in REGISTRY:
-            if q.branch not in (None, kind):
-                continue
-            if q.negative_first or not q.skippable:
-                assert q.id in kept, f"{q.id} was trimmed and must never be"
+def test_every_flag_dimension_has_a_negative_producer() -> None:
+    """Negatives are where the value is: an invented capability, an over-claimed
+    price and a fabricated support line are all UNFLAGGABLE without a stated
+    negative to contradict them, because an omission is never a finding."""
+    negatives = {q.section for q in REGISTRY if q.negative_first and q.section is not None}
+    for section in (
+        SheetSection.IDENTITY,
+        SheetSection.CONTACT,
+        SheetSection.HOURS,
+        SheetSection.SERVICE_AREA,
+        SheetSection.SERVICES_PRICING,
+    ):
+        assert section in negatives, f"{section} has no negative-first producer"
 
 
 # --- assertions ---------------------------------------------------------------
 
 # One fixture answer per card that produces claims. Parametrised over the whole
 # registry, so a new card with no fixture fails loudly here rather than shipping
-# with an untested sentence.
+# with an untested sentence. The values deliberately span archetypes.
 _ANSWERS: dict[str, object] = {
-    "Q-ID-01": "local_service",
-    "Q-ID-02": {"identity_name": BUSINESS, "identity_category": "a plumbing contractor"},
-    "Q-ID-03": "Family-owned plumbing and heating contractor serving the East Bay since 1982",
-    "Q-ID-06": ["Nahman Plumbing of San Jose"],
-    "Q-LOC-01": {"contact_phone": "(510) 408-7879"},
-    "Q-LOC-02": ["(510) 555-0100"],
-    "Q-LOC-03": {"sunday": "closed", "monday": "8:00 AM to 5:00 PM"},
-    "Q-LOC-04": "no",
-    "Q-LOC-06": ["Berkeley", "Albany"],
-    "Q-LOC-07": ["Marin County"],
-    "Q-LOC-08": "CSLB 1083634",
-    "Q-LOC-09": ["drain cleaning", "water heaters"],
-    "Q-LOC-10": ["septic work"],
-    "Q-LOC-11": "0",
-    "Q-LOC-12": {"presence_gbp": "https://maps.google.com/x"},
-    "Q-PRD-01": "subscription",
-    "Q-PRD-02": [{"name": "Pro", "price": "$20/month", "includes": "everything"}],
-    "Q-PRD-03": "$5.99/month membership",
-    "Q-PRD-04": "no",
-    "Q-PRD-05": "Ring 5, released 2026-05-28",
-    "Q-PRD-06": ["sleep tracking"],
-    "Q-PRD-07": ["a redesigned app"],
-    "Q-PRD-08": ["Android app"],
-    "Q-PRD-09": ["iOS"],
-    "Q-PRD-11": "endurance athletes",
-    "Q-PRD-12": ["Ultrahuman"],
-    "Q-END-01": [{"said": "Oura has no subscription", "truth": "a membership is required"}],
-    "Q-END-02": "It is sometimes described as a medical device. It is not one",
+    "Q-WHAT-01": {"identity_name": BUSINESS, "identity_category": "a plumbing contractor"},
+    "Q-WHAT-02": "Family-owned plumbing and heating contractor serving the East Bay since 1982",
+    "Q-WHAT-03": ["Nahman Plumbing", "A. Nahman"],
+    "Q-WHAT-04": ["Nahman Plumbing of San Jose"],
+    "Q-OFFER-01": ["drain cleaning", "water heaters"],
+    "Q-OFFER-02": ["septic work"],
+    "Q-OFFER-03": {
+        "current": "the Ring 5, released 2026-05-28",
+        "added": [{"what": "emergency water damage", "when": "March"}],
+        "removed": [{"what": "duct cleaning", "when": "January 2026"}],
+    },
+    "Q-COST-01": [
+        {
+            "what": "a diagnostic visit",
+            "price": "$89",
+            "basis": "per_visit",
+            "includes": "the callout",
+        }
+    ],
+    "Q-COST-02": {"extra": "$5.99/month membership", "free": "no"},
+    "Q-REACH-01": {
+        "contact_phone": "(510) 408-7879",
+        "none": ["address"],
+        "retired": ["(510) 555-0100"],
+    },
+    "Q-REACH-02": {
+        "scope": "places",
+        "included": ["Berkeley", "Albany"],
+        "excluded": ["Marin County"],
+        "city": "Berkeley",
+        "region": "California",
+    },
+    "Q-REACH-03": {
+        "scope": "set_hours",
+        "days": {"sunday": "closed", "monday": "8:00 AM to 5:00 PM"},
+        "after_hours": "no",
+    },
+    "Q-PROOF-01": {
+        "credentials": [{"what": "licence 1083634", "issuer": "CSLB"}],
+        "not_held": ["HIPAA compliance"],
+    },
+    "Q-PROOF-02": {"competitors": ["Ultrahuman"], "for": "East Bay homeowners"},
+    "Q-AI-01": {
+        "watchlist": [{"said": "they are open on Sundays", "truth": "the shop is closed Sunday"}]
+    },
+    "Q-AI-02": "It is sometimes described as a franchise. It is not one",
 }
 
 _CLAIMING_IDS = [q.id for q in REGISTRY if q.produces_claims and q.keys]
@@ -189,6 +253,24 @@ def test_every_assertion_is_a_complete_quotable_sentence(qid: str) -> None:
         assert a.quote.strip(), "a claim with no quote cannot show its provenance"
 
 
+def test_the_alias_card_produces_no_claim_at_all() -> None:
+    """`Q-WHAT-03` is a MATCHER input, not ground truth. "Also known as Acme
+    Plumbing." is not falsifiable, so asserting it spends a line that can never
+    fire — while missing the mention scores as absence, which is the most
+    expensive kind of wrong the measurement can be."""
+    q = question("Q-WHAT-03")
+    assert not q.produces_claims
+    assert (
+        assertions_for(
+            q,
+            Answer(question_id=q.id, value=["Nahman Plumbing"]),
+            as_of=AS_OF,
+            business_name=BUSINESS,
+        )
+        == []
+    )
+
+
 @pytest.mark.parametrize("qid", _CLAIMING_IDS)
 def test_a_skipped_card_produces_zero_claims(qid: str) -> None:
     """Rule 2. A blank must produce zero claims, not an empty claim — a
@@ -204,59 +286,241 @@ def test_a_skipped_card_produces_zero_claims(qid: str) -> None:
             assert to_assertion(q, key, blank, as_of=AS_OF, business_name=BUSINESS) is None
 
 
+# The worked table from the agent plan §4.2, pinned key by key. These are the
+# sentences the owner is quoted on and the sentences that make an over-claiming
+# answer flaggable; a well-meaning rewrite into a positive silently defeats the
+# card, and a wording drift breaks the demo the whole feature is sold on.
 @pytest.mark.parametrize(
-    ("qid", "value", "expected"),
+    ("qid", "value", "key", "expected", "polarity"),
     [
-        ("Q-LOC-04", "no", "No after-hours or emergency service."),
-        ("Q-LOC-07", ["Marin County"], "Does not serve Marin County."),
-        ("Q-LOC-10", ["septic work"], "Does not offer septic work."),
-        # Pricing is volatile, so this one carries its date inside the sentence.
-        ("Q-PRD-04", "no", f"There is no free tier (as of {AS_OF})."),
-        ("Q-PRD-08", ["Android app"], "There is no Android app."),
-        ("Q-ID-06", ["Nahman Plumbing of San Jose"], None),
+        # --- identity
+        (
+            "Q-WHAT-04",
+            ["Nahman Plumbing of San Jose"],
+            "identity_not_1",
+            "Not affiliated with Nahman Plumbing of San Jose.",
+            Polarity.NEGATIVE,
+        ),
+        # --- what you don't offer: the single highest-value card in the set
+        (
+            "Q-OFFER-02",
+            ["septic work"],
+            "services_excluded_1",
+            "Does not offer septic work.",
+            Polarity.NEGATIVE,
+        ),
+        (
+            "Q-OFFER-02",
+            ["an Android app"],
+            "services_excluded_1",
+            "Does not offer an Android app.",
+            Polarity.NEGATIVE,
+        ),
+        # --- staleness: the removed half is the valuable one
+        (
+            "Q-OFFER-03",
+            {"removed": [{"what": "duct cleaning", "when": "January 2026"}]},
+            "features_removed_1",
+            f"No longer offers duct cleaning, discontinued January 2026 (as of {AS_OF}).",
+            Polarity.NEGATIVE,
+        ),
+        # --- price + basis. A PRICE WITH NO BASIS IS UNCHECKABLE.
+        (
+            "Q-COST-01",
+            [{"what": "a diagnostic visit", "price": "$89", "basis": "per_visit"}],
+            "pricing_row_1",
+            f"The price for a diagnostic visit is $89 per visit (as of {AS_OF}).",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-COST-01",
+            [{"what": "partner time", "price": "$450", "basis": "per_hour"}],
+            "pricing_row_1",
+            f"The price for partner time is $450 per hour (as of {AS_OF}).",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-COST-01",
+            [{"what": "the Business plan", "price": "$12", "basis": "per seat/mo"}],
+            "pricing_row_1",
+            f"The price for the Business plan is $12 per seat per month (as of {AS_OF}).",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-COST-01",
+            [{"what": "estimates", "price": "Free"}],
+            "pricing_row_1",
+            f"There is no charge for estimates (as of {AS_OF}).",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-COST-01",
+            [{"what": "repiping", "price": "Quote only"}],
+            "pricing_row_1",
+            (
+                "The price for repiping is quoted individually rather than at a "
+                f"fixed price (as of {AS_OF})."
+            ),
+            Polarity.POSITIVE,
+        ),
+        # --- the most demo-able claim the system can make
+        (
+            "Q-COST-02",
+            {"extra": "$5.99/month membership"},
+            "pricing_mandatory_extra",
+            (
+                "A $5.99/month membership is required in addition to the listed "
+                f"price (as of {AS_OF})."
+            ),
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-COST-02",
+            {"free": "no"},
+            "pricing_free_option",
+            f"There is no free option (as of {AS_OF}).",
+            Polarity.NEGATIVE,
+        ),
+        # --- contact absences: unflaggable unless asserted
+        (
+            "Q-REACH-01",
+            {"none": ["phone"]},
+            "contact_none_phone",
+            "There is no phone support.",
+            Polarity.NEGATIVE,
+        ),
+        (
+            "Q-REACH-01",
+            {"none": ["address"]},
+            "contact_none_address",
+            "There is no public office address.",
+            Polarity.NEGATIVE,
+        ),
+        (
+            "Q-REACH-01",
+            {"retired": ["(510) 555-0100"]},
+            "contact_retired_1",
+            "(510) 555-0100 is no longer in use by this business.",
+            Polarity.NEGATIVE,
+        ),
+        # --- service area, including the half nothing else in the system produces
+        (
+            "Q-REACH-02",
+            {"scope": "anywhere"},
+            "service_area_scope",
+            "Available anywhere.",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-REACH-02",
+            {"excluded": ["Marin County"]},
+            "service_area_excluded_1",
+            "Does not serve Marin County.",
+            Polarity.NEGATIVE,
+        ),
+        # --- availability: "reach a person", never "available"
+        (
+            "Q-REACH-03",
+            {"days": {"sunday": "closed"}},
+            "hours_sunday",
+            "Closed Sunday.",
+            Polarity.NEGATIVE,
+        ),
+        (
+            "Q-REACH-03",
+            {"days": {"monday": "8:00 AM to 5:00 PM"}},
+            "hours_monday",
+            "Open Monday 8:00 AM to 5:00 PM.",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-REACH-03",
+            {"scope": "always"},
+            "hours_scope",
+            "A person can be reached 24 hours a day, 7 days a week.",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-REACH-03",
+            {"after_hours": "no"},
+            "hours_after_hours",
+            "No after-hours service.",
+            Polarity.NEGATIVE,
+        ),
+        # --- licensing: the only producer this dimension has anywhere
+        (
+            "Q-PROOF-01",
+            {"credentials": [{"what": "licence 1083634", "issuer": "CSLB"}]},
+            "licensing_credentials_1",
+            "Holds licence 1083634, issued by CSLB.",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-PROOF-01",
+            {"credentials": [{"what": "a SOC 2 Type II report", "issuer": "Prescient"}]},
+            "licensing_credentials_1",
+            "Holds a SOC 2 Type II report, issued by Prescient.",
+            Polarity.POSITIVE,
+        ),
+        (
+            "Q-PROOF-01",
+            {"not_held": ["HIPAA compliance"]},
+            "licensing_not_held_1",
+            "Does not hold HIPAA compliance.",
+            Polarity.NEGATIVE,
+        ),
     ],
 )
-def test_the_worked_negative_sentences_are_pinned(
-    qid: str, value: object, expected: str | None
+def test_the_worked_assertion_table_is_pinned(
+    qid: str, value: object, key: str, expected: str, polarity: Polarity
 ) -> None:
-    """The exact wording the owner is quoted on. Pinned because these are the
-    sentences that make an over-claiming answer flaggable, and a well-meaning
-    rewrite into a positive would silently defeat the whole card."""
-    built = assertions_for(
-        question(qid), Answer(question_id=qid, value=value), as_of=AS_OF, business_name=BUSINESS
-    )
-    assert built
-    assert built[0].polarity is Polarity.NEGATIVE
-    if expected is not None:
-        assert built[0].value == expected
-
-
-def test_closed_and_open_days_read_as_sentences() -> None:
     built = {
         a.key: a
         for a in assertions_for(
-            question("Q-LOC-03"),
-            Answer(question_id="Q-LOC-03", value={"sunday": "closed", "monday": "8am to 5pm"}),
+            question(qid),
+            Answer(question_id=qid, value=value),
             as_of=AS_OF,
             business_name=BUSINESS,
         )
     }
-    assert built["hours_sunday"].value.startswith("Closed Sunday.")
-    assert built["hours_sunday"].polarity is Polarity.NEGATIVE
-    assert built["hours_monday"].value.startswith("Open Monday 8am to 5pm")
-    assert built["hours_monday"].polarity is Polarity.POSITIVE
+    assert key in built, f"{qid} produced {sorted(built)}, not {key}"
+    assert built[key].value == expected
+    assert built[key].polarity is polarity
+
+
+def test_one_claim_per_thing_not_one_claim_listing_everything() -> None:
+    """A wrong figure on the Business plan should flag the Business plan. A
+    single combined line makes every finding about all of them."""
+    built = assertions_for(
+        question("Q-OFFER-02"),
+        Answer(question_id="Q-OFFER-02", value=["septic work", "commercial jobs"]),
+        as_of=AS_OF,
+        business_name=BUSINESS,
+    )
+    assert [a.key for a in built] == ["services_excluded_1", "services_excluded_2"]
 
 
 def test_a_day_the_owner_left_alone_produces_nothing() -> None:
-    """"We don't know Tuesday" and "closed Tuesday" are different facts and only
+    """ "We don't know Tuesday" and "closed Tuesday" are different facts and only
     one of them is ours to assert."""
     built = assertions_for(
-        question("Q-LOC-03"),
-        Answer(question_id="Q-LOC-03", value={"sunday": "closed", "tuesday": ""}),
+        question("Q-REACH-03"),
+        Answer(question_id="Q-REACH-03", value={"days": {"sunday": "closed", "tuesday": ""}}),
         as_of=AS_OF,
         business_name=BUSINESS,
     )
     assert [a.key for a in built] == ["hours_sunday"]
+
+
+def test_a_price_row_with_no_number_is_not_a_price_claim() -> None:
+    """Rule 2 again. A label with no figure asserts nothing the judge can grade."""
+    built = assertions_for(
+        question("Q-COST-01"),
+        Answer(question_id="Q-COST-01", value=[{"what": "repiping", "price": ""}]),
+        as_of=AS_OF,
+        business_name=BUSINESS,
+    )
+    assert built == []
 
 
 @pytest.mark.parametrize("qid", _CLAIMING_IDS)
@@ -279,13 +543,13 @@ def test_volatile_keys_carry_their_date(qid: str) -> None:
 
 def test_hours_are_not_date_stamped() -> None:
     """Deliberate. A stamp on all seven day claims is seven pieces of noise on
-    the shortest, most-quoted lines of a local sheet, and opening hours are
-    already covered by the claim's own `as_of` column and the sheet's
-    `generated_at`. Prices and version numbers are the two places a model is
-    systematically behind reality, and they are the two that carry it."""
+    the shortest, most-quoted lines of a sheet, and opening hours are already
+    covered by the claim's own `as_of` column and the sheet's `generated_at`.
+    Prices and what-changed are the two places a model is systematically behind
+    reality, and they are the two that carry it."""
     built = assertions_for(
-        question("Q-LOC-03"),
-        Answer(question_id="Q-LOC-03", value={"sunday": "closed"}),
+        question("Q-REACH-03"),
+        Answer(question_id="Q-REACH-03", value={"days": {"sunday": "closed"}}),
         as_of=AS_OF,
         business_name=BUSINESS,
     )
@@ -299,8 +563,8 @@ def test_the_marketing_guard_reports_and_never_blocks() -> None:
     # Reporting only: the sentence is still built. Refusing to let an owner
     # describe their own business is worse than one unfireable claim.
     built = assertions_for(
-        question("Q-ID-03"),
-        Answer(question_id="Q-ID-03", value="The leading plumber in Berkeley"),
+        question("Q-WHAT-02"),
+        Answer(question_id="Q-WHAT-02", value="The leading plumber in Berkeley"),
         as_of=AS_OF,
         business_name=BUSINESS,
     )
@@ -314,7 +578,7 @@ def _answers() -> list[Answer]:
     return [
         Answer(question_id=qid, value=value, raw=str(value))
         for qid, value in _ANSWERS.items()
-        if qid in {"Q-ID-01", "Q-LOC-01", "Q-LOC-04", "Q-LOC-07", "Q-LOC-10"}
+        if qid in {"Q-WHAT-01", "Q-REACH-01", "Q-REACH-03", "Q-OFFER-02", "Q-COST-02"}
     ]
 
 
@@ -334,21 +598,35 @@ def test_claims_are_client_confirmed_and_carry_session_provenance() -> None:
 
 
 def test_run_inputs_are_not_claims() -> None:
-    """Aliases and the trade are matcher and query-generator inputs. Asserting
-    "Also known as Acme Plumbing." spends a line the judge cannot falsify."""
+    """Aliases, the city and the derived trade are matcher and query-generator
+    inputs. Asserting "Also known as Acme Plumbing." spends a line the judge
+    cannot falsify."""
     answers = [
-        Answer(question_id="Q-ID-05", value=["Nahman Plumbing", "A. Nahman"]),
-        Answer(question_id="Q-LOC-00", value="plumbing"),
-        Answer(question_id="Q-ID-02", value={"identity_name": BUSINESS}),
+        Answer(question_id="Q-WHAT-03", value=["Nahman Plumbing", "A. Nahman"]),
+        Answer(
+            question_id="Q-WHAT-01",
+            value={"identity_name": BUSINESS, "identity_category": "a plumbing contractor"},
+        ),
+        Answer(
+            question_id="Q-REACH-02",
+            value={"scope": "places", "city": "Berkeley", "region": "California"},
+        ),
+        Answer(question_id="Q-PROOF-02", value={"competitors": ["Ultrahuman"]}),
     ]
     claims = claims_from_answers(
         answers, session_id=SESSION, as_of=AS_OF, business_name=BUSINESS
     )
     assert all(c.key != "identity_aliases" for c in claims)
+    # The location anchor is a run input too — `service_area_included` carries
+    # the falsifiable version of where the business works.
+    assert all(c.key not in {"city", "region"} for c in claims)
+
     inputs = run_inputs_from_answers(answers)
     assert inputs.aliases == ("Nahman Plumbing", "A. Nahman")
-    assert inputs.trade == "plumbing"
     assert inputs.business == BUSINESS
+    assert inputs.city == "Berkeley"
+    assert inputs.region == "California"
+    assert inputs.competitors == ("Ultrahuman",)
 
 
 def test_confirming_a_crawl_claim_upgrades_only_that_claim() -> None:
@@ -387,6 +665,16 @@ def test_confirming_a_crawl_claim_upgrades_only_that_claim() -> None:
     assert upgraded["identity_founded"].verification is Verification.PUBLIC_SOURCE_ONLY
 
 
+def test_the_trade_is_derived_and_a_miss_is_normal() -> None:
+    """Under the branched design "which trade is it?" was a gate question with a
+    dead end at "something else". It is now derived from the category the owner
+    already confirmed, and a miss falls through to the generic generator."""
+    assert derive_trade("a plumbing contractor") == "plumbing"
+    assert derive_trade("HVAC and refrigeration") == "hvac"
+    assert derive_trade("an employment law firm") == ""
+    assert derive_trade("") == ""
+
+
 # --- the quote gate (adversarial; never weaken) --------------------------------
 
 
@@ -423,7 +711,7 @@ def test_a_client_claim_passes_the_gate_with_no_page_at_all() -> None:
     no page to quote and demanding one would make the intake impossible."""
     claim = _claim(
         source_kind=SourceKind.CLIENT,
-        source_url=f"{INTAKE_SOURCE_URL_PREFIX}{SESSION}/Q-LOC-01",
+        source_url=f"{INTAKE_SOURCE_URL_PREFIX}{SESSION}/Q-REACH-01",
     )
     kept, dropped = verify_quotes([claim], {})
     assert kept == [claim]

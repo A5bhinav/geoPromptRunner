@@ -8,6 +8,7 @@ from src.prompts.query_set import Query
 
 __all__ = [
     "ROUGH_COST_PER_CALL",
+    "DEFAULT_COST_PER_CALL",
     "JUDGE_COST_PER_CALL",
     "PREFLIGHT_COST_PER_ENGINE",
     "OFFSITE_RUN_COST_USD",
@@ -100,6 +101,11 @@ ROUGH_COST_PER_CALL: dict[str, float] = {
     "google_local_pack": 0.001,
 }
 _DEFAULT_PER_CALL = 0.02
+
+#: The same number, exported. A second module (the intake's review screen) now
+#: prices a run before it is started, and reaching across for a private name is
+#: how a constant ends up with two owners and one of them silently wrong.
+DEFAULT_COST_PER_CALL = _DEFAULT_PER_CALL
 # Rough USD per judge call (one per answer). Worst case is no dedup, so the judge
 # estimate uses the full call count — conservative on purpose.
 #

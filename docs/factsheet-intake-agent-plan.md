@@ -4,6 +4,10 @@
 the business owner has confirmed line by line — through a conversational intake
 that ends with a runnable query CSV in a review screen.*
 
+**Question set:** `docs/factsheet-questions.md` is the source of truth for the
+sixteen questions — wording, rationale, and the six-audience robustness pass.
+Where it and this document disagree on a prompt, it wins.
+
 **Companion document:** `docs/factsheet-intake-design-plan.md` (for Claude Design).
 **§1 of both documents is byte-identical.** It is the seam. If you change a
 question id, a state name, an API route or a field name, change it in both or the
@@ -40,7 +44,7 @@ that turns the accuracy half of the product on.
 The second reason: two of the four local flag types have **no producer at all**.
 `licensing` is declared, titled and never emitted, and the negative half of
 `wrong_service_area` — the boundary line — is forbidden to derive (§4.4) and
-nothing asks for it. `Q-LOC-08` and `Q-LOC-07` below are those producers.
+nothing asks for it. `Q-PROOF-01` and `Q-REACH-02` below are those producers.
 
 ---
 
@@ -84,16 +88,47 @@ at `version = N+1` in `draft`, then immediately calls `activate_fact_sheet`,
 which demotes the domain's previous `active` row to `superseded`. One approval,
 one version, one row. Nothing is ever mutated in place and nothing is deleted.
 
-### 1.3 Question id namespace
+### 1.3 One question set, not two branches
 
-| Prefix | Branch | Count |
+There is **no product branch and no local branch.** The judge checks
+*dimensions*, not business types, and every dimension applies to every business.
+A plumber's call-out fee and a SaaS's activation fee are the same question. A
+shop's Sunday closure and a support desk's weekend gap are the same question.
+"What don't you do?" is the same question for a smart-ring maker and a law firm.
+
+Forking the registry by business type buys nothing and costs three things: two
+half-maintained question trees, a `showIf` graph that has to be reasoned about
+every time a card moves, and **no answer at all for the businesses that are
+neither** — an agency, a restaurant, a clinic, a nonprofit, a marketplace, a
+company that sells software *and* sends technicians.
+
+So: **one spine of 16 questions, grouped by dimension.** `business_kind` stops
+being a router. It picks the *example text* inside a question and the query
+allocation afterwards. Nothing structural.
+
+| Group | The dimension it establishes | Cards | Sheet section |
+|---|---|---|---|
+| `Q-WHAT-*` | Who you are and what you're called | 4 | `identity` |
+| `Q-OFFER-*` | What you provide, what you don't, what changed | 3 | `services_pricing`, `features` |
+| `Q-COST-*` | What it costs, and what else it costs | 2 | `services_pricing` |
+| `Q-REACH-*` | How to reach you, where, when | 3 | `contact`, `service_area`, `hours` |
+| `Q-PROOF-*` | What you can prove, who you're up against | 2 | `licensing`, `positioning` |
+| `Q-AI-*` | What AI already gets wrong | 2 | `watchlist` |
+
+Every one of the seven existing `SheetSection` members now has a producer for
+every business, which was not true when the sections were read literally. The
+enum values are immutable (they are inside the claim-ID order, §3 I0-T4), but
+their **meaning generalizes**:
+
+| Section | Read narrowly (before) | Reads now |
 |---|---|---|
-| `Q-ID-*` | Trunk — asked of everyone | 5 |
-| `Q-LOC-*` | Local-service branch | up to 11 |
-| `Q-PRD-*` | Product branch | up to 11 |
-| `Q-END-*` | Shared tail | 2 |
+| `contact` | phone and street address | any channel a customer uses to reach you |
+| `hours` | shop opening times | when you are and are not available |
+| `service_area` | towns a van drives to | where you can and cannot deliver |
+| `licensing` | a contractor's state licence | anything you can prove — licence, SOC 2, insurance, membership |
+| `services_pricing` | services and rates | anything you offer and what it costs |
 
-**Ceiling: 18 cards. Median: 13** when the crawl found JSON-LD, because
+**Ceiling: 16 cards. Median: 11** when the crawl found JSON-LD, because
 pre-filled facts collapse into batch-confirm cards that carry 3–5 facts each.
 A *card* is not a *field*.
 
@@ -104,34 +139,41 @@ never hardcodes a question; the registry is the single source of truth.
 
 ```ts
 type AnswerKind =
-  | "choice"         // 2–4 options, single select
+  | "choice"         // 2–4 options, single select; an option may reveal a sub-input
   | "multi"          // options, multi select, + "add your own"
   | "confirm"        // "I found X. Right?" → yes | fix (reveals an input)
   | "batch_confirm"  // N pre-filled facts, tap the wrong ones
   | "text"           // one line
   | "longtext"       // 2–4 lines
   | "list"           // repeatable chips
-  | "hours"          // 7-day grid, per-day open/closed
-  | "money"          // currency, auto-stamped "as of"
-  | "tiers"          // repeatable {name, price, includes}
+  | "availability"   // Always / Set hours / By arrangement — grid only on "Set hours"
+  | "priced_rows"    // repeatable {what, price, basis, what's included}
   | "links"          // labelled URL fields
-  | "watchlist";     // repeatable {what the AI said, what is actually true}
+  | "pairs";         // repeatable two-field rows (watch-list, credentials)
+
+/** The only thing business kind is allowed to change. Never the question,
+ *  never the keys, never whether a card appears — only the for-instance. */
+interface Examples {
+  neutral: string;               // used when business_kind is unknown. REQUIRED.
+  product?: string;
+  local?: string;
+}
 
 interface IntakeQuestion {
-  id: string;                    // "Q-LOC-04"
+  id: string;                    // "Q-REACH-03"
+  group: "WHAT" | "OFFER" | "COST" | "REACH" | "PROOF" | "AI";
   kind: AnswerKind;
   section: SheetSection;         // routes the resulting claim
   keys: string[];                // fact-row keys this card can produce
-  prompt: string;                // the bot's line
-  helper?: string;               // the smaller line under it
-  placeholder?: string;
-  options?: { value: string; label: string }[];
+  prompt: string;                // the bot's line — identical for every business
+  helper?: string;               // why we're asking. Also identical
+  examples: Examples;            // the ONLY adaptive text on the card
+  options?: { value: string; label: string; reveals?: AnswerKind }[];
   prefill?: unknown;             // from the draft sheet; null when nothing was found
   prefillSourceUrl?: string;     // shown as "found on your pricing page"
-  skippable: boolean;            // false only for Q-ID-01 and Q-LOC-00
-  negativeFirst: boolean;        // true ⇒ "no" is the valuable answer, lead with it
+  skippable: boolean;            // true for all 16. There is no gate question
+  negativeFirst: boolean;        // true ⇒ "no"/"none" is the valuable answer
   assertionPreview: string;      // template with {slots} — see §1.6 rule 4
-  showIf?: { questionId: string; equals: unknown }; // branching
 }
 ```
 
@@ -297,7 +339,7 @@ class SheetSection(StrEnum):
     LICENSING = "licensing"
     SERVICES_PRICING = "services_pricing"
     PRESENCE = "presence"
-    # --- appended 2026-08-XX for the product branch. APPEND ONLY. ---
+    # --- appended 2026-08-XX for the universal spine. APPEND ONLY. ---
     # Declaration order is claim-ID order (`assigned_claims`), and a claim ID
     # change re-keys every cached verdict for that client. Appending is safe:
     # every existing sheet's sections sort before these, so existing IDs are
@@ -361,62 +403,74 @@ A frozen tuple of `IntakeQuestion` dataclasses. Below is the full inventory. The
 design plan §4 and the two must be reconciled before I4 — the design doc's
 wording wins on tone, this doc's `keys` and `assertion` win on structure.
 
-#### Trunk — `Q-ID-*`, asked of everyone
+Sixteen cards, one spine, every business. Client-facing copy is in the design
+plan §4; this table is the structure.
+
+#### `Q-WHAT-*` — who you are, what you're called → `identity`
+
+| id | kind | keys | Asks for | Notes |
+|---|---|---|---|---|
+| `Q-WHAT-01` | `batch_confirm` | `identity_name`, `identity_website`, `identity_founded`, `identity_category` | Confirm what the crawl already found | Absorbs 4 dimensions in one card. Anything **not** found is omitted, never rendered as a blank field |
+| `Q-WHAT-02` | `longtext` | `identity_what` | One factual sentence: what the business actually does | Marketing-language guard, §4.3. This is the card that "gets the idea of what the business is about" |
+| `Q-WHAT-03` | `list` | `identity_aliases` | Other spellings, legal name, DBA, a former name | **Not a judge claim — a matcher input.** §4.4 |
+| `Q-WHAT-04` | `list` | `identity_not` | Who people mix you up with | `negativeFirst`. Universal: a same-name shop two towns over, a competitor, a company you were spun out of |
+
+#### `Q-OFFER-*` — what you provide → `services_pricing`, `features`
 
 | id | kind | section | keys | Asks for | Notes |
 |---|---|---|---|---|---|
-| `Q-ID-01` | `choice` | — | — | Product or local business? | **Not skippable.** Routes the whole tree. Pre-filled from the draft's `business_kind` → renders as a `confirm` |
-| `Q-ID-02` | `batch_confirm` | identity | `identity_name`, `identity_website`, `identity_founded`, `identity_category` | Confirm what the crawl found | Absorbs up to 4 dimensions in one card. Anything not found is *omitted*, not asked as a blank |
-| `Q-ID-03` | `longtext` | identity | `identity_what` | One factual sentence: what is it | Marketing-language guard, §4.3 |
-| `Q-ID-05` | `list` | identity | `identity_aliases` | Other spellings, legal name, DBA, former name | **Not a judge claim — a matcher input.** See §4.4 |
-| `Q-ID-06` | `list` | identity | `identity_not` | Who do people mix you up with | `negativeFirst`. Cheap, high value |
+| `Q-OFFER-01` | `list` | services_pricing | `services_offered` | What you offer, at the level a customer asks about | Pre-filled from the crawl. **Category level, not SKU level** — a 140-SKU catalogue is unusable as a chip list and useless to the judge. Cap the hint at ~10 |
+| `Q-OFFER-02` | `list` | services_pricing | `services_excluded` | What you **don't** offer that people assume you do | `negativeFirst`. **The single highest-value card in the set** — an invented capability is unflaggable without it |
+| `Q-OFFER-03` | `pairs` | features | `features_current`, `features_added`, `features_removed` | What's newest, what you've added lately, what you've stopped doing | The staleness card. Covers a product version, a new service line, a discontinued one. Training data lags by months; this is what catches it |
 
-`Q-ID-04` and `Q-ID-07` are deliberately absent — category folds into
-`Q-ID-02`'s batch, leadership folds into `Q-ID-02` for local and into
-`Q-PRD-*`'s identity confirm for product. Gaps in the numbering are kept so ids
-stay stable if either is ever restored.
+#### `Q-COST-*` — what it costs → `services_pricing`
 
-#### Local branch — `Q-LOC-*`
+| id | kind | keys | Asks for | Notes |
+|---|---|---|---|---|
+| `Q-COST-01` | `priced_rows` | `pricing_rows` | Repeatable {what, price, **basis**, what's included} | `basis` ∈ one-time · per hour · per seat/mo · per month · per year · per visit · per project · per unit. **A price with no basis is uncheckable** — "450" is not a claim. `Free`, `From $X`, `Varies by scope`, `Quote only` are first-class price values. `as_of` stamped |
+| `Q-COST-02` | `choice`+reveal | `pricing_mandatory_extra`, `pricing_free_option` | Anything mandatory on top, and whether there's a free option | `negativeFirst`. A required membership, an activation fee, a trip charge, a minimum. **The most demo-able claim the system can make.** "No" on the free option → `There is no free option.` |
 
-| id | kind | section | keys | Asks for | Notes |
-|---|---|---|---|---|---|
-| `Q-LOC-00` | `choice` | — | — | Which trade | **Not skippable.** Options are `TRADES` + "something else". See §4.5 — "something else" is a real dead end today |
-| `Q-LOC-01` | `batch_confirm` | contact | `contact_phone`, `contact_address`, `contact_email` | Confirm the NAP block | Highest-consequence card on the sheet |
-| `Q-LOC-02` | `list` | contact | `contact_retired` | Old numbers/addresses still online | `negativeFirst`. The single most useful line in the local template |
-| `Q-LOC-03` | `hours` | hours | `hours_monday` … `hours_sunday` | The week | Pre-filled from `openingHoursSpecification`. One claim per day. Closed days are the point |
-| `Q-LOC-04` | `choice` | hours | `hours_after_hours`, `hours_booking` | Emergency/after-hours? Appointment or walk-in? | `negativeFirst`. "No" → `No after-hours service.` — the classic AI over-claim |
-| `Q-LOC-06` | `list`+`text` | service_area | `service_area_towns`, `service_area_primary` | Towns served, + city and **full state name** | State is a `<select>`, never free text — `_ABBREVIATED_REGION_RE` rejects "CA" and the SERP vendor returns an empty surface that reads as absence |
-| `Q-LOC-07` | `list` | service_area | `service_area_excluded` | Where you do **not** go | `negativeFirst`. **No producer exists today** |
-| `Q-LOC-08` | `text`+`multi` | licensing | `licensing_number`, `licensing_bonded`, `licensing_insured`, `licensing_certifications` | Licence number + issuer, bonded/insured, certs | **No producer exists today.** A liability-grade dimension |
-| `Q-LOC-09` | `list` | services_pricing | `services_offered` | What you do | Pre-filled from the crawl |
-| `Q-LOC-10` | `list` | services_pricing | `services_excluded` | What you don't do | `negativeFirst`. The false-positive guard |
-| `Q-LOC-11` | `money` | services_pricing | `pricing_callout_fee` | Call-out / diagnostic fee, or free estimates | `as_of` stamped |
-| `Q-LOC-12` | `links` | presence | `presence_gbp`, `presence_yelp`, `presence_bbb`, `presence_other` | Profile links we're missing | Mostly pre-filled from `sameAs`; only the blanks render |
-
-#### Product branch — `Q-PRD-*`
+#### `Q-REACH-*` — how to get you → `contact`, `service_area`, `hours`
 
 | id | kind | section | keys | Asks for | Notes |
 |---|---|---|---|---|---|
-| `Q-PRD-01` | `choice` | services_pricing | `pricing_model` | One-time / subscription / per-seat / usage / hardware+sub | |
-| `Q-PRD-02` | `tiers` | services_pricing | `pricing_tiers` | Plans, prices, what's included | Highest-hallucination area in the whole template |
-| `Q-PRD-03` | `choice`+`text` | services_pricing | `pricing_mandatory_fee` | Anything mandatory on top of the sticker price | The Oura membership. The single most demo-able claim on a product sheet |
-| `Q-PRD-04` | `choice`×2 | services_pricing | `pricing_free_tier`, `pricing_trial` | Free tier? Trial? | `negativeFirst`. "No" → `There is no free tier.` |
-| `Q-PRD-05` | `text`+date | features | `features_current_version`, `pricing_previous_version` | Newest version, ship date, old price if it moved | #1 staleness hotspot — training data lags |
-| `Q-PRD-06` | `list` | features | `features_core` | What it actually does | Pre-filled from the crawl |
-| `Q-PRD-07` | `list` | features | `features_recent` | Shipped in the last 6–12 months | Second staleness hotspot |
-| `Q-PRD-08` | `list` | features | `features_excluded` | What people wrongly assume you do | `negativeFirst`. "No Android app." "Not owned by X." |
-| `Q-PRD-09` | `multi`+`list` | features | `features_platforms`, `features_requirements`, `features_integrations` | Where it runs, what it needs, what it plugs into | Three fields, one card |
-| `Q-PRD-11` | `text` | positioning | `positioning_icp` | Who it is actually for | |
-| `Q-PRD-12` | `list` | positioning | `positioning_competitors` | The named benchmark set | **Feeds the query generator's hard constraint** — every competitor must appear in ≥1 comparison query |
+| `Q-REACH-01` | `batch_confirm` + `list` | contact | `contact_phone`, `contact_email`, `contact_booking`, `contact_address`, `contact_none`, `contact_retired` | Confirm whatever channels exist; then: any old number or address still floating around | Highest-consequence card. Rows are **whatever exists**, never four fixed fields. `contact_none` makes *"There is no phone support."* / *"There is no public office address."* first-class answers — an AI inventing a support number for a software company is unflaggable otherwise |
+| `Q-REACH-02` | `choice`+reveal | service_area | `service_area_scope`, `service_area_included`, `service_area_excluded` | Anywhere / specific places — then where, and where **not or not licensed to** | The "not" half is `negativeFirst` and **has no producer today**. For regulated professions this means *jurisdiction*, not delivery radius — "Not admitted in Nevada." is a liability-grade claim. When the answer is a place list, also captures city + **full state name** (a `<select>`; `_ABBREVIATED_REGION_RE` rejects "CA" and the SERP vendor then returns an empty surface that reads as absence) |
+| `Q-REACH-03` | `availability` | hours | `hours_scope`, `hours_monday`…`hours_sunday`, `hours_after_hours` | **When someone can reach a person** — always / set hours / by arrangement, then the detail | The 7-day grid renders **only** on "set hours". The prompt must say *reach a person*: a SaaS answering "always" about a self-serve product yields a claim reading "support is reachable at 3am", which is false and sendable. `negativeFirst` on the after-hours half: "No after-hours service." is the classic AI over-claim, and it is the same claim as "no weekend support" |
 
-#### Tail — `Q-END-*`, both branches
+#### `Q-PROOF-*` — what you can prove, who you're up against
 
 | id | kind | section | keys | Asks for | Notes |
 |---|---|---|---|---|---|
-| `Q-END-01` | `watchlist` | watchlist | `watchlist_{n}` | "Have you seen an AI say something wrong about you?" — what it said / what's true | Repeatable. Maps to template §E. This is what the sales demo opens with |
-| `Q-END-02` | `longtext` | watchlist | `watchlist_other` | Anything else an AI could get wrong | Optional catch-all |
+| `Q-PROOF-01` | `pairs` | licensing | `licensing_credentials`, `licensing_not_held` | Anything you can prove: licence, certification, compliance, insurance, membership, award — plus the issuer | **No producer today.** Universal: a CSLB number and a SOC 2 report are the same dimension. An AI asserting a credential you don't hold is a liability; the `licensing_not_held` half guards it |
+| `Q-PROOF-02` | `list` | positioning | `positioning_competitors`, `positioning_for` | **"If someone didn't pick you, who else would they be looking at?"** and who it's for | **Feeds a hard query-generator constraint** — every competitor must appear in ≥1 comparison query, so an empty list leaves the comparison bucket measuring nothing. Never ask this as "who are your competitors": a nonprofit and a law firm answer "nobody, really" |
 
-`Q-END-03` is **not a question** — it is the close screen. See design plan §5.
+#### `Q-AI-*` — what AI already gets wrong → `watchlist`
+
+| id | kind | keys | Asks for | Notes |
+|---|---|---|---|---|
+| `Q-AI-01` | `pairs` | `watchlist_{n}` | "What did it say?" / "What's actually true?" | Repeatable. Template §E. What the sales demo opens with |
+| `Q-AI-02` | `longtext` | `watchlist_other` | Anything else an AI could get wrong | Optional catch-all |
+
+The close screen is **not a question**. See design plan §3.7.
+
+#### Where `business_kind` still matters — and where it does not
+
+| Used for | Yes/No |
+|---|---|
+| Which cards appear | **No.** All 16, always |
+| The prompt or helper text | **No.** Identical for every business |
+| The `examples` string on a card | **Yes.** The only place |
+| Query bucket allocation (`BUCKET_ALLOCATION` vs `LOCAL_BUCKET_ALLOCATION`) | **Yes** |
+| Which trade template, if any, applies | **Yes**, derived from `Q-WHAT-01`'s category against `TRADES` |
+| `FactSheet.business_kind` on the stored sheet | **Yes** — the field is required by the model |
+
+It is confirmed inside `Q-WHAT-01`'s batch, pre-filled from the crawl, never
+asked as its own card. If nothing is known, default to `neutral` examples and
+infer from `Q-REACH-02`'s scope answer. **There is no gate question and no
+unskippable card** — every one of the 16 can be skipped, because rule 2 says a
+blank is safe and a router that cannot be skipped is a router that produces
+guesses.
 
 ### 4.2 `assertions.py` — the part that actually matters
 
@@ -436,22 +490,36 @@ def to_assertion(question: IntakeQuestion, key: str, answer: Answer,
 
 Worked table — pin every one of these in tests:
 
+Worked table — **note that the same card produces the same shape of assertion
+regardless of business type.** Pin every one of these in tests.
+
 | Question | Raw answer | `value` | polarity |
 |---|---|---|---|
-| `Q-LOC-04` | `no` | `No after-hours service.` | negative |
-| `Q-LOC-04` | `yes_surcharge` | `After-hours service is available at a higher rate.` | positive |
-| `Q-LOC-03` Sun | closed | `Closed Sunday.` | negative |
-| `Q-LOC-03` Mon | 08:00–17:00 | `Open Monday 8:00 AM to 5:00 PM.` | positive |
-| `Q-LOC-02` | `(510) 555-0100` | `(510) 555-0100 is no longer this business's phone number.` | negative |
-| `Q-LOC-07` | `Marin County` | `Does not serve Marin County.` | negative |
-| `Q-LOC-08` | `CSLB 123456` | `Licensed by the CSLB, licence number 123456.` | positive |
-| `Q-LOC-10` | `septic work` | `Does not offer septic work.` | negative |
-| `Q-LOC-11` | `0` / free | `Estimates are free; there is no call-out fee (as of 2026-08-04).` | negative |
-| `Q-ID-06` | `Nahman Plumbing of San Jose` | `Not affiliated with Nahman Plumbing of San Jose.` | negative |
-| `Q-PRD-04` free tier | `no` | `There is no free tier.` | negative |
-| `Q-PRD-03` | `$5.99/mo membership` | `A $5.99/month membership is required in addition to the hardware price (as of 2026-08-04).` | positive |
-| `Q-PRD-08` | `Android app` | `There is no Android app.` | negative |
-| `Q-PRD-05` | `Ring 5, 2026-05-28` | `The current model is the Ring 5, released 2026-05-28.` | positive |
+| `Q-WHAT-04` | `Nahman Plumbing of San Jose` | `Not affiliated with Nahman Plumbing of San Jose.` | negative |
+| `Q-OFFER-02` | `septic work` | `Does not offer septic work.` | negative |
+| `Q-OFFER-02` | `an Android app` | `Does not offer an Android app.` | negative |
+| `Q-OFFER-03` current | `Ring 5, 2026-05-28` | `The current version is the Ring 5, released 2026-05-28.` | positive |
+| `Q-OFFER-03` removed | `duct cleaning, ended 2026-01` | `No longer offers duct cleaning (discontinued January 2026).` | negative |
+| `Q-COST-01` | `Diagnostic visit · $89 · per visit` | `A diagnostic visit costs $89 (as of 2026-08-04).` | positive |
+| `Q-COST-01` | `Partner time · $450 · per hour` | `Partner time is billed at $450 per hour (as of 2026-08-04).` | positive |
+| `Q-COST-01` | `Business · $12 · per seat/mo` | `The Business plan costs $12 per seat per month (as of 2026-08-04).` | positive |
+| `Q-COST-01` | `Estimates · free` | `Estimates are free (as of 2026-08-04).` | positive |
+| `Q-COST-01` | `Premium · $499 · 2 seats` | `The Premium plan costs $499 and includes 2 seats (as of 2026-08-04).` | positive |
+| `Q-COST-02` extra | `$5.99/mo membership` | `A $5.99/month membership is required in addition to the listed price (as of 2026-08-04).` | positive |
+| `Q-COST-02` free | `no` | `There is no free option.` | negative |
+| `Q-REACH-01` none | `phone` | `There is no phone support.` | negative |
+| `Q-REACH-01` none | `address` | `There is no public office address.` | negative |
+| `Q-REACH-01` retired | `(510) 555-0100` | `(510) 555-0100 is no longer this business's phone number.` | negative |
+| `Q-REACH-02` scope | `anywhere` | `Available anywhere in the United States.` | positive |
+| `Q-REACH-02` excluded | `Marin County` | `Does not serve Marin County.` | negative |
+| `Q-REACH-03` Sun | closed | `Closed Sunday.` | negative |
+| `Q-REACH-03` Mon | 08:00–17:00 | `Open Monday 8:00 AM to 5:00 PM.` | positive |
+| `Q-REACH-03` scope | `always` | `Available 24 hours a day, 7 days a week.` | positive |
+| `Q-REACH-03` after-hours | `no` | `No after-hours service.` | negative |
+| `Q-PROOF-01` | `CSLB · 123456` | `Licensed by the CSLB, licence number 123456.` | positive |
+| `Q-PROOF-01` | `SOC 2 Type II · 2026` | `Holds a SOC 2 Type II report, issued 2026.` | positive |
+| `Q-PROOF-01` not held | `HIPAA compliance` | `Is not HIPAA compliant.` | negative |
+| `Q-REACH-02` excluded | `admitted in Nevada` | `Not admitted to practise in Nevada.` | negative |
 
 Hard constraints, enforced by a property test over the **entire registry** × a
 fixture answer per kind:
@@ -466,7 +534,7 @@ fixture answer per kind:
 
 ### 4.3 The marketing-language guard
 
-`Q-ID-03` and the free-text tails are where "the leading platform" gets in. A
+`Q-WHAT-02` and the free-text tails are where "the leading platform" gets in. A
 soft guard, in `assertions.py`, surfaced as a UI nudge and **never as a block**:
 
 ```python
@@ -482,33 +550,36 @@ describing their own business is worse than one unfireable claim.
 
 ### 4.4 Aliases are not a claim
 
-`Q-ID-05` produces **no `FactClaim`.** Name variants are a *matcher* input —
+`Q-WHAT-03` produces **no `FactClaim`.** Name variants are a *matcher* input —
 `docs/query-generation-plan.md` §1a's brand roster — and asserting
 `identity_aliases: Also known as Acme Plumbing.` puts a non-falsifiable line in
 front of the judge. Store them on the session and thread them into the query set
-and the run config, not into `claims[]`. Same for the trade (`Q-LOC-00`) and the
-state (`Q-LOC-06`'s region): run inputs, not ground truth.
+and the run config, not into `claims[]`. Same for the region captured inside
+`Q-REACH-02` and the trade derived from `Q-WHAT-01`: run inputs, not ground truth.
 
 `render.suggested_run_inputs` already exists for exactly this shape — extend it
 rather than inventing a parallel channel.
 
-### 4.5 `Q-LOC-00`'s dead end, stated plainly
+### 4.5 The trade template is an optimization, not a requirement
 
-`TRADES` is `("hvac", "plumbing", "barbershop")`. A local business outside those
-three has **no query template**, and `assemble_run_csv` raises `AssembleError`.
-Three honest options, in preference order:
+`TRADES` is `("hvac", "plumbing", "barbershop")`. Under the old branched design
+that made "what trade are you?" a gate question with a dead end at "something
+else." **Under one universal spine it is not a question at all**, and the dead
+end disappears:
 
-1. **Fall back to the product-side generator** (§6.2) with the local bucket
-   allocation. It only needs `category`, `competitors` and a city, all of which
-   the intake has. This is the recommended path and it is the reason to build
-   §6.2 as bucket-generic rather than product-specific.
-2. Let the intake finish and mark the review screen's query pane
-   *"No template for this trade — upload a CSV or ask for one."* The sheet is
-   still worth having on its own.
-3. Refuse at `Q-LOC-00`. Do not do this — the sheet is the valuable half.
+1. Derive a candidate trade by matching `Q-WHAT-01`'s category label against
+   `TRADES`. A hit means `assemble_run_csv` can be used — 29 hand-written,
+   human-validated queries for free.
+2. A miss is the **normal** case, not an error. Fall through to the generic
+   generator (§6.2) with `LOCAL_BUCKET_ALLOCATION` or `BUCKET_ALLOCATION`
+   depending on `business_kind`. Every input it needs — category, competitors,
+   offerings, a place — came out of the spine.
 
-Whichever you pick, **say so in the UI**. Silently producing a thin or wrong
-query set is the failure mode that costs a real audit.
+This is the reason §6.2 must be built **bucket-generic from the start** rather
+than as a "product generator." The hand-written trade templates become what they
+should have been: a quality upgrade for three trades, not the only path for one
+business type. Nothing about an unknown trade is a dead end, and nothing needs
+saying in the UI beyond which set was used.
 
 ---
 
@@ -549,7 +620,7 @@ create unique index if not exists uq_intake_sessions_live
 alter table factsheet_intake_sessions enable row level security;
 ```
 
-`answers` shape: `{"Q-LOC-04": {"value": "no", "skipped": false, "raw": "No", "answered_at": "..."}}`.
+`answers` shape: `{"Q-REACH-03": {"value": {...}, "skipped": false, "raw": "No", "answered_at": "..."}}`.
 
 **On the create-only invariant.** `CLAUDE.md` says core-data writes are
 create-only and the only delete path is project deletion. A session is *working
@@ -579,8 +650,8 @@ is already 42 KB and the fact-sheet block is the last coherent thing in it.
    - drop `showIf` cards whose condition can't be met
    - collapse fully-prefilled dimensions into `batch_confirm` cards
    - **omit** cards whose only keys have no prefill *and* are optional-by-value
-     if the plan exceeds 18 cards, dropping lowest-value first
-     (`Q-LOC-12` → `Q-ID-05` → `Q-PRD-09` → `Q-END-02`)
+     if the plan exceeds 16 cards, dropping lowest-value first
+     (`Q-AI-02` → `Q-WHAT-03` → `Q-OFFER-03`)
 4. Return `{session_id, plan, prefill, next}`.
 
 `POST /intake/{id}/answer` is **idempotent per question id** — re-answering
@@ -635,11 +706,11 @@ button — see design plan §6.5.
 csv_text = assemble_run_csv(
     business=run_inputs["business"],          # identity_name
     website=run_inputs["website"],            # identity_website
-    trade=run_inputs["trade"],                # Q-LOC-00
-    city=run_inputs["city"],                  # Q-LOC-06
-    region=run_inputs["region"],              # Q-LOC-06, full state name
+    trade=run_inputs["trade"],                # derived from Q-WHAT-01, §4.5
+    city=run_inputs["city"],                  # Q-REACH-02
+    region=run_inputs["region"],              # Q-REACH-02, full state name
     competitors=run_inputs["competitors"],    # src/audit/competitors.py
-    category=run_inputs.get("category"),      # Q-ID-02
+    category=run_inputs.get("category"),      # Q-WHAT-01
 )
 ```
 
@@ -652,7 +723,7 @@ Competitors are the one input that costs money (`GET /local-entities`). Fetch
 once at `complete`, store on the session, and let the review screen edit the list
 without refetching.
 
-### 6.2 Product — a template bank, not a model
+### 6.2 The generic generator — a template bank, not a model
 
 There is no product query generator. **Do not write an LLM one.**
 `docs/query-generation-plan.md` §1b is explicit that the methodology *forbids
@@ -682,18 +753,18 @@ slots filled **only** from sheet claims:
 
 | Bucket | Share | Shapes | Slot source |
 |---|---|---|---|
-| `problem_aware` | 15% | first-person pain, **never** naming category or brand | `Q-END-01` watch-list, `Q-PRD-11` ICP |
-| `category` | 30% | one head (`best {category}`), the rest qualified | `Q-PRD-06` features, `Q-ID-02` category |
-| `comparison` | 25% | `{client} vs {competitor}`, `best alternative to {competitor}` | `Q-PRD-12` |
-| `brand` | 15% | the claims most damaging if wrong | `Q-PRD-02/03/04/05` |
-| `adjacent_authority` | 15% | expertise topics, no brand named | `Q-PRD-06`, `Q-PRD-11` |
+| `problem_aware` | 15% | first-person pain, **never** naming category or brand | `Q-AI-01` watch-list, `Q-PROOF-02` who-it's-for |
+| `category` / `local_intent` | 30% / 45% | one head (`best {category}`, `best {category} in {city}`), the rest qualified | `Q-OFFER-01`, `Q-WHAT-01` category |
+| `comparison` / `hybrid` | 25% | `{client} vs {competitor}`, `best alternative to {competitor}`, `average cost of {offering} in {city}` | `Q-PROOF-02`, `Q-COST-01` |
+| `brand` | 15% / 10% | the claims most damaging if wrong | `Q-COST-01`, `Q-COST-02`, `Q-OFFER-03`, `Q-PROOF-01` |
+| `adjacent_authority` / `informational` | 15% / 20% | expertise topics, no brand named | `Q-OFFER-01`, `Q-PROOF-02` |
 
 Two hard constraints from §3.3, enforced not suggested:
 - **every competitor appears in ≥1 comparison query**
 - **≥2 comparison queries leave the client unnamed** — these test unprompted
   surfacing, which is the measurement that matters most
 
-Year-stamp 2–3 category queries to bait staleness against `Q-PRD-05`.
+Year-stamp 2–3 category queries to bait staleness against `Q-OFFER-03`.
 
 Each query carries a provenance tag (`verbatim | near_verbatim | constructed`)
 so §5's "≥1/3 verbatim" check is auditable. Template-bank entries sourced from
@@ -798,7 +869,7 @@ Add `tests/test_factsheet_intake.py`. The ones that must exist:
 - every question id is unique and matches `Q-(ID|LOC|PRD|END)-\d\d`
 - every `section` is a real `SheetSection`; every `key` is non-empty
 - every `showIf.questionId` refers to a question earlier in the plan
-- a plan for either `BusinessKind` never exceeds 18 cards
+- the plan is the same 16 cards for every `BusinessKind`; only `examples` differs
 
 **Assertions** (parametrized over registry × a fixture answer per kind)
 - non-empty, no `\n`/`\r`, ends in a full stop
@@ -862,10 +933,13 @@ value; the screens are how it stops being Josh's job.
 
 ## 10 · Decisions still open
 
-1. **`Q-LOC-00`'s "something else."** §4.5 recommends falling back to the
-   bucket-generic generator. Confirm before I3 — it changes whether §6.2 is built
-   product-specific or generic.
-2. **Does the watch-list (`Q-END-01`) produce claims, or only aim the reverse
+1. **Is the generic generator good enough on its own?** §4.5 makes the three
+   hand-written trade templates an optimization rather than a requirement, so
+   §6.2 has to carry every business that is not an HVAC shop, a plumber or a
+   barbershop — which is most of them. Worth one read-aloud pass on a generated
+   set for a business type nobody anticipated (a law firm, a restaurant) before
+   I3 is called done.
+2. **Does the watch-list (`Q-AI-01`) produce claims, or only aim the reverse
    pass?** As claims it is the most demo-able section of the sheet. As input to
    §7's reverse pass it is cheaper and never wrong. Recommendation: **both** —
    store as claims in `WATCHLIST`, and thread into the reverse pass when F5

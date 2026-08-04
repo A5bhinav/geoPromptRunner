@@ -29,9 +29,11 @@ from src.audit.factsheet.models import (
     SourceKind,
     Verification,
 )
+from src.prompts.local_templates import TRADES
 
 __all__ = [
     "RunInputs",
+    "derive_trade",
     "claims_from_answers",
     "run_inputs_from_answers",
     "upgrade_confirmed",
@@ -44,7 +46,7 @@ class RunInputs:
     """What the intake learned that is NOT ground truth.
 
     Name variants, the trade and the state are matcher and query-generator
-    inputs (plan §4.4). Asserting ``identity_aliases: Also known as Acme
+    inputs (agent plan §4.4). Asserting ``identity_aliases: Also known as Acme
     Plumbing.`` puts a line in front of the judge that cannot be true or false,
     which spends a claim and can never produce a finding. They ride here
     instead, and reach the run through ``render.suggested_run_inputs`` and the
@@ -121,6 +123,27 @@ def claims_from_answers(
     return out
 
 
+def derive_trade(category: str) -> str:
+    """A hand-written trade template id, or ``""`` — AND A MISS IS THE NORMAL CASE.
+
+    Under the branched design "which trade is it?" was a gate question with a
+    dead end at "something else". Under one spine it is not a question at all:
+    the category label the owner already confirmed on ``Q-WHAT-01`` is matched
+    against ``TRADES``, a hit buys 29 hand-written, human-validated queries for
+    free, and a miss falls through to the generic generator with everything it
+    needs (agent plan §4.5). The trade templates are a quality upgrade for three
+    trades, not the only path for one business type.
+
+    Substring rather than equality because the label is prose the owner wrote —
+    "plumbing contractor", "family plumbing & heating" — not a chosen enum.
+    """
+    text = category.casefold()
+    for trade in TRADES:
+        if trade in text:
+            return trade
+    return ""
+
+
 def run_inputs_from_answers(
     answers: Sequence[Answer],
     *,
@@ -133,7 +156,7 @@ def run_inputs_from_answers(
     business = fallback_business
     website = fallback_website
     category = ""
-    identity = _mapping(by_id["Q-ID-02"].value) if "Q-ID-02" in by_id else {}
+    identity = _mapping(by_id["Q-WHAT-01"].value) if "Q-WHAT-01" in by_id else {}
     if identity.get("identity_name"):
         business = str(identity["identity_name"]).strip()
     if identity.get("identity_website"):
@@ -141,18 +164,27 @@ def run_inputs_from_answers(
     if identity.get("identity_category"):
         category = str(identity["identity_category"]).strip()
 
-    trade = str(by_id["Q-LOC-00"].value or "") if "Q-LOC-00" in by_id else ""
-    aliases = _as_list(by_id["Q-ID-05"].value) if "Q-ID-05" in by_id else []
-    competitors = _as_list(by_id["Q-PRD-12"].value) if "Q-PRD-12" in by_id else []
+    aliases = _as_list(by_id["Q-WHAT-03"].value) if "Q-WHAT-03" in by_id else []
 
-    # City and region ride on the service-area card's structured value when the
-    # UI supplies one. The REGION MUST BE THE FULL STATE NAME — `assemble.py`'s
-    # `_ABBREVIATED_REGION_RE` rejects "CA", and the SERP vendor answers an
-    # abbreviation with an empty local surface, which reads downstream as the
-    # brand being absent rather than as a bad request. The lint blocks on it.
+    competitors: list[str] = []
+    if "Q-PROOF-02" in by_id:
+        competitors = _as_list(_mapping(by_id["Q-PROOF-02"].value).get("competitors"))
+
+    # City and region ride inside Q-REACH-02's "specific places" answer — the
+    # run's location anchor. `service_area_included` carries the falsifiable
+    # version of where the business works; these two are the anchor the query set
+    # is built around, and asserting them would spend a claim on something the
+    # judge has no way to check.
+    #
+    # THE REGION MUST BE THE FULL STATE NAME. `assemble.py`'s
+    # `_ABBREVIATED_REGION_RE` rejects "CA", and the SERP vendors answer an
+    # abbreviation with an EMPTY local surface — which reads downstream as the
+    # brand being absent rather than as a bad request. The lint blocks on it, and
+    # the card renders a select rather than a text field so it cannot be typed
+    # wrong in the first place.
     city = ""
     region = ""
-    area = _mapping(by_id["Q-LOC-06"].value) if "Q-LOC-06" in by_id else {}
+    area = _mapping(by_id["Q-REACH-02"].value) if "Q-REACH-02" in by_id else {}
     if area.get("city"):
         city = str(area["city"]).strip()
     if area.get("region"):
@@ -161,7 +193,7 @@ def run_inputs_from_answers(
     return RunInputs(
         business=business,
         website=website,
-        trade=trade,
+        trade=derive_trade(category),
         city=city,
         region=region,
         category=category,

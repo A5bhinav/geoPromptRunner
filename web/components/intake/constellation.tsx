@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { cn } from "@/lib/utils";
 
 /**
  * The canvas: every fact the owner has put on the record, as a point.
@@ -52,7 +53,13 @@ const GHOST_EDGES = GHOST_NODES.map((n, k) => {
   };
 });
 
-export function Constellation({ count }: { count: number }) {
+export function Constellation({
+  count,
+  className,
+}: {
+  count: number;
+  className?: string;
+}) {
   const nodes = React.useMemo(
     () =>
       Array.from({ length: count }, (_, k) => {
@@ -86,7 +93,21 @@ export function Constellation({ count }: { count: number }) {
   }, [nodes]);
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+    // The caller BOUNDS this and fades its lower edge. Left at `inset-0` the
+    // edges drew straight through the chat bubbles and the composer labels,
+    // which is most of what made the screen feel busy — a graph crossing a
+    // sentence reads as noise no matter how faint it is.
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-0 flex items-center justify-center",
+        className,
+      )}
+      style={{
+        // Fades out before it reaches anything with words in it.
+        maskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 100%)",
+      }}
+    >
       <svg
         width="620"
         height="520"

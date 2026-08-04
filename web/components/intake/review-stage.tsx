@@ -35,6 +35,20 @@ const SECTION_TITLES: Record<string, string> = {
   watchlist: "J · Known bad answers",
 };
 
+/** Client-facing surface names. Never a raw engine key. */
+const ENGINE_LABELS: Record<string, string> = {
+  openai: "ChatGPT",
+  openai_search: "ChatGPT (web search)",
+  anthropic: "Claude",
+  anthropic_search: "Claude (web search)",
+  gemini: "Gemini",
+  gemini_grounded: "Gemini (grounded)",
+  perplexity: "Perplexity",
+  google_ai_overviews: "Google AI Overviews",
+  google_ai_mode: "Google AI Mode",
+  mock: "Mock",
+};
+
 const INTENT_TONE: Record<string, string> = {
   problem_aware: "#B2B7BC",
   category: "#697585",
@@ -92,6 +106,7 @@ export function ReviewStage({
 
   const shownClaims = showAllClaims ? review.claims.length : 7;
   const queries = showAllQueries ? review.query_set : review.query_set.slice(0, 5);
+  const shape = review.run_shape;
   const blocks = review.lint.filter((i) => i.level === "block");
   const warns = review.lint.filter((i) => i.level === "warn");
   const confirmed = review.unconfirmed.length === 0 && review.claims.length > 0;
@@ -187,12 +202,24 @@ export function ReviewStage({
                     Download CSV
                   </Button>
                 </div>
-                {/* The run shape in one plain sentence, before the table. */}
-                <p className="mt-2.5 text-[13px]">
-                  {review.query_set.length} question
-                  {review.query_set.length === 1 ? "" : "s"} · 4 assistants · 3 runs each ·{" "}
-                  {review.query_set.length * 4 * 3} calls
+                {/* The run shape in one plain sentence, before the table.
+                    EVERY NUMBER COMES FROM THE GENERATED CSV. This line used to
+                    read "4 assistants · 3 runs each" as literal text, which was
+                    already wrong — the assembler emits five surfaces — and would
+                    have gone on being wrong for every run whose config differed.
+                    The cost is priced per engine, because a search surface can
+                    cost 27x a parametric one. */}
+                <p className="mt-2.5 text-[13px] tabular-nums">
+                  {shape.questions} question{shape.questions === 1 ? "" : "s"} ·{" "}
+                  {shape.surfaces} assistant{shape.surfaces === 1 ? "" : "s"} ·{" "}
+                  {shape.runs_per_query} run{shape.runs_per_query === 1 ? "" : "s"} each ·{" "}
+                  {shape.calls} calls · about ${shape.estimated_usd.toFixed(2)}
                 </p>
+                {shape.engines.length > 0 ? (
+                  <p className="mt-1 text-[11px] text-harbour">
+                    {shape.engines.map((e) => ENGINE_LABELS[e] ?? e).join(", ")}
+                  </p>
+                ) : null}
               </div>
 
               <table className="w-full">

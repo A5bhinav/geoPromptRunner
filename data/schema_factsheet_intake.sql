@@ -7,12 +7,20 @@
 -- behind as a record of how that sheet came to exist.
 --
 -- ON THE CREATE-ONLY INVARIANT. CLAUDE.md says core-data writes are create-only
--- and the only delete path is explicit project deletion. That still holds. What
--- a session is never allowed to do is get DELETED on abandonment: an abandoned
--- intake is `state = 'abandoned'`, because "the owner stopped answering after
--- four questions" is a fact worth keeping — it is the only signal we get that a
--- card is too hard or too invasive. Project deletion cascades it, which is what
--- stops this becoming the orphan surface Storage blobs already are.
+-- and the only delete path is explicit project deletion. A session is working
+-- state, not core data, so it is not covered by that rule — but it has two
+-- different endings and they are not interchangeable:
+--
+--   `state = 'abandoned'`  the OWNER stopped answering. Kept, because it is the
+--                          only signal we get that a card is too hard or too
+--                          invasive, and a deleted row teaches nothing.
+--   deleted                an OPERATOR discarding a conversation they opened by
+--                          mistake. No drop-off to learn from, and the row is
+--                          holding the domain's uq_intake_sessions_live slot.
+--
+-- The queue offers the second, because the operator is who is looking at it.
+-- Project deletion also removes sessions, which is what stops this becoming the
+-- orphan surface Storage blobs already are.
 --
 -- WHICH PROJECT. The PLATFORM project (geoPromptRunner/.env), same as
 -- schema_factsheets.sql. RLS on with no policies: service_role only, so the

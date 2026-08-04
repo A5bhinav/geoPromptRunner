@@ -1,3 +1,86 @@
+## The intake question set — one spine of sixteen — Completed 2026-08-04
+
+`docs/factsheet-questions.md` built into the code. The registry used to fork:
+`BusinessKind` picked a local branch (13 cards) or a product branch (12), and the
+two were maintained separately. Three faults, and the third is fatal — two
+half-maintained trees drift, a `show_if` graph has to be re-reasoned about every
+time a card moves, and there was **no answer at all** for the businesses that are
+neither: an agency, a restaurant, a clinic, a nonprofit, a marketplace, a company
+that sells software *and* sends technicians.
+
+`business_kind` is no longer a router. It picks the *for-instance* line inside a
+card and the query allocation afterwards. Nothing structural.
+
+### What changed
+
+**`questions.py`** — 26 branched cards → 16 in one tuple, `Q-WHAT/OFFER/COST/
+REACH/PROOF/AI-nn`. `TRUNK`/`LOCAL_BRANCH`/`PRODUCT_BRANCH`/`TAIL`, `branch`,
+`drop_rank`, `stage` and `show_if` are gone. New: `Examples` (the only adaptive
+text on a card, and `neutral` is required so an unknown kind is never a broken
+card) and `Part`/`PartKind` — six of the sixteen ask two things at once, and the
+registry now describes that shape rather than the frontend knowing which card is
+which. Every card is skippable; there is no gate question, because a router that
+cannot be skipped produces guesses.
+
+**`assertions.py`** — one builder per card. The four that did not exist before:
+
+- `Q-COST-01` gains **basis** (`priced_rows` is 4 columns now). A price with no
+  basis is uncheckable — "450" is not a claim the judge can grade or an AI can
+  contradict. `Free`, `From $X`, `Varies by scope`, `Quote only` are first-class.
+- `Q-REACH-01` gains *"we don't have a phone line"* / *"no public address"* as
+  quotable negatives. An AI inventing a support number for a software company is
+  a real, frequent failure and it is **unflaggable unless the absence is
+  asserted** — an omission is never a finding, only a contradiction is.
+- `Q-PROOF-01` is the only producer `licensing` has anywhere in the system; it
+  was declared, titled and never emitted.
+- `Q-REACH-02`'s excluded half likewise — `factsheet-autogen-plan` §4.4 forbids
+  deriving it from an open list and nothing else asked.
+
+`Q-REACH-03` says **"reach a person"**. Without that word a SaaS answers "always"
+truthfully about a self-serve product, and the claim reads as "support is
+reachable at 3am" — a false line in a document we send a stranger.
+
+Per-item claims replaced joined ones on the excluded/confusable/retired lists: a
+wrong answer about ONE of them should flag that one.
+
+**`plan.py`** — routing and trimming both deleted; sixteen is the ceiling and the
+floor. **`claims.py`** — run inputs read `Q-WHAT-01`/`Q-WHAT-03`/`Q-PROOF-02`/
+`Q-REACH-02`, and `derive_trade` matches the owner's category against `TRADES`.
+A miss is the **normal** case, not an error: the hand-written trade templates are
+a quality upgrade for three trades, not the only path for one business type, and
+the "something else" dead end is gone with the gate question that caused it.
+
+**API + web** — `_question_json` serves `group`, resolved `example`, `parts`,
+`basisOptions`, `dayLabels`; `stage`/`showIf` are gone. New
+`web/components/intake/structured-answer.tsx` renders composite cards **from the
+registry**, so a seventeenth composite card is a registry edit rather than a
+frontend one. Five cards that would have degraded to a textarea — and produced
+nothing — now have real controls.
+
+### The one deliberate deviation
+
+The agent plan's worked table reads *"The Business plan costs $12 per seat per
+month"*. That requires knowing "Business" names a *plan* and "Diagnostic visit"
+names a *visit*; nothing in the answer says which, and inferring it puts an
+invented noun in front of a client. The frame is uniform instead — *"The price
+for {what} is …"* — which is grammatical for every row a plumber, a law firm or a
+roaster can type and keeps the falsifiable part intact.
+
+### Gate
+
+`mypy src/` clean · `ruff check src/` clean · **1394 passed, 3 skipped**.
+`tests/test_factsheet_intake.py` rewritten to 124 tests: the worked assertion
+table is pinned key by key, the parts graph is checked for dangling `show_when`
+siblings, and every card is asserted skippable and to carry a neutral example.
+Smoke-run end to end for a plumber (24 claims) and a SaaS (20 claims, including
+*"There is no phone support."*) — both `client_confirmed`, from the same sixteen
+cards.
+
+Nothing here touches `_PROMPT_LAYOUT`; the judge parity tests are unaffected.
+Approving an intake re-keys cached verdicts for that client only, as before.
+
+---
+
 ## Phases 2, 4 and 5 — the half-built mechanisms, finished — Completed 2026-08-04
 
 Everything `docs/audit-packaging-status.md` listed as left. The through-line: each

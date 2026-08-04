@@ -38,7 +38,8 @@ there are no recommendations. **P0-T1 is the keystone; almost everything else is
 
 ```
 P0-T0 (API surface check — do first, no code)
-P0-T4 (Sable tokens + fonts) ──► blocks EVERY render task (P1-T2, T5, T6, P2-T6, P3-T5)
+P0-T4 (Sable tokens + fonts) ──► blocks EVERY render task (P1-T2, T5, T6, P2-T6, P3-T5,
+                                  and all of Phase T)
 P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
                                       ├── P0-T3 (root-cause taxonomy)
                                       └── P2-T1 (prior-run resolution)
@@ -53,11 +54,17 @@ P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
    P0-T1 ──► P2-T7 (evidence bundle) ──► P3-T1 (drill-down)
    Phase 3 needs Phase 2 complete. Phases 4 and 5 are independent of each other.
 
-   TR-T0 (kill the prominence composite) ──► TR-T5, TR-T6
-   TR-T2 (pp vs %) — independent, do first, one session
-   TR-T11 (section registry) — do alongside TR-T1; it is what makes tiering cheap later
-   P0-T4 + P2-T3 ──► TR-T1 (exec snapshot)
-   P2-T1 ──► TR-T3 (trend)      P2-T4 ──► TR-T6      P2-T7 ──► TR-T8
+   Phase T (the Track report) — runs after Phase 2:
+   TR-T2  (pp vs %) — independent, do first, one session
+   TR-T11 (section registry) ──► BLOCKS every other Phase T section task; nothing renders
+                                 outside the registry, or standing rule 1 is violated
+   TR-T0  (kill the prominence composite) ──► TR-T1, TR-T3, TR-T5, TR-T6
+   TR-T11 + TR-T0 + TR-T2 + P0-T4 + P2-T1 + P2-T3 + P2-T4 ──► TR-T1 (exec snapshot)
+   TR-T2 ──► TR-T3, TR-T4, TR-T5, TR-T6
+   P2-T1 (prior-run comparability) ──► TR-T3, TR-T4, TR-T5, TR-T6 — every section showing a change
+   P2-T2 guardrail A (coverage gate) ──► TR-T3, TR-T5     P2-T4 (significance) ──► TR-T1, TR-T6
+   TR-T7 (citations), TR-T9 (methodology) — depend only on TR-T11
+   P2-T7 ──► TR-T8 (representative answers)
    P1-T7 + P1-T8 ──► TR-T10 (back matter, last task in Phase T)
 ```
 
@@ -67,26 +74,31 @@ P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
 
 ## The report contract (added 2026-08-04)
 
-This is the deliverable, in delivery order. It supersedes `audit-packaging-research.md` §6, whose
-row 4 still carries the retired scorecard framing. **Sections are data, not component structure**
-(see TR-T11) — the order below lives in a registry, so changing it never means editing a component.
+This is the deliverable, in delivery order. It supersedes `audit-packaging-research.md` §6 and is the
+only section list in this repo — if another task names a position ("above the theme cards", "before
+Scorecard"), this table wins. **Sections are data, not component structure** (TR-T11): the order
+below lives in a registry, so changing it never means editing a component.
 
-**Front matter — the analysis (13–16 pp).** Independently readable; a reader who never opens the
-back matter still gets a complete report.
+**Front matter — the analysis (13–17 pp).** Independently readable: a reader who never opens the back
+matter still has a complete report.
 
 | # | Section | Length | Built by |
 |---|---|---|---|
-| 0 | Cover — client logo + Sable, "Prepared for X · Cycle of Y." No data. | ⅓ pg | P0-T4 |
-| 1 | **Executive snapshot** — six measured tiles + one neutral sentence + the action clause | 1 pg | TR-T1, P1-T5 |
-| 2 | **Visibility trend** — mention rate, SoV, citation rate, prominence, by cycle | 1 pg | TR-T3 |
-| 3 | **Results by question type** — per intent bucket, family-aware | 1 pg | TR-T4 |
-| 4 | **Results by surface** — per engine, incl. attempted vs returned | 1 pg | TR-T5 |
-| 5 | **Competitive position** — leaderboard, SoV, movement | 1–2 pg | TR-T6 |
-| 6 | **Citation results** — client domain, top domains, source types | 1 pg | TR-T7 |
-| 7 | **Accuracy findings** — themed groups + severity bar | 3–5 pg | P1-T1, P1-T2 |
-| 8 | **This cycle's priority actions** — 3–7 ranked rows with owner and effort | 1 pg | P1-T4 |
-| 9 | **Representative answers** — five slots, deterministic selection | 1–2 pg | TR-T8 |
-| 10 | **Methodology note** | 1 pg | TR-T9 |
+| 0 | Cover — client logo + Sable, "Prepared for X · Cycle of Y." No data. | ⅓ pg | TR-T11 |
+| 1 | **Executive snapshot** — six measured tiles + one neutral sentence | 1 pg | TR-T1, P1-T6 |
+| 2 | **What changed this cycle** — accountability line, gated deltas, oldest still open | 1 pg | P2-T5, P1-T6 |
+| 3 | **Visibility trend** — mention rate, SoV, citation rate, prominence, by cycle | 1 pg | TR-T3 |
+| 4 | **Results by question type** — per intent bucket, family-aware | 1 pg | TR-T4 |
+| 5 | **Results by surface** — per engine, incl. attempted vs returned | 1 pg | TR-T5 |
+| 6 | **Competitive position** — leaderboard, SoV, movement | 1–2 pg | TR-T6 |
+| 7 | **Citation results** — client domain, top domains, source types | 1 pg | TR-T7 |
+| 8 | **This cycle's priority actions** — 3–7 ranked rows, owner, effort. Opens with the BLUF action clause. | 1 pg | P1-T4, P1-T5 |
+| 9 | **Accuracy findings** — themed groups + severity bar + foundation-readiness checklist | 3–5 pg | P1-T1, P1-T2 |
+| 10 | **Representative answers** — five slots, deterministic selection | 1–2 pg | TR-T8 |
+| 11 | **Methodology note** | 1 pg | TR-T9 |
+
+Actions precede findings deliberately — answer-first (Minto/BLUF). The findings are the evidence
+behind the actions, not a preamble to them.
 
 **Back matter — the outputs (12–20 pp).** Dense tables, own mini-TOC, page-numbered.
 
@@ -96,21 +108,44 @@ back matter still gets a complete report.
 | A2 | Query × surface × run outcome matrix | TR-T10 |
 | A3 | Full findings table — every flag with `cluster_id`, theme, severity, status | TR-T10 |
 | A4 | Competitor mention ledger | TR-T10 |
-| A5 | The verbatim, versioned query set | TR-T10 |
+| A5 | Worst-performing queries ledger (`metrics.losing_queries`) | TR-T10, P1-T3 |
+| A6 | The verbatim, versioned query set | TR-T10 |
 
 **Verbatim answer text is not printed.** At 6 surfaces × 25 queries × 3 runs that is 450 answers —
 90–150 pages inline, which recreates exactly the blob this work exists to kill. It goes to the
 CSV/portal export, linked from A2.
 
-**Total: 26–38 pages.** Front matter alone: 13–16.
+### Page budget
 
-**Voice rule for sections 1–6 and the back matter: descriptive only.** "youtube.com was cited 31
-times," never "you need a YouTube strategy." Interpretation is confined to sections 7–8, which are
-labelled as such. See SKILL.md.
+Front matter: min `0.33 + 1×8 + 1 + 3 + 1 = 13.3` · max `0.33 + 1×8 + 2 + 5 + 2 = 17.3`.
+Back matter: 12–20. **Total band: 25–38 pages.** TR-T10's test asserts this band; P1-T7's page-count
+test asserts the front-matter band alone.
 
-**Tiering.** Every section ships in base **Track** for now. The registry carries a `tier` field so
-sections 7 and 8 can move to **Track Pro** later as a one-line change. Do not build tier gating
-logic beyond that field.
+### Reconciling the tiles
+
+SKILL.md specifies a **four-tile** scorecard row (AI visibility · share of model · open findings ·
+oldest still open). The contract splits those two ways and **the split is the reconciliation, not a
+contradiction**: section 1 carries the six *measured* tiles (TR-T1), and the two *accountability*
+tiles — open findings, oldest still open — move to section 2, where the accountability arithmetic
+already lives and where standing rule 2 governs them. Neither tile is dropped. There is no "Scorecard"
+section in this contract. **P1-T6** builds this split: its first two tiles land in section 1 and its
+last two in section 2. Any other task naming a "Scorecard" means section 1.
+
+### Voice
+
+**Sections 1–7, 10, 11 and all back matter are descriptive only.** "youtube.com was cited 31 times,"
+never "you need a YouTube strategy." Section 1's closing sentence is a neutral summary, not a
+recommendation.
+
+**Interpretation and recommendation are confined to sections 8 and 9**, which are labelled as such.
+The BLUF action clause ("the highest-leverage fix this cycle is …") opens section 8 — not section 1.
+The separation is the product: a client who distrusts the advice can still trust the measurement, and
+an agency reselling the report can supply its own advice over our numbers without contradicting us.
+
+### Tiering
+
+Every section ships in base **Track** for now. The registry carries a `tier` field so sections 8 and 9
+can move to **Track Pro** later as a one-line change. Build no tier gating beyond reading that field.
 
 
 # Phase 0 — Foundation
@@ -345,14 +380,17 @@ real use of the intent data**; `reach` is `occurrence.observed / occurrence.tota
 0.6 for a borderline judge call; `effort` is mapped from **fix channel** — S = owned site/schema,
 M = third-party listing, L = training-data misconception. Add `fix_channel` and `owner`
 (Marketing / PR / Eng / Legal) to `FindingGroup`, derived per theme via a static lookup table.
-Render a "This week's priority actions" section — 3–7 rows max — above the theme cards.
+Render the **"This cycle's priority actions"** section — 3–7 rows max — as **contract section 8**,
+above the accuracy findings (section 9). Answer-first: the findings are the evidence behind the
+actions, not a preamble.
 **Test:** `tests/test_priority.py` — a bottom-funnel pricing error outranks an awareness-stage
 founder-bio error with identical reach and severity; the ordering is stable and deterministic for a
 fixed input.
 
 ## P1-T5 — [Depends: P1-T4] Executive summary / BLUF block
 **Problem:** Page 1 is five metric tiles. There is no page for a CMO.
-**Change:** New section at the very top of `ReportView`, above Scorecard: one bold sentence
+**Change:** The BLUF sentence opens **contract section 8** (priority actions), not section 1 —
+section 1's closing line is a neutral summary. One bold sentence
 (standing + direction + the single most important action), then a short SCQA block. Generated
 deterministically from structured fields in this release — **no LLM in this task** (narrative
 generation is P4-T4, and it must not land before the grounding guard exists). Template:
@@ -376,7 +414,8 @@ Klout / Nutri-Score / HubSpot Grader failure mode.
 > **The report now carries no letter grade and no composite score.**
 
 **Change:** Delete `gradeColor` and the `visibility_grade` tile. Replace the scorecard row with four
-tiles that are each **counted or measured, never invented**:
+tiles that are each **counted or measured, never invented**. Per the contract's "Reconciling the
+tiles", the **first two render in section 1** and the **last two in section 2**:
 
 | Tile | Value | Sub | Delta chip |
 |---|---|---|---|
@@ -390,7 +429,7 @@ to act, and it is a count rather than an opinion. It depends on `first_seen` fro
 with a `—` placeholder until the lifecycle lands.
 
 **Foundation readiness survives as a checklist, not a letter** — fact sheet ✓ / schema ✗ / PR
-footprint partial — rendered later in the report from `src/audit/rubric.py` + `synthesize.py`, where
+footprint partial — rendered in **contract section 9** from `src/audit/rubric.py` + `synthesize.py`, where
 it is directly actionable. Do **not** roll those signals into a score.
 
 Keep `visibility_grade` in the payload for back-compat; simply stop rendering it.
@@ -426,7 +465,8 @@ default, cards break across pages, and table headers don't repeat.
 5. `break-inside: avoid` fails on flex/grid containers — put it on a plain `display:block` wrapper
    *around* the flex content, not on the flex element.
 
-**Test:** Playwright test printing a fixture to PDF asserting page count is in an expected band, and
+**Test:** Playwright test printing a fixture to PDF asserting the **front matter** lands in the
+contract's 13–17 page band, and
 a DOM-level pagination test under `emulateMedia({media:'print'})` asserting each card's top and
 bottom fall in the same page-height multiple (`Math.floor(top/pageH) === Math.floor(bottom/pageH)`) —
 catches the failure earlier than parsing the PDF.
@@ -573,7 +613,8 @@ swing at n=12 does **not** earn an "Up" label but the same swing at n=240 does.
 
 ## P2-T5 — [Depends: P2-T2, P2-T4] "What changed" section and the accountability line
 **Problem:** No delta anywhere. A recurring report with no comparison is a status update.
-**Change:** New section, placed immediately after the exec summary and before Scorecard. Contains:
+**Change:** **Contract section 2**, immediately after the executive snapshot. Also carries the two
+accountability tiles (open findings · oldest still open) from SKILL.md's four-tile row. Contains:
 (a) the **accountability line** — *"3 of 7 findings from last cycle are resolved, 1 regressed, 4
 still open. 19 resolved since we started."*; (b) significance-gated delta chips per engine; (c) top
 3 movers up and down. When `comparison_blocked_reason` is set (P2-T1), render the honest explanation
@@ -843,9 +884,11 @@ render but leaves the computation in place, so it can silently come back.
 **Test:** `grep -rn "visibility_score\|visibility_grade" src/ web/` returns nothing outside tests.
 Leaderboard order for a fixture where prominence and mention rate disagree follows mention rate.
 
-## TR-T1 — [Depends: P0-T4, P2-T3] Executive snapshot
+## TR-T1 — [Depends: TR-T11, TR-T0, TR-T2, P0-T4, P2-T1, P2-T3, P2-T4] Executive snapshot
 
-Six measured tiles, one neutral sentence, then the P1-T5 action clause. No composite, no grade.
+Six measured tiles and one **neutral** sentence. No composite, no grade, and **no action clause** —
+that opens section 8 (see the contract's Voice rule). The two accountability tiles from SKILL.md's
+four-tile row (open findings, oldest still open) live in section 2, not here.
 
 | Tile | Source |
 |---|---|
@@ -856,6 +899,9 @@ Six measured tiles, one neutral sentence, then the P1-T5 action clause. No compo
 | Prominence distribution | `Prominence` / `_PROM_RANK` |
 | Surfaces and answers measured — "N surfaces × Q queries × R runs = A answers" | `coverage_by_engine` |
 
+**Significance:** the change tile follows P2-T4 — no direction arrow without a passing gate. An
+ungated move renders the value and its interval, flat.
+
 **Thin data:** first cycle → the change tile renders "Baseline — no prior cycle", never "0.0 pp".
 
 ## TR-T2 — [Independent, do first] Percentage points vs percent
@@ -864,21 +910,22 @@ Six measured tiles, one neutral sentence, then the P1-T5 action clause. No compo
 them is the fastest way to lose a numerate reader.
 
 **Change:** one formatter, `fmt_delta(before, after, unit)`. Rate changes are always pp. Percent
-change only where the base is a count. No ad-hoc `%` string building in components. Add the rule to
-SKILL.md.
+change only where the base is a count. No ad-hoc `%` string building in components.
+(Already recorded in SKILL.md § "Percentage points, never percent change" — do not re-add it.)
 
 **Test:** 0.42 → 0.48 renders "+6.0 pp"; a count 120 → 150 renders "+25%".
 
-## TR-T3 — [Depends: P2-T1, TR-T2] Visibility trend
+## TR-T3 — [Depends: TR-T11, TR-T0, TR-T2, P2-T1, P2-T2] Visibility trend
 
 Four series by cycle: mention rate, share of voice, citation rate, prominence. `trend.compare_runs`
-covers two cycles; this needs an N-cycle series over comparable runs (P2-T1's coverage gate decides
-which runs qualify).
+covers two cycles; this needs an N-cycle series over comparable runs — P2-T1 resolves which prior
+runs are comparable, and **P2-T2 guardrail A** (`coverage_ratio >= 0.95`) is the coverage gate that
+decides which of them qualify.
 
 **Thin data:** <2 cycles → a single-point baseline statement, not an empty chart. <4 cycles → plot
 points only, no connecting line — a line through two points asserts a trend the data cannot support.
 
-## TR-T4 — [Depends: TR-T2] Results by question type
+## TR-T4 — [Depends: TR-T11, TR-T2, P2-T1] Results by question type
 
 **Must be family-aware.** `IntentBucket` carries two families: `CONSUMER_BUCKETS` (problem_aware,
 category, comparison, brand, adjacent_authority) and `LOCAL_BUCKETS` (local_intent, hybrid,
@@ -888,29 +935,30 @@ consumer five** — every local-service client would render an empty section.
 Per bucket: mention rate, citation rate, n, change. Name the best and weakest bucket.
 `mention_rate_by_bucket` and `citation_rate_by_bucket` already exist.
 
-**Thin data:** a bucket below the P2-T3 minimum renders its count and suppresses the rate.
+**Thin data:** P2-T3 defines no minimum-n threshold, so do not invent one. A bucket whose Wilson
+interval is wider than ±15 pp renders its **count and interval only**, point estimate suppressed.
 
-## TR-T5 — [Depends: TR-T0, TR-T2] Results by surface
+## TR-T5 — [Depends: TR-T11, TR-T0, TR-T2, P2-T1, P2-T2] Results by surface
 
 Per engine: mention rate, citation rate, prominence distribution, change vs prior cycle, and
-**attempted vs returned**. A surface that failed its coverage gate is labelled as such, never
-silently averaged into the total.
+**attempted vs returned**. A surface that failed **P2-T2 guardrail A** (`coverage_ratio >= 0.95`) is
+labelled as such, never silently averaged into the total.
 
-## TR-T6 — [Depends: TR-T0, P2-T4] Competitive position
+## TR-T6 — [Depends: TR-T11, TR-T0, TR-T2, P2-T1, P2-T4] Competitive position
 
 Leaderboard sorted by mention rate. Columns: brand, mention rate, share of voice, change in pp,
 prominence. Movement since prior cycle; who gained and who lost. **Only significance-gated moves get
 a direction arrow** — everything else renders flat with the interval shown.
 
-## TR-T7 — Citation results
+## TR-T7 — [Depends: TR-T11] Citation results
 
 Client-domain citation count and rate; top cited domains (`metrics.top_cited_domains`); source-type
 classification (owned / earned / directory / social / video / competitor); change in pattern.
 
 **Voice: descriptive only.** "youtube.com was cited 31 times." Never "you need a YouTube strategy."
-Add this to the SKILL.md voice section — it applies to sections 1–6 and all back matter.
+(Already recorded in SKILL.md § "Descriptive voice outside the findings sections" — do not re-add it.)
 
-## TR-T8 — [Depends: P2-T7] Representative answers
+## TR-T8 — [Depends: TR-T11, P2-T7] Representative answers
 
 Five slots: a strong appearance, a weak or buried appearance, a missing appearance, a citation, an
 inaccurate statement.
@@ -923,30 +971,32 @@ rule per slot (e.g. strong = highest-prominence present cell, ties broken by
 **Thin data:** a slot with no qualifying answer renders "No qualifying example this cycle." Never
 substitute one from another slot.
 
-## TR-T9 — Methodology note
+## TR-T9 — [Depends: TR-T11] Methodology note
 
 Measurement window dates · query-set version · N queries × R repetitions · surfaces with pinned model
 ids · geography and account configuration · a definition for every metric on page 1 · **methodology
 changes since last cycle** (diff the query-set version and the engine pins) · limitations and
 non-guarantees · the non-reproducibility disclosure verbatim from SKILL.md · the TR-T8 selection rule.
 
-## TR-T10 — [Depends: P1-T7, P1-T8] The back matter
+## TR-T10 — [Depends: TR-T11, P1-T7, P1-T8] The back matter
 
-Five appendix tables (A1–A5 per the contract), page-numbered, with their own mini-TOC.
+Six appendix tables (A1–A6 per the contract), page-numbered, with their own mini-TOC.
 
 **Verbatim answer text is not printed** — it goes to the CSV/portal export, linked from A2.
 
 **Test:** back matter renders from the Fort fixture in ≤20 pages; every A3 row joins to a
-front-matter theme by `cluster_id`; total document lands inside the 26–38 page band.
+front-matter theme by `cluster_id`; back matter is **≥12 pages** so the band's floor holds; total
+document lands inside the **25–38** page band.
 
-## TR-T11 — [Blocks nothing; do alongside TR-T1] Section registry and tier tags
+## TR-T11 — [Blocks every other Phase T section task; build it first] Section registry and tier tags
 
 **Problem:** the section order currently lives in JSX. Changing what the report contains, or moving a
 section behind a tier, means editing a component — which is the thing standing rule 1 forbids.
 
-**Change:** a registry — an ordered list of `{id, title, tier, render, thin_data_fallback}`. `tier` is
-`track` | `track_pro`; **everything ships as `track` now.** Moving sections 7 and 8 to Pro later is a
-one-line registry change. Build no tier gating beyond reading that field.
+**Change:** a registry — an ordered list of `{id, title, tier, render, thin_data_fallback}` matching
+the report contract exactly, including the cover (section 0). `tier` is
+`track` | `track_pro`; **everything ships as `track` now.** Moving sections 8 and 9 (priority actions,
+accuracy findings) to Pro later is a one-line registry change. Build no tier gating beyond reading that field.
 
 **Test:** reordering or disabling a section is a registry edit with no component diff; a snapshot test
 asserts rendered order matches the registry; every section has a non-null `thin_data_fallback`.
@@ -993,23 +1043,27 @@ this; do not ship a view that violates it.
 
 ## Definition of done for the whole spec
 
-The Phase 1–2 slice is done when a second run of the same client produces a report that:
-1. Opens with one sentence a CMO can act on.
-2. States what changed since the prior cycle, with noise-gated deltas and an explicit resolved/
-   regressed/open count.
+The Phase 1–2 + Phase T slice is done when a second run of the same client produces a report that:
+1. Opens section 1 with six measured tiles and a **neutral** one-sentence summary — the action
+   clause opens section 8, not section 1.
+2. States what changed since the prior cycle in section 2, with noise-gated deltas, an explicit
+   resolved/regressed/open count, and the oldest-still-open finding named.
 3. Shows ≤15 themed findings with instance counts instead of 235 cards.
-4. Ranks 3–7 concrete actions with an owner and an effort estimate.
+4. Ranks 3–7 concrete actions with an owner and an effort estimate, placed **before** the findings
+   that justify them.
 5. Quotes the verbatim query and verbatim model text behind every Critical/High finding, with a
    timestamp, a pinned model id, and an honest "observed in N of M runs" statement.
 6. Contains **no letter grade and no composite score at all** — every headline number is counted
    (findings, resolved, cycles open) or measured (sampled rate, share of model) — and no bare
-   percentage without its denominator.
-8. Uses **one counting unit** in client-facing views (themes), with the accountability arithmetic
+   percentage without its denominator. `visibility_score` and the grade machinery are gone from
+   `src/`, not merely unrendered (TR-T0).
+7. Uses **one counting unit** in client-facing views (themes), with the accountability arithmetic
    closing exactly: `opening = resolved + still_open`, `closing = still_open + new + regressed`.
-7. Fits the **26–38 page** band: 13–16 pages of front matter that reads independently, plus
+8. Fits the **25–38 page** band: 13–17 pages of front matter that reads independently, plus
    12–20 pages of back-matter tables. Verbatim answer text is never printed — it lives in the
    CSV/portal export linked from A2.
-9. Renders every section from the registry, with a non-null thin-data fallback on each, and
-   reads the intent-bucket family from the client's business kind rather than hardcoding the
-   consumer five.
+9. Renders every section from the registry, with a non-null thin-data fallback on each, and reads
+   the intent-bucket family from the client's business kind rather than hardcoding the consumer five.
 10. States every rate change in **percentage points**, never as a percent change.
+11. Keeps sections 1–7, 10, 11 and all back matter **descriptive** — no recommendation outside
+    sections 8 and 9.

@@ -4,7 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, FolderClosed, Play, Printer, Sparkles } from "lucide-react";
+import { FileText, FolderClosed, MessageSquare, Play } from "lucide-react";
 import { Wordmark } from "@/components/plume";
 import { cn } from "@/lib/utils";
 
@@ -27,20 +27,25 @@ import { cn } from "@/lib/utils";
  * is already spent.
  */
 
-/** Nav order is the workflow order: make one → look at them → the ground truth
- * everything is judged against. Not alphabetical. */
-const PRIMARY_NAV = [
-  { href: "/", label: "Runs", Icon: Play, exact: true },
-  { href: "/projects", label: "Projects", Icon: FolderClosed },
+/** Nav order is the ORDER OF THE WORK: start a conversation → the sheet it
+ * produces → run against that sheet → read the results. Not alphabetical, and
+ * not by how often a screen is opened.
+ *
+ * THREE ITEMS, AND THAT IS THE WHOLE RAIL. `/teaser` and `/audit` are still real
+ * routes and still work — the project detail page links straight into
+ * `/teaser?teaser=…`, which is how you reach a teaser you already made. They are
+ * not in the rail because the rail is the run → report loop and neither is a
+ * step in it; a permanent nav slot for a surface you visit from somewhere else
+ * spends the rail's attention on the wrong thing. */
+const NAV = [
+  // Start is FIRST and is the landing route. Everything downstream rests on a
+  // fact sheet, and a sheet is only worth anything if a human vouched for it —
+  // so the conversation that produces one is the front door, not a thing you
+  // find after uploading a CSV.
+  { href: "/", label: "Start", Icon: MessageSquare, exact: true },
   { href: "/fact-sheets", label: "Fact sheets", Icon: FileText },
-];
-
-/** The two supporting surfaces, below a hairline. They are real pages with real
- * functionality — they are not in the primary group because neither is a step in
- * the run → report loop, and the design's rail is that loop. */
-const SUPPORTING_NAV = [
-  { href: "/teaser", label: "Teaser", Icon: Sparkles },
-  { href: "/audit", label: "Deliverable", Icon: Printer },
+  { href: "/runs", label: "Runs", Icon: Play },
+  { href: "/projects", label: "Projects", Icon: FolderClosed },
 ];
 
 const ITEM_CLS =
@@ -156,12 +161,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-px px-3">
-          {PRIMARY_NAV.map((item) => (
+          {NAV.map((item) => (
             <NavItem key={item.href} {...item} active={isActive(item.href, item.exact)} />
-          ))}
-          <span className="my-2 h-px bg-white/[0.12]" aria-hidden />
-          {SUPPORTING_NAV.map((item) => (
-            <NavItem key={item.href} {...item} active={isActive(item.href)} />
           ))}
         </nav>
 

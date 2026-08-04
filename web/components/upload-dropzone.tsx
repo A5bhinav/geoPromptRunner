@@ -1,12 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { FileText, X, Download } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Plume } from "@/components/plume";
-import { INPUT_CLS } from "@/lib/ui";
 import { cn } from "@/lib/utils";
-import { downloadTemplate, listTrades, type FileProvenance } from "@/lib/api";
+import type { FileProvenance } from "@/lib/api";
 
 // Mirror of the backend MAX_UPLOAD_BYTES (5 MB) for a fast client-side reject.
 // The server enforces the real cap; this is just UX.
@@ -21,12 +20,6 @@ interface Props {
 
 export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
   const [dragging, setDragging] = React.useState(false);
-  const [trades, setTrades] = React.useState<string[]>([]);
-  const [trade, setTrade] = React.useState("");
-
-  React.useEffect(() => {
-    listTrades().then(setTrades).catch(() => setTrades([]));
-  }, []);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFiles = (list: FileList | null) => {
@@ -90,37 +83,10 @@ export function UploadDropzone({ files, provenance, onAdd, onRemove }: Props) {
         />
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
           Add file
         </Button>
-        <div className="flex items-center gap-2">
-          {/* A trade template ships 29 filled local questions instead of the
-              4-query consumer starter. The list comes from the API so the UI
-              never hardcodes which trades exist. */}
-          {trades.length > 0 && (
-            <select
-              className={cn(INPUT_CLS, "h-8 w-auto px-2")}
-              value={trade}
-              onChange={(e) => setTrade(e.target.value)}
-              aria-label="Template type"
-            >
-              <option value="">Consumer product</option>
-              {trades.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          )}
-          <button
-            type="button"
-            onClick={() => void downloadTemplate(trade || null)}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue hover:underline"
-          >
-            <Download className="h-4 w-4" /> Download template
-          </button>
-        </div>
       </div>
 
       {files.length > 0 && (

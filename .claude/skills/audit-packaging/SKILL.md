@@ -217,14 +217,15 @@ after, unit)`. No component builds a `%` string by hand. (Spec TR-T2.)
 
 ## Descriptive voice outside the findings sections
 
-Sections 1–6 of the report contract and all back matter are **descriptive only**. They state what
-was measured and nothing more:
+Sections 1–7, 10 and 11 of the report contract, and all back matter, are **descriptive only**. They
+state what was measured and nothing more:
 
 > ✅ "youtube.com was cited 31 times, up from 12 last cycle."
 > ❌ "You need a YouTube strategy."
 
-Interpretation and recommendation live in the accuracy findings and priority actions sections,
-which are labelled as such. The separation is the product: a client who distrusts the advice can
+Interpretation and recommendation live in **sections 8 and 9** (priority actions, accuracy
+findings), which are labelled as such. The BLUF action clause opens section 8, never section 1 —
+section 1's closing line is a neutral summary. The separation is the product: a client who distrusts the advice can
 still trust the measurement, and an agency reselling the report can supply its own advice over our
 numbers without contradicting us.
 

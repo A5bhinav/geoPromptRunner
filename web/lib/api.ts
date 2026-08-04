@@ -1414,6 +1414,10 @@ export async function assembleAudit(body: AssembleRequest): Promise<AssembleResu
 // contains rather than hardcoding a card. A question that exists in the
 // frontend but not in the registry is a question whose answer has nowhere to go.
 
+// Eleven kinds cover all sixteen cards for every business. The test to apply
+// before adding a twelfth is whether one control can hold a plumber's answer and
+// a SaaS's answer — `availability` and `priced_rows` both exist because the
+// naive version (a bare 7-day grid, a bare price field) could not.
 export type IntakeAnswerKind =
   | "choice"
   | "multi"
@@ -1422,15 +1426,40 @@ export type IntakeAnswerKind =
   | "text"
   | "longtext"
   | "list"
-  | "hours"
-  | "money"
-  | "tiers"
+  | "availability"
+  | "priced_rows"
   | "links"
-  | "watchlist";
+  | "pairs";
 
 export interface IntakeOption {
   value: string;
   label: string;
+}
+
+export type IntakePartKind = "text" | "list" | "pairs" | "choice" | "days";
+
+/** One sub-control of a composite card, described BY THE REGISTRY.
+ *
+ * Six of the sixteen cards ask two things — where do you serve and where don't
+ * you, what do you hold and what don't you. Those halves are one card because
+ * they are one decision, but two shapes for the answer. This is what lets the
+ * composer render them without knowing which card is which. */
+export interface IntakePart {
+  key: string;
+  label: string;
+  kind: IntakePartKind;
+  helper: string;
+  placeholder: string;
+  /** Column headings on a `pairs` part. */
+  labels: [string, string] | null;
+  options: IntakeOption[];
+  /** A `choice` option that reveals a free-text input; the typed text is what
+   * gets stored, so "Yes — a $5.99/mo membership" is one value, not two. */
+  revealOn: string | null;
+  /** Render only when a sibling part holds this value. The ONLY conditional in
+   * the intake, and it lives within one card rather than across cards. */
+  showWhen: { part: string; equals: string } | null;
+  prefill: IntakePrefillEntry | null;
 }
 
 export interface IntakePrefillEntry {
@@ -1442,26 +1471,39 @@ export interface IntakePrefillEntry {
 
 export interface IntakeQuestion {
   id: string;
+  /** WHAT | OFFER | COST | REACH | PROOF | AI. Grouping only — nothing routes
+   * on it. There is no business-kind branch anywhere in this flow. */
+  group: string;
   kind: IntakeAnswerKind;
   section: string | null;
   keys: string[];
   /** What each field of a multi-key card is called. From the registry, so a
    * label cannot drift from the key it names. */
   keyLabels: Record<string, string>;
-  /** "config" cards open the conversation — the five things the run cannot
-   * start without. "facts" is everything the sheet is made of. */
-  stage: "config" | "facts";
   prompt: string;
   /** The one-line rationale, shown in the open-questions launcher. */
   why: string;
   helper: string;
+  /** The for-instance line, ALREADY RESOLVED for this session's business kind.
+   * The only thing business kind is allowed to change, and it is resolved
+   * server-side so the client has no branch in it at all. */
+  example: string;
   placeholder: string;
   options: IntakeOption[];
+  /** The sub-controls of a composite card, in render order. Empty means the
+   * card is a single control and `kind` alone describes it. */
+  parts: IntakePart[];
+  /** The basis vocabulary, on `priced_rows` only. A PRICE WITH NO BASIS IS
+   * UNCHECKABLE — "$450" is not a claim, "$450 per hour" is. */
+  basisOptions: IntakeOption[] | null;
+  /** The 7-day grid's rows, when a part needs them. Server-supplied because
+   * `assertions.py` matches on these names — a grid emitting "Tues" would
+   * produce no claim at all. */
+  dayLabels: IntakeOption[] | null;
   skippable: boolean;
   /** "No" is the valuable answer. Never reword these into positives. */
   negativeFirst: boolean;
   producesClaims: boolean;
-  showIf: { questionId: string; equals: string } | null;
   prefill: Record<string, IntakePrefillEntry>;
 }
 
