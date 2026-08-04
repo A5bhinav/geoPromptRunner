@@ -4,6 +4,11 @@ import "./globals.css";
 import "../styles/tokens.css";
 import "../styles/motion.css";
 import "../styles/sable.css";
+// The white-label skin. Loaded alongside Sable rather than swapped at build
+// time: both are scoped to a class, the report picks one via brand.themeClass,
+// and shipping only the "active" one would make the second skin something
+// nobody ever renders — which is how it stayed a stub for a whole phase.
+import "../styles/neutral.css";
 import { AppShell } from "@/components/app-shell";
 
 // Sable's two faces, self-hosted at build by next/font. Deliberately NOT a CDN

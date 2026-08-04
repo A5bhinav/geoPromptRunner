@@ -1,0 +1,116 @@
+/* Neutral — the white-label report skin (P5-T3).
+ *
+ * The SECOND skin, and the reason `web/lib/brand.ts` exists. An abstraction with
+ * exactly one implementation is not an abstraction: until this file existed,
+ * `NEUTRAL` pointed at `.sable` and every "white-label" render shipped Sable's
+ * navy, Sable's Garamond and Sable's masthead under a different name.
+ *
+ * WHAT A WHITE-LABEL SWAP ACTUALLY REPLACES. Not an accent colour — the whole
+ * skin. Sable's identity is the three plumes, the Cormorant wordmark and the
+ * Berkeley navy; an agency reselling this cannot ship any of them. So this file
+ * changes the two things a reader would recognise:
+ *
+ *   1. **The typefaces.** No Cormorant. Display and text are the same neutral
+ *      grotesque, which is what an unbranded document looks like — a second
+ *      typeface IS a brand decision, and a white-label artifact should not be
+ *      making one on the agency's behalf.
+ *   2. **The hue.** Slate rather than Berkeley Navy. Close enough in value that
+ *      every contrast ratio the layout was built against still holds, far enough
+ *      that nobody mistakes the artifact for a Sable one.
+ *
+ * WHAT IT DELIBERATELY KEEPS. The STRUCTURE of the palette: a single-hue ramp,
+ * four steps, darkest = most severe, no alert colour anywhere. That is not
+ * Sable-specific styling, it is the packaging rule — severity is carried by icon
+ * and label, and handing a tenant a red would quietly re-open the "colour alone"
+ * failure the ramp exists to prevent.
+ *
+ * Same structural guarantee as sable.css: the accent is defined ONLY inside
+ * `.on-navy`, so using it on a paper ground resolves to nothing and fails
+ * visibly rather than passing review and shipping.
+ */
+
+.neutral {
+  /* --- palette: one hue, four steps, no alert colour --- */
+  --navy: #1f2933; /* ink, most severe */
+  --blue: #323f4b; /* links, active states */
+  --harbour: #6b7684; /* body text */
+  --mist: #b6bcc4; /* rules, least severe */
+  --paper: #f4f4f2; /* ground */
+  --white: #ffffff; /* cards */
+
+  --rule: rgba(31, 41, 51, 0.12);
+  --rule-soft: rgba(31, 41, 51, 0.07);
+  --rule-inner: rgba(31, 41, 51, 0.08);
+
+  /* The ramp keeps its logic: monochrome, darkest = most severe. */
+  --sev-critical: var(--navy);
+  --sev-high: var(--blue);
+  --sev-medium: var(--harbour);
+  --sev-low: var(--mist);
+
+  /* --- type: one family, no display serif ---
+   * A second typeface is a brand decision. A resold artifact should not be
+   * making one on the agency's behalf, so display and text are the same face
+   * and the difference is weight and size. */
+  --font-display: var(--font-libre-franklin), ui-sans-serif, system-ui, sans-serif;
+  --font-text: var(--font-libre-franklin), ui-sans-serif, system-ui, sans-serif;
+
+  background-color: var(--paper);
+  color: var(--navy);
+  font-family: var(--font-text);
+}
+
+.neutral .on-navy,
+.neutral.on-navy {
+  /* The tenant's one bright note, scoped exactly like Sky. */
+  --on-navy-accent: #9fb3c8;
+  background-color: var(--navy);
+  color: var(--white);
+}
+
+.neutral .display,
+.neutral .wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.neutral .display-lg {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.neutral .display-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.neutral .body {
+  color: var(--harbour);
+}
+
+/* Sentence case everywhere; the tracked label is the only uppercase in the
+ * system. That rule is the packaging spec's, not Sable's, so it survives the
+ * white-label swap unchanged. */
+.neutral .label,
+.neutral .section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--harbour);
+}
+
+.neutral a {
+  color: var(--blue);
+}
+
+.neutral .card {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}

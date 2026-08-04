@@ -176,6 +176,18 @@ def extract_numeric_claims(text: str) -> list[ExtractedClaim]:
 #: Severity words the prose may use only if a cited fact carries them.
 _ENUM_TERMS = ("critical", "high", "medium", "low", "regressed", "resolved")
 
+#: Matched on WORD BOUNDARIES, not as substrings.
+#:
+#: Substring matching rejected correct prose: "8 percentage points lower" trips
+#: `low`, "a higher share" trips `high`, and "the following surfaces" trips it
+#: too. Those are direction and ordinary English, not severity claims — and
+#: `_direction_ok` is what actually checks direction, properly and separately.
+#:
+#: This narrows the rule to what it was always for (asserting a SEVERITY the
+#: facts do not carry) rather than weakening it: "low" standing alone still
+#: fails, which is the case the rule exists to catch.
+_ENUM_TERM_RES = {term: re.compile(rf"\b{term}\b", re.IGNORECASE) for term in _ENUM_TERMS}
+
 
 def verify(sentences: Sequence[Sentence], facts: Sequence[Fact]) -> VerificationResult:
     """The actual guarantee. Deterministic; no model involved.
@@ -214,10 +226,9 @@ def verify(sentences: Sequence[Sentence], facts: Sequence[Fact]) -> Verification
         if direction_problem:
             failures.append(VerificationFailure(sentence.text, direction_problem))
 
-        lowered = sentence.text.lower()
         cited_words = " ".join(str(f.label).lower() + " " + str(f.value).lower() for f in cited)
-        for term in _ENUM_TERMS:
-            if term in lowered and term not in cited_words:
+        for term, pattern in _ENUM_TERM_RES.items():
+            if pattern.search(sentence.text) and term not in cited_words:
                 failures.append(
                     VerificationFailure(
                         sentence.text,

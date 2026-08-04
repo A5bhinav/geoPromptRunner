@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
 import uuid
@@ -20,12 +21,13 @@ from src.audit.factsheet import FactSheet, expected_fact_sheet_text
 from src.config import settings
 from src.engines.base import BaseEngine
 from src.engines.local_pack import LocalEntity, LocalPackCapture
-from src.pipeline import judge_metrics, lifecycle, metrics, preflight, themes
+from src.pipeline import drift, judge_metrics, lifecycle, metrics, preflight, themes
 from src.pipeline.answers_export import build_answers_markdown, build_results_csv
 from src.pipeline.cost import CostBudgetExceeded, estimate_total_cost_for_queries
 from src.pipeline.engine_routing import routed_totals_by_name
 from src.pipeline.orchestrator import AuditOutcome, engine_models
 from src.pipeline.prompt_runner import run_query_set
+from src.prompts import versioning
 from src.prompts.csv_loader import ParsedAudit, RunConfig
 from src.prompts.intent import IntentBucket
 from src.prompts.query_set import Query, QuerySet
@@ -580,6 +582,7 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         _join_phases(site_thread, local_thread)
         state.state = "done"
         _persist_state(state)
+        _persist_operations_history(state)
     except Exception as exc:  # defensive: a run thread must never die silently
         # Log the real type server-side; surface only a generic message to the
         # client so internal details aren't disclosed.
@@ -588,6 +591,84 @@ def _execute_run(state: _RunState, engines: list[BaseEngine]) -> None:
         state.state = "failed"
         state.error = "run failed (see server logs)"
         _persist_state(state, state.error)
+
+
+def _persist_operations_history(state: _RunState) -> None:
+    """Record what this cycle says about the INSTRUMENT (P4-T3, P4-T6).
+
+    Two things, both of which were computed correctly and then discarded:
+
+    - the per-surface **drift fingerprint**, which is only meaningful as a
+      series — "Perplexity's answers got 40% shorter in June" is a question about
+      a sequence, and a fingerprint that exists for one render cannot answer it;
+    - the **client config fingerprint**, which is what makes two cycles
+      comparable, so a config change with no record is an unexplained trend break
+      a year later.
+
+    Entirely best-effort. This runs after the run is already marked done: losing a
+    row of operational history is a cost, failing a completed run over it is not
+    a trade anyone would make.
+    """
+    run_id = state.db_run_id
+    if not run_id:
+        return
+    cfg = state.audit.config
+    try:
+        prints = drift.fingerprint_run(state.results, state.engine_models)
+        db.save_engine_fingerprints(
+            run_id,
+            cfg.client_name,
+            state.created_at,
+            [
+                {
+                    "engine_name": f.engine_name,
+                    "model_id": f.model_id,
+                    "n_cells": f.n_cells,
+                    "n_answered": f.n_answered,
+                    "median_length": f.median_length,
+                    "mean_citations": f.mean_citations,
+                }
+                for f in prints.values()
+            ],
+        )
+    except db.StorageError:
+        logger.warning("engine fingerprints not persisted for run %s", state.run_id)
+
+    try:
+        config = versioning.ClientConfig(
+            client_name=cfg.client_name,
+            revision=0,
+            comparability_version=state.audit.query_set.version,
+            engines=tuple(sorted(state.active_engines)),
+            competitors=tuple(sorted(cfg.competitors)),
+            # In the fingerprint because it decides what counts as an error, and
+            # because the judge cache already keys on it — two configs differing
+            # only in the sheet genuinely produce different verdicts.
+            fact_sheet_text=state.audit.fact_sheet or "",
+            core_query_ids=tuple(sorted(q.query_id for q in state.audit.query_set.queries)),
+            runs_per_query=cfg.runs_per_query,
+        )
+        db.save_client_config(
+            cfg.client_name,
+            versioning.config_fingerprint(config),
+            {
+                "comparability_version": config.comparability_version,
+                "engines": list(config.engines),
+                "competitors": list(config.competitors),
+                "core_query_ids": list(config.core_query_ids),
+                "runs_per_query": config.runs_per_query,
+                # The sheet TEXT is deliberately not stored here — it is already
+                # on the run row and in the judge cache key, and duplicating a
+                # client's ground truth into a third place is a third place to
+                # leak it from. The fingerprint above covers it.
+                "fact_sheet_sha256": hashlib.sha256(
+                    config.fact_sheet_text.encode("utf-8")
+                ).hexdigest(),
+            },
+            reason=f"run {state.run_id}",
+        )
+    except db.StorageError:
+        logger.warning("client config not persisted for run %s", state.run_id)
 
 
 def _join_phases(*threads: threading.Thread | None, timeout: float | None = None) -> None:
@@ -1248,6 +1329,25 @@ def _local_pack_from_db(run_id: str, client: str, location: str) -> LocalPackPay
     return build_local_pack_payload(list(by_query.values()), client, location)
 
 
+def _finding_registry(client_name: str) -> db.SupabaseFindingRegistry | None:
+    """The durable claim registry for this client, or None when unavailable.
+
+    Probed once per report. Without the table (or without storage at all) the
+    report falls back to in-memory clustering, which still collapses within-run
+    duplicates — it simply cannot recognise a PARAPHRASE of last cycle's finding
+    as the same finding. That is a degraded report, not a broken one, so this
+    never raises.
+    """
+    if not client_name:
+        return None
+    try:
+        if not db.supports_findings_registry():
+            return None
+    except db.StorageError:
+        return None
+    return db.SupabaseFindingRegistry(client_name)
+
+
 def _report_from_db(run_id: str) -> ReportPayload | None:
     """Rebuild the report from storage for a run not in this process's memory."""
     try:
@@ -1289,6 +1389,7 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         prior_metrics=history.metrics_history,
         prior_engine_models=history.prior_engine_models,
         location=(str(row["location"]).strip() if row.get("location") else ""),
+        finding_registry=_finding_registry(str(row.get("client_name", ""))),
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -1398,6 +1499,7 @@ def get_report(run_id: str) -> ReportPayload | None:
         prior_metrics=live_history.metrics_history,
         prior_engine_models=live_history.prior_engine_models,
         location=(state.audit.config.location or "").strip(),
+        finding_registry=_finding_registry(state.audit.config.client_name),
     )
     if state.state == "done":
         with _REPORT_CACHE_LOCK:

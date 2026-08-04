@@ -7,8 +7,8 @@ from typing import TypedDict
 
 from src.api import sections
 from src.engines.local_pack import LocalPackCapture
+from src.pipeline import finding_id, judge_metrics, lifecycle, metrics, movement, stats
 from src.pipeline import findings as findings_mod
-from src.pipeline import judge_metrics, lifecycle, metrics, movement, stats
 from src.pipeline import themes as themes_mod
 from src.pipeline.calibration import load_agreement_summary
 from src.pipeline.orchestrator import AuditOutcome
@@ -872,6 +872,10 @@ def build_report(
     prior_metrics: Sequence[sections.CycleMetrics] = (),
     prior_engine_models: dict[str, str] | None = None,
     location: str = "",
+    # Cross-cycle claim identity. Injected rather than constructed here so this
+    # function stays pure with respect to storage — every test in the suite
+    # builds a report without touching Supabase, and that must keep being true.
+    finding_registry: finding_id.FindingRegistry | None = None,
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -1074,6 +1078,12 @@ def build_report(
         runs_by_cell=runs_by_cell,
         engine_models=outcome.engine_models,
         total_engines=len(engines),
+        # Cross-cycle claim identity (P0-T1). None keeps the in-memory default,
+        # which still collapses within-run duplicates — a report built without a
+        # registry is correct, it just cannot say "this exact wrong sentence has
+        # been live for five cycles". Callers on a render path pass the durable
+        # one; `build_report` stays pure with respect to storage.
+        registry=finding_registry,
     )
     finding_groups = [_group_row(g) for g in grouping.groups]
     # 3–7 rows: enough to be a plan, few enough to be done before the next cycle.

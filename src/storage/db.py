@@ -87,6 +87,19 @@ __all__ = [
     "claim_factsheet_job",
     "finish_factsheet_job",
     "factsheet_spend_today",
+    "findings_registry_lookup",
+    "findings_registry_remember",
+    "forget_findings_for_client",
+    "SupabaseFindingRegistry",
+    "supports_findings_registry",
+    "save_review_records",
+    "get_review_records",
+    "save_engine_fingerprints",
+    "get_engine_fingerprints",
+    "save_client_config",
+    "list_client_configs",
+    "revoke_share_token",
+    "revoked_share_ids",
 ]
 
 logger = logging.getLogger(__name__)
@@ -99,6 +112,15 @@ TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
 TABLE_JUDGMENTS = "judgments"
 TABLE_LOCAL_PACK = "local_pack_entities"
+#: Cross-cycle claim identity (P0-T1). One row per (client, normalized claim);
+#: see data/schema_findings_registry.sql for why it is not keyed on a run.
+TABLE_FINDINGS_REGISTRY = "findings_registry"
+#: Phase 4 operations history — QA reviews, engine drift fingerprints, per-client
+#: config revisions and the share-link deny list. See data/schema_operations.sql.
+TABLE_REVIEW_RECORDS = "review_records"
+TABLE_ENGINE_FINGERPRINTS = "engine_fingerprints"
+TABLE_CLIENT_CONFIGS = "client_configs"
+TABLE_REVOKED_SHARES = "revoked_share_tokens"
 
 # Fixed namespaces for deriving deterministic (idempotent) row ids from a row's
 # natural key, so a retried save upserts the same row rather than duplicating it.
@@ -1878,6 +1900,26 @@ def list_intake_sessions(
     return list(getattr(response, "data", None) or [])
 
 
+def delete_intake_session(session_id: str) -> int:
+    """Permanently delete ONE intake session.
+
+    Distinct from abandonment. `state = 'abandoned'` records that an OWNER
+    stopped answering, which is a signal worth keeping — it is the only evidence
+    we get that a card is too hard or too invasive. This is the other thing: an
+    OPERATOR discarding a conversation they opened by mistake, where there is no
+    drop-off to learn from and the row is just clutter holding the domain's
+    `uq_intake_sessions_live` slot.
+
+    Both exist because they mean different things. Deleting is the one the queue
+    offers, because the operator is the one looking at it.
+    """
+    response = _execute(
+        f"delete_intake_session {session_id}",
+        lambda c: c.table(TABLE_INTAKE_SESSIONS).delete().eq("id", session_id).execute(),
+    )
+    return _deleted_count(response)
+
+
 def delete_intake_sessions_for_domains(domains: list[str]) -> int:
     """Remove sessions for deleted projects.
 
@@ -2050,6 +2092,346 @@ def factsheet_spend_today() -> dict[str, float]:
         "tier2_runs": int(str(row.get("tier2_runs") or 0)),
         "spend_usd": float(str(row.get("spend_usd") or 0)),
     }
+
+
+# --- Findings registry: claim identity across cycles (P0-T1) ------------------
+#
+# `finding_id.assign_clusters` takes any object satisfying `FindingRegistry`.
+# The default is `InMemoryRegistry` — this process, this run — which collapses
+# within-run duplicates but mints a fresh `cluster_id` for a PARAPHRASE next
+# cycle. This is the durable one.
+#
+# It is deliberately best-effort at the call site: a registry that cannot be
+# reached degrades to in-memory behaviour, which produces a correct report with
+# less history rather than no report at all.
+
+
+def findings_registry_lookup(
+    client_name: str, normalized: str, limit: int = 20
+) -> list[tuple[str, str]]:
+    """Candidate ``(cluster_id, normalized)`` pairs for one claim, this client only.
+
+    RECALL-oriented by contract: the caller re-scores every candidate with
+    rapidfuzz and applies ``DUP_THRESHOLD`` itself, so a near-miss returned costs
+    one comparison while a near-miss missed is a silent split — which surfaces to
+    a client as one finding resolving and an identical one appearing.
+
+    Exact match first (the common case, and free), then a trigram search, then
+    the most recent rows as a floor so a registry with no trigram index still
+    returns something to compare against.
+    """
+    exact = _execute(
+        f"findings_registry exact lookup ({client_name})",
+        lambda c: c.table(TABLE_FINDINGS_REGISTRY)
+        .select("cluster_id,normalized")
+        .eq("client_name", client_name)
+        .eq("normalized", normalized)
+        .limit(1)
+        .execute(),
+    )
+    rows = list(getattr(exact, "data", None) or [])
+    if rows:
+        return [(str(rows[0]["cluster_id"]), str(rows[0]["normalized"]))]
+
+    response = _execute(
+        f"findings_registry lookup ({client_name})",
+        lambda c: c.table(TABLE_FINDINGS_REGISTRY)
+        .select("cluster_id,normalized")
+        .eq("client_name", client_name)
+        .order("last_seen_at", desc=True)
+        .limit(max(1, limit))
+        .execute(),
+    )
+    return [
+        (str(r["cluster_id"]), str(r["normalized"]))
+        for r in (getattr(response, "data", None) or [])
+    ]
+
+
+def findings_registry_remember(
+    client_name: str, cluster_id: str, normalized: str, representative: str
+) -> None:
+    """Record that ``normalized`` belongs to ``cluster_id`` for this client.
+
+    Upsert on (client_name, normalized), which is the unique index: `remember` is
+    called once per component on every render, so a re-render of an unchanged
+    report must not grow the table. ``last_seen_at`` moves; ``first_seen_at``
+    does not, because how long a claim has been alive is the thing this table
+    exists to be able to say.
+    """
+    _execute(
+        f"findings_registry remember ({client_name})",
+        lambda c: c.table(TABLE_FINDINGS_REGISTRY)
+        .upsert(
+            {
+                "client_name": client_name,
+                "cluster_id": cluster_id,
+                "normalized": normalized,
+                "representative": representative,
+                "last_seen_at": _now(),
+            },
+            on_conflict="client_name,normalized",
+        )
+        .execute(),
+    )
+
+
+def forget_findings_for_client(client_name: str) -> int:
+    """Scrub one client's claim history. The offboarding path.
+
+    Separate from project deletion on purpose: `delete_audit_runs` removes runs,
+    and a cluster's identity deliberately outlives the run that first saw it. A
+    client leaving is the one event that should also remove what a model once
+    said about them.
+    """
+    response = _execute(
+        f"forget findings ({client_name})",
+        lambda c: c.table(TABLE_FINDINGS_REGISTRY)
+        .delete()
+        .eq("client_name", client_name)
+        .execute(),
+    )
+    return _deleted_count(response)
+
+
+# --- Phase 4 operations history (P4-T1/T3/T6, P3-T4) --------------------------
+#
+# Three Phase-4 mechanisms computed a correct result and threw it away, and all
+# three are only useful as a SERIES: "the reviewers disagreed more this month",
+# "Perplexity's answers got 40% shorter in June", "this client's core question
+# set last changed in May". None of those can be asked of a value that lives for
+# the length of one render.
+#
+# Every writer here is best-effort at the call site. These are operational
+# records, not the measurement — losing one costs a row of history, while
+# raising on one would fail a run that otherwise succeeded.
+
+
+def save_review_records(
+    run_id: str | None, client_name: str, records: list[dict[str, Any]]
+) -> None:
+    """Append reconciled QA reviews. Upsert on (cell_id, prompt_fingerprint).
+
+    Re-reviewing a cell after a prompt change is a NEW record — the judge being
+    reviewed is a different judge — but re-submitting the same reconciliation is
+    not, so the same review twice leaves one row.
+    """
+    if not records:
+        return
+    rows = [
+        {
+            "run_id": run_id,
+            "client_name": client_name,
+            "cell_id": str(r["cell_id"]),
+            "stratum": str(r["stratum"]),
+            "judge_label": str(r["judge_label"]),
+            "reviewer_a": str(r["reviewer_a"]),
+            "reviewer_b": str(r["reviewer_b"]),
+            "final_label": str(r["final_label"]),
+            "outcome": str(r["outcome"]),
+            "prompt_fingerprint": str(r["prompt_fingerprint"]),
+            "reviewed_at": str(r["reviewed_at"]),
+            "note": str(r.get("note", "")),
+        }
+        for r in records
+    ]
+    _execute(
+        f"save review records ({client_name})",
+        lambda c: c.table(TABLE_REVIEW_RECORDS)
+        .upsert(rows, on_conflict="cell_id,prompt_fingerprint")
+        .execute(),
+    )
+
+
+def get_review_records(client_name: str, limit: int = 500) -> list[dict[str, object]]:
+    """This client's reconciled reviews, most recent first."""
+    response = _execute(
+        f"read review records ({client_name})",
+        lambda c: c.table(TABLE_REVIEW_RECORDS)
+        .select("*")
+        .eq("client_name", client_name)
+        .order("reviewed_at", desc=True)
+        .limit(limit)
+        .execute(),
+    )
+    return list(getattr(response, "data", None) or [])
+
+
+def save_engine_fingerprints(
+    run_id: str, client_name: str, run_date: str, fingerprints: list[dict[str, Any]]
+) -> None:
+    """One structural fingerprint per surface per cycle (P4-T3).
+
+    Upsert on (run_id, engine_name): re-rendering a report re-fingerprints the
+    same stored answers and must produce the same row, not a duplicate.
+    """
+    if not fingerprints:
+        return
+    rows: list[dict[str, Any]] = [
+        {
+            "run_id": run_id,
+            "client_name": client_name,
+            "run_date": run_date[:10],
+            "engine_name": str(f["engine_name"]),
+            "model_id": str(f.get("model_id", "")),
+            "n_cells": int(f["n_cells"]),
+            "n_answered": int(f["n_answered"]),
+            "median_length": float(f["median_length"]),
+            "mean_citations": float(f["mean_citations"]),
+        }
+        for f in fingerprints
+    ]
+    _execute(
+        f"save engine fingerprints ({run_id})",
+        lambda c: c.table(TABLE_ENGINE_FINGERPRINTS)
+        .upsert(rows, on_conflict="run_id,engine_name")
+        .execute(),
+    )
+
+
+def get_engine_fingerprints(
+    client_name: str, engine_name: str = "", limit: int = 100
+) -> list[dict[str, object]]:
+    """This client's fingerprint series, newest first. Empty ``engine_name`` is
+    every surface."""
+
+    def _query(c: Client) -> Any:
+        q = (
+            c.table(TABLE_ENGINE_FINGERPRINTS)
+            .select("*")
+            .eq("client_name", client_name)
+            .order("run_date", desc=True)
+            .limit(limit)
+        )
+        return (q.eq("engine_name", engine_name) if engine_name else q).execute()
+
+    response = _execute(f"read engine fingerprints ({client_name})", _query)
+    return list(getattr(response, "data", None) or [])
+
+
+def save_client_config(
+    client_name: str, fingerprint: str, config: dict[str, Any], reason: str = ""
+) -> None:
+    """Record a config revision (P4-T6). Create-only: a change is a new row.
+
+    Upsert on (client_name, fingerprint) so re-saving an UNCHANGED config is a
+    no-op — the fingerprint is what makes two cycles comparable, and a table with
+    one row per render could not answer "when did this last change".
+    """
+    _execute(
+        f"save client config ({client_name})",
+        lambda c: c.table(TABLE_CLIENT_CONFIGS)
+        .upsert(
+            {
+                "client_name": client_name,
+                "fingerprint": fingerprint,
+                "config": config,
+                "reason": reason,
+            },
+            on_conflict="client_name,fingerprint",
+        )
+        .execute(),
+    )
+
+
+def list_client_configs(client_name: str, limit: int = 50) -> list[dict[str, object]]:
+    """Config revisions for this client, newest first."""
+    response = _execute(
+        f"list client configs ({client_name})",
+        lambda c: c.table(TABLE_CLIENT_CONFIGS)
+        .select("*")
+        .eq("client_name", client_name)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute(),
+    )
+    return list(getattr(response, "data", None) or [])
+
+
+def revoke_share_token(jti: str, run_id: str | None = None, reason: str = "") -> None:
+    """Add one token id to the deny list (P3-T4).
+
+    The jti, never the token: storing the signed token would put a working
+    credential in a table whose entire purpose is that the credential no longer
+    works.
+    """
+    _execute(
+        f"revoke share token ({jti[:8]})",
+        lambda c: c.table(TABLE_REVOKED_SHARES)
+        .upsert({"jti": jti, "run_id": run_id, "reason": reason}, on_conflict="jti")
+        .execute(),
+    )
+
+
+def revoked_share_ids() -> set[str]:
+    """Every revoked token id. Read on the share-verification path."""
+    response = _execute(
+        "read revoked share tokens",
+        lambda c: c.table(TABLE_REVOKED_SHARES).select("jti").execute(),
+    )
+    return {str(r["jti"]) for r in (getattr(response, "data", None) or [])}
+
+
+def supports_findings_registry() -> bool:
+    """Whether the `findings_registry` table exists.
+
+    Probed once per report rather than discovered per claim: without it every
+    lookup would raise, be caught, and log — 200 warnings for one missing
+    migration. The report is identical either way except for cross-cycle claim
+    identity, so this is a capability check and never an error.
+    """
+    try:
+        _execute(
+            "probe findings_registry",
+            lambda c: c.table(TABLE_FINDINGS_REGISTRY).select("cluster_id").limit(1).execute(),
+        )
+    except StorageError:
+        return False
+    return True
+
+
+class SupabaseFindingRegistry:
+    """The durable `FindingRegistry`, scoped to one client.
+
+    Satisfies the protocol structurally — no import from `finding_id`, so the
+    storage layer stays free of a pipeline dependency.
+
+    Every method swallows `StorageError` and degrades to the in-memory mirror it
+    keeps alongside. That is the right trade here: a report that clusters within
+    the run but loses cross-cycle identity is degraded, while one that raises
+    because Supabase blinked is broken — and this runs on the render path, which
+    is meant to be free and reliable.
+    """
+
+    def __init__(self, client_name: str) -> None:
+        self.client_name = client_name
+        self._local: dict[str, str] = {}
+        self._degraded = False
+
+    def lookup(self, normalized: str, limit: int = 20) -> list[tuple[str, str]]:
+        local = self._local.get(normalized)
+        if local is not None:
+            return [(local, normalized)]
+        if self._degraded:
+            return list(self._local.items())[:limit] if limit else []
+        try:
+            return findings_registry_lookup(self.client_name, normalized, limit)
+        except StorageError:
+            # Logged once, by `_execute`, as a type. Flipping the flag stops a
+            # report with 200 flags from making 200 doomed round-trips.
+            self._degraded = True
+            return []
+
+    def remember(self, cluster_id: str, normalized: str, representative: str) -> None:
+        self._local[normalized] = cluster_id
+        if self._degraded:
+            return
+        try:
+            findings_registry_remember(
+                self.client_name, cluster_id, normalized, representative
+            )
+        except StorageError:
+            self._degraded = True
 
 
 if __name__ == "__main__":

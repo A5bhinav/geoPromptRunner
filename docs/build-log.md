@@ -1,3 +1,108 @@
+## Phases 2, 4 and 5 — the half-built mechanisms, finished — Completed 2026-08-04
+
+Everything `docs/audit-packaging-status.md` listed as left. The through-line: each
+of these was a correct mechanism with nothing on the other end of it.
+
+### The Phase 2 remainder
+
+**`findings_registry`** (`data/schema_findings_registry.sql`,
+`db.SupabaseFindingRegistry`). `assign_clusters` always took a `FindingRegistry`
+and the only implementation was `InMemoryRegistry` — this process, this run. So
+within-run duplicates collapsed and a re-wording next cycle minted a fresh
+`cluster_id`. Scoped per client, because two clients can produce byte-identical
+claims about unrelated companies and a shared keyspace is both wrong and a
+cross-tenant leak. Degrades to in-memory on any storage failure, and flips a flag
+after the first one so 200 flags do not become 200 doomed round-trips.
+
+The **Pareto sources** view landed with TR-T7. The **bump chart** stays skipped,
+and TR-T3 now makes the reason explicit rather than implicit: the trend section
+draws no connecting line under four comparable cycles at all, and a bump chart of
+competitor rank is the same problem one dimension up.
+
+### Phase 4 — the three mechanisms that threw their result away
+
+`data/schema_operations.sql` + writers in `db.py`. Review records, engine drift
+fingerprints and per-client config were all computed correctly and discarded, and
+all three are only useful as a SERIES: "the reviewers disagreed more this month",
+"Perplexity's answers got 40% shorter in June", "this client's core set last
+changed in May" are questions about a sequence, and none can be asked of a value
+that lives for the length of one render.
+
+**Share-link revocation** moved out of a process-local set. A revoked link coming
+back after a deploy is the one failure mode a revocation mechanism may not have.
+The deny list stores the jti, never the token — storing the signed token would
+put a working credential in a table whose entire purpose is that the credential
+no longer works. `/shares/{id}/revoke` now reports `persistent` honestly instead
+of always claiming success.
+
+**The QA review loop had no ends.** The sampler and the reconciler existed;
+nothing fed the queue to a reviewer and nothing kept what came back. Added
+`GET /audits/{id}/review-queue`, `POST /audits/{id}/reviews` and
+`GET /clients/{name}/reviews`.
+
+**P4-T4's generator** (`src/pipeline/narrative_generator.py`), behind the verifier
+that was deliberately built first. The model never sees raw findings, raw answers
+or the fact sheet — only an enumerated `Fact` list, which turns unconstrained
+factual recall into closed-set selection. Every sentence is re-checked by regex
+against that list; on failure, one retry with the specific rejected claims quoted
+back, then the wooden fallback. Off by default (`RUN_NARRATIVE`): a report is
+meant to be free to re-render, and generation is an optimisation on top of
+something that already works.
+
+Building it surfaced a real false positive in the guard: `_ENUM_TERMS` matched as
+substrings, so "8 percentage points **low**er" was rejected as an invented
+severity, as was "a **high**er share" and "the fol**low**ing surfaces". Narrowed
+to word boundaries — "low" alone still fails, which is the case the rule is for.
+
+`scripts/stratify_gold.py` does the sampling half of the gold-set gap. What is
+left there is labelling, not deciding what to label.
+
+### Phase 5
+
+- **P5-T1 free scan** (`free_scan.py`): its own cap at $0.75, far below
+  `MAX_AUDIT_COST_USD`'s 25 — that cap guards a paying client's bill, and an
+  anonymous form with a 25-dollar ceiling is a denial-of-wallet. The public
+  payload is CONSTRUCTED, not redacted: a response that carries the claims and
+  marks them private has already sent them.
+- **P5-T2 signed fact sheet** (`factsheet/signoff.py`): a client render built from
+  the claims rather than redacted from the internal document, a changelog keyed on
+  claim KEY (keying on id would make a re-extraction report every line as
+  changed), and `cache_impact` — the warning the edit screen must show, computed
+  from the same text the cache keys on. An edit the judge cannot see invalidates
+  nothing. A signature is hash-based, so it does not survive a silent edit.
+- **P5-T3 white-label**: the seam existed and `NEUTRAL` pointed at `.sable`, so
+  every white-label render shipped Sable's navy, Cormorant and masthead accent
+  under a different name. `web/styles/neutral.css` is a real second skin — its own
+  hue, no display serif — that keeps the single-hue severity ramp, because that is
+  the packaging rule and not Sable styling.
+- **P5-T4 reference panel** (`reference_panel.py`): percentiles never a mean,
+  suppression below n=5, and the label centralised so "benchmark" cannot creep in
+  through a component. Famous brands score systematically higher than a median
+  client; calling their distribution a peer benchmark tells a client they are
+  behind their peers when what they are behind is Nike.
+- **P5-T5 tiers** (`tiers.py`): meters prompts × surfaces × competitors. A test
+  greps the module for `cadence|interval|refresh|per_week|per_day|last_run` and
+  fails if any appears — metering cadence is a cost-to-you metric wearing a value
+  metric's clothes, every competitor gives refresh away, and it creates the trap
+  where a flat week reads as wasted money in a product that sells "held steady at
+  8 of 12 for the third week".
+
+### Deliberately not done
+
+The narrative generator is **not wired into the client-facing report**. The spec
+requires human sign-off on Critical/High narrative sentences and no sign-off flow
+exists; shipping generated prose before one would violate the task that created
+it. The guard, the generator and the fallback are all in place behind
+`RUN_NARRATIVE=0`.
+
+### Gate
+
+`mypy src/` · `ruff check src/` · `tsc --noEmit` · 1277 passed, 3 skipped. The 67
+failures in `tests/test_factsheet_intake.py` are an unrelated in-progress rewrite
+of `src/audit/factsheet/intake/questions.py`, untouched by this work.
+
+---
+
 ## Phase T — the Track report: sections as data, and the composite is gone — Completed 2026-08-04
 
 The whole of `docs/audit-packaging-spec.md` Phase T (TR-T0 through TR-T11), in

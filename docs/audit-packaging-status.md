@@ -14,8 +14,8 @@
 | **1 — Restructure** | ✅ complete |
 | **2 — Recurring** | ✅ complete |
 | **3 — Delivery** | ✅ complete |
-| **4 — Operations** | ✅ complete (code); P4-T1 still needs a real gold SET |
-| **5 — Commercialize** | 🟡 P5-T3 partially (the `brandConfig` seam exists) |
+| **4 — Operations** | ✅ complete (code + persistence + generator); P4-T1 still needs a real gold SET |
+| **5 — Commercialize** | ✅ complete (code) |
 | **T — the Track report** | ✅ complete (TR-T0 … TR-T11) |
 
 Plus one addition that is not in the spec: **correction runs**
@@ -65,57 +65,58 @@ instead of re-running the whole audit.
 | TR-T10 back matter A1–A6 | `sections.build_back_matter` |
 | Pareto sources *(P2-T6 remainder)* | `sections.CitationDomainRow.cumulative_share` |
 | Oldest-still-open tile | `reports.ScorecardPayload.oldest_open` |
+| P0-T1 `findings_registry` table | `data/schema_findings_registry.sql`, `db.SupabaseFindingRegistry` |
+| P4 persistence (reviews/drift/config) | `data/schema_operations.sql`, `db.py` |
+| P3-T4 durable share revocation | `db.revoke_share_token`, `app._revoked_share_ids` |
+| P4-T2 review queue + submission API | `app.get_review_queue`, `app.submit_review` |
+| P4-T4 grounded narrative generator | `src/pipeline/narrative_generator.py` |
+| P4-T1 gold stratification script | `scripts/stratify_gold.py` |
+| P5-T1 free scan | `src/pipeline/free_scan.py` |
+| P5-T2 signed fact sheet | `src/audit/factsheet/signoff.py` |
+| P5-T3 white-label second skin | `web/styles/neutral.css`, `brand.NEUTRAL` |
+| P5-T4 reference panel | `src/pipeline/reference_panel.py` |
+| P5-T5 tier enforcement | `src/pipeline/tiers.py` |
 
 ## Left to build
 
-### Phase 2 remainder
+### The one thing code cannot finish
 
-- ~~**`SourcesChart` → Pareto**~~ **Done 2026-08-04** as part of TR-T7: the
-  citations section carries `cumulative_share` per domain and renders the curve
-  over the bars, plus a concentration sentence.
-- **Bump chart** (part of P2-T6). Still deliberately skipped, and TR-T3 makes the
-  reason explicit rather than implicit: the trend section draws no connecting
-  line under four comparable cycles at all. A bump chart of competitor *rank*
-  over cycles is the same problem one dimension up, and no client has four
-  comparable cycles yet.
-- **`findings_registry` table** (part of P0-T1). Never built — only
-  `InMemoryRegistry` exists, so a *paraphrase* next cycle gets a new
-  `cluster_id`. Not blocking: cards are keyed on theme, which is stable by
-  construction. Needed only if per-claim tracking across cycles is ever wanted.
+**The gold sets' flag-bearing half.** `data/fort_gold.json` and
+`data/oura_gold.json` measure brand-level agreement well (Fort 94% present / 86%
+prominence / 93% framing, n=240). What is thin is flags: Fort carries 3 gold
+findings and Oura 18 against a 20-finding floor, so
+`AgreementSummary.flags_are_quotable` is False for both and the methodology names
+the gap instead of quoting a number. A perfect judge cannot pass
+`gate_critical_high_recall` on either set — the gate correctly refusing to
+certify recall from a sample that cannot support it.
 
-### Phase 4 — the one thing code cannot finish
+`scripts/stratify_gold.py` now does the sampling half: point it at the Fort
+`csv-2026-06-13` run (115 flags across 540 judged cells) and it writes ~60
+stratified, deterministically-chosen candidates with the judge's verdicts
+withheld. What remains is two people labelling them blind.
 
-**The gold sets EXIST and have been run.** `data/fort_gold.json` and
-`data/oura_gold.json` are 40 hand-labeled answers each, re-measured 2026-07-31
-against the held-constant judge. The report publishes their real figures:
+### Held back on purpose
 
-    Fort  present 94% · prominence 86% · framing 93%   (n=240 judgements)
-    Oura  present 99% · prominence 90% · framing 94%   (n=240 judgements)
+**The narrative generator is not wired into the client-facing report.** P4-T4
+requires human sign-off on Critical/High narrative sentences and no sign-off flow
+exists. The guard (`narrative.verify`), the generator
+(`narrative_generator.generate_narrative`) and the wooden fallback are all in
+place behind `RUN_NARRATIVE=0`; switching it on before a sign-off UI would
+violate the task that created it.
 
-What is thin is the **flag-bearing** half. Fort's set carries 3 gold findings and
-Oura's 18, against a 20-finding floor — so `AgreementSummary.flags_are_quotable`
-is False for both and the methodology names the gap instead of quoting a number.
-A perfect judge cannot pass `gate_critical_high_recall` on either set, which is
-the gate correctly reporting that these sets cannot measure this thing.
+**The bump chart** (part of P2-T6). TR-T3 makes the reason explicit: the trend
+section draws no connecting line under four comparable cycles, and a bump chart of
+competitor rank over cycles is the same problem one dimension up. No client has
+four comparable cycles yet.
 
-The fix is ~60 stratified items (`stratify_gold_candidates`, 20 per stratum) drawn
-from runs already stored — the Fort `csv-2026-06-13` run alone has 115 flags
-across 540 judged cells. Not a new labelling programme.
+### Migrations to apply
 
-**P4-T4 has a verifier but no generator.** Deliberate, and the safe order: the
-guard is what makes any generator safe to switch on. Until one exists,
-`fallback_narrative` produces wooden-but-correct prose, which is strictly better
-for a product selling "no invented facts".
+Three schema files are written and NOT applied. Each degrades cleanly — the
+feature falls back rather than failing — so applying them is a decision, not an
+emergency:
 
-**Persistence not wired:** review records, drift fingerprints and `ClientConfig`
-are computed and returned but not stored — each needs a table before it accrues
-history. Share-link revocation is in-process only and forgets on restart.
-
-### Phase 5 — commercialize
-
-P5-T1 free scan · P5-T2 fact sheet as a signed artifact · P5-T3 white-label
-(**seam built**, second skin not) · P5-T4 reference brand panel ·
-P5-T5 tier enforcement.
+    python -m scripts.apply_schema data/schema_findings_registry.sql
+    python -m scripts.apply_schema data/schema_operations.sql
 
 ### Not in the spec, but owed
 
@@ -129,8 +130,6 @@ P5-T5 tier enforcement.
   Note the local consequence: with a key set, the web app 401s unless
   `NEXT_PUBLIC_GEO_API_KEY` in `web/.env.local` matches. Share minting needs a
   key; the dev UI currently needs none. Set both together or neither.
-- ~~`data/schema_run_corrections.sql` is NOT applied.~~ **Applied 2026-08-02**;
-  `supports_run_lineage()` returns True and `--correct` is live.
 
 ## Open decisions
 

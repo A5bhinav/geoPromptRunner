@@ -61,7 +61,12 @@ export const NEUTRAL: BrandConfig = {
   id: "neutral",
   name: "AI Visibility Report",
   descriptor: "",
-  themeClass: "sable",
+  // Its OWN class (web/styles/neutral.css), not Sable's. Pointing this at
+  // `sable` is what made the white-label a stub: every "neutral" render shipped
+  // Sable's navy, Sable's Cormorant wordmark and Sable's masthead accent under a
+  // different name. A tenant ships a whole class rather than overriding
+  // individual variables, so the two skins can never half-apply.
+  themeClass: "neutral",
   showMark: false,
   poweredBy: false,
   chartHighlightToken: "--navy",

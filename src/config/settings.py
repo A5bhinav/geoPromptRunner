@@ -189,6 +189,26 @@ JUDGE_VERIFIER_MODEL: str = os.getenv("JUDGE_VERIFIER_MODEL", JUDGE_MODEL)
 _run_content = os.getenv("RUN_CONTENT_JUDGE", "0").strip().lower()
 RUN_CONTENT_JUDGE: bool = _run_content in ("1", "true", "yes")
 
+# --- Grounded narrative generation (P4-T4) ---
+# The ONE sanctioned LLM in the report layer, and it is OFF by default.
+#
+# A naive summary pass introduces a second hallucination surface in a product
+# whose entire pitch is catching hallucinations. What makes it safe is not the
+# generation step but `narrative.verify()`, a deterministic post-check that every
+# number in the prose matches an enumerated fact — so the generator can only ever
+# be as trustworthy as that guard, and the guard runs on every render whether or
+# not this is on.
+#
+# Off by default because a report is meant to be free to re-render. With this on,
+# every uncached render costs one small model call; with it off, the fallback
+# writes wooden, provably-correct prose from the same facts.
+_run_narrative = os.getenv("RUN_NARRATIVE", "0").strip().lower()
+RUN_NARRATIVE: bool = _run_narrative in ("1", "true", "yes")
+# A small, cheap model is right here: the task is filling a fixed skeleton from
+# an enumerated fact list, not reasoning. Capability buys nothing when the output
+# is verified against a closed set anyway.
+NARRATIVE_MODEL: str = os.getenv("NARRATIVE_MODEL", "claude-haiku-4-5-20251001")
+
 # Persistent judge cache ("the notebook"). A verdict is fully determined by (judge
 # model, client, competitors, fact sheet, prompt, answer), so once an answer is
 # judged it never needs re-judging — across resumes, re-runs, or cadence re-checks.

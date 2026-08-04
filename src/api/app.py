@@ -24,6 +24,7 @@ from src.audit.competitors import candidates_from_local_pack
 from src.audit.factsheet import FactSheet, suggested_run_inputs, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
+from src.pipeline import review
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.fixpack import render_fix_pack
 from src.prompts.assemble import AssembleError, assemble_run_csv
@@ -712,25 +713,48 @@ def shared_report(token: str, password: str = "") -> dict[str, object]:
     return dict(report)
 
 
-# In-process revocation set. Deliberately not a database table yet: revocation is
-# rare, and a restart re-enabling a revoked link is a real limitation that is
-# better written down than hidden behind a half-built store.
+# In-process mirror of the revocation deny list.
+#
+# NOT the source of truth — `revoked_share_tokens` is (data/schema_operations.sql).
+# This exists so a revocation still holds for the life of the process when
+# storage is unreachable, and so the read path has an answer if the table is
+# missing. A share token is stateless and signed, so revoking it means
+# remembering that we no longer honour it; a store that forgets on restart would
+# bring a revoked link back to life after a deploy, which is the one failure mode
+# a revocation mechanism may not have.
 _REVOKED_SHARES: set[str] = set()
 
 
 def _revoked_share_ids() -> frozenset[str]:
-    return frozenset(_REVOKED_SHARES)
+    """Every revoked token id: the durable list, unioned with this process's.
+
+    Union rather than either alone. Storage may be unreachable (then the local
+    set is all we have), and a token revoked by another process must still be
+    honoured here — erring toward MORE revocations is the safe direction, since
+    the failure is a link that stops working rather than one that should not.
+    """
+    try:
+        return frozenset(db.revoked_share_ids() | _REVOKED_SHARES)
+    except db.StorageError:
+        return frozenset(_REVOKED_SHARES)
 
 
 @api.post("/shares/{token_id}/revoke")
 def revoke_share(token_id: str) -> dict[str, object]:
     """Withdraw one link. Per-token, so revoking one does not revoke them all.
 
-    NOTE: in-process only — a restart forgets. Move to a table before this is
-    used for anything a leak would matter for.
+    Writes through to the deny-list table and mirrors locally. ``persistent``
+    tells the caller which of those happened: a revocation that only took effect
+    in this process is a materially weaker guarantee, and the API says so rather
+    than reporting success either way.
     """
     _REVOKED_SHARES.add(token_id)
-    return {"revoked": token_id, "persistent": False}
+    try:
+        db.revoke_share_token(token_id, reason="revoked via API")
+    except db.StorageError:
+        logger.warning("share revocation not persisted: storage unavailable")
+        return {"revoked": token_id, "persistent": False}
+    return {"revoked": token_id, "persistent": True}
 
 
 @api.post("/audits/{run_id}/cancel")
@@ -765,6 +789,122 @@ def judge_audit(run_id: str) -> dict[str, object]:
             status_code=404, detail=f"run {run_id} not found or has no answers to judge"
         )
     return dict(report)
+
+
+# --- QA review queue: sample, reconcile, persist (P4-T1/T2) -------------------
+#
+# The sampler and the reconciler were built and correct, and the loop had no
+# ends: nothing fed the queue to a reviewer and nothing kept what came back. A
+# review that is computed and discarded cannot answer the only questions worth
+# asking of it — "did the reviewers disagree more this month", "which judge
+# prompt was in force when this verdict was overridden".
+
+
+class ReviewSubmission(BaseModel):
+    """Two BLIND labels for one cell, plus the judge's, for reconciliation.
+
+    Both reviewer labels are required and both are stored, even when they agree.
+    Recording only the reconciled answer throws away the disagreement RATE, which
+    is the number that says whether the labels themselves are trustworthy — and a
+    gold set built by two people who never disagree is usually one where the
+    second anchored on the first.
+    """
+
+    cell_id: str
+    stratum: str
+    judge_label: str
+    reviewer_a: str
+    reviewer_b: str
+    prompt_fingerprint: str
+    note: str = ""
+
+
+@api.get("/audits/{run_id}/review-queue")
+def get_review_queue(run_id: str) -> dict[str, object]:
+    """The cells this cycle wants a human to check, stratified.
+
+    Deterministic given the run: the sampler ranks by a hash of the cell id, so
+    the same run always produces the same queue. A reviewer who reloads the page
+    does not get a different sample, and two reviewers working the same queue are
+    genuinely working the same queue.
+    """
+    report = runner.get_report(run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+
+    candidates = [
+        review.ReviewCandidate(
+            cell_id=f"{flag['query_id']}:{flag['engine_name']}:{flag['run_index']}",
+            severity=str(flag["severity"]),
+            lifecycle_status="",
+        )
+        for flag in report["accuracy_flags"]
+    ]
+    sampled = review.sample_for_review(candidates)
+    return {
+        "run_id": run_id,
+        "client_name": report["client_name"],
+        "pool": len(candidates),
+        "items": [{"cell_id": cell_id, "stratum": stratum} for cell_id, stratum in sampled.items],
+        "dropped": sampled.dropped,
+    }
+
+
+@api.post("/audits/{run_id}/reviews")
+def submit_review(run_id: str, body: ReviewSubmission) -> dict[str, object]:
+    """Reconcile two blind labels and append the record.
+
+    Reconciliation ESCALATES to the more severe label when reviewers differ: for a
+    client-facing product the errors are not symmetric — a false Critical is
+    embarrassing and gets caught at the next review, a missed one ships as
+    silence.
+    """
+    report = runner.get_report(run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+
+    record = review.reconcile(
+        cell_id=body.cell_id,
+        stratum=body.stratum,
+        judge_label=body.judge_label,
+        reviewer_a=body.reviewer_a,
+        reviewer_b=body.reviewer_b,
+        prompt_fingerprint=body.prompt_fingerprint,
+        reviewed_at=datetime.now(UTC).isoformat(),
+        note=body.note,
+    )
+    try:
+        db.save_review_records(run_id, report["client_name"], [dataclasses.asdict(record)])
+    except db.StorageError as exc:
+        # 503, not 500: the reconciliation itself succeeded and is in the
+        # response, so the caller can retry the write without re-labelling.
+        raise HTTPException(status_code=503, detail="storage unavailable") from exc
+    return dataclasses.asdict(record)
+
+
+@api.get("/clients/{client_name}/reviews")
+def list_reviews(client_name: str, limit: int = 500) -> dict[str, object]:
+    """This client's review history, with the agreement figures it supports."""
+    try:
+        records = db.get_review_records(client_name, limit=limit)
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail="storage unavailable") from exc
+    outcomes: dict[str, int] = {}
+    for r in records:
+        outcomes[str(r.get("outcome", ""))] = outcomes.get(str(r.get("outcome", "")), 0) + 1
+    total = len(records)
+    return {
+        "client_name": client_name,
+        "records": records,
+        "total": total,
+        "by_outcome": outcomes,
+        # Counted, with its denominator — the same rule the report follows.
+        "reviewer_disagreement": (
+            f"{outcomes.get('escalated', 0)} of {total} reviewed cells"
+            if total
+            else "none reviewed"
+        ),
+    }
 
 
 # --- Teasers: persist a generated one-pager, then approve / edit / reject -----
@@ -1075,6 +1215,42 @@ def approve_fact_sheet(sheet_id: str) -> dict[str, object]:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return {"id": sheet_id, "state": db.FactSheetState.ACTIVE.value}
+
+
+@api.delete("/fact-sheets/{sheet_id}")
+def delete_fact_sheet(sheet_id: str) -> dict[str, object]:
+    """Permanently delete one fact sheet and its claims.
+
+    WHAT SURVIVES, AND WHY THIS IS SAFE. A finished run keeps its OWN copy of
+    the sheet it was judged against — `audit_runs.fact_sheet` is the rendered
+    text and `fact_sheet_version` records which version it was — so deleting the
+    sheet row cannot retroactively change what a past report was measured
+    against. `fact_claims` cascades; `factsheet_jobs.fact_sheet_id` and
+    `factsheet_intake_sessions.fact_sheet_id` are ON DELETE SET NULL, so the
+    record of what was spent producing it, and any conversation about it,
+    outlive the row.
+
+    Snapshots go FIRST, while the row that names their prefix still exists —
+    same ordering as project deletion, for the same reason: the bucket is not
+    covered by the row cascade and nothing else knows the prefix.
+
+    THIS REPLACES REJECTION AS THE "NO" PATH. `reject_fact_sheet` still exists
+    and still records a reason, but the queue no longer offers it: a sheet whose
+    claims are wrong is now deleted and re-made through the intake, where the
+    owner confirms every line. The cost of that choice is real and worth naming
+    — a rejection reason was the only signal the extractor got about what it
+    produced wrongly, and a deleted row teaches nothing.
+    """
+    sheet = db.get_fact_sheet(sheet_id)
+    if sheet is None:
+        raise HTTPException(status_code=404, detail=f"fact sheet {sheet_id} not found")
+    try:
+        db.delete_factsheet_sources_for_sheets([sheet_id])
+        deleted = db.delete_fact_sheets([sheet_id])
+    except db.StorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    logger.info("fact sheet deleted: domain=%s version=%s", sheet.domain, sheet.version)
+    return {"id": sheet_id, "domain": sheet.domain, "deleted": deleted}
 
 
 @api.post("/fact-sheets/{sheet_id}/reject")
