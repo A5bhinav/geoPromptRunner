@@ -400,23 +400,18 @@ def test_the_drill_down_endpoint_returns_one_cell_and_404s_cleanly() -> None:
 def test_the_filter_controls_never_print() -> None:
     """A filtered PDF that looks complete is the same bug as a section that
     silently vanishes — the controls are screen-only and the count says so."""
-    from pathlib import Path
+    from tests.report_surface import render_source
 
-    view = (
-        Path(__file__).resolve().parents[1] / "web" / "components" / "report-view.tsx"
-    ).read_text()
+    view = render_source()
     assert 'className="no-print flex flex-wrap items-center gap-2"' in view
-    assert "Showing {visibleGroups.length} of {groups.length} findings" in view
+    assert "Showing {visible.length} of {groups.length} findings" in view
 
 
 def test_the_severity_bar_counts_what_is_visible() -> None:
     """A summary that ignores the filter is a summary of a different report."""
-    from pathlib import Path
+    from tests.report_surface import render_source
 
-    view = (
-        Path(__file__).resolve().parents[1] / "web" / "components" / "report-view.tsx"
-    ).read_text()
-    assert "<SeveritySummaryBar counts={visibleBySeverity} />" in view
+    assert "<SeveritySummaryBar counts={bySeverity} />" in render_source()
 
 
 def test_the_pdf_endpoint_delegates_to_the_p1_t7_worker() -> None:
@@ -450,11 +445,9 @@ def test_the_finding_card_can_fetch_the_full_answer() -> None:
     A client who doubts an excerpt needs the sentence IN CONTEXT, and the
     alternative was downloading the whole answers export.
     """
-    from pathlib import Path
+    from tests.report_surface import render_source
 
-    view = (
-        Path(__file__).resolve().parents[1] / "web" / "components" / "report-view.tsx"
-    ).read_text()
+    view = render_source()
     assert "function AnswerPanel" in view
     assert "getAnswerCell(" in view
     assert "<mark" in view, "the flagged claim must be highlighted in context"

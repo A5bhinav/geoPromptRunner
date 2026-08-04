@@ -1,3 +1,115 @@
+## Phase T — the Track report: sections as data, and the composite is gone — Completed 2026-08-04
+
+The whole of `docs/audit-packaging-spec.md` Phase T (TR-T0 through TR-T11), in
+dependency order. The spec called it "mostly presentation and one deletion", and
+that is what it was — no new engine call, no new judge pass, nothing on this path
+spends money.
+
+### TR-T0 — the deletion
+
+`judge_metrics.visibility_score()` returned a prominence-weighted 0–1 composite
+from hardcoded weights (`recommended_first` 1.0 / `mid_pack` 0.6 / `buried` 0.3 /
+`also_ran` 0.1) that nothing derived, and **`leaderboard()` sorted by it**. So the
+competitor ranking a client read was ordered by an invented number, and the
+leaderboard table printed it as a decimal in a column called "Visibility". A
+composite that orders a client-facing ranking is a score whether or not its value
+shows.
+
+Gone: `_PROM_SCORE`, `visibility_score`, `visibility_grade`, `VisibilityGrade`,
+`GradePolicy`, `grade_from`, `grade_penalty_flags`, `ScorecardPayload.visibility_grade`,
+`LeaderRow.visibility`, and the TS types behind them. The grade *formula* survives
+in `src/pipeline/grade_calibration.py`, which is dev-only and which
+`test_no_render_path_imports_the_grade_harness` keeps unreachable from a report.
+
+Prominence now travels two ways: `prominence_distribution()` (counts across the
+five levels, in a fixed order, every level present even at zero) and
+`median_prominence()` (an ordinal label — "mid-pack" — never a decimal, and on an
+even count it takes the WORSE of the two middles so a tie never rounds a client's
+position up). `leaderboard()` sorts by mention rate, ties broken on brand name so
+the order cannot reshuffle when nothing moved.
+
+The payload field was carried for a whole phase as "back-compat for stored
+deliverables". That is exactly how a dead computation stays alive long enough for
+the next person to re-render it, so it went too. `teaser/` already treats a
+missing grade as null.
+
+### TR-T2 — pp, not %
+
+`src/pipeline/fmt.py` + `web/lib/format.ts`, mirrored. A rate delta is percentage
+points (42% → 48% is `+6.0 pp`); a count delta is percent change (120 → 150 is
+`+25%`). A first cycle renders "Baseline — no prior cycle", never `0.0 pp` —
+"nothing was measured before" and "it did not move" are different claims. A move
+that rounds to zero renders in words, because a signed zero reads as movement to a
+scanning eye.
+
+### TR-T11 — the registry
+
+`web/lib/report-sections.tsx` is the report. Fourteen entries, each
+`{id, title, tier, inToc, render, thinDataFallback, hasData}`, and
+`report-view.tsx` iterates it. Reordering a section is reordering an array;
+dropping one is a deletion; moving one behind a tier is changing one string. None
+of those touches a component, which is the standing rule the old JSX ordering
+broke.
+
+Every entry has a non-null `thinDataFallback`, asserted. An empty section reads as
+a rendering bug, and a client who thinks the tool is broken stops trusting the
+numbers that *did* render.
+
+`tier` is read and nothing more. Everything ships as `track`; no gating is built
+beyond the field, because speculative gating is how a tier system becomes
+load-bearing before anyone has bought the tier.
+
+### TR-T1, T3–T10 — the sections
+
+`src/api/sections.py` builds nine blocks onto `ReportPayload`;
+`web/components/report-contract.tsx` renders them. Highlights of what the honesty
+rules forced:
+
+- **§1** six measured tiles and a **neutral** sentence — the BLUF action clause
+  opens §8, so a client who distrusts the advice can still trust the measurement.
+- **§3** draws no connecting line under four cycles (a line through two points
+  asserts a direction the sample cannot support), and excludes cycles that failed
+  the coverage gate *saying so* rather than plotting a half-run as a drop.
+- **§4** reads the intent-bucket family from the run. Hardcoding the consumer five
+  would render an empty section for every local-service client. A bucket whose
+  interval is wider than ±15 pp shows its count and interval with the point
+  estimate suppressed — and its bar hatched, because drawing the bar is the same
+  claim in a different medium.
+- **§5** reports attempted vs returned per surface and labels anything under the
+  coverage gate instead of averaging it in.
+- **§6** gates every brand's move through one `gate_movements` family, so the
+  multiple-comparison correction sees every test performed.
+- **§7** classifies sources deterministically (owned / earned / directory / social
+  / video / competitor — no LLM, or a model reclassifying youtube.com between
+  editions manufactures a change) and carries the **Pareto curve**, which closes
+  the last open piece of P2-T6: "are we dependent on 2 sources or 20".
+- **§10** five slots, each with a published rule and ties broken on
+  `(query_id, engine_name, run_index)`. A slot with no qualifying answer says so
+  and is **never** filled from another — substituting a strong appearance into the
+  "missing" slot makes the section a highlight reel.
+- **A1–A6** rows pre-stringified so the renderer stays generic, capped at 400 rows
+  with the truncation *stated*, and verbatim answer text is not printed anywhere:
+  450 answers inline is 90–150 pages, which is the blob this work exists to kill.
+
+Also unblocked in passing: the **oldest-still-open tile**. It had been `None`
+since P1-T6 waiting on the lifecycle engine, which landed in P2-T2 — it now names
+the finding and its age, which is the tile that replaced the grade and does its
+job better.
+
+### One test-infrastructure fix worth naming
+
+Eight source-scanning tests were pinned to `report-view.tsx` by filename. When the
+section content moved to `report-contract.tsx` they went **green-by-absence** —
+still scanning a file, but the file no longer held what they were checking, which
+is the worst outcome a source-scanning test has. `tests/report_surface.py` now
+names the render surface once, and every rule follows it.
+
+### Gate
+
+`mypy src/` · `ruff check src/` · `tsc --noEmit` · 1311 passed, 3 skipped.
+
+---
+
 ## Fact-sheet intake — the switch that turns HIGH/CRITICAL findings on — Completed 2026-08-04
 
 Plan phases I1–I3 plus the screen. `docs/factsheet-intake-agent-plan.md` §0 is the

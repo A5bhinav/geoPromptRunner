@@ -126,21 +126,32 @@ export interface RunSummary {
 
 // --- Report (src/api/reports.py) ---
 
-export interface GradePayload {
-  letter: string;
-  score: number;
-  raw_score: number;
-  accuracy_penalty: number;
-  n_flags: number;
-  rationale: string;
-}
+// THERE IS NO GradePayload. The A–F grade and the prominence-weighted composite
+// behind it are gone from the backend entirely (spec TR-T0) — not unrendered,
+// not optional, gone. Re-adding a type here is the first step of putting a `B−`
+// back on page 1.
 
+/** One brand's row of the competitive leaderboard, **sorted by mention rate**.
+ *
+ * The `visibility` column is gone with the composite that fed it: the table used
+ * to print it as a decimal AND sort the client's competitive ranking by it.
+ * Prominence now travels as an ordinal label plus the distribution behind it. */
 export interface LeaderRow {
   brand: string;
   is_client: boolean;
-  visibility: number | null;
   mention_rate: number;
+  /** The count behind the rate. Optional so pre-TR-T0 stored runs still parse;
+   * when absent the row renders its rate alone. */
+  present_cells?: number;
+  cells?: number;
   share_of_model: number;
+  /** Median position when present, raw level + client-facing wording. Null/"—"
+   * means "no typical position" (the brand appears nowhere), never "absent". */
+  prominence?: string | null;
+  prominence_label?: string;
+  /** Cells at each of the five levels, best first. Empty on the regex path,
+   * which detects presence only and cannot see position. */
+  prominence_distribution?: Record<string, number>;
 }
 
 export interface BucketRow {
@@ -340,13 +351,13 @@ export interface LosingRow {
   prominence?: string | null;
 }
 
-/** Four measured tiles. No letter grade, no composite score.
+/** Measured tiles. No letter grade, no composite score — at all.
  *
- * `visibility_grade` survives for back-compat with stored deliverables and the
- * CSV export. NOTHING RENDERS IT — see src/api/reports.py ScorecardPayload for
- * why the grade is dead and stays dead. */
+ * `visibility_grade` is GONE from the payload, not merely unrendered. It
+ * survived one round as "back-compat", which is exactly how a dead computation
+ * stays alive long enough for the next person to re-render it. See
+ * src/api/reports.py ScorecardPayload. */
 export interface ScorecardPayload {
-  visibility_grade: GradePayload | null;
   /** Tile 1. Optional so pre-P1-T6 stored runs parse. */
   ai_visibility?: RatePayload;
   /** Tile 3, counted in themes. */
@@ -459,6 +470,204 @@ export interface ReportPayload {
   sources: SourceRow[];
   losing_queries: LosingRow[];
   site_audit: SiteAuditPayload | null;
+  // --- the report contract's sections (Phase T) ---------------------------
+  // All optional: a run stored before Phase T has none of them, and every
+  // section's registry entry has a thin-data fallback that says so rather than
+  // rendering an empty box.
+  /** §1 — six measured tiles and one NEUTRAL sentence. */
+  exec_snapshot?: ExecSnapshotPayload;
+  /** §3 — the N-cycle series, gated on comparability and coverage. */
+  trend?: TrendPayload;
+  /** §4 — per intent bucket, family-aware (consumer vs local-service). */
+  question_types?: QuestionTypePayload;
+  /** §5 — per engine, including attempted vs returned. */
+  surfaces?: SurfacePayload;
+  /** §6 — the leaderboard, with gated movement. */
+  competitive?: CompetitivePayload;
+  /** §7 — client citations, top domains, source types, the Pareto curve. */
+  citations?: CitationsPayload;
+  /** §10 — five slots filled by published, deterministic rules. */
+  representative_answers?: RepresentativePayload;
+  /** §11 — everything needed to re-run, check or challenge the measurement. */
+  methodology?: MethodologyPayload;
+  /** A1–A6 — the dense tables behind the analysis. */
+  back_matter?: BackMatterPayload;
+}
+
+// --- Report contract sections (src/api/sections.py) ---
+
+/** One measured tile. `direction` is only ever "up"/"down" when the significance
+ * gate passed — an arrow is a claim that something happened, and at 3–5 runs
+ * most week-over-week wobble is the sampling, not the market. */
+export interface TilePayload {
+  key: string;
+  label: string;
+  value: string;
+  secondary: string;
+  delta: string;
+  direction: "up" | "down" | "flat" | "unknown";
+  gated: boolean;
+}
+
+export interface ExecSnapshotPayload {
+  tiles: TilePayload[];
+  /** DESCRIPTIVE. The action clause opens section 8, never this one. */
+  summary: string;
+}
+
+export interface TrendPoint {
+  run_date: string;
+  run_id: string;
+  mention: RatePayload;
+  citation: RatePayload | null;
+  share_of_model: number;
+  prominence: string | null;
+  prominence_label: string;
+  is_current: boolean;
+}
+
+export interface TrendPayload {
+  points: TrendPoint[];
+  cycles: number;
+  /** False under four cycles — points only. A line through two points asserts a
+   * direction the data cannot support, and a reader reads the slope. */
+  draw_line: boolean;
+  statement: string;
+  excluded_cycles: number;
+}
+
+export interface QuestionTypeRow {
+  bucket: string;
+  label: string;
+  mention: RatePayload;
+  citation_rate: number | null;
+  delta: string;
+  /** Interval wider than ±15 pp ⇒ render the count and interval, not the point. */
+  suppress_point: boolean;
+}
+
+export interface QuestionTypePayload {
+  family: "consumer" | "local" | "mixed";
+  rows: QuestionTypeRow[];
+  best: string;
+  weakest: string;
+  note: string;
+}
+
+export interface SurfaceRow {
+  engine_name: string;
+  label: string;
+  model_id: string;
+  mention: RatePayload;
+  prominence_distribution: Record<string, number>;
+  attempted_cells: number;
+  answered_cells: number;
+  coverage_ratio: number;
+  coverage_ok: boolean;
+  delta: string;
+  direction: "up" | "down" | "flat" | "unknown";
+}
+
+export interface SurfacePayload {
+  rows: SurfaceRow[];
+  degraded: string[];
+  dead: string[];
+  note: string;
+}
+
+export interface CompetitiveRow {
+  brand: string;
+  is_client: boolean;
+  mention: RatePayload;
+  share_of_model: number;
+  prominence: string | null;
+  prominence_label: string;
+  prominence_distribution: Record<string, number>;
+  delta: string;
+  direction: "up" | "down" | "flat" | "unknown";
+}
+
+export interface CompetitivePayload {
+  rows: CompetitiveRow[];
+  gained: string[];
+  lost: string[];
+  note: string;
+}
+
+export interface CitationDomainRow {
+  domain: string;
+  count: number;
+  share: number;
+  /** Running share, domains ordered by count — the Pareto read. */
+  cumulative_share: number;
+  source_type: string;
+  is_client: boolean;
+  delta: string;
+}
+
+export interface CitationsPayload {
+  client_citations: number;
+  client_rate: RatePayload | null;
+  domains: CitationDomainRow[];
+  by_source_type: Record<string, number>;
+  total_citations: number;
+  concentration: string;
+  note: string;
+}
+
+export interface RepresentativeAnswer {
+  slot: string;
+  slot_label: string;
+  /** The published rule that chose this one. "Why this example" must have an
+   * answer that is not "we liked it". */
+  rule: string;
+  available: boolean;
+  prompt: string;
+  query_id: string;
+  run_index: number;
+  engine_name: string;
+  engine_label: string;
+  model_id: string;
+  observed_at: string;
+  excerpt: string;
+  note: string;
+}
+
+export interface RepresentativePayload {
+  slots: RepresentativeAnswer[];
+  selection_rules: string[];
+}
+
+export interface MethodologyPayload {
+  window_start: string;
+  window_end: string;
+  query_set_version: string;
+  n_queries: number;
+  runs_per_query: number;
+  surfaces: [string, string][];
+  geography: string;
+  account_config: string;
+  definitions: [string, string][];
+  changes_since_last: string[];
+  limitations: string[];
+  selection_rules: string[];
+  non_reproducibility: string;
+  independence: string;
+  judge_agreement: string;
+}
+
+export interface AppendixTable {
+  id: string;
+  title: string;
+  columns: string[];
+  rows: string[][];
+  note: string;
+  total_rows: number;
+}
+
+export interface BackMatterPayload {
+  appendices: AppendixTable[];
+  note: string;
 }
 
 // --- Teaser types (teaser/ pipeline draft + the persisted review row) ---
@@ -1094,6 +1303,21 @@ export interface FactSheetDetail {
   };
 }
 
+/** Permanently delete a sheet and its claims.
+ *
+ * Safe for history: a finished run keeps its own copy of the sheet text and the
+ * version it was judged against, so a past report cannot change underneath it. */
+export async function deleteFactSheet(
+  id: string,
+): Promise<{ id: string; domain: string; deleted: number }> {
+  const res = await fetch(`${API_BASE}/fact-sheets/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`delete fact sheet failed (${res.status})`);
+  return res.json();
+}
+
 export async function listFactSheets(state?: FactSheetState): Promise<FactSheetSummary[]> {
   const qs = state ? `?state=${encodeURIComponent(state)}` : "";
   const res = await fetch(`${API_BASE}/fact-sheets${qs}`, {
@@ -1221,6 +1445,12 @@ export interface IntakeQuestion {
   kind: IntakeAnswerKind;
   section: string | null;
   keys: string[];
+  /** What each field of a multi-key card is called. From the registry, so a
+   * label cannot drift from the key it names. */
+  keyLabels: Record<string, string>;
+  /** "config" cards open the conversation — the five things the run cannot
+   * start without. "facts" is everything the sheet is made of. */
+  stage: "config" | "facts";
   prompt: string;
   /** The one-line rationale, shown in the open-questions launcher. */
   why: string;
@@ -1313,6 +1543,17 @@ export interface LintItem {
   code: string;
 }
 
+/** What this set would actually run, read off the generated CSV — never
+ * assumed. It is the last number a person sees before spending money. */
+export interface IntakeRunShape {
+  questions: number;
+  engines: string[];
+  surfaces: number;
+  runs_per_query: number;
+  calls: number;
+  estimated_usd: number;
+}
+
 export interface IntakeReview {
   session_id: string;
   state: string;
@@ -1323,6 +1564,7 @@ export interface IntakeReview {
   query_set: IntakeQueryRow[];
   csv: string;
   lint: LintItem[];
+  run_shape: IntakeRunShape;
   tier: string;
   can_approve: boolean;
   run_inputs: Record<string, unknown>;
@@ -1358,6 +1600,42 @@ async function intakeJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function startIntake(sheetId: string): Promise<IntakeSession> {
   return intakeJson(`/fact-sheets/${encodeURIComponent(sheetId)}/intake`, { method: "POST" });
+}
+
+/** One conversation still in flight. */
+export interface OpenIntake {
+  session_id: string;
+  domain: string;
+  business_name: string;
+  state: string;
+  answered: number;
+  updated_at: string;
+}
+
+/** THE COLD-START ENTRY POINT. No fact sheet needed, no crawl required — a
+ * domain the crawler has never seen is exactly the case where the owner's
+ * answers are the only thing on the sheet, and that sheet is already better
+ * than a crawled one because every line of it is client-confirmed. */
+export function startIntakeForBrand(body: {
+  business: string;
+  website: string;
+}): Promise<IntakeSession> {
+  return intakeJson(`/intake/start`, { method: "POST", body: JSON.stringify(body) });
+}
+
+/** Discard a conversation. Frees the domain so a new one can be started.
+ *
+ * Distinct from abandonment: `abandoned` records that an OWNER stopped
+ * answering, which is a signal worth keeping. This is an OPERATOR throwing away
+ * a conversation they opened by mistake. */
+export function deleteIntake(
+  sessionId: string,
+): Promise<{ session_id: string; domain: string; deleted: number }> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+}
+
+export function listOpenIntakes(): Promise<OpenIntake[]> {
+  return intakeJson(`/intake`);
 }
 
 export function getIntake(sessionId: string): Promise<IntakeSession> {
@@ -1410,6 +1688,16 @@ export function patchIntakeReview(
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+/** The question set the intake generated alongside an approved sheet.
+ *
+ * Read off the session that approved it rather than stored twice — two
+ * representations of the same set is how they drift. */
+export function getSheetQuerySet(
+  sheetId: string,
+): Promise<{ fact_sheet_id: string; queries: IntakeQueryRow[]; csv: string }> {
+  return intakeJson(`/fact-sheets/${encodeURIComponent(sheetId)}/query-set`);
 }
 
 export function approveIntake(

@@ -31,18 +31,14 @@ from src.api.reports import (
 )
 from src.pipeline.orchestrator import AuditOutcome
 from src.storage.models import AccuracyFlag, AnswerJudgment, BrandJudgment, QueryResult
+from tests.report_surface import REPORT_CONTENT_FILES, REPORT_RENDER_FILES, render_code
 
 WEB = Path(__file__).resolve().parents[1] / "web"
-REPORT_COMPONENTS = [
-    WEB / "components" / "report-view.tsx",
-    # charts.tsx is gone: recharts left the report and its five chart components
-    # were replaced by the hand-rolled panels below. Both new files are scanned,
-    # so the voice and off-limits-copy rules still cover every string a client
-    # can read.
-    WEB / "components" / "report-panels.tsx",
-    WEB / "components" / "marks.tsx",
-    WEB / "components" / "badges.tsx",
-]
+SRC = Path(__file__).resolve().parents[1] / "src"
+# The render surface is named once, in tests/report_surface.py. Pinning these
+# rules to a filename is how they went green-by-absence when TR-T11 moved the
+# section content out of report-view.tsx and into report-contract.tsx.
+REPORT_COMPONENTS = list(REPORT_RENDER_FILES)
 
 _BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 _LINE_COMMENT = re.compile(r"^\s*//.*$", re.MULTILINE)
@@ -57,6 +53,24 @@ def code_of(path: Path) -> str:
     would make the rules unwritable.
     """
     return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", path.read_text()))
+
+
+_PY_DOCSTRING = re.compile(r'("""|\'\'\')(?:.|\n)*?\1')
+_PY_COMMENT = re.compile(r"^\s*#.*$", re.MULTILINE)
+
+
+def executable_code_of(path: Path) -> str:
+    """Source with comments AND docstrings removed — Python or TypeScript.
+
+    The TR-T0 scan below bans identifiers that the surviving comments have to
+    NAME in order to explain why they were deleted ("`visibility_score()` used to
+    turn these five levels into a composite"). Matching prose would make the rule
+    unwritable, so this strips every form of prose the two languages have.
+    """
+    body = code_of(path)
+    if path.suffix == ".py":
+        body = _PY_COMMENT.sub("", _PY_DOCSTRING.sub("", body))
+    return body
 
 
 # --- fixtures -----------------------------------------------------------------
@@ -197,7 +211,7 @@ def test_losing_rows_carry_the_verbatim_question(report: ReportPayload) -> None:
 
 
 def test_the_report_view_never_renders_a_query_id() -> None:
-    source = code_of(WEB / "components" / "report-view.tsx")
+    source = render_code()
     assert "l.query_id" not in source, "the losing-queries table is rendering an internal id"
     # The id may still be READ (as a React key or a join), but never interpolated
     # as visible text.
@@ -249,11 +263,120 @@ def test_an_intermittent_finding_is_not_reported_as_universal(report: ReportPayl
 # --- no letter grade, no composite score --------------------------------------
 
 
-def test_the_payload_keeps_the_grade_for_back_compat_but_nothing_renders_it() -> None:
+def test_the_section_order_lives_in_the_registry_not_in_jsx() -> None:
+    """TR-T11. Reordering or disabling a section must be a registry edit.
+
+    The failure this prevents is not cosmetic: while the order lived in JSX,
+    "move citations above competitive" and "put priority actions behind a paid
+    tier" were both component edits, which is exactly what standing rule 1
+    forbids — structure is code, content is data.
+    """
+    view = code_of(WEB / "components" / "report-view.tsx")
+    registry = code_of(WEB / "lib" / "report-sections.tsx")
+
+    # The view renders BY ITERATING the registry, and does not name a section.
+    assert "sections.map((section)" in view
+    assert "section.render(ctx)" in view
+    assert "section.thinDataFallback(ctx)" in view
+
+    ids = re.findall(r'^\s*id: "([a-z-]+)",', registry, re.MULTILINE)
+    assert ids == [
+        "cover",
+        "snapshot",
+        "what-changed",
+        "trend",
+        "question-types",
+        "surfaces",
+        "competitive",
+        "citations",
+        "actions",
+        "findings",
+        "representative",
+        "supporting",
+        "methodology",
+        "appendices",
+    ], "the registry no longer matches the report contract's delivery order"
+
+    # Actions precede findings — answer-first. The findings are the evidence
+    # behind the actions, not a preamble to them.
+    assert ids.index("actions") < ids.index("findings")
+    # Methodology and the appendices close the document.
+    assert ids[-1] == "appendices"
+
+
+def test_every_section_has_a_thin_data_fallback() -> None:
+    """An empty section reads as a rendering bug, and a client who thinks the
+    tool is broken stops trusting the numbers that did render."""
+    registry = code_of(WEB / "lib" / "report-sections.tsx")
+    ids = len(re.findall(r'^\s*id: "([a-z-]+)",', registry, re.MULTILINE))
+    # Matched on the VALUE, so the interface's own declaration of the field does
+    # not count as an implementation of it.
+    fallbacks = len(re.findall(r"thinDataFallback: (?:notMeasured|\(ctx\))", registry))
+    has_data = len(re.findall(r"hasData: \((?:\)|ctx\))", registry))
+    assert fallbacks == ids, f"{ids} sections but {fallbacks} fallbacks"
+    assert has_data == ids, f"{ids} sections but {has_data} data checks"
+
+
+def test_tier_gating_is_a_field_and_nothing_more() -> None:
+    """Everything ships as `track` today. Speculative gating is how a tier system
+    becomes load-bearing before anyone has bought the tier."""
+    registry = code_of(WEB / "lib" / "report-sections.tsx")
+    assert 'tier: "track_pro"' not in registry
+    assert registry.count('tier: "track"') >= 10
+
+
+def test_nothing_renders_the_grade() -> None:
     view = code_of(WEB / "components" / "report-view.tsx")
     assert "gradeColor" not in view, "the grade colouring function is back"
     assert "visibility_grade" not in view, "the report is rendering the grade again"
     assert "AI Visibility Grade" not in view
+
+
+def test_the_composite_is_gone_from_the_codebase_not_merely_unrendered() -> None:
+    """TR-T0. The grep the spec names, as a test.
+
+    A composite that ORDERS a client-facing ranking is a score whether or not its
+    number is printed — `leaderboard()` used to sort by `visibility_score`. And a
+    computation left in place is how a `B−` comes back: the payload carried
+    `visibility_grade` for a whole phase as "back-compat" before this landed.
+    """
+    # Hand-written source only. `web/node_modules` and `web/.next` are vendored
+    # and generated respectively; walking them costs minutes and proves nothing.
+    roots = [SRC, WEB / "components", WEB / "lib", WEB / "app"]
+    for root in roots:
+        for path in root.rglob("*"):
+            if path.suffix not in {".py", ".ts", ".tsx"}:
+                continue
+            # The dev-only calibration harness is the one sanctioned home for the
+            # grade formula, and it is imported by nothing on a render path.
+            if path.name == "grade_calibration.py":
+                continue
+            body = executable_code_of(path)
+            for banned in ("visibility_score(", "visibility_grade(", "_PROM_SCORE"):
+                assert banned not in body, f"{path.name} computes the dead composite: {banned}"
+
+
+_IMPORTS_HARNESS = re.compile(r"^\s*(from|import)\s+src\.pipeline\.grade_calibration", re.MULTILINE)
+
+
+def test_no_render_path_imports_the_grade_harness() -> None:
+    """The formula may exist for research; it may not be reachable from a report."""
+    for path in SRC.rglob("*.py"):
+        if path.name == "grade_calibration.py":
+            continue
+        assert not _IMPORTS_HARNESS.search(path.read_text()), (
+            f"{path.name} imports the dev-only grade harness"
+        )
+
+
+def test_leaderboard_is_ordered_by_a_measured_quantity(report: ReportPayload) -> None:
+    rates = [row["mention_rate"] for row in report["leaderboard"]]
+    assert rates == sorted(rates, reverse=True), "the leaderboard is not ordered by mention rate"
+    for row in report["leaderboard"]:
+        # Prominence is an ordinal label, never a decimal a reader could mistake
+        # for a score.
+        assert not isinstance(row.get("prominence"), float)
+        assert "visibility" not in row
 
 
 def test_no_letter_grade_string_can_appear_in_the_rendered_tiles(report: ReportPayload) -> None:
@@ -424,9 +547,11 @@ def test_the_independence_disclaimer_ships_verbatim(report: ReportPayload) -> No
 
 
 def test_each_disclosure_renders_exactly_once() -> None:
-    view = code_of(WEB / "components" / "report-view.tsx")
-    assert view.count("report.methodology_disclosure}") == 1
-    assert view.count("report.independence_disclaimer}") == 1
+    """Verbatim, and ONCE. Twice reads as boilerplate and gets skipped; the
+    methodology section is the single place both belong."""
+    view = render_code()
+    assert view.count("{m.non_reproducibility}") == 1
+    assert view.count("{m.independence}") == 1
 
 
 # --- copy that is off-limits --------------------------------------------------
@@ -473,7 +598,11 @@ def test_the_severity_ramp_is_the_navy_ramp_with_no_alert_hue() -> None:
 
 def test_report_components_take_colour_from_tokens_not_raw_hex() -> None:
     """A raw hex in a report component is a near-miss colour waiting to happen."""
-    for path in (WEB / "components" / "report-view.tsx", WEB / "components" / "badges.tsx"):
+    # marks.tsx and report-panels.tsx are EXEMPT and that is the point of them:
+    # marks.tsx is where the four-step navy ramp is defined (RAMP, STRIPE), and
+    # panels take their tones from it. Everything downstream must reach for a
+    # token rather than retyping a near-miss navy.
+    for path in REPORT_CONTENT_FILES:
         source = code_of(path)
         # `currentColor` and `#fff` on a navy fill are the two sanctioned literals;
         # anything else must come from a `var(--…)` token.
@@ -495,7 +624,7 @@ def test_the_brand_lives_behind_one_config_object() -> None:
     """An agency white-label replaces the whole skin, not just an accent."""
     brand = code_of(WEB / "lib" / "brand.ts")
     assert "export const SABLE" in brand and "export const NEUTRAL" in brand
-    view = code_of(WEB / "components" / "report-view.tsx")
+    view = render_code()
     assert "brand.name" in view and "brand.showMark" in view
     assert '"Sable"' not in view, "the report hardcodes the tenant name"
 
@@ -509,8 +638,11 @@ def test_the_donut_is_gone() -> None:
     compare a value SET, and the report must not reach for one.
     """
     panels = code_of(WEB / "components" / "report-panels.tsx")
-    view = code_of(WEB / "components" / "report-view.tsx")
-    for source in (panels, view):
+    # Scoped to the report's own components: marks.tsx legitimately exports a
+    # Donut for the run-progress ring, which is a single-arc gauge of one value
+    # that nobody compares to anything.
+    contract = "\n".join(code_of(p) for p in REPORT_CONTENT_FILES)
+    for source in (panels, contract):
         assert "Donut" not in source
         assert "PieChart" not in source
         assert "ShareDonut" not in source

@@ -175,7 +175,9 @@ def test_readiness_is_gated_on_more_than_networkidle() -> None:
 
 def test_evidence_is_expanded_when_printing() -> None:
     """A collapsed disclosure is the silently-drops-content bug in miniature."""
-    view = (WEB / "components" / "report-view.tsx").read_text()
+    from tests.report_surface import render_source
+
+    view = render_source()
     assert "React.useState(isPrint)" in view
     assert "print:block" in view
 
@@ -221,7 +223,9 @@ def test_the_card_evidences_a_few_observations_and_admits_it() -> None:
     from src.pipeline.findings import _MAX_EVIDENCE_PER_GROUP
 
     assert 1 <= _MAX_EVIDENCE_PER_GROUP <= 6
-    view = (WEB / "components" / "report-view.tsx").read_text()
+    from tests.report_surface import render_source
+
+    view = render_source()
     assert "evidence_total > group.evidence.length" in view
     assert "Showing" in view
 

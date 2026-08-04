@@ -3,18 +3,16 @@ from __future__ import annotations
 from src.pipeline.calibration import compare
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, BrandJudgment
 from src.pipeline.judge_metrics import (
-    DEFAULT_GRADE_POLICY,
     brand_cells_map,
     collect_accuracy_flags,
-    grade_penalty_flags,
     leaderboard,
     losing_cells,
+    median_prominence,
     mention_rate,
+    prominence_distribution,
     split_cells,
     stability,
     stability_by_engine,
-    visibility_grade,
-    visibility_score,
 )
 
 
@@ -47,17 +45,78 @@ def _judgments() -> list[AnswerJudgment]:
     ]
 
 
-def test_mention_and_visibility() -> None:
+def test_mention_rate_counts_presence() -> None:
     js = _judgments()
     assert mention_rate(js, "YNAB") == 1.0  # present in both cells
     assert mention_rate(js, "Centsible") == 0.5  # present in 1 of 2
-    # YNAB (recommended_first + mid_pack) outranks Centsible (absent + buried).
-    assert visibility_score(js, "YNAB") > visibility_score(js, "Centsible")
 
 
-def test_leaderboard_orders_by_visibility() -> None:
+def test_prominence_is_a_distribution_not_a_score() -> None:
+    """TR-T0: prominence reports counts across five levels, never a decimal."""
+    js = _judgments()
+    dist = prominence_distribution(brand_cells_map(js, ["YNAB"])["YNAB"])
+    # Every level present even at zero, and the counts add back to the denominator.
+    assert dist == {
+        "recommended_first": 1,
+        "mid_pack": 1,
+        "buried": 0,
+        "also_ran": 0,
+        "absent": 0,
+    }
+    assert sum(dist.values()) == 2
+
+
+def test_median_prominence_reads_only_cells_where_present() -> None:
+    cm = brand_cells_map(_judgments(), ["YNAB", "Centsible"])
+    # YNAB: recommended_first + mid_pack. Even count -> the WORSE of the two
+    # middles, so a tie never rounds a client's position up.
+    assert median_prominence(cm["YNAB"]) == "mid_pack"
+    # Centsible: absent in q1, buried in q2. The absent cell is not a position.
+    assert median_prominence(cm["Centsible"]) == "buried"
+
+
+def test_median_prominence_is_none_when_never_present() -> None:
+    # "No typical position" is a different statement from "typically absent",
+    # and the tile renders an em dash rather than the worst level.
+    js = [_aj("q1", "openai", [_bj("Ghost", False, "absent")])]
+    assert median_prominence(brand_cells_map(js, ["Ghost"])["Ghost"]) is None
+
+
+def test_leaderboard_orders_by_mention_rate_not_prominence() -> None:
+    """The spec's own TR-T0 test: where the two disagree, mention rate wins.
+
+    `Wide` appears everywhere but always mid-pack; `Narrow` is recommended first
+    in the one cell it appears in. The old composite ranked Narrow above Wide —
+    a client-facing ranking ordered by an invented weighting.
+    """
+    js = [
+        _aj("q1", "openai", [_bj("Wide", True, "mid_pack"), _bj("Narrow", False, "absent")]),
+        _aj("q2", "openai", [_bj("Wide", True, "mid_pack"), _bj("Narrow", False, "absent")]),
+        _aj(
+            "q3",
+            "openai",
+            [_bj("Wide", True, "mid_pack"), _bj("Narrow", True, "recommended_first")],
+        ),
+    ]
+    board = leaderboard(js, ["Narrow", "Wide"])
+    assert [r.brand for r in board] == ["Wide", "Narrow"]
+    assert board[0].mention_rate > board[1].mention_rate
+    # Prominence rides along as a label, and it is not the sort key.
+    assert board[0].prominence == "mid_pack"
+    assert board[1].prominence == "recommended_first"
+
+
+def test_leaderboard_ties_break_on_brand_name() -> None:
+    # A leaderboard that reshuffles when nothing moved reads as movement.
+    js = [_aj("q1", "openai", [_bj("Zeta", True, "mid_pack"), _bj("Alpha", True, "buried")])]
+    assert [r.brand for r in leaderboard(js, ["Zeta", "Alpha"])] == ["Alpha", "Zeta"]
+    assert [r.brand for r in leaderboard(js, ["Alpha", "Zeta"])] == ["Alpha", "Zeta"]
+
+
+def test_leaderboard_carries_the_denominator() -> None:
     board = leaderboard(_judgments(), ["Centsible", "YNAB"])
-    assert [row[0] for row in board] == ["YNAB", "Centsible"]
+    row = next(r for r in board if r.brand == "Centsible")
+    assert (row.present_cells, row.cells) == (1, 2)
 
 
 def test_losing_cells_flags_client_absent_competitor_first() -> None:
@@ -86,25 +145,6 @@ def test_losing_cells_collapses_multiple_rivals_in_one_cell() -> None:
     assert losses[0].brand == "Monarch"  # deterministic representative (brand-sorted)
 
 
-def test_visibility_grade_rewards_prominence() -> None:
-    # YNAB is recommended_first / mid_pack -> high visibility -> top grade.
-    strong = visibility_grade(_judgments(), "YNAB")
-    # Centsible is absent / buried -> low visibility -> low grade.
-    weak = visibility_grade(_judgments(), "Centsible")
-    assert strong.score > weak.score
-    assert strong.letter == "A"
-    assert weak.letter in {"C", "D", "F"}
-
-
-def test_visibility_grade_penalized_by_accuracy_flags() -> None:
-    flag = AccuracyFlag("wrong_pricing", "$20/mo", "free", "high")
-    clean = [_aj("q1", "openai", [_bj("Centsible", True, "recommended_first")])]
-    flagged = [_aj("q1", "openai", [_bj("Centsible", True, "recommended_first")], [flag])]
-    # Same visibility, but the high-severity flag drags the graded score down.
-    assert visibility_grade(flagged, "Centsible").score < visibility_grade(clean, "Centsible").score
-    assert visibility_grade(flagged, "Centsible").n_flags == 1
-
-
 def test_collect_accuracy_flags_dedupes() -> None:
     f = AccuracyFlag("wrong_pricing", "$20/mo", "free + $5/mo", "high")
     js = [
@@ -112,24 +152,6 @@ def test_collect_accuracy_flags_dedupes() -> None:
         _aj("q1", "anthropic", [_bj("Centsible", True, "buried")], [f]),  # same flag, deduped
     ]
     assert len(collect_accuracy_flags(js)) == 1
-
-
-def test_grade_dedupes_repeated_error_within_answer() -> None:
-    # One answer flags the SAME error type twice (different claim text, as an
-    # over-flagging judge does). It must count once toward the grade penalty —
-    # repetition of one mistake cannot compound the score — and keep the worst
-    # severity. (collect_accuracy_flags still lists both for display.)
-    f_hi = AccuracyFlag("stale", "Ring 4 is the newest", "Ring 5 is current", "high")
-    f_lo = AccuracyFlag("stale", "compare Ring 4 vs RingConn", "Ring 5 is current", "low")
-    twice = [_aj("q1", "gemini", [_bj("Centsible", True, "recommended_first")], [f_hi, f_lo])]
-    once = [_aj("q1", "gemini", [_bj("Centsible", True, "recommended_first")], [f_hi])]
-
-    assert len(grade_penalty_flags(twice)) == 1  # collapsed to one stale problem
-    assert len(collect_accuracy_flags(twice)) == 2  # but both still shown in the report
-    g_twice, g_once = visibility_grade(twice, "Centsible"), visibility_grade(once, "Centsible")
-    assert g_twice.n_flags == 1
-    assert g_twice.score == g_once.score  # repetition did not compound the penalty
-    assert g_twice.accuracy_penalty == DEFAULT_GRADE_POLICY.penalty["high"]  # worst severity kept
 
 
 def test_calibration_compare_counts_matches() -> None:

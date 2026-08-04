@@ -5,32 +5,44 @@ from dataclasses import dataclass
 
 from src.pipeline import metrics
 from src.pipeline.judge import AccuracyFlag, AnswerJudgment, Framing, Prominence
-from src.storage.models import Severity
 
 __all__ = [
     "BrandLabel",
     "BrandCell",
-    "VisibilityGrade",
+    "LeaderRow",
+    "PROMINENCE_ORDER",
+    "PROMINENCE_LABELS",
     "brand_cells_map",
     "mention_rate",
-    "visibility_score",
+    "prominence_distribution",
+    "median_prominence",
+    "prominence_label",
     "leaderboard",
     "framing_breakdown",
     "stability",
     "stability_by_engine",
     "split_cells",
     "collect_accuracy_flags",
-    "grade_penalty_flags",
-    "GradePolicy",
-    "DEFAULT_GRADE_POLICY",
-    "grade_from",
-    "visibility_grade",
     "losing_cells",
     "judge_sections",
     "render_judge_report",
 ]
 
-# Prominence as an ordinal (best -> worst) and as a 0..1 visibility weight.
+# Prominence as an ordinal (best -> worst). An ORDINAL, and only an ordinal.
+#
+# There is no weight table here any more. `visibility_score()` used to turn these
+# five levels into a 0..1 composite from hardcoded weights (1.0 / 0.6 / 0.3 / 0.1)
+# that nothing derived, and `leaderboard()` SORTED BY IT — so the competitor
+# ranking a client read was ordered by an invented number. A composite that orders
+# a client-facing ranking is a score whether or not its value is printed, which
+# the "no invented scores" rule forbids outright (spec TR-T0).
+#
+# Prominence now travels as a DISTRIBUTION across the five levels, or as a median
+# ordinal LABEL ("mid-pack") — never as a decimal, never as a sort key. The rank
+# below exists for ordering the levels themselves (which of two labels is better),
+# not for arithmetic across them: the gap between "recommended first" and
+# "mid-pack" is not measurably the same size as the gap between "buried" and
+# "also-ran", and averaging them asserts that it is.
 _PROM_RANK: dict[str, int] = {
     Prominence.RECOMMENDED_FIRST.value: 0,
     Prominence.MID_PACK.value: 1,
@@ -38,12 +50,21 @@ _PROM_RANK: dict[str, int] = {
     Prominence.ALSO_RAN.value: 3,
     Prominence.ABSENT.value: 4,
 }
-_PROM_SCORE: dict[str, float] = {
-    Prominence.RECOMMENDED_FIRST.value: 1.0,
-    Prominence.MID_PACK.value: 0.6,
-    Prominence.BURIED.value: 0.3,
-    Prominence.ALSO_RAN.value: 0.1,
-    Prominence.ABSENT.value: 0.0,
+
+#: The five levels, best first. The fixed order every distribution renders in —
+#: a chart whose axis order moves between editions cannot be compared at a glance.
+PROMINENCE_ORDER: tuple[str, ...] = tuple(
+    sorted(_PROM_RANK, key=lambda p: _PROM_RANK[p])
+)
+
+#: Client-facing wording for each level. Sentence case; the report never prints
+#: the raw enum value (`recommended_first` is a join key, not content).
+PROMINENCE_LABELS: dict[str, str] = {
+    Prominence.RECOMMENDED_FIRST.value: "Recommended first",
+    Prominence.MID_PACK.value: "Mid-pack",
+    Prominence.BURIED.value: "Buried",
+    Prominence.ALSO_RAN.value: "Also-ran",
+    Prominence.ABSENT.value: "Absent",
 }
 
 
@@ -182,15 +203,66 @@ def mention_rate(
     return sum(1 for c in cells if c.present) / len(cells) if cells else 0.0
 
 
-def visibility_score(
-    judgments: list[AnswerJudgment], brand: str, *, cells: list[BrandCell] | None = None
-) -> float:
-    """Prominence-weighted visibility in [0, 1] — the leaderboard metric.
+def prominence_distribution(cells: list[BrandCell]) -> dict[str, int]:
+    """How many cells landed at each of the five prominence levels.
 
-    Rewards being recommended first over being buried, unlike a flat mention rate.
+    The reported form of prominence: counts, in a fixed order, every level
+    present even at zero. A distribution is auditable — a client can add the
+    numbers up and get the denominator back — where a weighted average is a
+    claim about the spacing between levels that nothing in the data supports.
     """
-    cells = _cells_for(judgments, brand, cells)
-    return sum(_PROM_SCORE.get(c.prominence, 0.0) for c in cells) / len(cells) if cells else 0.0
+    counts = Counter(c.prominence if c.present else Prominence.ABSENT.value for c in cells)
+    return {level: counts.get(level, 0) for level in PROMINENCE_ORDER}
+
+
+def median_prominence(cells: list[BrandCell]) -> str | None:
+    """The median prominence level ACROSS THE CELLS WHERE THE BRAND IS PRESENT.
+
+    Returns the raw level value, or ``None`` when the brand is present nowhere —
+    which is "no typical position", not "absent-typical". A brand appearing in one
+    cell in twelve has a median position in that one cell, and the mention rate
+    beside it is what says how rare that is; conflating the two into one number is
+    exactly what the composite did.
+
+    The median (not the mean) because these are ordered categories, not
+    quantities: the middle observation is well-defined, an average is not. On an
+    even count it takes the WORSE of the two middle levels — the conservative
+    read, so a tie never rounds a client's position up.
+    """
+    present = sorted(
+        (c.prominence for c in cells if c.present),
+        key=lambda p: _PROM_RANK.get(p, len(_PROM_RANK)),
+    )
+    if not present:
+        return None
+    # Sorted best -> worst, so index n//2 is the middle observation on an odd
+    # count and the WORSE of the two middles on an even one.
+    return present[len(present) // 2]
+
+
+def prominence_label(level: str | None) -> str:
+    """Client-facing wording for a level. ``None`` → an em dash, never "absent"."""
+    if level is None:
+        return "—"
+    return PROMINENCE_LABELS.get(level, level.replace("_", " "))
+
+
+@dataclass(frozen=True)
+class LeaderRow:
+    """One brand's row of the competitive leaderboard.
+
+    Deliberately not a tuple: the old ``(brand, visibility, mention_rate)`` shape
+    put a composite in the position callers read as "the number", and swapping
+    two floats in a tuple is a silent change. Prominence travels as a label and a
+    distribution, and it is never the sort key.
+    """
+
+    brand: str
+    mention_rate: float
+    present_cells: int
+    cells: int
+    prominence: str | None
+    distribution: dict[str, int]
 
 
 def leaderboard(
@@ -198,18 +270,27 @@ def leaderboard(
     brands: list[str],
     *,
     cells_map: dict[str, list[BrandCell]] | None = None,
-) -> list[tuple[str, float, float]]:
-    """(brand, visibility_score, mention_rate) ranked by visibility, best first."""
+) -> list[LeaderRow]:
+    """The competitive ranking, **sorted by mention rate**, best first.
+
+    Mention rate is a measured quantity with a denominator a client can check.
+    Ties break on brand name so the order is stable between editions rather than
+    dependent on dict iteration — a leaderboard that reshuffles when nothing
+    moved reads as movement.
+    """
     cm = cells_map if cells_map is not None else brand_cells_map(judgments, brands)
     rows = [
-        (
-            b,
-            visibility_score(judgments, b, cells=cm.get(b, [])),
-            mention_rate(judgments, b, cells=cm.get(b, [])),
+        LeaderRow(
+            brand=b,
+            mention_rate=mention_rate(judgments, b, cells=cm.get(b, [])),
+            present_cells=sum(1 for c in cm.get(b, []) if c.present),
+            cells=len(cm.get(b, [])),
+            prominence=median_prominence(cm.get(b, [])),
+            distribution=prominence_distribution(cm.get(b, [])),
         )
         for b in brands
     ]
-    return sorted(rows, key=lambda r: r[1], reverse=True)
+    return sorted(rows, key=lambda r: (-r.mention_rate, r.brand))
 
 
 def framing_breakdown(
@@ -258,8 +339,8 @@ def split_cells(cells: list[BrandCell]) -> list[BrandCell]:
 def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
     """All distinct client accuracy flags across the run (deduped by type+claim).
 
-    This is the *display* list (the report's flag listing). The grade penalty uses
-    ``grade_penalty_flags`` instead — a coarser dedup that repetition can't game.
+    This is the *display* list (the report's flag listing). The findings pipeline
+    re-clusters these into themes; nothing in this module scores them.
     """
     seen: set[tuple[str, str]] = set()
     out: list[AccuracyFlag] = []
@@ -271,134 +352,6 @@ def collect_accuracy_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag
                 out.append(f)
     return out
 
-
-# Severity as an ordinal so "the worst flag of this type wins" is well-defined.
-_SEVERITY_RANK: dict[str, int] = {
-    Severity.HIGH.value: 0,
-    Severity.MED.value: 1,
-    Severity.LOW.value: 2,
-}
-
-
-def grade_penalty_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
-    """The flags that drive the A-F grade penalty, deduped so repetition can't
-    compound it (the Layer-2 guard against an over-flagging judge tanking the
-    grade).
-
-    WITHIN each answer, the same error *type* counts once, highest severity wins:
-    a reply that says "Ring 4" three times has one stale problem, not three —
-    `collect_accuracy_flags` keeps all three (different claim text) for display,
-    but the grade must not be penalized thrice for one mistake. ACROSS answers,
-    each answer's distinct-type problems are kept, so a pervasive error (many
-    replies make it) still weighs more than a one-off.
-    """
-    out: list[AccuracyFlag] = []
-
-    def rank(sev: str) -> int:  # lower rank = worse severity
-        return _SEVERITY_RANK.get(sev, 1)
-
-    for j in _assessed(judgments):
-        best: dict[str, AccuracyFlag] = {}
-        for f in j.accuracy_flags:
-            cur = best.get(f.type)
-            if cur is None or rank(f.severity) < rank(cur.severity):
-                best[f.type] = f
-        out.extend(best.values())
-    return out
-
-
-# How much each distinct client accuracy flag drags the grade down. A confident
-# wrong claim ("it's $20/mo" when it's free) erodes trust even when visibility is
-# fine, so the grade is visibility *discounted* by what the model gets wrong.
-# These magnitudes + the band cutoffs are v1 guesses — calibration (Layer 2 of
-# the calibration plan) fits them to analyst gut-grades via GradePolicy.
-_FLAG_PENALTY: dict[str, float] = {
-    Severity.HIGH.value: 0.15,
-    Severity.MED.value: 0.07,
-    Severity.LOW.value: 0.03,
-}
-# Penalized-score thresholds, best first. Below the last band is an F.
-_GRADE_BANDS: tuple[tuple[float, str], ...] = (
-    (0.70, "A"),
-    (0.50, "B"),
-    (0.30, "C"),
-    (0.15, "D"),
-)
-
-
-@dataclass(frozen=True)
-class GradePolicy:
-    """The tunable Layer-2 parameters of the A-F grade: per-severity flag
-    penalties and the score→letter band cutoffs. Defaults are the v1 guesses;
-    ``grade_calibration`` fits a policy to human gut-grades."""
-
-    penalty: dict[str, float]
-    bands: tuple[tuple[float, str], ...]
-
-
-DEFAULT_GRADE_POLICY = GradePolicy(penalty=dict(_FLAG_PENALTY), bands=_GRADE_BANDS)
-
-
-def grade_from(
-    raw_visibility: float, flag_severities: list[str], policy: GradePolicy = DEFAULT_GRADE_POLICY
-) -> VisibilityGrade:
-    """Pure grade core: prominence-weighted visibility discounted by a
-    severity-weighted flag penalty, floored at 0, mapped to a band. Shared by
-    ``visibility_grade`` (live judgments) and the grade-calibration harness
-    (raw numbers), so both score a policy identically.
-    """
-    low = policy.penalty.get(Severity.LOW.value, 0.0)
-    penalty = sum(policy.penalty.get(sev, low) for sev in flag_severities)
-    score = max(0.0, raw_visibility - penalty)
-    letter = next((g for threshold, g in policy.bands if score >= threshold), "F")
-    rationale = f"visibility {raw_visibility:.2f}"
-    if flag_severities:
-        rationale += f" − {penalty:.2f} for {len(flag_severities)} accuracy flag(s) → {score:.2f}"
-    return VisibilityGrade(
-        letter=letter,
-        score=score,
-        raw_score=raw_visibility,
-        accuracy_penalty=penalty,
-        n_flags=len(flag_severities),
-        rationale=rationale,
-    )
-
-
-@dataclass(frozen=True)
-class VisibilityGrade:
-    """The §1 A-F headline: prominence-weighted visibility, discounted by the
-    client accuracy flags the judge raised."""
-
-    letter: str
-    score: float  # visibility after the accuracy penalty, 0..1
-    raw_score: float  # prominence-weighted visibility before the penalty
-    accuracy_penalty: float
-    n_flags: int
-    rationale: str
-
-
-def visibility_grade(
-    judgments: list[AnswerJudgment],
-    client: str,
-    policy: GradePolicy = DEFAULT_GRADE_POLICY,
-    *,
-    cells: list[BrandCell] | None = None,
-    flags: list[AccuracyFlag] | None = None,
-) -> VisibilityGrade:
-    """Roll the client's judge metrics up into an A-F grade.
-
-    Base is the prominence-weighted ``visibility_score`` (recommended-first beats
-    buried); each distinct client accuracy flag subtracts a severity-weighted
-    penalty, floored at 0. ``policy`` carries the (calibratable) penalty weights
-    and band cutoffs. ``cells``/``flags`` let a caller pass already-computed data
-    to avoid recomputing. Pure — derives entirely from data already produced.
-    """
-    raw = visibility_score(judgments, client, cells=cells)
-    # The grade penalty uses the deduped problem set, not the per-claim display
-    # list — repetition of one error must not multiply the penalty.
-    flags = flags if flags is not None else grade_penalty_flags(judgments)
-    severities = [f.severity for f in flags]
-    return grade_from(raw, severities, policy)
 
 
 def losing_cells(
@@ -453,19 +406,20 @@ def judge_sections(
     flags = collect_accuracy_flags(judgments)
 
     lines: list[str] = []
-    grade = visibility_grade(judgments, client, cells=cells_map.get(client))
-    lines.append("## AI Visibility Grade")
-    lines.append("")
-    lines.append(f"**{grade.letter}** — {grade.rationale}")
-    lines.append("")
-
+    # NO GRADE SECTION. There is no letter and no composite anywhere in this
+    # report: every headline number is counted or measured (spec TR-T0). What
+    # opened this document used to be a letter derived from a weighted prominence
+    # score nobody could audit or act on.
     lines.append("## Visibility Leaderboard")
     lines.append("")
-    lines.append("| Brand | Visibility | Mention rate |")
+    lines.append("| Brand | Mention rate | Typical position |")
     lines.append("| --- | --- | --- |")
-    for brand, vis, mention in leaderboard(judgments, brands, cells_map=cells_map):
-        marker = " (client)" if brand == client else ""
-        lines.append(f"| {brand}{marker} | {vis:.2f} | {_pct(mention)} |")
+    for row in leaderboard(judgments, brands, cells_map=cells_map):
+        marker = " (client)" if row.brand == client else ""
+        # Count first, percentage parenthetical — a bare rate at this sample size
+        # is the most misleading thing this table could print.
+        rate = f"{row.present_cells} of {row.cells} ({_pct(row.mention_rate)})"
+        lines.append(f"| {row.brand}{marker} | {rate} | {prominence_label(row.prominence)} |")
     lines.append("")
 
     client_cells = cells_map.get(client) or []

@@ -4,11 +4,13 @@ This is the quantitative backbone for docs/report.md. It pulls the run's
 QueryResults + judge verdicts from Supabase and computes, per the deliverable
 spec in docs/engine-gap-analysis.md ("The deliverable test"):
 
-  §1  scorecard: A-F grade, share-of-model for client / top competitor /
-      category leader, per-engine client mention & citation rate
+  §1  scorecard: mention rate with its denominator, prominence distribution,
+      share-of-model for client / top competitor / category leader, per-engine
+      client mention & citation rate. NO grade and NO composite (spec TR-T0).
   §2.2 mention rate, citation rate, and prominence distribution by intent bucket
   §2.3 accuracy flags grouped by type x severity (+ totals)
-  §3  leaderboard (visibility + mention + share-of-voice), "closest to winning"
+  §3  leaderboard (mention rate + median prominence + share-of-voice, ordered by
+      mention rate), "closest to winning"
       and "structurally behind" splits of the losing cells
   §4.4 sources behind the category (cited domains, ranked, with engines)
   §6.1 query set with persona/weight
@@ -95,16 +97,19 @@ def main(run_id: str, query_set_path: str) -> int:
     }
 
     # ---- §1 scorecard ----
-    grade = jm.visibility_grade(judgments, client)
+    # No grade and no composite (spec TR-T0): counted or measured only. The
+    # leaderboard is ordered by mention rate, and prominence is reported as a
+    # median ordinal label beside it rather than folded into a score.
     board = jm.leaderboard(judgments, brands)
-    top_comp = next((b for b, _, _ in board if b != client), None)
+    client_row = next((r for r in board if r.brand == client), None)
+    top_comp = next((r.brand for r in board if r.brand != client), None)
     out["scorecard"] = {
-        "grade": grade.letter,
-        "raw_visibility": round(grade.raw_score, 3),
-        "penalty": round(grade.accuracy_penalty, 3),
-        "score": round(grade.score, 3),
-        "n_flags": grade.n_flags,
         "client_mention_rate": round(jm.mention_rate(judgments, client), 3),
+        "client_present_cells": client_row.present_cells if client_row else 0,
+        "client_cells": client_row.cells if client_row else 0,
+        "client_prominence": client_row.prominence if client_row else None,
+        "client_prominence_dist": client_row.distribution if client_row else {},
+        "n_flags": len(jm.collect_accuracy_flags(judgments)),
         "top_competitor": top_comp,
         "category_leader_after_client": top_comp,
     }
@@ -146,11 +151,15 @@ def main(run_id: str, query_set_path: str) -> int:
             "n_queries": sum(1 for q in qs.queries if q.intent.value == intent),
             "n_cells": len(cells),
             "client_mention_rate": round(present / len(cells), 3) if cells else 0.0,
-            "client_visibility": round(jm.visibility_score(sub, client), 3),
+            "client_prominence": jm.median_prominence(cells),
             "prominence_dist": {p: prom_dist.get(p, 0) for p in PROM_ORDER},
             "leaderboard": [
-                {"brand": b, "visibility": round(v, 3), "mention": round(m, 3)}
-                for b, v, m in comp_board
+                {
+                    "brand": r.brand,
+                    "mention": round(r.mention_rate, 3),
+                    "prominence": r.prominence,
+                }
+                for r in comp_board
             ],
         }
     out["by_bucket"] = by_bucket

@@ -322,12 +322,26 @@ def mention_rate_by_bucket(results: list[QueryResult], brand: str) -> dict[str, 
     return {bucket: _rate(vs) for bucket, vs in _by_bucket(brand_verdicts(results, brand)).items()}
 
 
-def citation_rate(results: list[QueryResult], client_domains: Iterable[str]) -> float:
-    """Fraction of (query, engine) cells that cite one of the client's domains."""
+def citation_verdicts(
+    results: list[QueryResult], client_domains: Iterable[str]
+) -> list[CellVerdict]:
+    """Per-cell "did this cite the client" verdicts — the counts behind the rate.
+
+    The public twin of what ``citation_rate`` averages. A report may not render a
+    rate without its denominator, and dividing then multiplying back by an
+    assumed denominator is how a 7-of-12 becomes a 58% that rounds to a different
+    count than the one in the table beside it.
+    """
     domains = _normalize_domains(client_domains)
     if not domains:
-        return 0.0
-    return _rate(_verdicts(results, _citation_predicate(domains)))
+        return []
+    return _verdicts(results, _citation_predicate(domains))
+
+
+def citation_rate(results: list[QueryResult], client_domains: Iterable[str]) -> float:
+    """Fraction of (query, engine) cells that cite one of the client's domains."""
+    verdicts = citation_verdicts(results, client_domains)
+    return _rate(verdicts) if verdicts else 0.0
 
 
 def citation_rate_by_bucket(

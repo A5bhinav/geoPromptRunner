@@ -1,14 +1,28 @@
 """Layer-2 calibration: fit the A-F grade formula to analyst gut-grades.
 
-The grade = prominence-weighted visibility − a severity-weighted flag penalty,
-mapped to letter bands (`judge_metrics.grade_from`). The penalty magnitudes and
-band cutoffs are v1 guesses; the Oura run made the stakes obvious — a category-
-*leading* 0.56 visibility was driven to F purely by flag count.
+**DEV-ONLY. NOTHING ON AN API, REPORT OR RENDER PATH MAY IMPORT THIS MODULE.**
 
-This harness closes that: analysts independently gut-grade ~12-15 real
+The client-facing report has no letter grade and no composite score — every
+headline number is counted (findings, resolved, cycles open) or measured
+(sampled rate, share of model). That is a hard rule, and spec TR-T0 removed the
+grade machinery from `judge_metrics` precisely because leaving a computation in
+place is how a `B−` quietly comes back onto page 1.
+
+What survives is this harness, and it survives for one reason: the *question*
+"can a human's gut-grade be reproduced from the numbers we hold" is a real
+research question about our own rubric, and answering it needs the formula. If
+the answer ever justifies reintroducing a score, its full rubric must be
+published in the methodology section first.
+
+The grade = a caller-supplied visibility number − a severity-weighted flag
+penalty, mapped to letter bands. Analysts independently gut-grade ~12-15 real
 situations A-F from the raw numbers, then `fit_grade_policy` searches penalty
 weights + band cutoffs for the `GradePolicy` that best reproduces those human
 grades. The gold set (Layer 1) is NOT the input here — human grades are.
+
+Note the input is a raw ``raw_visibility`` float the caller brings. There is no
+longer a `visibility_score()` to produce one automatically, which is deliberate:
+computing a composite now takes a conscious act rather than a function call.
 
 Usage:
     python -m src.pipeline.grade_calibration            # demo on the sample file
@@ -22,10 +36,15 @@ from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
 
-from src.pipeline.judge_metrics import DEFAULT_GRADE_POLICY, GradePolicy, grade_from
+from src.pipeline.judge import AccuracyFlag, AnswerJudgment
 from src.storage.models import Severity
 
 __all__ = [
+    "VisibilityGrade",
+    "GradePolicy",
+    "DEFAULT_GRADE_POLICY",
+    "grade_from",
+    "grade_penalty_flags",
     "GradeSituation",
     "GradeFit",
     "load_grade_situations",
@@ -33,6 +52,108 @@ __all__ = [
     "fit_grade_policy",
     "render_grade_calibration",
 ]
+
+
+# --- The grade formula itself (moved here from judge_metrics by TR-T0) --------
+#
+# It lives in the calibration harness because the harness is the only sanctioned
+# caller. `judge_metrics` is imported by `src/api/reports.py`; this module is not,
+# and `tests/test_report_packaging.py` asserts that it stays that way.
+
+# Severity as an ordinal so "the worst flag of this type wins" is well-defined.
+_SEVERITY_RANK: dict[str, int] = {
+    Severity.HIGH.value: 0,
+    Severity.MED.value: 1,
+    Severity.LOW.value: 2,
+}
+
+# How much each distinct client accuracy flag drags the grade down. A confident
+# wrong claim ("it's $20/mo" when it's free) erodes trust even when visibility is
+# fine, so the grade is visibility *discounted* by what the model gets wrong.
+_FLAG_PENALTY: dict[str, float] = {
+    Severity.HIGH.value: 0.15,
+    Severity.MED.value: 0.07,
+    Severity.LOW.value: 0.03,
+}
+# Penalized-score thresholds, best first. Below the last band is an F.
+_GRADE_BANDS: tuple[tuple[float, str], ...] = (
+    (0.70, "A"),
+    (0.50, "B"),
+    (0.30, "C"),
+    (0.15, "D"),
+)
+
+
+@dataclass(frozen=True)
+class VisibilityGrade:
+    """A letter over our own rubric. Never rendered to a client."""
+
+    letter: str
+    score: float  # visibility after the accuracy penalty, 0..1
+    raw_score: float  # the visibility number before the penalty
+    accuracy_penalty: float
+    n_flags: int
+    rationale: str
+
+
+@dataclass(frozen=True)
+class GradePolicy:
+    """The tunable parameters of the A-F grade: per-severity flag penalties and
+    the score→letter band cutoffs."""
+
+    penalty: dict[str, float]
+    bands: tuple[tuple[float, str], ...]
+
+
+DEFAULT_GRADE_POLICY = GradePolicy(penalty=dict(_FLAG_PENALTY), bands=_GRADE_BANDS)
+
+
+def grade_from(
+    raw_visibility: float, flag_severities: list[str], policy: GradePolicy = DEFAULT_GRADE_POLICY
+) -> VisibilityGrade:
+    """Pure grade core: a visibility number discounted by a severity-weighted flag
+    penalty, floored at 0, mapped to a band."""
+    low = policy.penalty.get(Severity.LOW.value, 0.0)
+    penalty = sum(policy.penalty.get(sev, low) for sev in flag_severities)
+    score = max(0.0, raw_visibility - penalty)
+    letter = next((g for threshold, g in policy.bands if score >= threshold), "F")
+    rationale = f"visibility {raw_visibility:.2f}"
+    if flag_severities:
+        rationale += f" − {penalty:.2f} for {len(flag_severities)} accuracy flag(s) → {score:.2f}"
+    return VisibilityGrade(
+        letter=letter,
+        score=score,
+        raw_score=raw_visibility,
+        accuracy_penalty=penalty,
+        n_flags=len(flag_severities),
+        rationale=rationale,
+    )
+
+
+def grade_penalty_flags(judgments: list[AnswerJudgment]) -> list[AccuracyFlag]:
+    """The flags that drive the grade penalty, deduped so repetition can't
+    compound it (the guard against an over-flagging judge tanking the grade).
+
+    WITHIN each answer, the same error *type* counts once, highest severity wins:
+    a reply that says "Ring 4" three times has one stale problem, not three.
+    ACROSS answers, each answer's distinct-type problems are kept, so a pervasive
+    error still weighs more than a one-off.
+    """
+    out: list[AccuracyFlag] = []
+
+    def rank(sev: str) -> int:  # lower rank = worse severity
+        return _SEVERITY_RANK.get(sev, 1)
+
+    for j in judgments:
+        if not j.assessed:
+            continue
+        best: dict[str, AccuracyFlag] = {}
+        for f in j.accuracy_flags:
+            cur = best.get(f.type)
+            if cur is None or rank(f.severity) < rank(cur.severity):
+                best[f.type] = f
+        out.extend(best.values())
+    return out
 
 # Letter scale (best→worst) for measuring how far a predicted grade is from the
 # human's — "within one letter" is the success bar in the plan.

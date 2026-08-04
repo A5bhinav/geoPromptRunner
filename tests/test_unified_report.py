@@ -54,8 +54,13 @@ def test_report_uses_judge_when_judgments_present() -> None:
     ]
     out = render_audit_report(_outcome(), judgments=judgments)
     assert "Detection:** LLM judge" in out
-    assert "AI Visibility Grade" in out  # §1 grade header present
+    # No grade header, and no grade anywhere: the letter and the prominence
+    # composite behind it are gone from the codebase, not merely unrendered
+    # (spec TR-T0). This assertion is inverted on purpose — it used to require
+    # the header.
+    assert "AI Visibility Grade" not in out
     assert "Visibility Leaderboard" in out  # judge section present
+    assert "Typical position" in out  # prominence as an ordinal, never a decimal
     assert "Client Framing" in out
     assert "Share of Voice" not in out  # regex section not used
 

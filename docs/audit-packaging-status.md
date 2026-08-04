@@ -4,7 +4,7 @@
 > `docs/audit-packaging-spec.md`; the standing rules are
 > `.claude/skills/audit-packaging/SKILL.md`. This file is only the checklist.
 >
-> Last updated **2026-08-02**.
+> Last updated **2026-08-04**.
 
 ## State
 
@@ -16,6 +16,7 @@
 | **3 — Delivery** | ✅ complete |
 | **4 — Operations** | ✅ complete (code); P4-T1 still needs a real gold SET |
 | **5 — Commercialize** | 🟡 P5-T3 partially (the `brandConfig` seam exists) |
+| **T — the Track report** | ✅ complete (TR-T0 … TR-T11) |
 
 Plus one addition that is not in the spec: **correction runs**
 (`src/pipeline/correction.py`), which re-measure a finished run's failed cells
@@ -57,17 +58,26 @@ instead of re-running the whole audit.
 | P3-T4 shareable links | `src/api/sharing.py` + `web/app/shared/[token]` |
 | P3-T5 server-side PDF | `GET /audits/{id}/report.pdf` |
 | P3-T6 fix-pack export | `src/pipeline/fixpack.py` |
+| TR-T0 composite + grade removed | `judge_metrics`, `grade_calibration` (dev-only) |
+| TR-T2 pp vs percent | `src/pipeline/fmt.py`, `web/lib/format.ts` |
+| TR-T11 section registry | `web/lib/report-sections.tsx` |
+| TR-T1/T3–T9 sections | `src/api/sections.py`, `web/components/report-contract.tsx` |
+| TR-T10 back matter A1–A6 | `sections.build_back_matter` |
+| Pareto sources *(P2-T6 remainder)* | `sections.CitationDomainRow.cumulative_share` |
+| Oldest-still-open tile | `reports.ScorecardPayload.oldest_open` |
 
 ## Left to build
 
 ### Phase 2 remainder
 
-- **Bump chart** (part of P2-T6). Deliberately skipped: it needs ≥3 cycles to
-  say anything, and an empty state would be decoration. Everything else in T6 is
-  done — donut deleted, stacked bar, engine heatmap, delta pills, paired bars,
-  Pareto sources still outstanding.
-- **`SourcesChart` → Pareto** (part of P2-T6). Answers "are we dependent on 2
-  sources or 20", which the current descending-bar chart cannot.
+- ~~**`SourcesChart` → Pareto**~~ **Done 2026-08-04** as part of TR-T7: the
+  citations section carries `cumulative_share` per domain and renders the curve
+  over the bars, plus a concentration sentence.
+- **Bump chart** (part of P2-T6). Still deliberately skipped, and TR-T3 makes the
+  reason explicit rather than implicit: the trend section draws no connecting
+  line under four comparable cycles at all. A bump chart of competitor *rank*
+  over cycles is the same problem one dimension up, and no client has four
+  comparable cycles yet.
 - **`findings_registry` table** (part of P0-T1). Never built — only
   `InMemoryRegistry` exists, so a *paraphrase* next cycle gets a new
   `cluster_id`. Not blocking: cards are keyed on theme, which is stable by

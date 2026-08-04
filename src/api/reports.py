@@ -5,6 +5,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from src.api import sections
 from src.engines.local_pack import LocalPackCapture
 from src.pipeline import findings as findings_mod
 from src.pipeline import judge_metrics, lifecycle, metrics, movement, stats
@@ -16,7 +17,6 @@ from src.pipeline.severity import SEVERITY_ORDER
 from src.storage.models import AccuracyFlag, AnswerJudgment
 
 __all__ = [
-    "GradePayload",
     "RatePayload",
     "ScorecardPayload",
     "LeaderRow",
@@ -81,15 +81,6 @@ INDEPENDENCE_DISCLAIMER = (
 )
 
 
-class GradePayload(TypedDict):
-    letter: str
-    score: float
-    raw_score: float
-    accuracy_penalty: float
-    n_flags: int
-    rationale: str
-
-
 class RatePayload(TypedDict):
     """A rate WITH its denominator and its interval. The only shape a rate ships in.
 
@@ -112,11 +103,34 @@ class RatePayload(TypedDict):
 
 
 class LeaderRow(TypedDict):
+    """One brand's row of the competitive leaderboard, sorted by mention rate.
+
+    There is no ``visibility`` column any more. It carried
+    ``judge_metrics.visibility_score`` — a prominence-weighted composite built
+    from hardcoded weights nothing derived — and the table both PRINTED it as a
+    decimal and SORTED the client's competitive ranking by it. A composite that
+    orders a client-facing ranking is a score whether or not its number shows
+    (spec TR-T0).
+
+    Prominence survives as an ordinal label plus the full distribution behind it,
+    which is auditable in a way a 0.62 never was.
+    """
+
     brand: str
     is_client: bool
-    visibility: float | None  # None in regex mode (needs the judge)
     mention_rate: float
+    # The count behind the rate. No rate without its denominator, including here.
+    present_cells: int
+    cells: int
     share_of_model: float
+    # The median position when present, as a raw level ("mid_pack") plus its
+    # client-facing wording. None/"—" when the brand appears nowhere — which is
+    # "no typical position", not "typically absent".
+    prominence: str | None
+    prominence_label: str
+    # Cells at each of the five levels, in PROMINENCE_ORDER. Empty on the regex
+    # path, which detects presence only and cannot see position.
+    prominence_distribution: dict[str, int]
 
 
 class BucketRow(TypedDict):
@@ -373,7 +387,7 @@ class LocalPackPayload(TypedDict):
 
 
 class ScorecardPayload(TypedDict):
-    """Four measured tiles. **No letter grade, no composite score.**
+    """Measured tiles. **No letter grade, no composite score — at all.**
 
     Every headline number here is either *counted* (findings, cycles open) or
     *measured* (sampled rate, share of model). That is a hard rule and the one
@@ -388,11 +402,13 @@ class ScorecardPayload(TypedDict):
     pre-launch brand on visibility it structurally cannot have is a category
     error: a thin file, not a bad score.
 
-    ``visibility_grade`` survives in the payload for back-compat with stored
-    deliverables and the CSV export. **Nothing renders it.**
+    The ``visibility_grade`` field is GONE, not merely unrendered. It survived one
+    round as "back-compat for stored deliverables", which is exactly how a
+    computation stays alive long enough to be re-rendered by the next person who
+    finds it on the payload (spec TR-T0). Consumers that read it — the separate
+    `teaser/` renderer — already treat a missing grade as null.
     """
 
-    visibility_grade: GradePayload | None
     # Tile 1 — AI visibility, as a count with its denominator.
     ai_visibility: RatePayload
     # Tile 3 — open findings, counted in THEMES.
@@ -540,17 +556,22 @@ class ReportPayload(TypedDict):
     # Google local pack for local-intent queries; None on a consumer run (and on any
     # local run with no pinned location, since an unpinned pack is the wrong market).
     local_pack: LocalPackPayload | None
-
-
-def _grade_payload(grade: judge_metrics.VisibilityGrade) -> GradePayload:
-    return GradePayload(
-        letter=grade.letter,
-        score=grade.score,
-        raw_score=grade.raw_score,
-        accuracy_penalty=grade.accuracy_penalty,
-        n_flags=grade.n_flags,
-        rationale=grade.rationale,
-    )
+    # --- the report contract's sections, in delivery order (Phase T) ---------
+    #
+    # Built by `src/api/sections.py` from the numbers above; the web registry
+    # (`web/lib/report-sections.tsx`) decides which of them render and in what
+    # order. Sections 2, 8 and 9 are the blocks already on this payload
+    # (`what_changed`, `priority_actions`, `finding_groups`) and are not
+    # duplicated here.
+    exec_snapshot: sections.ExecSnapshotPayload  # §1
+    trend: sections.TrendPayload  # §3
+    question_types: sections.QuestionTypePayload  # §4
+    surfaces: sections.SurfacePayload  # §5
+    competitive: sections.CompetitivePayload  # §6
+    citations: sections.CitationsPayload  # §7
+    representative_answers: sections.RepresentativePayload  # §10
+    methodology: sections.MethodologyPayload  # §11
+    back_matter: sections.BackMatterPayload  # A1–A6
 
 
 def _rate_payload(successes: int, n: int, runs_per_query: int, unit: str = "runs") -> RatePayload:
@@ -657,6 +678,47 @@ def _with_lifecycle(
         )
     )
     return stamped
+
+
+def _overall_direction(movements: list[MovementRow]) -> str:
+    """The run-wide direction, DERIVED from the per-surface gated movements.
+
+    Never separately computed: a tile that says "Up" while every listed surface
+    says "held steady" is the contradiction that makes a reader distrust the
+    whole page. Flat unless at least one surface earned a direction, then the
+    majority direction of those that did.
+    """
+    known = [m for m in movements if m["direction"] != "unknown"]
+    if not known:
+        return "unknown"
+    moved = [m for m in known if m["direction"] != "flat"]
+    if not moved:
+        return "flat"
+    ups = sum(1 for m in moved if m["direction"] == "up")
+    return "up" if ups * 2 >= len(moved) else "down"
+
+
+def _top_finding_evidence(groups: list[FindingGroupRow]) -> dict[str, str] | None:
+    """The first observation of the worst finding, for the §10 "inaccurate" slot.
+
+    Reads off the already-ranked groups (Critical → High → … then priority), so
+    the example a client reads is the one the report already called most
+    important — not a second, differently-ranked opinion.
+    """
+    for group in groups:
+        if group["evidence"]:
+            e = group["evidence"][0]
+            return {
+                "prompt": e["prompt"],
+                "query_id": e["query_id"],
+                "run_index": str(e["run_index"]),
+                "engine_name": e["engine_name"],
+                "model_id": e["model_id"],
+                "observed_at": e["observed_at"],
+                "excerpt": e["excerpt"],
+                "reality": e["reality"],
+            }
+    return None
 
 
 def _exec_summary(
@@ -802,6 +864,14 @@ def build_report(
     prior_cycles: Sequence[lifecycle.CycleObservation] = (),
     prior_engine_counts: dict[str, tuple[int, int]] | None = None,
     judge_agreement: str = "",
+    # --- Phase T inputs -----------------------------------------------------
+    # The measured history behind the trend, the per-bucket/per-brand/per-domain
+    # deltas and the methodology's instrument diff. Defaults to empty, so every
+    # section degrades to its thin-data statement rather than failing to render:
+    # a first cycle is the normal case, not an error.
+    prior_metrics: Sequence[sections.CycleMetrics] = (),
+    prior_engine_models: dict[str, str] | None = None,
+    location: str = "",
 ) -> ReportPayload:
     """Assemble the structured report the UI renders.
 
@@ -850,35 +920,46 @@ def build_report(
         judge_flags = judge_metrics.collect_accuracy_flags(judgments)
 
     # --- Per-brand mention rate + leaderboard ---
+    #
+    # Ranked by MENTION RATE, descending, ties broken on brand name. Never by a
+    # composite: the ranking a client reads must be ordered by a measured quantity
+    # with a denominator they can check (TR-T0). Prominence rides along as a
+    # distribution and a median label, and is never the sort key.
+    prominence_by_brand: dict[str, str | None] = dict.fromkeys(brands)
+    distribution_by_brand: dict[str, dict[str, int]] = {b: {} for b in brands}
     if has_judge:
         assert judgments is not None
         mention_by_brand = {
             b: judge_metrics.mention_rate(judgments, b, cells=cells_map[b]) for b in brands
         }
-        visibility_by_brand: dict[str, float | None] = {
-            b: judge_metrics.visibility_score(judgments, b, cells=cells_map[b]) for b in brands
-        }
+        for b in brands:
+            prominence_by_brand[b] = judge_metrics.median_prominence(cells_map[b])
+            distribution_by_brand[b] = judge_metrics.prominence_distribution(cells_map[b])
     else:
         mention_by_brand = {b: metrics.mention_rate(results, b) for b in brands}
-        visibility_by_brand = {b: None for b in brands}
 
     share_by_brand = _shares(mention_by_brand)
 
     # Rank competitors by the active detection's mention rate.
     ranked_competitors = sorted(
-        competitors, key=lambda c: mention_by_brand.get(c, 0.0), reverse=True
+        competitors, key=lambda c: (-mention_by_brand.get(c, 0.0), c)
     )
     top_competitor = ranked_competitors[0] if ranked_competitors else None
 
     leaderboard: list[LeaderRow] = []
-    for brand in sorted(brands, key=lambda b: mention_by_brand.get(b, 0.0), reverse=True):
+    for brand in sorted(brands, key=lambda b: (-mention_by_brand.get(b, 0.0), b)):
+        cells_for_brand = cells_map.get(brand, [])
         leaderboard.append(
             LeaderRow(
                 brand=brand,
                 is_client=brand == client,
-                visibility=visibility_by_brand[brand],
                 mention_rate=mention_by_brand[brand],
+                present_cells=sum(1 for c in cells_for_brand if c.present),
+                cells=len(cells_for_brand),
                 share_of_model=share_by_brand[brand],
+                prominence=prominence_by_brand[brand],
+                prominence_label=judge_metrics.prominence_label(prominence_by_brand[brand]),
+                prominence_distribution=distribution_by_brand[brand],
             )
         )
 
@@ -1059,13 +1140,6 @@ def build_report(
             )
 
     # --- Scorecard ---
-    grade_payload: GradePayload | None = None
-    if has_judge:
-        assert judgments is not None
-        grade_payload = _grade_payload(
-            judge_metrics.visibility_grade(judgments, client, cells=cells_map.get(client))
-        )
-
     citation_rate_client = metrics.citation_rate(results, domains) if domains else None
 
     # Accuracy was assessed iff the judge ran against a fact sheet. The run row's
@@ -1134,6 +1208,10 @@ def build_report(
     # is a claim the report must make, and because the FDR correction needs every
     # comparison performed in its family or it silently corrects nothing.
     movements: list[MovementRow] = []
+    # The gated `Movement` objects themselves, kept so §5 can label a surface's
+    # change without re-running the gate. Two gates over the same family would
+    # apply the multiple-comparison correction twice and disagree.
+    gated_engine_movements: list[movement.Movement] = []
     if len(comparable) > 1 and prior_engine_counts:
         raw = [
             movement.compare_cell(
@@ -1146,6 +1224,7 @@ def build_report(
             )
             for engine, (present, cells) in sorted(_client_engine_counts(engine_matrix, client))
         ]
+        gated_engine_movements = movement.gate_movements(raw)
         movements = [
             MovementRow(
                 key=m.key,
@@ -1158,7 +1237,7 @@ def build_report(
                 phrase=m.phrase(),
                 flat_reason=m.flat_reason,
             )
-            for m in movement.gate_movements(raw)
+            for m in gated_engine_movements
         ]
 
     what_changed = WhatChangedPayload(
@@ -1191,15 +1270,28 @@ def build_report(
         accuracy_assessed=accuracy_assessed,
     )
 
+    # The tile that replaced the grade, and does its job better: SLA-style aging
+    # is what creates pressure to act, and it is a count rather than an opinion.
+    # Oldest = most cycles open; ties break on severity then theme so the tile
+    # names the same finding on every re-render. A resolved finding is not open.
+    still_open_groups = [g for g in finding_groups if g["lifecycle_status"] != "resolved"]
+    oldest_open = (
+        max(
+            still_open_groups,
+            key=lambda g: (
+                g["cycles_open"],
+                -SEVERITY_ORDER.index(g["severity"]) if g["severity"] in SEVERITY_ORDER else 0,
+                g["theme"],
+            ),
+        )
+        if still_open_groups
+        else None
+    )
+
     scorecard = ScorecardPayload(
-        visibility_grade=grade_payload,
         ai_visibility=ai_visibility,
         open_findings=open_findings,
-        # Needs `first_seen` from the lifecycle engine (P2-T2). Until that lands
-        # the tile renders "—": an age we cannot compute is not an age we may
-        # guess, and storage is create-only so the history is already there to
-        # compute it from once the engine exists.
-        oldest_open=None,
+        oldest_open=oldest_open,
         share_of_model_client=share_by_brand.get(client, 0.0),
         top_competitor=top_competitor,
         top_competitor_share=(share_by_brand.get(top_competitor) if top_competitor else None),
@@ -1212,6 +1304,204 @@ def build_report(
         accuracy_flag_count=(len(accuracy_flags) if accuracy_assessed else None),
         answered_cells=answered_cells,
         attempted_cells=attempted_cells,
+    )
+
+    # Publish what IS measured. Saying "unmeasured" while holding 94% on 240
+    # brand judgements understates the work; quoting a 43% flag precision off 7
+    # flags overstates it. `AgreementSummary.sentence` splits the two and carries
+    # every denominator. Resolved once, here, so the methodology section and the
+    # payload field cannot disagree.
+    resolved_judge_agreement = (
+        judge_agreement
+        or (summary.sentence() if (summary := load_agreement_summary(client)) else "")
+        or JUDGE_AGREEMENT_UNMEASURED
+    )
+
+    # --- The report contract's sections (Phase T) ---------------------------
+    #
+    # Everything below is presentation of numbers already computed above. The
+    # prior cycle feeding the deltas is the LAST COMPARABLE one — the same
+    # instrument, per `comparison_blocked_reason`; when the query set changed
+    # there is no prior and every section says so rather than comparing across a
+    # changed ruler.
+    comparable_prior = [
+        c for c in prior_metrics if c.query_set_version == outcome.query_set_version
+    ]
+    prior = comparable_prior[-1] if comparable_prior and not comparison_blocked_reason else None
+
+    client_cells = cells_map.get(client, [])
+    this_cycle_metrics = sections.CycleMetrics(
+        run_id=outcome.run_id or "",
+        run_date=run_date,
+        query_set_version=outcome.query_set_version,
+        coverage_ratio=(answered_cells / attempted_cells if attempted_cells else 0.0),
+        mention_successes=client_mentions,
+        mention_n=answered_cells,
+        citation_successes=(
+            sum(1 for v in metrics.citation_verdicts(results, domains) if v.hit) if domains else 0
+        ),
+        citation_n=(
+            sum(1 for v in metrics.citation_verdicts(results, domains) if v.hit is not None)
+            if domains
+            else 0
+        ),
+        share_of_model=share_by_brand.get(client, 0.0),
+        prominence=prominence_by_brand.get(client),
+        brand_counts={
+            b: (sum(1 for c in cells_map.get(b, []) if c.present), len(cells_map.get(b, [])))
+            for b in brands
+        },
+        mention_by_bucket=mention_buckets,
+        citation_counts={row["domain"]: row["count"] for row in sources},
+    )
+
+    # Which brands' week-over-week change earned a direction arrow. Gated as one
+    # family so the multiple-comparison correction sees every test performed —
+    # correcting a subset silently corrects nothing.
+    gated_brands: list[str] = []
+    if prior:
+        brand_moves = movement.gate_movements(
+            [
+                movement.compare_cell(
+                    key=b,
+                    before_successes=prior.brand_counts.get(b, (0, 0))[0],
+                    before_n=prior.brand_counts.get(b, (0, 0))[1],
+                    after_successes=this_cycle_metrics.brand_counts[b][0],
+                    after_n=this_cycle_metrics.brand_counts[b][1],
+                    runs_per_query=outcome.runs_per_query,
+                )
+                for b in brands
+            ]
+        )
+        gated_brands = [m.key for m in brand_moves if m.is_significant]
+
+    exec_snapshot = sections.build_exec_snapshot(
+        client=client,
+        visibility=ai_visibility,
+        prior_visibility_rate=(
+            (prior.mention_successes / prior.mention_n)
+            if prior and prior.mention_n
+            else None
+        ),
+        overall_direction=_overall_direction(movements),
+        share_of_model=share_by_brand.get(client, 0.0),
+        top_competitor=top_competitor,
+        top_competitor_share=(share_by_brand.get(top_competitor) if top_competitor else None),
+        citation=(
+            _rate_payload(
+                this_cycle_metrics.citation_successes,
+                this_cycle_metrics.citation_n,
+                outcome.runs_per_query,
+                unit="answers",
+            )
+            if domains
+            else None
+        ),
+        prominence_distribution=distribution_by_brand.get(client, {}),
+        median_prominence=prominence_by_brand.get(client),
+        engines=engines,
+        n_queries=len({r["query_id"] for r in results}),
+        runs_per_query=outcome.runs_per_query,
+        answered_cells=answered_cells,
+    )
+
+    trend = sections.build_trend(
+        history=comparable_prior,
+        current=this_cycle_metrics,
+        runs_per_query=outcome.runs_per_query,
+        query_set_version=outcome.query_set_version,
+        min_coverage=lifecycle.MIN_COVERAGE_RATIO,
+    )
+
+    question_types = sections.build_question_types(
+        results=results,
+        client=client,
+        client_domains=domains,
+        runs_per_query=outcome.runs_per_query,
+        prior_by_bucket=(prior.mention_by_bucket if prior else None),
+    )
+
+    surfaces = sections.build_surfaces(
+        results=results,
+        cells=client_cells,
+        engines=engines,
+        dead_engines=dead_engines,
+        engine_models=outcome.engine_models,
+        runs_per_query=outcome.runs_per_query,
+        movements=gated_engine_movements,
+        min_coverage=lifecycle.MIN_COVERAGE_RATIO,
+    )
+
+    competitive = sections.build_competitive(
+        board=[
+            judge_metrics.LeaderRow(
+                brand=row["brand"],
+                mention_rate=row["mention_rate"],
+                present_cells=row["present_cells"],
+                cells=row["cells"],
+                prominence=row["prominence"],
+                distribution=row["prominence_distribution"],
+            )
+            for row in leaderboard
+        ],
+        client=client,
+        shares=share_by_brand,
+        prior_mention=(
+            {
+                b: (counts[0] / counts[1] if counts[1] else 0.0)
+                for b, counts in prior.brand_counts.items()
+            }
+            if prior
+            else None
+        ),
+        runs_per_query=outcome.runs_per_query,
+        gated_brands=gated_brands,
+    )
+
+    citations = sections.build_citations(
+        results=results,
+        client_domains=domains,
+        competitors=competitors,
+        runs_per_query=outcome.runs_per_query,
+        prior_counts=(prior.citation_counts if prior else None),
+    )
+
+    representative = sections.build_representative_answers(
+        results=results,
+        client_cells=client_cells,
+        losing_cells=(
+            judge_metrics.losing_cells(judgments, client, competitors, cells_map=cells_map)
+            if has_judge and judgments is not None
+            else []
+        ),
+        client_domains=domains,
+        engine_models=outcome.engine_models,
+        top_finding_evidence=_top_finding_evidence(finding_groups),
+    )
+
+    methodology = sections.build_methodology(
+        results=results,
+        query_set_version=outcome.query_set_version,
+        runs_per_query=outcome.runs_per_query,
+        engines=engines,
+        engine_models=outcome.engine_models,
+        location=location,
+        prior_query_set_version=(prior_run[1] if prior_run else None),
+        prior_engine_models=prior_engine_models,
+        non_reproducibility=NON_REPRODUCIBILITY_DISCLOSURE,
+        independence=INDEPENDENCE_DISCLAIMER,
+        judge_agreement=resolved_judge_agreement,
+    )
+
+    back_matter = sections.build_back_matter(
+        results=results,
+        judgments=judgments or [],
+        client=client,
+        competitors=competitors,
+        cells_map=cells_map,
+        flags=[dict(f) for f in accuracy_flags],
+        losing=[dict(row) for row in losing_queries],
+        engine_models=outcome.engine_models,
     )
 
     return ReportPayload(
@@ -1245,21 +1535,22 @@ def build_report(
         comparison_blocked_reason=comparison_blocked_reason,
         methodology_disclosure=NON_REPRODUCIBILITY_DISCLOSURE,
         independence_disclaimer=INDEPENDENCE_DISCLAIMER,
-        # Publish what IS measured. Saying "unmeasured" while holding 94% on 240
-        # brand judgements understates the work; quoting a 43% flag precision off
-        # 7 flags overstates it. `AgreementSummary.sentence` splits the two and
-        # carries every denominator.
-        judge_agreement=(
-            judge_agreement
-            or (summary.sentence() if (summary := load_agreement_summary(client)) else "")
-            or JUDGE_AGREEMENT_UNMEASURED
-        ),
+        judge_agreement=resolved_judge_agreement,
         accuracy_flags=accuracy_flags,
         fact_sheet_verification=fact_sheet_verification,
         sources=sources,
         losing_queries=losing_queries,
         site_audit=site_audit,
         local_pack=local_pack,
+        exec_snapshot=exec_snapshot,
+        trend=trend,
+        question_types=question_types,
+        surfaces=surfaces,
+        competitive=competitive,
+        citations=citations,
+        representative_answers=representative,
+        methodology=methodology,
+        back_matter=back_matter,
     )
 
 
@@ -1292,7 +1583,10 @@ if __name__ == "__main__":
     )
     payload = build_report(outcome)
     print(f"detection={payload['detection']}")
-    print(f"grade={payload['scorecard']['visibility_grade']}")
+    print(f"visibility={payload['scorecard']['ai_visibility']['label']}")
     for row in payload["leaderboard"]:
-        print(f"  {row['brand']:12s} mention={row['mention_rate']:.0%}")
+        print(
+            f"  {row['brand']:12s} mention={row['mention_rate']:.0%} "
+            f"position={row['prominence_label']}"
+        )
     print(f"sources={payload['sources']}")

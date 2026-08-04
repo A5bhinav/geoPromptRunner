@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from src.api import sections
 from src.api.engine_registry import build_engines
 from src.api.reports import (
     LocalPackPayload,
@@ -892,23 +893,49 @@ def _outcome_from_row(row: dict[str, object], results: list[QueryResult]) -> Aud
 _LIFECYCLE_LOOKBACK_CYCLES = 12
 
 
+@dataclass(frozen=True)
+class CycleHistory:
+    """Everything the report needs about the cycles BEFORE this one.
+
+    One walk of storage feeds four consumers — the lifecycle state machine, the
+    week-over-week movement gate, the N-cycle trend, and the methodology's
+    instrument diff. They used to need three separate reads; the walk already
+    loads each prior run's results and judgments, so it may as well keep hold of
+    what it computed.
+    """
+
+    observations: list[lifecycle.CycleObservation]
+    #: The IMMEDIATELY prior cycle's client engine counts — a week-over-week
+    #: delta compares two cycles, not a trend line.
+    engine_counts: dict[str, tuple[int, int]]
+    #: Every comparable prior cycle's headline numbers, oldest first (TR-T3).
+    metrics_history: list[sections.CycleMetrics]
+    #: The prior cycle's pinned models, so the methodology can say a surface
+    #: changed underneath the measurement instead of silently reporting the move
+    #: as the client's.
+    prior_engine_models: dict[str, str]
+
+
 def _cycle_history(
     run_id: str, client_name: str, created_at: str, query_set_version: str
-) -> tuple[list[lifecycle.CycleObservation], dict[str, tuple[int, int]]]:
-    """Rebuild the prior cycles' theme sets and the previous cycle's engine counts.
+) -> CycleHistory:
+    """Rebuild the prior cycles from storage.
 
-    Returns ``([] , {})`` on any storage problem — a report that renders without a
-    comparison is degraded; one that fails to render is broken.
+    Returns an empty history on any storage problem — a report that renders
+    without a comparison is degraded; one that fails to render is broken.
 
     Superseded runs are excluded: a run a correction replaced is the broken first
     attempt at a cycle, not a cycle. Comparing against it reports the repair as
     client progress.
     """
+    empty = CycleHistory(
+        observations=[], engine_counts={}, metrics_history=[], prior_engine_models={}
+    )
     try:
         runs = db.list_audit_runs(client_name)
         superseded = db.superseded_run_ids(client_name)
     except db.StorageError:
-        return [], {}
+        return empty
 
     earlier = [
         r
@@ -922,6 +949,8 @@ def _cycle_history(
 
     history: list[lifecycle.CycleObservation] = []
     engine_counts: dict[str, tuple[int, int]] = {}
+    measured: list[sections.CycleMetrics] = []
+    prior_models: dict[str, str] = {}
     for index, row in enumerate(earlier):
         prior_id = str(row.get("id", ""))
         try:
@@ -931,23 +960,105 @@ def _cycle_history(
             continue
         answered = sum(1 for r in results if r["response"] is not None)
         themes = _themes_of(judgments)
+        coverage_ratio = answered / len(results) if results else 0.0
         history.append(
             lifecycle.CycleObservation(
                 run=lifecycle.RunMeta(
                     run_id=prior_id,
                     run_date=str(row.get("created_at", ""))[:10],
                     status="done",
-                    coverage_ratio=(answered / len(results) if results else 0.0),
+                    coverage_ratio=coverage_ratio,
                     query_set_version=str(row.get("query_set_version", "")),
                 ),
                 themes=themes,
+            )
+        )
+        measured.append(
+            _cycle_metrics_from(
+                run_id=prior_id,
+                run_date=str(row.get("created_at", ""))[:10],
+                query_set_version=str(row.get("query_set_version", "")),
+                coverage_ratio=coverage_ratio,
+                client=str(row.get("client_name", "")),
+                competitors=_str_list(row.get("competitors")),
+                client_domains=_str_list(row.get("client_domains")),
+                results=results,
+                judgments=judgments,
             )
         )
         # Only the IMMEDIATELY prior cycle feeds the movement section — a
         # week-over-week delta compares two cycles, not a trend line.
         if index == len(earlier) - 1:
             engine_counts = _client_engine_counts_from(judgments, str(row.get("client_name", "")))
-    return history, engine_counts
+            raw_models = row.get("engine_models")
+            prior_models = (
+                {str(k): str(v) for k, v in raw_models.items()}
+                if isinstance(raw_models, dict)
+                else {}
+            )
+    return CycleHistory(
+        observations=history,
+        engine_counts=engine_counts,
+        metrics_history=measured,
+        prior_engine_models=prior_models,
+    )
+
+
+def _cycle_metrics_from(
+    *,
+    run_id: str,
+    run_date: str,
+    query_set_version: str,
+    coverage_ratio: float,
+    client: str,
+    competitors: list[str],
+    client_domains: list[str],
+    results: list[QueryResult],
+    judgments: list[AnswerJudgment],
+) -> sections.CycleMetrics:
+    """One stored cycle's headline numbers, computed the same way this cycle's are.
+
+    Identical arithmetic on both sides of every comparison, deliberately: a trend
+    whose earlier points were measured differently from its latest one is a
+    picture of our own method changing, not of the client's visibility.
+    """
+    brands = [client, *competitors]
+    has_judge = any(j.assessed for j in judgments)
+    cells_map = judge_metrics.brand_cells_map(judgments, brands) if has_judge else {}
+    counts = {
+        b: (
+            sum(1 for c in cells_map.get(b, []) if c.present),
+            len(cells_map.get(b, [])),
+        )
+        for b in brands
+    }
+    rates = {b: (n[0] / n[1] if n[1] else 0.0) for b, n in counts.items()}
+    total = sum(rates.values())
+
+    citation_verdicts = (
+        metrics.citation_verdicts(results, client_domains) if client_domains else []
+    )
+    answered_citation_cells = [v for v in citation_verdicts if v.hit is not None]
+    coverage = metrics.coverage_by_engine(results)
+    answered_cells = sum(c.answered_cells for c in coverage.values())
+
+    return sections.CycleMetrics(
+        run_id=run_id,
+        run_date=run_date,
+        query_set_version=query_set_version,
+        coverage_ratio=coverage_ratio,
+        mention_successes=counts.get(client, (0, 0))[0]
+        if has_judge
+        else round(metrics.mention_rate(results, client) * answered_cells),
+        mention_n=counts.get(client, (0, 0))[1] if has_judge else answered_cells,
+        citation_successes=sum(1 for v in answered_citation_cells if v.hit),
+        citation_n=len(answered_citation_cells),
+        share_of_model=(rates.get(client, 0.0) / total if total else 0.0),
+        prominence=judge_metrics.median_prominence(cells_map.get(client, [])),
+        brand_counts=counts,
+        mention_by_bucket=metrics.mention_rate_by_bucket(results, client),
+        citation_counts=dict(metrics.top_cited_domains(results, limit=50)),
+    )
 
 
 def _themes_of(judgments: list[AnswerJudgment]) -> frozenset[str]:
@@ -1156,7 +1267,7 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
     except db.StorageError:
         return None
     outcome = _outcome_from_row(row, results)
-    history, engine_counts = _cycle_history(
+    history = _cycle_history(
         run_id,
         str(row.get("client_name", "")),
         str(row.get("created_at", "")),
@@ -1173,8 +1284,11 @@ def _report_from_db(run_id: str) -> ReportPayload | None:
         prior_run=_prior_comparable_run(
             run_id, str(row.get("client_name", "")), str(row.get("created_at", ""))
         ),
-        prior_cycles=history,
-        prior_engine_counts=engine_counts,
+        prior_cycles=history.observations,
+        prior_engine_counts=history.engine_counts,
+        prior_metrics=history.metrics_history,
+        prior_engine_models=history.prior_engine_models,
+        location=(str(row["location"]).strip() if row.get("location") else ""),
     )
     if str(row.get("status") or "") == "done":
         with _REPORT_CACHE_LOCK:
@@ -1256,7 +1370,7 @@ def get_report(run_id: str) -> ReportPayload | None:
     state = _get(run_id)
     if state is None:
         return _report_from_db(run_id)
-    live_history, live_engine_counts = _cycle_history(
+    live_history = _cycle_history(
         state.db_run_id or "",
         state.audit.config.client_name,
         state.created_at,
@@ -1279,8 +1393,11 @@ def get_report(run_id: str) -> ReportPayload | None:
         prior_run=_prior_comparable_run(
             state.db_run_id or "", state.audit.config.client_name, state.created_at
         ),
-        prior_cycles=live_history,
-        prior_engine_counts=live_engine_counts,
+        prior_cycles=live_history.observations,
+        prior_engine_counts=live_history.engine_counts,
+        prior_metrics=live_history.metrics_history,
+        prior_engine_models=live_history.prior_engine_models,
+        location=(state.audit.config.location or "").strip(),
     )
     if state.state == "done":
         with _REPORT_CACHE_LOCK:

@@ -281,12 +281,17 @@ export function TrendChart({
   height = 240,
   ariaLabel,
   caption,
+  drawLine = true,
 }: {
   points: TrendPoint[];
   yTicks?: number[];
   height?: number;
   ariaLabel: string;
   caption?: string;
+  /** False plots the points WITHOUT connecting them. Under four cycles a line
+   * asserts a direction the sample cannot support, and a reader reads the slope
+   * before they read the sample size (spec TR-T3). */
+  drawLine?: boolean;
 }) {
   const W = 1180;
   const H = 240;
@@ -338,7 +343,7 @@ export function TrendChart({
             {t}%
           </text>
         ))}
-        {points.length > 1 ? (
+        {drawLine && points.length > 1 ? (
           <polyline
             points={points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ")}
             fill="none"
