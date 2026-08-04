@@ -563,6 +563,24 @@ export interface ProjectDetail {
   teasers: ProjectTeaser[];
 }
 
+/** One completed cycle, reduced to the numbers the project page plots.
+ *
+ * `query_set_version` is not decoration: a run is comparable only to a run that
+ * asked the same questions, so the client connects a line only across points
+ * that share it and says so when it cannot. */
+export interface ProjectHistoryPoint {
+  run_id: string;
+  run_date: string;
+  query_set_version: string;
+  /** Both numbers, always. A mention rate without its denominator is the single
+   * most misleading thing this product could print. */
+  mention_successes: number;
+  mention_n: number;
+  share_of_model: number;
+  open_findings: number;
+  critical: number;
+}
+
 // --- Calls ---
 
 function filesToForm(files: File[]): FormData {
@@ -627,6 +645,15 @@ export async function getProject(key: string): Promise<ProjectDetail> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`get project failed (${res.status})`);
+  return res.json();
+}
+
+export async function getProjectHistory(key: string): Promise<ProjectHistoryPoint[]> {
+  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(key)}/history`, {
+    cache: "no-store",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`project history failed (${res.status})`);
   return res.json();
 }
 
@@ -1154,4 +1181,239 @@ export async function assembleAudit(body: AssembleRequest): Promise<AssembleResu
   }
   if (!res.ok) throw new Error(`assemble failed (${res.status})`);
   return res.json();
+}
+
+// --- Fact-sheet intake (src/api/intake.py) -----------------------------------
+//
+// The registry is the single source of truth for what the intake asks: these
+// types mirror the Python dataclasses, and the UI renders whatever the plan
+// contains rather than hardcoding a card. A question that exists in the
+// frontend but not in the registry is a question whose answer has nowhere to go.
+
+export type IntakeAnswerKind =
+  | "choice"
+  | "multi"
+  | "confirm"
+  | "batch_confirm"
+  | "text"
+  | "longtext"
+  | "list"
+  | "hours"
+  | "money"
+  | "tiers"
+  | "links"
+  | "watchlist";
+
+export interface IntakeOption {
+  value: string;
+  label: string;
+}
+
+export interface IntakePrefillEntry {
+  value: string;
+  source_url: string;
+  source_kind: string;
+  confidence: string;
+}
+
+export interface IntakeQuestion {
+  id: string;
+  kind: IntakeAnswerKind;
+  section: string | null;
+  keys: string[];
+  prompt: string;
+  /** The one-line rationale, shown in the open-questions launcher. */
+  why: string;
+  helper: string;
+  placeholder: string;
+  options: IntakeOption[];
+  skippable: boolean;
+  /** "No" is the valuable answer. Never reword these into positives. */
+  negativeFirst: boolean;
+  producesClaims: boolean;
+  showIf: { questionId: string; equals: string } | null;
+  prefill: Record<string, IntakePrefillEntry>;
+}
+
+/** done | current | skipped | todo. `skipped` renders as visibly ADDRESSED —
+ * never as answered, never as pending. That distinction is what makes skipping
+ * safe to offer. */
+export type IntakeMark = "done" | "current" | "skipped" | "todo";
+
+export interface IntakeProgress {
+  marks: IntakeMark[];
+  total: number;
+  answered: number;
+  confirmed: number;
+  done: boolean;
+}
+
+export interface IntakeStoredAnswer {
+  value: unknown;
+  raw: string;
+  skipped: boolean;
+  answered_at: string;
+}
+
+export interface IntakeSession {
+  session_id: string;
+  domain: string;
+  /** What the prompts call the business. Resolved server-side — a prompt that
+   * addresses someone as "blackpropeller.com" is not one they will answer. */
+  business_name: string;
+  business_kind: string;
+  state: string;
+  fact_sheet_id: string | null;
+  approved_fact_sheet_id: string | null;
+  plan: IntakeQuestion[];
+  answers: Record<string, IntakeStoredAnswer>;
+  prefill: Record<string, IntakePrefillEntry>;
+  run_inputs: Record<string, unknown>;
+  next: IntakeQuestion | null;
+  progress: IntakeProgress;
+}
+
+/** The exact sentence the owner is put on the record as saying. */
+export interface IntakeAssertion {
+  key: string;
+  value: string;
+  polarity: "positive" | "negative";
+}
+
+export interface IntakeAnswerResult {
+  next: IntakeQuestion | null;
+  progress: IntakeProgress;
+  assertions: IntakeAssertion[];
+  /** Marketing words we noticed. A NUDGE, never a block. */
+  nudge: string[];
+}
+
+export interface IntakeReviewClaim {
+  claim_id: string;
+  section: string;
+  key: string;
+  value: string;
+  quote: string;
+  polarity: string;
+  as_of: string;
+  verification: string;
+}
+
+export interface IntakeQueryRow {
+  query_id: string;
+  text: string;
+  intent: string;
+  persona: string;
+  provenance: string;
+}
+
+export interface LintItem {
+  level: "block" | "warn";
+  message: string;
+  code: string;
+}
+
+export interface IntakeReview {
+  session_id: string;
+  state: string;
+  claims: IntakeReviewClaim[];
+  /** Keys nobody confirmed. Named, not counted — "3 facts nobody confirmed"
+   * with no way to see which is a dead end. */
+  unconfirmed: string[];
+  query_set: IntakeQueryRow[];
+  csv: string;
+  lint: LintItem[];
+  tier: string;
+  can_approve: boolean;
+  run_inputs: Record<string, unknown>;
+}
+
+async function intakeJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    ...init,
+    headers: authHeaders({
+      "Content-Type": "application/json",
+      ...((init?.headers as Record<string, string> | undefined) ?? {}),
+    }),
+  });
+  if (!res.ok) {
+    // A 409 from approve means an unconfirmed claim survived the tier rule, or
+    // the question set failed its checks. Both carry a sentence a person can
+    // act on; surface it rather than "request failed (409)".
+    let detail: unknown = null;
+    try {
+      detail = (await res.json())?.detail;
+    } catch {
+      detail = null;
+    }
+    if (typeof detail === "string") throw new Error(detail);
+    if (detail && typeof detail === "object" && "message" in detail) {
+      throw new Error(String((detail as { message: unknown }).message));
+    }
+    throw new Error(`${path} failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export function startIntake(sheetId: string): Promise<IntakeSession> {
+  return intakeJson(`/fact-sheets/${encodeURIComponent(sheetId)}/intake`, { method: "POST" });
+}
+
+export function getIntake(sessionId: string): Promise<IntakeSession> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}`);
+}
+
+export function answerIntake(
+  sessionId: string,
+  body: { question_id: string; value: unknown; raw: string; skipped: boolean },
+): Promise<IntakeAnswerResult> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/answer`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** The sentence a candidate answer WOULD produce, without storing it.
+ *
+ * A round trip rather than a client-side copy of the phrasing on purpose: the
+ * registry and its sentences live in one place, and a second implementation
+ * here would drift the first time someone reworded a card — showing the owner
+ * one sentence and quoting them on another. */
+export function previewIntake(
+  sessionId: string,
+  body: { question_id: string; value: unknown; raw: string },
+): Promise<{ assertions: IntakeAssertion[]; nudge: string[] }> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/preview`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function backIntake(sessionId: string): Promise<IntakeSession> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/back`, { method: "POST" });
+}
+
+export function completeIntake(sessionId: string): Promise<IntakeReview> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/complete`, { method: "POST" });
+}
+
+export function getIntakeReview(sessionId: string): Promise<IntakeReview> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/review`);
+}
+
+export function patchIntakeReview(
+  sessionId: string,
+  body: { run_inputs?: Record<string, unknown> },
+): Promise<IntakeReview> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/review`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export function approveIntake(
+  sessionId: string,
+): Promise<{ fact_sheet_id: string; version: number; claims: number }> {
+  return intakeJson(`/intake/${encodeURIComponent(sessionId)}/approve`, { method: "POST" });
 }

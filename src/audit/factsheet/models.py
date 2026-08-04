@@ -47,6 +47,21 @@ class SheetSection(StrEnum):
     LICENSING = "licensing"
     SERVICES_PRICING = "services_pricing"
     PRESENCE = "presence"
+    # --- APPEND ONLY, added for the product branch of the intake ---
+    #
+    # A product sheet has nowhere to put features, positioning or the
+    # watch-list, and the enum above is local-shaped.
+    #
+    # APPENDING IS SAFE AND INSERTING IS NOT. Declaration order is claim-ID
+    # order (`assigned_claims`), and a claim ID change re-keys every cached
+    # verdict for that client. Every pre-existing sheet's sections sort BEFORE
+    # these three, so existing FS-nn ids are byte-identical — which
+    # tests/test_factsheet_intake.py pins with a fixture. Inserting a member in
+    # the middle, or reordering, renumbers sheets that are already in front of
+    # clients. Don't.
+    FEATURES = "features"
+    POSITIONING = "positioning"
+    WATCHLIST = "watchlist"
 
 
 class Polarity(StrEnum):

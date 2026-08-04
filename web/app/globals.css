@@ -39,8 +39,51 @@
     color: var(--ink-secondary);
   }
 
+  /* The SAME uppercase treatment one step in, for a label INSIDE a card rather
+   * than above a page. 0.3em not 0.36em: the page eyebrow is the widest thing on
+   * the screen and a card label sitting at the same tracking competes with it.
+   * Still --ink-secondary — a card label can land on the white card or on the
+   * 3%-navy section band, and Harbour only clears AA on the former. */
+  .section-label {
+    font-family: var(--font-text);
+    font-size: 0.625rem; /* 10 */
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-secondary);
+  }
+
+  /* A table's column header. Harbour is correct HERE and nowhere else on paper:
+   * every table in the app sits on a white card. */
+  .col-label {
+    font-family: var(--font-text);
+    font-size: 0.625rem; /* 10 */
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--harbour);
+  }
+
+  /* Page titles. Libre Franklin 600, NOT Cormorant: the guide's display face is
+   * for the wordmark and hero numbers, and a 34px Garamond h1 above a dense
+   * table reads as a magazine, not a tool. `.display` still exists for the two
+   * places that are genuinely display. */
+  .page-title {
+    font-weight: 600;
+    font-size: 34px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* 2px Sable Blue with a 2px Paper offset. A 1px navy ring is invisible against
+   * a white card, which is where most of the app's focusable things live. */
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
   }
 }
 

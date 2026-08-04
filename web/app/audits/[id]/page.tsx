@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ProgressView } from "@/components/progress-view";
 import { Notice } from "@/components/notice";
+import { Page } from "@/components/page";
 import { ReportView } from "@/components/report-view";
 import { RenderModeProvider } from "@/lib/render-mode";
 import {
@@ -90,24 +90,25 @@ export default function AuditPage({ params }: { params: Promise<{ id: string }> 
     await cancelAudit(runId);
   };
 
+  // ProgressView and ReportView each render their own <Page>: one is a
+  // two-column workbench and the other is four full-bleed panels, and a shared
+  // wrapper here could only be the intersection of the two, which is nothing.
   return (
     <RenderModeProvider mode={isPrint ? "print" : "screen"}>
-    <div className="space-y-6">
-      {/* --ink-secondary, not Harbour: this link sits on the PAPER ground, where
-          Harbour measures 4.14:1 and fails AA. Harbour is only safe on a card. */}
-      <Link
-        href="/"
-        className="no-print inline-flex items-center gap-1.5 text-[13px] text-[color:var(--ink-secondary)] hover:text-navy"
-      >
-        <ArrowLeft className="h-4 w-4" /> Run
-      </Link>
-
-      {error && <Notice tone="problem" className="no-print">{error}</Notice>}
+      {error && (
+        <Page>
+          <Notice tone="problem" className="no-print">
+            {error}
+          </Notice>
+        </Page>
+      )}
 
       {!error && !status && (
-        <div className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-        </div>
+        <Page>
+          <p className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+          </p>
+        </Page>
       )}
 
       {status && status.state === "done" && report && (
@@ -115,15 +116,16 @@ export default function AuditPage({ params }: { params: Promise<{ id: string }> 
       )}
 
       {status && status.state === "done" && !report && (
-        <div className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
-          <Loader2 className="h-4 w-4 animate-spin" /> Assembling report…
-        </div>
+        <Page>
+          <p className="flex items-center gap-2 text-[13px] text-[color:var(--ink-secondary)]">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Assembling report…
+          </p>
+        </Page>
       )}
 
       {status && status.state !== "done" && (
         <ProgressView status={status} elapsed={elapsed} onCancel={onCancel} />
       )}
-    </div>
     </RenderModeProvider>
   );
 }

@@ -58,6 +58,9 @@ _LOCAL_SECTION_TITLES: dict[SheetSection, str] = {
         "F · Services & pricing → `wrong_pricing`, `missing_or_invented_feature`"
     ),
     SheetSection.PRESENCE: "G · Reputation & presence",
+    SheetSection.FEATURES: "H · Features & capabilities → `missing_or_invented_feature`",
+    SheetSection.POSITIONING: "I · Positioning & competitors → `competitor_confusion`",
+    SheetSection.WATCHLIST: "J · Known bad answers → the watch-list",
 }
 
 # docs/fact-sheet-template.md organises a product around identity / pricing /
@@ -71,9 +74,56 @@ _PRODUCT_SECTION_TITLES: dict[SheetSection, str] = {
     # A product's features live here too — the consumer template splits them into
     # "C · Features & capabilities", but both are `wrong_pricing` /
     # `missing_or_invented_feature` territory and the key already disambiguates.
-    SheetSection.SERVICES_PRICING: "B · Pricing, features & capabilities",
-    SheetSection.PRESENCE: "D · Positioning & competitors",
+    SheetSection.SERVICES_PRICING: "B · Pricing & plans",
+    SheetSection.FEATURES: "C · Features & capabilities",
+    SheetSection.POSITIONING: "D · Positioning & competitors",
+    SheetSection.PRESENCE: "E · Reputation & presence",
+    SheetSection.WATCHLIST: "F · Known bad answers → the watch-list",
 }
+
+# READ ORDER, which is a document concern and is free to differ from claim-ID
+# order — and here it must.
+#
+# Claim-ID order is SheetSection's declaration order and is IMMUTABLE: it is
+# inside the judge cache key (models.py). Appending FEATURES / POSITIONING /
+# WATCHLIST kept every existing id byte-identical, but it also put a product
+# sheet's presence section ahead of its features, which reads wrong. So the
+# document gets its own order and the ids keep theirs.
+#
+# THIS DICT IS THE ONLY PLACE THE TWO ARE ALLOWED TO DISAGREE. `to_fact_rows`
+# and `to_csv` stay in claim-ID order, because that is what the judge reads.
+_RENDER_ORDER: dict[BusinessKind, tuple[SheetSection, ...]] = {
+    BusinessKind.LOCAL_SERVICE: (
+        SheetSection.IDENTITY,
+        SheetSection.CONTACT,
+        SheetSection.HOURS,
+        SheetSection.SERVICE_AREA,
+        SheetSection.LICENSING,
+        SheetSection.SERVICES_PRICING,
+        SheetSection.PRESENCE,
+        SheetSection.WATCHLIST,
+    ),
+    BusinessKind.PRODUCT: (
+        SheetSection.IDENTITY,
+        SheetSection.SERVICES_PRICING,
+        SheetSection.FEATURES,
+        SheetSection.POSITIONING,
+        SheetSection.PRESENCE,
+        SheetSection.WATCHLIST,
+    ),
+}
+
+
+def _render_sections(kind: BusinessKind) -> tuple[SheetSection, ...]:
+    """The document's section order, with any section the map forgot appended.
+
+    The fallback is load-bearing rather than defensive: a future SheetSection
+    that nobody adds to `_RENDER_ORDER` would otherwise have its claims silently
+    vanish from the human render while still being in the CSV the judge reads —
+    a sheet that says one thing to a client and another to the grader.
+    """
+    listed = _RENDER_ORDER[kind]
+    return listed + tuple(s for s in SheetSection if s not in listed)
 
 # What a reader sees next to a claim. Anything short of `client_confirmed` says
 # UNCONFIRMED in as many words (plan §8) — "cross_confirmed" reads like an
@@ -157,7 +207,7 @@ def to_markdown(sheet: FactSheet) -> str:
         )
 
     lines.append("---")
-    for section in SheetSection:
+    for section in _render_sections(sheet.business_kind):
         in_section = [c for c in claims if c.section is section]
         if not in_section:
             continue

@@ -18,19 +18,24 @@ name bucket until/unless a domain is supplied.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 
 from src.api import runner
 from src.storage import db
 
+logger = logging.getLogger(__name__)
+
 __all__ = [
     "ProjectAudit",
     "ProjectTeaser",
     "ProjectSummary",
     "ProjectDetail",
+    "ProjectHistoryPoint",
     "list_projects",
     "get_project",
+    "project_history",
     "delete_project",
 ]
 
@@ -72,6 +77,30 @@ class ProjectDetail:
     domain: str | None
     audits: list[ProjectAudit]
     teasers: list[ProjectTeaser]
+
+
+@dataclass(frozen=True)
+class ProjectHistoryPoint:
+    """One completed cycle, reduced to the four numbers the project page plots.
+
+    Every one is COUNTED or MEASURED — no composite score, and the mention rate
+    ships with its denominator rather than as a bare percentage, because at this
+    sample size a bare percentage is misleading.
+
+    ``query_set_version`` rides along because a run is comparable only to a run
+    that asked the same questions. The client decides what to CONNECT with a
+    line; the API's job is to make the version visible so it cannot silently
+    compare across a changed instrument.
+    """
+
+    run_id: str
+    run_date: str
+    query_set_version: str
+    mention_successes: int
+    mention_n: int
+    share_of_model: float
+    open_findings: int
+    critical: int
 
 
 @dataclass
@@ -213,6 +242,73 @@ def get_project(key: str) -> ProjectDetail | None:
     )
 
 
+# A project page plots a cadence, not an archive. Twelve monthly cycles is a
+# year, and each point costs one report assembly — free (it reads stored rows and
+# the warm judge cache) but not instant.
+_HISTORY_LIMIT = 12
+
+
+def project_history(key: str, limit: int = _HISTORY_LIMIT) -> list[ProjectHistoryPoint]:
+    """Completed cycles for one project, OLDEST FIRST so the list plots left to right.
+
+    Only ``done`` runs: a cancelled or still-running cycle has no defensible
+    numbers, and plotting a partial one would put a figure nobody stands behind
+    on a chart a client reads. A run whose report cannot be assembled is skipped
+    rather than zero-filled — a missing point is honest, a zero is a claim.
+    """
+    acc = _collect().get(key)
+    if acc is None:
+        return []
+
+    points: list[ProjectHistoryPoint] = []
+    # Newest-first for the cap, so a long history keeps its RECENT cycles.
+    for audit in sorted(acc.audits, key=lambda a: a.created_at, reverse=True):
+        if len(points) >= limit:
+            break
+        if audit.state != "done":
+            continue
+        report = runner.get_report(audit.run_id)
+        if report is None:
+            continue
+        scorecard = report.get("scorecard")
+        if not isinstance(scorecard, dict):
+            continue
+        visibility = scorecard.get("ai_visibility")
+        findings = scorecard.get("open_findings")
+        points.append(
+            ProjectHistoryPoint(
+                run_id=audit.run_id,
+                run_date=str(report.get("run_date", audit.created_at)),
+                query_set_version=str(report.get("query_set_version", "")),
+                mention_successes=_int(visibility, "successes"),
+                mention_n=_int(visibility, "n"),
+                share_of_model=_float(scorecard, "share_of_model_client"),
+                open_findings=_int(findings, "themes"),
+                critical=_int(findings, "critical"),
+            )
+        )
+    return list(reversed(points))
+
+
+def _int(payload: object, field_name: str) -> int:
+    """A payload field as an int, or 0. Payload shapes are versioned and optional
+    (older stored runs predate several of them), so read defensively rather than
+    letting one missing key 500 the whole page."""
+    if isinstance(payload, dict):
+        value = payload.get(field_name)
+        if isinstance(value, (int, float)):
+            return int(value)
+    return 0
+
+
+def _float(payload: object, field_name: str) -> float:
+    if isinstance(payload, dict):
+        value = payload.get(field_name)
+        if isinstance(value, (int, float)):
+            return float(value)
+    return 0.0
+
+
 # The UI collection (_collect) caps audits/teasers for a light dashboard; deleting
 # must instead find EVERY row for the key or it would orphan a large project's
 # older runs. This bound is far above any realistic single project's history.
@@ -271,6 +367,17 @@ def delete_project(key: str) -> dict[str, object] | None:
     db.delete_site_audit_html_for_runs(run_ids_list)
     audits_deleted = db.delete_audit_runs(run_ids_list)
     teasers_deleted = db.delete_teasers(teaser_ids_list)
+    # Intake sessions are keyed by DOMAIN, not by run — so they are not reachable
+    # through the row cascade above. Left behind, an abandoned session keeps
+    # holding the domain's `uq_intake_sessions_live` slot, and re-adding the
+    # client would resume into a conversation about a sheet that no longer
+    # exists. Best-effort: an orphaned session is recoverable, a half-deleted
+    # project is not.
+    if acc is not None and acc.domain:
+        try:
+            db.delete_intake_sessions_for_domains([acc.domain])
+        except db.StorageError:
+            logger.warning("could not delete intake sessions for %s", acc.domain)
     return {
         "key": key,
         "label": label or key,

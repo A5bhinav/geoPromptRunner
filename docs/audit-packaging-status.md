@@ -75,13 +75,22 @@ instead of re-running the whole audit.
 
 ### Phase 4 — the one thing code cannot finish
 
-**P4-T1 needs a gold SET, not more code.** The metrics, the stratified sampler,
-the reconciliation and the gate are all built and tested. What is missing is
-labelled data: at a ~6% base rate, `required_items_for_minority(20, 0.06)` wants
-**334 randomly-sampled items**, or roughly 60 with the stratified sampler
-(`stratify_gold_candidates`, 20 per stratum). Until that exists the report says
-"not yet measured at a sample size that would support quoting a figure", which is
-true.
+**The gold sets EXIST and have been run.** `data/fort_gold.json` and
+`data/oura_gold.json` are 40 hand-labeled answers each, re-measured 2026-07-31
+against the held-constant judge. The report publishes their real figures:
+
+    Fort  present 94% · prominence 86% · framing 93%   (n=240 judgements)
+    Oura  present 99% · prominence 90% · framing 94%   (n=240 judgements)
+
+What is thin is the **flag-bearing** half. Fort's set carries 3 gold findings and
+Oura's 18, against a 20-finding floor — so `AgreementSummary.flags_are_quotable`
+is False for both and the methodology names the gap instead of quoting a number.
+A perfect judge cannot pass `gate_critical_high_recall` on either set, which is
+the gate correctly reporting that these sets cannot measure this thing.
+
+The fix is ~60 stratified items (`stratify_gold_candidates`, 20 per stratum) drawn
+from runs already stored — the Fort `csv-2026-06-13` run alone has 115 flags
+across 540 judged cells. Not a new labelling programme.
 
 **P4-T4 has a verifier but no generator.** Deliberate, and the safe order: the
 guard is what makes any generator safe to switch on. Until one exists,

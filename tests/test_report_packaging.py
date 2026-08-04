@@ -35,7 +35,12 @@ from src.storage.models import AccuracyFlag, AnswerJudgment, BrandJudgment, Quer
 WEB = Path(__file__).resolve().parents[1] / "web"
 REPORT_COMPONENTS = [
     WEB / "components" / "report-view.tsx",
-    WEB / "components" / "charts.tsx",
+    # charts.tsx is gone: recharts left the report and its five chart components
+    # were replaced by the hand-rolled panels below. Both new files are scanned,
+    # so the voice and off-limits-copy rules still cover every string a client
+    # can read.
+    WEB / "components" / "report-panels.tsx",
+    WEB / "components" / "marks.tsx",
     WEB / "components" / "badges.tsx",
 ]
 
@@ -496,18 +501,48 @@ def test_the_brand_lives_behind_one_config_object() -> None:
 
 
 def test_the_donut_is_gone() -> None:
-    """Arc-angle comparison across six non-adjacent segments is unreadable."""
-    charts = code_of(WEB / "components" / "charts.tsx")
-    assert "ShareDonut" not in charts
-    assert "ShareStackedBar" in charts
-    assert "PieChart" not in charts
+    """Arc-angle comparison across six non-adjacent segments is unreadable.
+
+    Scoped to the REPORT. `marks.tsx` does export a `Donut`, and that is fine:
+    it is the run-progress ring on the Running screen, a single-arc gauge of one
+    value that nobody compares to anything. The banned thing is a donut used to
+    compare a value SET, and the report must not reach for one.
+    """
+    panels = code_of(WEB / "components" / "report-panels.tsx")
+    view = code_of(WEB / "components" / "report-view.tsx")
+    for source in (panels, view):
+        assert "Donut" not in source
+        assert "PieChart" not in source
+        assert "ShareDonut" not in source
+    # The replacement: one 100% stacked bar, every brand on a shared baseline.
+    assert "Share of model" in panels
+    assert "flexGrow: d.value" in panels
 
 
 def test_the_heatmap_prints_numbers_in_every_cell() -> None:
     """Colour to scan, digits to verify. Colour alone also fails accessibility."""
-    charts = code_of(WEB / "components" / "charts.tsx")
-    assert "EngineHeatmap" in charts
-    assert "{cell.present}/{cell.cells}" in charts
+    panels = code_of(WEB / "components" / "report-panels.tsx")
+    assert "HeatCell" in panels
+    assert "cell!.present" in panels
+    # "Not measured" and "measured zero" are opposite facts. The cell renders an
+    # em dash for the first and never a 0 — this is the error the grid exists to
+    # avoid, so it is asserted at the mark itself.
+    marks = code_of(WEB / "components" / "marks.tsx")
+    assert 'value === null ? "—" : value' in marks
+
+
+def test_no_report_chart_carries_an_unmarked_svg() -> None:
+    """Every report chart opts in to the print-layout collapse check.
+
+    `scripts/check-print-layout.mjs` measures `svg.report-chart`. An unmarked
+    chart is an unchecked chart — it would print at zero height and the guard
+    would report "0 charts" and pass.
+    """
+    marks = (WEB / "components" / "marks.tsx").read_text()
+    script = (WEB / "scripts" / "check-print-layout.mjs").read_text()
+    assert "svg.report-chart" in script
+    # TrendChart and AreaChart are the report's two SVG charts.
+    assert marks.count('className="report-chart"') >= 2
 
 
 # --- prior-run resolution (P2-T1) ---------------------------------------------

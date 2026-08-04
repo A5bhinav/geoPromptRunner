@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Libre_Franklin } from "next/font/google";
 import "./globals.css";
 import "../styles/tokens.css";
+import "../styles/motion.css";
 import "../styles/sable.css";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 
 // Sable's two faces, self-hosted at build by next/font. Deliberately NOT a CDN
 // <link>: that breaks static export, and the PDF worker's header/footer
@@ -36,9 +37,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${libreFranklin.variable}`}>
+      {/* The shell owns the page's outer geometry now; the content well and its
+          padding belong to each page's own <Page>, because the report and the
+          intake both need to break out of it (full-bleed panels, a full-height
+          composer column) and a padded <main> would have to be fought. */}
       <body className="min-h-screen font-sans antialiased">
-        <AppHeader />
-        <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

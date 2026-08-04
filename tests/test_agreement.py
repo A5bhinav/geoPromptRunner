@@ -171,3 +171,84 @@ def test_an_answers_label_is_its_worst_severity() -> None:
     ]
     assert severity_label(flags) == "critical"  # wrong_pricing/high escalates
     assert severity_label([]) == NO_FLAG
+
+
+# --- publishing what IS measured ----------------------------------------------
+
+
+def _summary(**overrides: object):  # type: ignore[no-untyped-def]
+    from src.pipeline.calibration import AgreementSummary
+
+    base = {
+        "client": "Fort",
+        "measured_on": "2026-07-31",
+        "judge_model": "claude-sonnet-4-5-20250929",
+        "n_items": 40,
+        "n_brand_judgements": 240,
+        "present": 0.94,
+        "prominence": 0.86,
+        "framing": 0.93,
+        "flag_precision": 0.43,
+        "flag_recall": 1.0,
+        "n_judge_flags": 7,
+        "n_gold_flags": 3,
+        "severity_exact": 0.67,
+        "n_severity_pairs": 3,
+    }
+    base.update(overrides)
+    return AgreementSummary(**base)  # type: ignore[arg-type]
+
+
+def test_the_measured_dimensions_are_published_with_their_denominator() -> None:
+    """Saying "unmeasured" while holding 94% on 240 judgements understates the work."""
+    sentence = _summary().sentence()
+    assert "94%" in sentence and "240 brand judgements" in sentence
+    assert "40 hand-labeled answers" in sentence
+    assert "2026-07-31" in sentence
+
+
+def test_a_thin_flag_sample_is_named_not_quoted() -> None:
+    """43% off SEVEN flags is the bare-percentage failure in a different coat."""
+    sentence = _summary().sentence()
+    assert "43%" not in sentence
+    assert "3 findings, too few" in sentence
+
+
+def test_a_well_powered_flag_sample_would_be_quoted() -> None:
+    """The gate is the denominator, not a permanent refusal — this is what
+    changes when ~60 stratified items get labeled."""
+    sentence = _summary(n_gold_flags=25, n_judge_flags=28, flag_precision=0.8).sentence()
+    assert "precision 80% of 28" in sentence
+    assert "recall 100% of 25" in sentence
+
+
+def test_the_quotable_threshold_is_the_documented_one() -> None:
+    from src.pipeline.calibration import AgreementSummary
+
+    assert AgreementSummary.MIN_FLAGS_TO_QUOTE == 20
+    assert not _summary(n_gold_flags=19, n_judge_flags=50).flags_are_quotable
+    assert _summary(n_gold_flags=20, n_judge_flags=20).flags_are_quotable
+
+
+def test_a_client_with_no_summary_falls_back_to_the_unmeasured_line() -> None:
+    from src.pipeline.calibration import load_agreement_summary
+
+    assert load_agreement_summary("A Client Nobody Has Labeled") is None
+
+
+def test_the_stored_summaries_load_and_match_the_calibration_report() -> None:
+    """Pins the transcription: these figures came from docs/calibration/."""
+    from src.pipeline.calibration import load_agreement_summary
+
+    fort = load_agreement_summary("Fort")
+    assert fort is not None
+    assert (fort.present, fort.prominence, fort.framing) == (0.94, 0.86, 0.93)
+    assert (fort.n_gold_flags, fort.n_judge_flags) == (3, 7)
+    assert not fort.flags_are_quotable
+
+    oura = load_agreement_summary("Oura")
+    assert oura is not None
+    # 18 gold flags is the best-powered set there is, and it is STILL under the
+    # bar — which is the finding, not a gap in the tooling.
+    assert oura.n_gold_flags == 18
+    assert not oura.flags_are_quotable

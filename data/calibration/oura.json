@@ -1,0 +1,16 @@
+{
+  "client": "Oura",
+  "measured_on": "2026-07-31",
+  "judge_model": "claude-sonnet-4-5-20250929 (JUDGE_VERIFY=1, isolated_cache)",
+  "n_items": 40,
+  "n_brand_judgements": 240,
+  "present": 0.99,
+  "prominence": 0.90,
+  "framing": 0.94,
+  "flag_precision": 0.65,
+  "flag_recall": 0.94,
+  "n_judge_flags": 26,
+  "n_gold_flags": 18,
+  "severity_exact": 0.18,
+  "n_severity_pairs": 17
+}

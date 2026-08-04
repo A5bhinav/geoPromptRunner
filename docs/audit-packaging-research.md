@@ -264,6 +264,12 @@ The honest posture — *"we don't sell you a score, we sell you a rate across re
 **Before:** 41 pages — tiles → donut → funnel bars → 30pp flag dump → domains → ID table.
 **After:** ~13–18 page body + linked data appendix.
 
+> **SUPERSEDED 2026-08-04.** The authoritative section order is now **"The report contract"**
+> in `audit-packaging-spec.md`. Two things below are retired: row 4's scorecard framing
+> (the grade is gone entirely — see spec P1-T6 and TR-T0), and the single-body page target
+> (the deliverable is now 13–16 pp of front matter plus 12–20 pp of back-matter tables).
+> The table is kept for the reasoning behind each section, not as the build target.
+
 Evidence base: Minto Pyramid Principle (answer first), SCQA, BLUF, McKinsey one-page exec summary structure (Objective → Situation → Complication → Resolution → Benefits → CTA, with the key sentence of each block bolded), and Eval Academy's tiered-report argument (1–5 page summary / ~25 page mid / full appendix — three artifacts, not one document trying to be all three).
 
 | # | Section | Length | Contents |
@@ -343,13 +349,17 @@ tfoot { display: table-footer-group; }
 
 p { orphans: 3; widows: 3; }
 
-/* position: fixed does NOT repeat per printed page — use running() */
-.running-header { position: running(header); }
-@page {
-  @top-center  { content: element(header); }
-  @bottom-right{ content: counter(page) " / " counter(pages); }
-}
+/* Running headers/footers: NOT via CSS. See the note below. */
 ```
+
+> **CORRECTED 2026-08-04.** An earlier version of this block used
+> `position: running(header)` with `@top-center { content: element(header) }`. **Chromium does not
+> implement `running()` or `element()`** — Chrome 131 shipped `@page` margin *boxes* but the
+> running-element machinery was explicitly out of scope, so that CSS silently produces no header at
+> all. Repeating headers and footers come from Playwright's `headerTemplate` / `footerTemplate`
+> options on `page.pdf()`, which take their own HTML fragments with `.pageNumber` / `.totalPages`
+> classes and require a non-zero top/bottom `margin`. See spec P1-T7.
+
 
 - **TOC page numbers** need a two-pass render (render once, read landed page numbers via injected markers, re-render with numbers filled).
 - **PDF bookmarks/outline** are not auto-generated from headings by `page.pdf()` — either accept their absence or post-process with `pdf-lib`.

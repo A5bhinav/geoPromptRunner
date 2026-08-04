@@ -110,13 +110,15 @@ async function main() {
         (img) => img.loading === "lazy" && !img.complete,
       ).length;
 
-      // Charts must have real SVG geometry, not a zero-size ResponsiveContainer.
+      // Charts must have real SVG geometry, not a collapsed box.
       //
-      // Direct children of `.recharts-wrapper` only: recharts reuses the
-      // `recharts-surface` class for the 14x14 SVG inside each LEGEND ITEM, and
-      // a bare class selector reports those as collapsed charts. That produced a
-      // confident, wrong "2 of 5 charts have no size" on the first real run.
-      const svgs = [...document.querySelectorAll(".recharts-wrapper > svg.recharts-surface")];
+      // `svg.report-chart` — an explicit opt-in marker set by the chart
+      // components themselves. It replaced `.recharts-wrapper >
+      // svg.recharts-surface` when recharts left the report. A marker rather
+      // than `svg[role="img"]` because the Sable plume is also a role="img" SVG
+      // and is 22px tall by design, so a geometry selector would report the
+      // wordmark as a collapsed chart on every run.
+      const svgs = [...document.querySelectorAll("svg.report-chart")];
       const collapsedCharts = svgs.filter((s) => {
         const r = s.getBoundingClientRect();
         return r.width < 50 || r.height < 50;

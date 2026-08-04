@@ -1,3 +1,287 @@
+## Fact-sheet intake — the switch that turns HIGH/CRITICAL findings on — Completed 2026-08-04
+
+Plan phases I1–I3 plus the screen. `docs/factsheet-intake-agent-plan.md` §0 is the
+whole argument: `verification_tier` is the WEAKEST verification across a sheet's
+claims, `SENDABLE_SEVERITIES[public_source_only]` is `{LOW, MED}`, and every
+auto-generated sheet was permanently `public_source_only` because no writer of
+`CLIENT_CONFIRMED` existed. HIGH and CRITICAL accuracy findings — the class the
+product sells — were structurally unreachable. This is that writer.
+
+### The package (I1) — `src/audit/factsheet/intake/`
+
+`questions.py` the registry · `plan.py` routing and the 18-card ceiling ·
+`assertions.py` answer → sentence · `claims.py` sentence → FactClaim.
+
+Inert in the same sense the extractor is: no fetch, no clock, no model. `as_of`
+is a parameter, and the one real clock is `_today()` at the API edge. That is why
+143 tests over the whole registry cost nothing and run on every commit.
+
+`assertions.py` is the part that matters. The judge quotes `FactClaim.value` and
+nothing else, so `hours_sunday: closed` is a form field that leaked into a
+document and `after_hours: no` contradicts nothing. Every answer becomes a
+sentence that stands alone — *Closed Sunday.* *No after-hours or emergency
+service.* *Does not serve Marin County.* One builder per card, because a generic
+template engine produces sentences nobody would sign.
+
+**Two decisions the plan left open, and where they landed:**
+
+- **Date stamps.** The plan listed `hours_*` and `presence_*` as volatile. They
+  are not stamped. A stamp on all seven day claims is seven pieces of noise on
+  the shortest, most-quoted lines of a local sheet, and a profile URL does not go
+  stale the way a price does. `pricing_*` and `features_current_*`/`features_recent`
+  carry it — the two places a model is systematically behind reality. Hours are
+  covered by the claim's own `as_of` column, which is what a human reads.
+- **The watch-list produces claims**, in `WATCHLIST`, *and* is available to aim a
+  future reverse pass. Both, so neither use has to win.
+
+**Two bugs the tests caught before the UI existed:** branch questions defaulted
+to `branch=None` ("asked of everyone"), so a plumber would have been asked about
+pricing tiers — now derived by `_branded()` rather than written out 23 times, which
+makes the mistake unrepresentable. And `Q-LOC-02` was being trimmed by the
+card-budget logic despite being `negative_first`.
+
+### Sessions and the API (I2)
+
+`data/schema_factsheet_intake.sql`, applied. `factsheet_intake_sessions` is
+WORKING STATE — mutated on every answer, exactly as `audit_runs` is by
+`update_audit_run_progress`. The create-only invariant holds where it matters:
+approving WRITES a new sheet row, and abandoning sets a state rather than
+deleting. `uq_intake_sessions_live` is a partial unique index, so two people
+opening the same sheet in the same minute get handed the SAME session — decided
+by Postgres, not by a read-then-write check that loses the race by construction.
+Project deletion cascades sessions; they are keyed by domain, so the row cascade
+would never have reached them.
+
+`src/api/intake.py`, mounted on the existing `require_api_key` router. The plan
+is RECOMPUTED per request rather than stored — Q-ID-01 routes the whole tree, so
+a stored plan is the old one the moment someone goes back and changes it.
+
+`approve` refuses with a 409 naming the claims when anything is unconfirmed. That
+is the tier rule, and it is a refusal rather than a warning because one
+`public_source_only` claim caps the whole sheet and hides every serious finding.
+
+### Query generation (I3)
+
+`src/prompts/generate.py` + `data/query_templates.json`. **No LLM**, per
+`docs/query-generation-plan.md` §1b: a generated set IS the instrument, and a
+nondeterministic instrument makes two cycles incomparable. Slots are filled only
+from confirmed claims and run inputs, and a shape whose slots cannot all be
+filled is dropped — a literal `{city}` reaching an engine scores as a loss on a
+question nobody asked.
+
+Two constraints are enforced in the generator, not left to the lint: every
+competitor gets a comparison question, and at least two comparisons leave the
+client UNNAMED (the ones that test unprompted surfacing). When the allocation
+cannot fit both, the set GROWS — an off-target allocation is a warning and a
+missing competitor is a block.
+
+`src/prompts/lint.py`: 12 checks, `block` disables approve. The last one is the
+only one that matters — generate, then parse your own output with the exact
+function `POST /audits` uses. Everything above it exists to produce a better
+message.
+
+### The screen (6 + 7 as ONE flow)
+
+`web/app/fact-sheets/[id]/intake/page.tsx`. Not two routes: the conversation and
+the approve gate are one continuous act, `stage` is state, and the shell and
+header persist across it. A navigation between them would cost the context of
+everything the owner just typed.
+
+**The assertion preview is a server round trip**, and that was a correction. It
+first rendered the owner's raw input ("A local business people call or visit")
+instead of the assertion ("Black Propeller is a local business people call or
+visit."), which defeats the point of the screen. Fixed with
+`POST /intake/{id}/preview` — the same builder that will write the claim,
+debounced 400ms because the element is `aria-live`. A TypeScript copy of the
+phrasing would have drifted the first time a card was reworded, showing the owner
+one sentence and quoting them on another.
+
+Browser-verified end to end: rail advances, the fact lands in the constellation,
+"On the record: …" quotes the built sentence, Skip appears only on skippable
+cards, and the launcher counts every remaining question rather than the four it
+lists.
+
+`/fact-sheets` now has two tabs — Needs review / Active. There is no Rejected tab
+and no Reject button: the only exits from the queue are approve and leave it
+there, and the way to fix a sheet a reviewer turned down is the intake.
+
+### Still open
+
+- `SheetStatus` (`draft | client_reviewed | signed`) still has no database
+  column, so every loaded sheet reports `draft`. A completed intake is precisely
+  `client_reviewed`. Deferred: it is not on the path to the tier, which is the
+  value here.
+- Attachments in the composer are rendered disabled — there is no upload path
+  behind them yet, and a control that silently does nothing is worse than one
+  that says it is not ready.
+- Nothing notifies the owner when their sheet is approved.
+
+Gate: `mypy` clean, `ruff` clean, 1255 passed / 3 skipped, `npm run build` clean.
+
+## Sable audit UI redesign (v3) — five screens rebuilt, recharts retired — Completed 2026-08-04
+
+The design handoff (`# Audit UI redesign.zip` → `design_handoff_sable_audit_ui/`)
+is a seven-screen, high-fidelity prototype. This entry covers the five that
+already had working code behind them. Screens 6–7 (fact-sheet intake → review)
+are a single continuous flow and are in progress against the intake plan.
+
+### The shell
+
+The top navy band became a **240px navy rail** (`components/app-shell.tsx`).
+The band cost every screen a 56px stripe and then squeezed the work into
+`max-w-6xl`; the report is four full-bleed panels and the run screen is a
+two-column workbench, and both were losing ~250px a side to dead margin. The
+rail spends the same navy vertically, where it costs nothing horizontally.
+
+Per-page rail content (report sections, live run progress) arrives by **portal**,
+not context — the rail is rendered once by the root layout and the page that owns
+the content is three levels down, so context would re-render the whole shell on
+every page-local state change.
+
+New: `styles/motion.css` (the entire motion vocabulary, eight keyframes and a
+required reduced-motion block), `components/page.tsx` (Page / PageHeader / Panel
+/ PanelGrid / StatStrip / Chip), `components/marks.tsx` (every data mark).
+
+### Recharts is gone from the report
+
+`components/charts.tsx` is deleted and the dependency is uninstalled. Its five
+components are replaced by four hand-rolled panels (`report-panels.tsx`):
+headline, competitive, presence, findings. Three reasons, in order of weight:
+
+1. The packaging rules say don't add a charting dependency and hand-roll the SVG.
+2. `SourcesChart` was still painting indigo / emerald / amber from a categorical
+   palette this brand does not have, and `BucketChart` spent a second hue on the
+   citation series. Both were live brand violations, not latent ones.
+3. The dynamic-import-versus-print race (a chunk still resolving when the PDF
+   capture runs) stops existing when there is no chunk.
+
+The headline panel **is** the scorecard — the four measured tiles survive intact
+(AI visibility, share of model, open findings, oldest still open) and there is
+still no letter grade. The one place the mock and the packaging rules pulled
+against each other was the 76px hero percentage: rule 1 wants the count primary.
+Resolved by keeping the count in the same block at 15px/500 navy with the Wilson
+interval under it, so "66%" cannot be taken away without "119 of 180" and
+"95% CI 58–73%".
+
+The print path keeps its full-bleed navy masthead; the screen gets the app
+header. `useIsPrint()` picks. Neither is a fallback for the other.
+
+### The tests moved with the code, and none were weakened
+
+`tests/test_print_pipeline.py` and `tests/test_report_packaging.py` both read
+`charts.tsx` directly. Re-targeted rather than relaxed: the ResponsiveContainer
+test became "no measurement-dependent chart runtime at all", the
+chart-registration test became "no chart arrives through a lazy chunk", the
+animation test moved to the stylesheet's reduced-motion block, and the donut and
+heatmap tests now read `report-panels.tsx`. `marks.tsx` and `report-panels.tsx`
+joined `REPORT_COMPONENTS`, so the voice and off-limits-copy scans cover every
+new client-facing string. New: `test_no_report_chart_carries_an_unmarked_svg` —
+`check-print-layout.mjs` now measures `svg.report-chart`, and an unmarked chart
+is an unchecked chart.
+
+### New API: `GET /projects/{key}/history`
+
+Screen 5's mention-rate trend had no data source. `projects.project_history()`
+returns one point per **completed** cycle — counts with denominators, share of
+model, open findings, critical — plus `query_set_version`, because a run is
+comparable only to a run that asked the same questions. The client draws the line
+across the trailing run of cycles sharing the current version and says in the
+caption how many earlier ones it dropped and why.
+
+### Intake prerequisites (plan I0)
+
+Two of the five were **already done** and the plan predates them: the fact-sheet
+schema is applied, and `db.next_fact_sheet_version` already exists. What landed:
+
+- `db.save_fact_sheet_next_version` — allocate, write, retry once, then fail with
+  a reason a human can act on. The unique index is the atomicity; the retry
+  covers two approvals for one domain in the same second.
+- `extract._GATE_EXEMPT` — the §4.1 substring gate exempts `SourceKind.CLIENT`
+  and nothing else. An owner's spoken answer has no page; what makes it
+  trustworthy is provenance (`intake://{session}/{question}`), not corroboration
+  by a document that does not exist. `__post_init__` still refuses an empty
+  quote, so a CLIENT claim with nothing behind it cannot be constructed.
+- `SheetSection` gained FEATURES / POSITIONING / WATCHLIST, **appended**. Every
+  pre-existing sheet's sections sort before them, so existing `FS-nn` ids are
+  byte-identical and no cached verdict is re-keyed.
+- `render._RENDER_ORDER` splits document order from claim-ID order — the only
+  place the two are allowed to disagree. `to_fact_rows` and `to_csv` are
+  unchanged, because that is what the judge reads.
+
+Gate: `mypy` clean, `ruff` clean, 1096 passed / 3 skipped, `npm run build` clean.
+Not yet verified: the PDF page-count band (`npm run report-pdf` needs a stored
+run with a live API).
+
+## Patch — the report was calling measured work "unmeasured" — Completed 2026-08-02
+
+Asked whether a gold set already existed. It does — `data/fort_gold.json` and
+`data/oura_gold.json`, 40 hand-labeled answers each, **already run** on
+2026-07-31 against the held-constant judge with `isolated_cache()`. The results
+have been sitting in `docs/calibration/fort-2026-07-31.md` the whole time.
+
+Meanwhile the report's methodology section said judge agreement "has not yet been
+measured". That was wrong, and wrong in the direction that costs credibility:
+94% agreement on 240 brand judgements is a defensible number, and publishing
+"unmeasured" beside it understates the work while sounding cautious.
+
+### What the sets actually hold
+
+    fort_gold.json   40 items   1 critical,  0 high,  0 med,  0 low,  39 none
+    oura_gold.json   40 items   0 critical,  3 high,  6 med,  5 low,  26 none
+    local_gold.json  25 items   zero findings of any kind
+
+The decisive check: run `gate_critical_high_recall` against a **hypothetically
+perfect judge** — one that agrees on every item. All three sets still fail.
+
+    fort:  raw 100%, AC1 1.00 -> critical: only 1 example (one item moves recall 100%)
+    oura:  raw 100%, AC1 1.00 -> high: only 3 examples (one item moves it 33%)
+    local: raw 100%, AC1 1.00 -> no findings at all
+
+A flawless judge cannot pass. That is not the gate being harsh; it is the gate
+correctly reporting that these sets cannot measure this thing. Which is the same
+conclusion `project-queue.md` reached by hand in June — now reproducible as a
+command instead of a note.
+
+### The fix: publish both halves, each with its denominator
+
+`AgreementSummary` (`src/pipeline/calibration.py`) reduces a calibration run to
+what the report may publish, and `data/calibration/<client>.json` stores it.
+Content as data, per the standing rule — no client wiring, no hardcoded figures
+in a component.
+
+The line Fort now carries:
+
+> Judge agreement with a human reviewer, measured 2026-07-31 on 40 hand-labeled
+> answers (240 brand judgements): brand mentioned 94%, prominence 86%, framing
+> 93%. Accuracy-finding agreement is not quoted: the labeled set contains 3
+> findings, too few for a precision or recall figure to be stable. Every finding
+> in this report cites the exact prompt, model and date behind it so it can be
+> checked directly.
+
+`flags_are_quotable` gates the second half at 20 findings. Fort's 43% precision
+is computed on **seven** judge flags; publishing "43%" without the 7 is the
+bare-percentage failure the report forbids everywhere else, wearing a different
+coat. Oura's 18 is the best-powered set that exists and is still under the bar —
+that is the finding, not a gap in the tooling.
+
+The threshold is not a permanent refusal: `test_a_well_powered_flag_sample_would_be_quoted`
+pins what changes the moment the strata are filled.
+
+### What is actually left
+
+~60 stratified items — `stratify_gold_candidates`, 20 each from judge-said-severe,
+judge-said-nothing, and boundary — drawn from runs already stored. The Fort
+`csv-2026-06-13` run alone carries 115 flags across 540 judged cells. Labelling
+work, not a new programme, and nothing about it is blocked.
+
+### Gate
+
+`mypy src/` 110 files · `ruff check src/` clean · `pytest tests/` 1094 passed,
+3 skipped · verified against run `ff231808`, which now publishes Fort's real
+figures.
+
+---
+
 ## Patch — Phase 3 was not done when I said it was — Completed 2026-08-02
 
 Asked to confirm, and it wasn't. Three gaps, all the same shape: **the backend

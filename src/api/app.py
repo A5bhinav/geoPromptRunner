@@ -19,7 +19,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api import digest as digest_mod
-from src.api import projects, runner, sharing
+from src.api import intake, projects, runner, sharing
 from src.audit.competitors import candidates_from_local_pack
 from src.audit.factsheet import FactSheet, suggested_run_inputs, to_markdown
 from src.config import settings
@@ -456,6 +456,18 @@ def get_project(key: str) -> dict[str, object]:
     if detail is None:
         raise HTTPException(status_code=404, detail=f"project {key} not found")
     return dataclasses.asdict(detail)
+
+
+@api.get("/projects/{key}/history")
+def project_history(key: str) -> list[dict[str, object]]:
+    """Completed cycles for one project, oldest first — the project page's trend.
+
+    A separate route from `/projects/{key}` on purpose: the detail route is a
+    cheap listing, and this one assembles a report per completed run. Both are
+    free (stored rows plus the warm judge cache, no engine and no judge calls),
+    but a dashboard should not pay for a chart it is not drawing.
+    """
+    return [dataclasses.asdict(p) for p in projects.project_history(key)]
 
 
 @api.delete("/projects/{key}")
@@ -1083,4 +1095,7 @@ def reject_fact_sheet(sheet_id: str, body: RejectFactSheetBody) -> dict[str, obj
     return {"id": sheet_id, "state": db.FactSheetState.REJECTED.value}
 
 
+# The intake routes carry no auth of their own — they ride the same
+# `require_api_key` dependency every other route does.
+api.include_router(intake.router)
 app.include_router(api)

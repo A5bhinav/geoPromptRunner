@@ -1,18 +1,25 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import ClassVar
 
 from src.pipeline.agreement import AgreementReport
 from src.pipeline.judge import AccuracyFlag, BrandJudgment, Judge
 from src.pipeline.judge_cache import JudgeCache
 from src.storage.models import Framing, Prominence, Severity
 
+logger = logging.getLogger(__name__)
+
 __all__ = [
     "GoldFlag",
+    "AgreementSummary",
+    "load_agreement_summary",
+    "summarize",
     "severity_label",
     "severity_agreement",
     "GoldItem",
@@ -386,6 +393,121 @@ def isolated_cache() -> JudgeCache:
     from src.pipeline.judge_cache import InMemoryJudgeCache
 
     return InMemoryJudgeCache()
+
+
+@dataclass(frozen=True)
+class AgreementSummary:
+    """A measured calibration result, in the shape the report publishes.
+
+    Persisted per client so the methodology section can quote a REAL figure
+    instead of "not measured". It is a *summary*, not the report — the full
+    markdown (confusion matrices, per-engine slices) stays in
+    ``docs/calibration/`` where it is read by a human.
+
+    Every field carries its own denominator, because that is what decides whether
+    a figure may be quoted at all. Fort's flag precision of 43% is computed on
+    SEVEN judge flags; publishing it as "43%" without the 7 would be the same
+    bare-percentage failure the report rules out everywhere else.
+    """
+
+    client: str
+    measured_on: str
+    judge_model: str
+    n_items: int
+    n_brand_judgements: int
+    present: float
+    prominence: float
+    framing: float
+    #: Flag-level precision/recall and their denominators. Quotable only when
+    #: the denominators support it; see :attr:`flags_are_quotable`.
+    flag_precision: float = 0.0
+    flag_recall: float = 0.0
+    n_judge_flags: int = 0
+    n_gold_flags: int = 0
+    severity_exact: float = 0.0
+    n_severity_pairs: int = 0
+
+    #: Below this a flag figure moves too far on one item to mean anything.
+    MIN_FLAGS_TO_QUOTE: ClassVar[int] = 20
+
+    @property
+    def flags_are_quotable(self) -> bool:
+        """Whether the flag figures may be published.
+
+        False on every set we have. Fort: 3 gold flags, so one item moves recall
+        33 points and two identical runs returned precision 29% then 43% on the
+        same inputs. That is the sample size talking, not the judge.
+        """
+        return min(self.n_gold_flags, self.n_judge_flags) >= self.MIN_FLAGS_TO_QUOTE
+
+    def sentence(self) -> str:
+        """The methodology line. Publishes what IS measured and names what is not.
+
+        Saying "not measured" while holding 94% on 240 judgements understates the
+        work; quoting a 43% precision off 7 flags overstates it. Both halves,
+        each with its denominator.
+        """
+        measured = (
+            f"Judge agreement with a human reviewer, measured {self.measured_on} on "
+            f"{self.n_items} hand-labeled answers ({self.n_brand_judgements} brand "
+            f"judgements): brand mentioned {self.present:.0%}, prominence "
+            f"{self.prominence:.0%}, framing {self.framing:.0%}."
+        )
+        if self.flags_are_quotable:
+            return (
+                f"{measured} On accuracy findings, precision {self.flag_precision:.0%} "
+                f"of {self.n_judge_flags} and recall {self.flag_recall:.0%} of "
+                f"{self.n_gold_flags}."
+            )
+        return (
+            f"{measured} Accuracy-finding agreement is not quoted: the labeled set "
+            f"contains {self.n_gold_flags} findings, too few for a precision or recall "
+            f"figure to be stable. Every finding in this report cites the exact prompt, "
+            f"model and date behind it so it can be checked directly."
+        )
+
+
+def load_agreement_summary(
+    client: str, root: str | Path = "data/calibration"
+) -> AgreementSummary | None:
+    """The stored calibration summary for a client, or None if never measured.
+
+    Matched on a slugged client name so the report needs no wiring per client.
+    Returns None rather than raising: an unmeasured judge is a fact the report
+    states, not an error that stops it rendering.
+    """
+    slug = "".join(c if c.isalnum() else "-" for c in client.lower()).strip("-")
+    path = Path(root) / f"{slug}.json"
+    if not path.exists():
+        return None
+    try:
+        raw = json.loads(path.read_text())
+        return AgreementSummary(**raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        logger.warning("Ignoring unreadable calibration summary %s: %s", path, type(exc).__name__)
+        return None
+
+
+def summarize(
+    report: CalibrationReport, client: str, measured_on: str, judge_model: str
+) -> AgreementSummary:
+    """Reduce a full calibration report to the publishable summary."""
+    return AgreementSummary(
+        client=client,
+        measured_on=measured_on,
+        judge_model=judge_model,
+        n_items=report.n_assessed,
+        n_brand_judgements=report.present_total,
+        present=report.present_agreement,
+        prominence=report.prominence_agreement,
+        framing=report.framing_agreement,
+        flag_precision=report.flags.precision,
+        flag_recall=report.flags.recall,
+        n_judge_flags=report.flags.tp + report.flags.fp,
+        n_gold_flags=report.flags.tp + report.flags.fn,
+        severity_exact=report.flags.severity_exact_rate,
+        n_severity_pairs=report.flags.severity_total,
+    )
 
 
 def severity_label(flags: Sequence[object]) -> str:

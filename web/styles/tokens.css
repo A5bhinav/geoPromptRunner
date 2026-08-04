@@ -42,6 +42,13 @@
   --rule-soft: rgb(14 35 64 / 0.07);
   --hover: rgb(14 35 64 / 0.04);
   --selected: rgb(14 35 64 / 0.06);
+  /* The hairline that splits a panel INTO cells, as distinct from the one that
+   * draws its outer edge. Lighter than --rule on purpose: a panel is one object
+   * and its internal divisions must not read as four cards pushed together. */
+  --rule-inner: rgb(14 35 64 / 0.08);
+  /* The band behind a section header inside a list, and the foot of a table. */
+  --band: rgb(14 35 64 / 0.03);
+  --band-soft: rgb(14 35 64 / 0.02);
 
   /* --- secondary ink, and the reason it is not just Harbour ---
    * Harbour IS navy at 60% over Paper — #697585 to the byte. That is a nice

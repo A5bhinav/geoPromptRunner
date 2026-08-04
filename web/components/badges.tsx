@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-const INTENT_LABELS: Record<string, string> = {
+export const INTENT_LABELS: Record<string, string> = {
   problem_aware: "Problem-aware",
   category: "Category",
   comparison: "Comparison",

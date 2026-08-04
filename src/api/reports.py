@@ -9,6 +9,7 @@ from src.engines.local_pack import LocalPackCapture
 from src.pipeline import findings as findings_mod
 from src.pipeline import judge_metrics, lifecycle, metrics, movement, stats
 from src.pipeline import themes as themes_mod
+from src.pipeline.calibration import load_agreement_summary
 from src.pipeline.orchestrator import AuditOutcome
 from src.pipeline.priority import sort_key as priority_sort_key
 from src.pipeline.severity import SEVERITY_ORDER
@@ -59,16 +60,12 @@ NON_REPRODUCIBILITY_DISCLOSURE = (
     "guarantee of what you will see if you ask right now."
 )
 
-#: What the methodology says when no gold set has been run for this ICP.
+#: What the methodology says when no gold set has been run for this CLIENT.
 #:
-#: Saying nothing would be worse. Every Critical finding rests on the judge, and a
-#: reader is entitled to know whether that has been checked — an omission reads as
-#: "not applicable" rather than "not measured".
-#:
-#: The current state is not "unmeasured" but "unmeasurable at this sample size":
-#: Fort carries three gold flags, and two identical runs returned precision 29%
-#: then 43% on the same inputs. One flag moves the metric 14 points. The fix is a
-#: gold set with enough flag-bearing items, not a better judge.
+#: The genuine no-measurement case only — a client with a stored summary in
+#: ``data/calibration/`` publishes its real figures instead. Saying nothing would
+#: be worse than either: every Critical finding rests on the judge, and an
+#: omission reads as "not applicable" rather than "not measured".
 JUDGE_AGREEMENT_UNMEASURED = (
     "Judge agreement with a human reviewer has not yet been measured at a sample size "
     "that would support quoting a figure. Every finding in this report cites the exact "
@@ -1248,7 +1245,15 @@ def build_report(
         comparison_blocked_reason=comparison_blocked_reason,
         methodology_disclosure=NON_REPRODUCIBILITY_DISCLOSURE,
         independence_disclaimer=INDEPENDENCE_DISCLAIMER,
-        judge_agreement=judge_agreement or JUDGE_AGREEMENT_UNMEASURED,
+        # Publish what IS measured. Saying "unmeasured" while holding 94% on 240
+        # brand judgements understates the work; quoting a 43% flag precision off
+        # 7 flags overstates it. `AgreementSummary.sentence` splits the two and
+        # carries every denominator.
+        judge_agreement=(
+            judge_agreement
+            or (summary.sentence() if (summary := load_agreement_summary(client)) else "")
+            or JUDGE_AGREEMENT_UNMEASURED
+        ),
         accuracy_flags=accuracy_flags,
         fact_sheet_verification=fact_sheet_verification,
         sources=sources,

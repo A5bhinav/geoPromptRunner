@@ -2,11 +2,18 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { FolderOpen, FileText, Sparkles, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/notice";
+import { Page, PageHeader, Panel } from "@/components/page";
 import { StateBadge } from "@/components/badges";
 import { listProjects, type ProjectSummary } from "@/lib/api";
+
+/** "2026-06-14T…" → "14 June 2026". Falls back to the raw string: a timestamp we
+ * cannot parse is still better than "Invalid Date". */
+function longDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+}
 
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<ProjectSummary[] | null>(null);
@@ -22,66 +29,67 @@ export default function ProjectsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <p className="label">Projects</p>
-        <h1 className="display text-[34px] leading-tight">Every client, every run</h1>
-        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
-          Every audit and teaser, grouped by prospect. One place to see all the work for a domain.
-        </p>
-      </div>
+    <Page className="gap-6">
+      <PageHeader
+        eyebrow="Projects"
+        title="Every client, every run"
+        helper="Every audit and teaser, grouped by client. One place to see all the work for a domain."
+      />
 
       {error && <Notice tone="problem">{error}</Notice>}
 
       {projects === null ? (
         <p className="text-[13px] text-[color:var(--ink-secondary)]">Loading…</p>
       ) : projects.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-[13px] text-harbour">
-            No projects yet. Run an audit or generate a teaser and it&apos;ll show up here grouped by
-            its domain.
-          </CardContent>
-        </Card>
+        <Panel className="px-5 py-10 text-center text-[13px] text-harbour">
+          No projects yet. Run an audit or generate a teaser and it&apos;ll show up here, grouped by
+          its domain.
+        </Panel>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2 xl:grid-cols-3">
           {projects.map((p) => (
-            <Link key={p.key} href={`/projects/${encodeURIComponent(p.key)}`} className="group">
-              <Card className="h-full transition-colors group-hover:border-navy/35">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <FolderOpen className="h-4 w-4 text-harbour" />
-                    <span className="truncate">{p.label}</span>
-                    {p.last_state && <StateBadge state={p.last_state} />}
-                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-harbour opacity-0 transition-opacity group-hover:opacity-100" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-harbour">
-                    <span className="inline-flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5" /> {p.audit_count} audit
-                      {p.audit_count === 1 ? "" : "s"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" /> {p.teaser_count} teaser
-                      {p.teaser_count === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  {p.engines.length > 0 && (
-                    <p className="truncate text-[11px] text-harbour">
-                      Engines: {p.engines.join(", ")}
-                    </p>
-                  )}
-                  {p.last_activity && (
-                    <p className="text-[11px] tabular-nums text-harbour">
-                      Last activity {new Date(p.last_activity).toLocaleString()}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+            <Link
+              key={p.key}
+              href={`/projects/${encodeURIComponent(p.key)}`}
+              className="group rounded-lg"
+            >
+              <Panel className="flex h-full min-h-[172px] flex-col gap-2 p-5 transition-colors group-hover:border-navy/35">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-[16px] font-semibold leading-tight">{p.label}</span>
+                  {/* Fill weight + glyph, never hue: Sable has no alert colour,
+                      so `interrupted` is a Mist chip with a triangle, not red. */}
+                  {p.last_state ? <StateBadge state={p.last_state} /> : null}
+                </div>
+
+                {p.domain ? (
+                  <span className="truncate text-[13px] text-blue">{p.domain}</span>
+                ) : (
+                  <span className="text-[13px] text-harbour">No domain on file</span>
+                )}
+
+                <p className="text-[13px] tabular-nums text-[color:var(--ink-secondary)]">
+                  {p.audit_count} audit{p.audit_count === 1 ? "" : "s"}
+                  {p.teaser_count > 0
+                    ? ` · ${p.teaser_count} teaser${p.teaser_count === 1 ? "" : "s"}`
+                    : ""}
+                </p>
+
+                {p.engines.length > 0 ? (
+                  <p className="line-clamp-2 text-[11px] text-[color:var(--ink-secondary)]">
+                    {p.engines.join(", ")}
+                  </p>
+                ) : null}
+
+                {p.last_activity ? (
+                  <p className="mt-auto pt-2 text-[11px] tabular-nums text-[color:var(--ink-secondary)]">
+                    {longDate(p.last_activity)}
+                  </p>
+                ) : null}
+              </Panel>
             </Link>
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

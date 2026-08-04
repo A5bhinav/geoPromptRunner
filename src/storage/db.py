@@ -1476,6 +1476,43 @@ def save_fact_sheet(
     return sheet_id
 
 
+def save_fact_sheet_next_version(
+    sheet: FactSheet,
+    *,
+    sheet_id: str | None = None,
+    source_snapshot_prefix: str | None = None,
+) -> tuple[str, int]:
+    """Allocate the next free version for the sheet's domain and write it.
+
+    Returns ``(sheet_id, version)``. The sheet is mutated in place to carry the
+    version it was actually written at, so a caller cannot report one number and
+    have stored another.
+
+    Retries ONCE. A single retry covers the only realistic contention here — two
+    people approving the same domain in the same second — while still failing
+    loudly on a genuine outage instead of hammering a downed database. The second
+    failure is re-raised with a reason a human can act on, because
+    ``StorageError`` on its own reads as "the database is down" and this one
+    usually is not.
+    """
+    for attempt in (1, 2):
+        sheet.version = next_fact_sheet_version(sheet.domain)
+        try:
+            written = save_fact_sheet(
+                sheet, sheet_id=sheet_id, source_snapshot_prefix=source_snapshot_prefix
+            )
+        except StorageError:
+            if attempt == 2:
+                raise StorageError(
+                    f"save_fact_sheet_next_version: could not write a new version for "
+                    f"{sheet.domain} after two attempts — another approval for this "
+                    f"domain is probably in flight, or v{sheet.version} already exists"
+                ) from None
+            continue
+        return written, sheet.version
+    raise AssertionError("unreachable: the loop above either returns or raises")
+
+
 def get_fact_sheet(sheet_id: str) -> FactSheet | None:
     """Fetch one sheet by row id, claims attached, or None if absent."""
     row = _fact_sheet_row(sheet_id)
@@ -1728,6 +1765,132 @@ def delete_fact_sheets(sheet_ids: list[str]) -> int:
     response = _execute(
         f"delete_fact_sheets ({len(sheet_ids)} sheet(s))",
         lambda c: c.table(TABLE_FACT_SHEETS).delete().in_("id", sheet_ids).execute(),
+    )
+    return _deleted_count(response)
+
+
+# --- Intake sessions: the conversation that makes a sheet client-confirmed ---
+#
+# WORKING STATE, not a core-data artifact. These rows are mutated on every
+# answer, exactly as `audit_runs` is mutated by `update_audit_run_progress`. The
+# create-only invariant still holds where it matters: approving a session WRITES
+# a new fact_sheets row and never edits one, and abandoning a session sets a
+# state rather than deleting anything.
+
+TABLE_INTAKE_SESSIONS = "factsheet_intake_sessions"
+
+#: The states in which a domain may have only one session. Mirrors the partial
+#: unique index in data/schema_factsheet_intake.sql — kept beside it because a
+#: drift between the two shows up as a confusing insert failure, not as a
+#: missing feature.
+_LIVE_INTAKE_STATES = ("in_progress", "awaiting_review")
+
+
+def create_intake_session(
+    *,
+    domain: str,
+    business_kind: str,
+    fact_sheet_id: str | None = None,
+    prefill: dict[str, Any] | None = None,
+    current_question_id: str | None = None,
+) -> str | None:
+    """Start a session, or ``None`` if one is already live for this domain.
+
+    Attempt-and-read-the-violation, exactly as :func:`enqueue_factsheet_job`
+    does, and for the same reason: two people opening the same sheet in the same
+    minute is the ordinary case, and a read-then-write "is one already open?"
+    check loses that race by construction because only Postgres sees both
+    writers. ``None`` means "resume the existing one" — the caller looks it up.
+    """
+    row: dict[str, Any] = {
+        "domain": domain,
+        "business_kind": business_kind,
+        "fact_sheet_id": fact_sheet_id,
+        "prefill": prefill or {},
+        "current_question_id": current_question_id,
+        "state": "in_progress",
+    }
+    try:
+        response = _execute(
+            f"create_intake_session for {domain}",
+            lambda c: c.table(TABLE_INTAKE_SESSIONS).insert(row).execute(),
+        )
+    except StorageError:
+        return None
+    rows = list(getattr(response, "data", None) or [])
+    return str(rows[0].get("id", "")) if rows else None
+
+
+def live_intake_session(domain: str) -> dict[str, object] | None:
+    """The domain's in-progress or awaiting-review session, if it has one."""
+    response = _execute(
+        f"live_intake_session for {domain}",
+        lambda c: (
+            c.table(TABLE_INTAKE_SESSIONS)
+            .select("*")
+            .eq("domain", domain)
+            .in_("state", list(_LIVE_INTAKE_STATES))
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        ),
+    )
+    rows = list(getattr(response, "data", None) or [])
+    return rows[0] if rows else None
+
+
+def get_intake_session(session_id: str) -> dict[str, object] | None:
+    rows = _select_rows(TABLE_INTAKE_SESSIONS, session_id, key="id")
+    return rows[0] if rows else None
+
+
+def update_intake_session(session_id: str, patch: dict[str, Any]) -> None:
+    """Merge a patch into one session. ``updated_at`` is always stamped.
+
+    A whole-row write, not a JSON merge: the caller has already read the session
+    (every route here does), so it holds the current ``answers`` map and can
+    write the version it means. A server-side merge would need a Postgres
+    function and would still lose to a concurrent writer — and the one writer
+    that matters, the owner's own browser, is single-threaded per session.
+    """
+    payload: dict[str, Any] = dict(patch)
+    payload["updated_at"] = _now()
+    _execute(
+        f"update_intake_session {session_id}",
+        lambda c: c.table(TABLE_INTAKE_SESSIONS).update(payload).eq("id", session_id).execute(),
+    )
+
+
+def list_intake_sessions(
+    state: str | None = None, domain: str | None = None, limit: int = 100
+) -> list[dict[str, object]]:
+    """Session rows, newest first. Raw rows, like ``list_fact_sheets``."""
+
+    def _query(client: Client) -> Any:
+        q = client.table(TABLE_INTAKE_SESSIONS).select("*")
+        if state is not None:
+            q = q.eq("state", state)
+        if domain is not None:
+            q = q.eq("domain", domain)
+        return q.order("updated_at", desc=True).limit(limit).execute()
+
+    response = _execute("list_intake_sessions", _query)
+    return list(getattr(response, "data", None) or [])
+
+
+def delete_intake_sessions_for_domains(domains: list[str]) -> int:
+    """Remove sessions for deleted projects.
+
+    Called from the project-delete path. Without it a deleted project leaves its
+    intake conversations behind, holding the domain's `uq_intake_sessions_live`
+    slot — so re-adding the client would find a live session for a sheet that no
+    longer exists and resume into it.
+    """
+    if not domains:
+        return 0
+    response = _execute(
+        f"delete_intake_sessions ({len(domains)} domain(s))",
+        lambda c: c.table(TABLE_INTAKE_SESSIONS).delete().in_("domain", domains).execute(),
     )
     return _deleted_count(response)
 

@@ -32,10 +32,28 @@ interface Props {
    * against — but choosing the same sheet twice is friction, not information.
    */
   onSheetChosen: (id: string | null) => void;
+  /**
+   * Controlled mode. The Run screen's Sources card puts the TRIGGER in the card
+   * header (next to "Template") and needs the FORM in the card body — a
+   * self-contained disclosure cannot span those two places. When `open` is
+   * supplied the component renders the form only, and the caller owns the
+   * trigger; when it is omitted the component is self-contained, which is how
+   * every other caller uses it.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
-  const [open, setOpen] = React.useState(false);
+export function AssembleFromLead({
+  onAssembled,
+  onSheetChosen,
+  open: openProp,
+  onOpenChange,
+}: Props) {
+  const [selfOpen, setSelfOpen] = React.useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : selfOpen;
+  const setOpen = onOpenChange ?? setSelfOpen;
   const [trades, setTrades] = React.useState<string[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -110,7 +128,9 @@ export function AssembleFromLead({ onAssembled, onSheetChosen }: Props) {
   };
 
   if (!open) {
-    return (
+    // Controlled: the caller draws the trigger, so drawing a second one here
+    // would put two "Start from a lead" links on the same card.
+    return controlled ? null : (
       <button
         type="button"
         onClick={() => setOpen(true)}

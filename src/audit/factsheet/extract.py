@@ -50,6 +50,8 @@ from src.audit.factsheet.models import (
 __all__ = [
     "MIN_EXTRACTION_TEXT_CHARS",
     "LEAD_FORM_SOURCE_URL",
+    "INTAKE_SOURCE_URL_PREFIX",
+    "intake_source_url",
     "LOCAL_BUSINESS_TYPES",
     "ORGANIZATION_TYPES",
     "BUSINESS_NODE_TYPES",
@@ -1120,6 +1122,30 @@ def page_text_index(pages: Sequence[PageRecord]) -> dict[str, str]:
     return index
 
 
+# The §4.1 substring gate is what converts "the model said so" into "the page
+# says so". A CLIENT claim has no page: the owner said so, on the record, in an
+# intake session we can point at. Its quote is their raw input verbatim, and what
+# makes it trustworthy is PROVENANCE — `source_url` carries the session and the
+# question id (see INTAKE_SOURCE_URL_PREFIX) — not corroboration by a document
+# that does not exist.
+#
+# This is a carve-out on the SOURCE KIND and never on the claim's content, and it
+# is the ONLY one. If a future layer wants an exemption it argues for it here, in
+# the open, rather than passing an already-verified flag through the gate. Note
+# what it does NOT relax: `FactClaim.__post_init__` still refuses an empty quote,
+# so a CLIENT claim with nothing behind it cannot be constructed at all.
+_GATE_EXEMPT: frozenset[SourceKind] = frozenset({SourceKind.CLIENT})
+
+# Mirrors LEAD_FORM_SOURCE_URL's sentinel precedent. Format:
+# ``intake://{session_id}/{question_id}``.
+INTAKE_SOURCE_URL_PREFIX: str = "intake://"
+
+
+def intake_source_url(session_id: str, question_id: str) -> str:
+    """The provenance URL for a claim the owner stated in an intake session."""
+    return f"{INTAKE_SOURCE_URL_PREFIX}{session_id}/{question_id}"
+
+
 def verify_quotes(
     claims: Sequence[FactClaim],
     page_texts: Mapping[str, str],
@@ -1136,11 +1162,16 @@ def verify_quotes(
     silently is not: this is the only mechanical check standing between "the
     model said so" and "the page says so", and it must stay the narrowest,
     dumbest function in the module.
+
+    One exemption exists, on the SOURCE KIND — see :data:`_GATE_EXEMPT`.
     """
     index = {_url_key(url): _match_key(text) for url, text in page_texts.items()}
     kept: list[FactClaim] = []
     dropped: list[FactClaim] = []
     for claim in claims:
+        if claim.source_kind in _GATE_EXEMPT:
+            kept.append(claim)
+            continue
         haystack = index.get(_url_key(claim.source_url))
         if haystack is not None and _match_key(claim.verbatim_quote) in haystack:
             kept.append(claim)

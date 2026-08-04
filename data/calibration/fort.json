@@ -1,0 +1,16 @@
+{
+  "client": "Fort",
+  "measured_on": "2026-07-31",
+  "judge_model": "claude-sonnet-4-5-20250929 (JUDGE_VERIFY=1, isolated_cache)",
+  "n_items": 40,
+  "n_brand_judgements": 240,
+  "present": 0.94,
+  "prominence": 0.86,
+  "framing": 0.93,
+  "flag_precision": 0.43,
+  "flag_recall": 1.0,
+  "n_judge_flags": 7,
+  "n_gold_flags": 3,
+  "severity_exact": 0.67,
+  "n_severity_pairs": 3
+}

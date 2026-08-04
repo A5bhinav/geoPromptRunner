@@ -29,7 +29,11 @@ SABLE_CSS = WEB / "styles" / "sable.css"
 PDF_WORKER = WEB / "scripts" / "render-report-pdf.mjs"
 LAYOUT_CHECK = WEB / "scripts" / "check-print-layout.mjs"
 RENDER_MODE = WEB / "lib" / "render-mode.tsx"
-CHARTS = WEB / "components" / "charts.tsx"
+# `charts.tsx` is gone with recharts; the report's marks live in these two.
+CHARTS = WEB / "components" / "marks.tsx"
+PANELS = WEB / "components" / "report-panels.tsx"
+REPORT_VIEW = WEB / "components" / "report-view.tsx"
+MOTION = WEB / "styles" / "motion.css"
 AUDIT_PAGE = WEB / "app" / "audits" / "[id]" / "page.tsx"
 
 
@@ -103,39 +107,59 @@ def test_one_flag_drives_every_print_fork() -> None:
     assert "RenderModeProvider" in page
 
 
-def test_charts_do_not_rely_on_responsive_container_when_printing() -> None:
-    """`ResponsiveContainer` sizes via `ResizeObserver`, which print never fires.
+def test_the_report_has_no_measurement_dependent_chart_runtime() -> None:
+    """The three print hazards recharts brought are gone by construction.
 
-    Charts would print at whatever the last on-screen size happened to be —
-    usually wrong, occasionally zero.
+    `ResponsiveContainer` sized via `ResizeObserver`, which print layout never
+    fires, so a chart printed at whatever the last on-screen size happened to be
+    — usually wrong, occasionally zero. The fix used to be a ChartFrame that
+    swapped in a fixed box. The charts are now hand-rolled SVG with a literal
+    `viewBox`, so there is no measurement step to get wrong and nothing to swap.
     """
-    charts = CHARTS.read_text()
-    # Exactly one ResponsiveContainer left, inside the ChartFrame that swaps it
-    # out for a fixed box when printing.
-    assert charts.count("<ResponsiveContainer") == 1
-    assert "function ChartFrame" in charts
-    assert "PRINT_CONTENT_WIDTH_PX" in charts
+    for path in (CHARTS, PANELS):
+        source = path.read_text()
+        # The IMPORT, not the word: both files explain in prose what they
+        # replaced, and banning the noun would make the comment unwritable.
+        assert 'from "recharts"' not in source
+        assert "<ResponsiveContainer" not in source
+    # A viewBox is the whole print story: geometry is declared, not measured.
+    assert CHARTS.read_text().count("viewBox=") >= 3
 
 
-def test_every_chart_registers_with_the_readiness_gate() -> None:
-    """Unconditionally, before any early return.
+def test_no_report_chart_arrives_through_a_lazy_chunk() -> None:
+    """`next/dynamic(..., {ssr:false})` sections vanish from a PDF.
 
-    A chart that bails out on an empty dataset still has to be accounted for, or
-    the readiness signal is computed over a different set of charts than the page
-    actually contains.
+    Print never scrolls, so nothing below the fold triggers the intersection
+    that resolves the chunk. The readiness gate in RenderModeProvider covered
+    that race while the charts were lazy; removing the laziness removes the
+    race, and this test is what stops it being reintroduced.
     """
-    charts = CHARTS.read_text()
-    exported = re.findall(r"export const (\w+) = React\.memo", charts)
-    assert len(exported) >= 5, f"expected the full chart set, found {exported}"
-    assert charts.count("useChartSettled();") == len(exported)
+    view = REPORT_VIEW.read_text()
+    assert "next/dynamic" not in view
+    assert "dynamic(" not in view
 
 
-def test_chart_animation_is_off_when_printing() -> None:
-    """A multi-frame transition is a race the capture can lose."""
-    charts = CHARTS.read_text()
-    bars = charts.count("<Bar ") + charts.count("<Bar\n")
-    assert bars > 0
-    assert charts.count("isAnimationActive={!isPrint}") == bars
+def test_the_readiness_gate_still_waits_for_fonts() -> None:
+    """Both Sable faces are metrically unlike system-ui.
+
+    A chart laid out before the webfonts land is laid out against the fallback,
+    and axis labels reflow after the capture. This survives the loss of the
+    chart-registration count — quiescence plus fonts is the remaining gate.
+    """
+    mode = RENDER_MODE.read_text()
+    assert "document.fonts.ready" in mode
+
+
+def test_print_runs_with_animation_disabled() -> None:
+    """A multi-frame transition is a race the capture can lose.
+
+    There is no chart animation left to switch off — the marks are static SVG —
+    so the guarantee moved to the stylesheet, where it also covers the intake's
+    bubbles and the progress rail.
+    """
+    motion = MOTION.read_text()
+    assert "prefers-reduced-motion: reduce" in motion
+    assert "animation-duration: 1ms !important" in motion
 
 
 def test_readiness_is_gated_on_more_than_networkidle() -> None:

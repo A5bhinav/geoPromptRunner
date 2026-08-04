@@ -101,6 +101,14 @@ count, not an opinion.
 **Foundation readiness survives as a checklist, not a letter** — fact sheet ✓ · schema ✗ ·
 PR footprint partial — placed later in the report where it is directly actionable.
 
+**This rule binds computation, not just rendering.** As of 2026-08-04 the codebase still ships
+`judge_metrics.visibility_score()` — a prominence-weighted 0–1 composite built from hardcoded
+weights (`recommended_first` 1.0, `mid_pack` 0.6, `buried` 0.3, `also_ran` 0.1) that nothing
+derives — and `leaderboard()` **sorts by it**. A composite that orders a client-facing ranking is a
+score whether or not its number is printed. Spec TR-T0 removes it. Prominence is reported as a
+distribution across the five levels, or as a median ordinal label — never as a decimal, never as a
+sort key.
+
 If a score is ever reintroduced, its full rubric must be published in the methodology
 section. Publish the *rubric and inputs*; keep the *prompt library and detection heuristics*
 private, so brands fix underlying data rather than teaching the test.
@@ -197,6 +205,28 @@ Never mix tokens between them. Full spec: `docs/audit-packaging-implementation.m
 Every report carries the independence disclaimer: not affiliated with, sponsored by, or endorsed by
 OpenAI, Anthropic, Google or Perplexity; product names used solely to identify which system produced
 the observed output.
+
+## Percentage points, never percent change
+
+A change in a rate is stated in **percentage points**. 42% → 48% is **"+6.0 pp"**, not "+14%".
+Percent change is reserved for changes in a *count* (120 → 150 citations is "+25%").
+
+Mixing the two is the fastest way to lose a numerate reader, and it is the single most common
+way AI-visibility vendors overstate movement. One formatter owns this — `fmt_delta(before,
+after, unit)`. No component builds a `%` string by hand. (Spec TR-T2.)
+
+## Descriptive voice outside the findings sections
+
+Sections 1–6 of the report contract and all back matter are **descriptive only**. They state what
+was measured and nothing more:
+
+> ✅ "youtube.com was cited 31 times, up from 12 last cycle."
+> ❌ "You need a YouTube strategy."
+
+Interpretation and recommendation live in the accuracy findings and priority actions sections,
+which are labelled as such. The separation is the product: a client who distrusts the advice can
+still trust the measurement, and an agency reselling the report can supply its own advice over our
+numbers without contradicting us.
 
 ## Scope boundaries
 

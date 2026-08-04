@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import dynamic from "next/dynamic";
 import {
   Printer,
   Download,
@@ -9,11 +8,9 @@ import {
   FileSpreadsheet,
   Gavel,
   Loader2,
-  Trophy,
   Target,
-  Quote,
   ShieldCheck,
-  PieChart as PieIcon,
+  Scale,
   BarChart3,
   Globe,
   TrendingDown,
@@ -35,35 +32,24 @@ import { IntentBadge, SeverityBadge, SeveritySummaryBar } from "@/components/bad
 import { SiteAuditSection } from "@/components/site-audit-section";
 import { DEFAULT_BRAND, type BrandConfig } from "@/lib/brand";
 import { useIsPrint } from "@/lib/render-mode";
-// Charts pull in recharts (the heaviest dependency). Load them lazily on the
-// client so recharts ships in a report-only chunk, not the shared bundle.
-const chartFallback = <div className="h-40 animate-pulse rounded-lg bg-secondary/40" />;
-// `ssr: false` + a loading fallback is right for the screen — recharts is the
-// heaviest dependency in the bundle and belongs in a report-only chunk. It is
-// WRONG for print, where the chunk may still be resolving when the capture runs.
-// The readiness gate in RenderModeProvider covers the race (it requires two
-// quiet frames after the last chart registers), which is why the dynamic import
-// can stay: nothing captures until every chart has actually laid out.
-const LeaderboardChart = dynamic(
-  () => import("@/components/charts").then((m) => m.LeaderboardChart),
-  { ssr: false, loading: () => chartFallback },
-);
-const ShareStackedBar = dynamic(
-  () => import("@/components/charts").then((m) => m.ShareStackedBar),
-  { ssr: false, loading: () => chartFallback },
-);
-const EngineHeatmap = dynamic(() => import("@/components/charts").then((m) => m.EngineHeatmap), {
-  ssr: false,
-  loading: () => chartFallback,
-});
-const BucketChart = dynamic(() => import("@/components/charts").then((m) => m.BucketChart), {
-  ssr: false,
-  loading: () => chartFallback,
-});
-const SourcesChart = dynamic(() => import("@/components/charts").then((m) => m.SourcesChart), {
-  ssr: false,
-  loading: () => chartFallback,
-});
+import { Page, PageHeader } from "@/components/page";
+import { SidebarLabel, SidebarRow, SidebarSlot } from "@/components/app-shell";
+import {
+  CompetitivePanel,
+  FindingsPanel,
+  HeadlinePanel,
+  PresencePanel,
+  engineLabel,
+} from "@/components/report-panels";
+// RECHARTS IS GONE FROM THE REPORT. The five lazy-loaded chart components it
+// backed (leaderboard, stacked share, heatmap, bucket bars, sources bars) are
+// replaced by the four hand-rolled panels above. Three reasons, in order of
+// weight: the packaging rules say don't add a charting dependency and hand-roll
+// the SVG; the sources chart was still painting indigo / emerald / amber from a
+// categorical palette this brand does not have, and the bucket chart spent a
+// second hue on the citation series; and the dynamic-import-versus-print race
+// (a chunk still resolving when the capture runs) stops existing when there is
+// no chunk. components/charts.tsx has no remaining importer.
 import { pct } from "@/lib/utils";
 import {
   downloadAudit,
@@ -77,37 +63,21 @@ import {
   type ReportPayload,
 } from "@/lib/api";
 
-function MetricCard({
-  icon,
-  label,
-  value,
-  sub,
-  delta,
-  muted,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-  sub?: React.ReactNode;
-  /** On a recurring report the delta is the SECOND-LARGEST element on a tile,
-   * after the value. Absent until the lifecycle engine lands (P2-T2) — an absent
-   * chip is honest; a "—" chip pretending to be a comparison is not. */
-  delta?: React.ReactNode;
-  muted?: boolean;
-}) {
-  return (
-    <Card className="card">
-      <CardContent className="pt-6">
-        <div className="label mb-2 flex items-center gap-2">
-          {icon}
-          {label}
-        </div>
-        <div className={muted ? "body text-lg font-medium" : "display-value"}>{value}</div>
-        {delta && <div className="mt-1.5 text-sm font-medium">{delta}</div>}
-        {sub && <div className="body mt-1 text-sm">{sub}</div>}
-      </CardContent>
-    </Card>
-  );
+/** The rail's table of contents. The four ids are on the four panels; findings
+ * is the full section further down, which is where "See all" lands. */
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "competitive", label: "Competitive" },
+  { id: "presence", label: "Where it shows up" },
+  { id: "findings", label: "Findings" },
+] as const;
+
+/** "2026-06-14" → "14 Jun". Falls back to the raw string rather than to
+ * "Invalid Date" — a run date we cannot parse is still a label. */
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
 function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
@@ -119,21 +89,10 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
-/** Client-facing surface names. Never a raw engine key or a bare model id. */
-const ENGINE_LABELS: Record<string, string> = {
-  openai: "ChatGPT",
-  openai_search: "ChatGPT (web search)",
-  anthropic: "Claude",
-  anthropic_search: "Claude (web search)",
-  gemini: "Gemini",
-  gemini_grounded: "Gemini (grounded)",
-  perplexity: "Perplexity",
-  google_ai_overviews: "Google AI Overviews",
-  google_ai_mode: "Google AI Mode",
-  mock: "Mock",
-};
-
-const engineLabel = (name: string) => ENGINE_LABELS[name] ?? name;
+// `engineLabel` now lives in components/report-panels.tsx and is imported above:
+// the panels and the finding cards must agree on what a surface is called, and
+// two copies of the same map is how "Google AI Mode" ends up rendered as
+// `google_ai_mode` in exactly one place.
 
 /** The delta, as a chip.
  *
@@ -421,16 +380,39 @@ export function ReportView({
     };
   }, [changed]);
 
-  // Prior-cycle share per brand, for the paired bars. Only the client's series
-  // is measured cycle-over-cycle today, so competitors show no prior bar rather
-  // than a fabricated one.
-  const priorShares = React.useMemo(() => {
+  // The visibility trend. Two points, not four: this run and the one it is
+  // GATED against. `what_changed` is only populated when the two cycles are
+  // comparable instruments (same query set), so a series built from it can never
+  // silently compare across a changed question set — which is the one thing the
+  // recurring contract forbids outright. Undefined ⇒ the headline panel draws
+  // per-surface presence instead, because a one-point line is not a trend.
+  const trend = React.useMemo(() => {
     if (!changed) return undefined;
     const before = changed.movements.reduce((a, m) => a + m.before_successes, 0);
     const beforeN = changed.movements.reduce((a, m) => a + m.before_n, 0);
-    if (!beforeN) return undefined;
-    return { [report.client_name]: before / beforeN };
-  }, [changed, report.client_name]);
+    const after = changed.movements.reduce((a, m) => a + m.after_successes, 0);
+    const afterN = changed.movements.reduce((a, m) => a + m.after_n, 0);
+    if (!beforeN || !afterN) return undefined;
+    return [
+      { label: shortDate(changed.prior_run_date), value: Math.round((before / beforeN) * 100) },
+      { label: shortDate(report.run_date), value: Math.round((after / afterN) * 100) },
+    ];
+  }, [changed, report.run_date]);
+
+  // The client's own row of the brand × surface matrix, in the report's fixed
+  // engine order. Feeds the headline panel's first-cycle fallback.
+  const clientBySurface = React.useMemo(() => {
+    const rows = report.engine_matrix ?? [];
+    return report.engines.map((engine) => {
+      const cell = rows.find(
+        (r) => r.engine_name === engine && r.brand === report.client_name,
+      );
+      return { engine, present: cell?.present ?? 0, cells: cell?.cells ?? 0 };
+    });
+  }, [report.engine_matrix, report.engines, report.client_name]);
+
+  const isPrint = useIsPrint();
+  const [activeSection, setActiveSection] = React.useState<string>("overview");
   // P3-T2 filters. Client-side only, no new payload. `no-print` on the controls
   // so a filtered PDF cannot be mistaken for the whole report — a partial export
   // that looks complete is the same class of bug as a lazy-loaded section that
@@ -537,74 +519,129 @@ export function ReportView({
     void downloadAudit(runId, ext);
   };
 
-  return (
-    <div className={`${brand.themeClass} space-y-8 p-4 sm:p-6`}>
-      {/* Masthead — a full-bleed navy band, which is the ONLY place Sky is legal
-          in the whole report. `--on-navy-accent` exists only inside `.on-navy`,
-          so using it anywhere else is a missing-variable bug rather than a
-          design-review argument. */}
-      <div className="on-navy report-section -mx-4 -mt-4 px-4 py-5 sm:-mx-6 sm:-mt-6 sm:px-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h1 className="display-lg">{report.client_name}</h1>
-            <p className="label mt-1" style={{ color: "var(--on-navy-accent)" }}>
-              AI visibility report
-            </p>
-          </div>
-          {brand.showMark && (
-            <span className="wordmark text-lg" style={{ color: "var(--on-navy-accent)" }}>
-              {brand.name}
-            </span>
-          )}
-        </div>
-      </div>
+  const scrollTo = (id: string) => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="body text-sm">
-            {report.run_date} · query set {report.query_set_version} · {report.runs_per_query}{" "}
-            run(s)/query · surfaces:{" "}
-            {report.engines.map(engineLabel).join(", ") || "none"}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant={report.detection === "judge" ? "muted" : "quiet"}>
-              {report.detection === "judge" ? "LLM judge" : "regex detection"}
-            </Badge>
-            {report.competitors.map((c) => (
-              <Badge key={c} variant="outline">
-                {c}
-              </Badge>
-            ))}
+  const headerActions = (
+    <>
+      {runId && (
+        <Button
+          variant="outline"
+          onClick={runJudge}
+          disabled={judging}
+          title={
+            report.detection === "judge"
+              ? "Re-run the LLM judge over the stored answers (free if the judge cache is warm)"
+              : "Run the LLM judge over the stored answers — free if you pre-judged this run on the subscription"
+          }
+        >
+          {judging ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Gavel className="h-4 w-4" aria-hidden />
+          )}
+          {judging ? "Judging…" : report.detection === "judge" ? "Re-judge" : "Judge"}
+          {!judging && allWarm ? " · free" : ""}
+        </Button>
+      )}
+      <Button variant="outline" onClick={() => window.print()}>
+        <Printer className="h-4 w-4" aria-hidden /> Export
+      </Button>
+    </>
+  );
+
+  return (
+    <div className={brand.themeClass}>
+      {/* The rail carries the report's own table of contents. Report-only: it is
+          rendered through a portal into the shell, and the shell's rail is
+          `no-print`, so none of this reaches the PDF. */}
+      <SidebarSlot slot="sections">
+        <SidebarLabel>Sections</SidebarLabel>
+        <div className="flex flex-col gap-px">
+          {SECTIONS.map((s) => (
+            <SidebarRow
+              key={s.id}
+              active={activeSection === s.id}
+              count={s.id === "findings" ? groups.length : undefined}
+              onClick={() => scrollTo(s.id)}
+            >
+              {s.label}
+            </SidebarRow>
+          ))}
+        </div>
+      </SidebarSlot>
+      <SidebarSlot slot="footer">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="h-[34px] w-full rounded-full bg-white text-[12px] font-semibold text-navy transition-opacity hover:opacity-90"
+        >
+          Build PDF
+        </button>
+      </SidebarSlot>
+
+      {/* TWO HEADERS, ON PURPOSE.
+          The PDF and the workbench are different artifacts. The deliverable
+          opens on a full-bleed navy masthead — the ONLY place Sky is legal in
+          the whole report, and the thing that makes a printed page look like it
+          came from somewhere. The screen opens on the app's own eyebrow/title
+          block, because a navy band immediately under a navy rail is a wall.
+          `useIsPrint()` picks; neither is a fallback for the other. */}
+      {isPrint ? (
+        <div className="on-navy report-section px-6 py-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h1 className="display-lg">{report.client_name}</h1>
+              <p className="label mt-1" style={{ color: "var(--on-navy-accent)" }}>
+                AI visibility report
+              </p>
+            </div>
+            {brand.showMark && (
+              <span className="wordmark text-lg" style={{ color: "var(--on-navy-accent)" }}>
+                {brand.name}
+              </span>
+            )}
           </div>
         </div>
+      ) : null}
+
+      <Page className="gap-[22px]">
+        {isPrint ? null : (
+          <PageHeader
+            eyebrow={`Report · ${report.run_date}`}
+            title={report.client_name}
+            href={report.client_domains[0] ? `https://${report.client_domains[0]}` : undefined}
+            hrefLabel={report.client_domains[0]}
+            actions={headerActions}
+          />
+        )}
+
+        {/* The instrument, in one line. Everything a reader needs to know a
+            number in this report is comparable to a number in the last one:
+            which question set, how many repeats, which surfaces. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-[color:var(--ink-secondary)]">
+          <span>
+            Query set {report.query_set_version} · {report.runs_per_query} run
+            {report.runs_per_query === 1 ? "" : "s"} per question ·{" "}
+            {report.engines.map(engineLabel).join(", ") || "no surface returned an answer"}
+          </span>
+          <Badge variant={report.detection === "judge" ? "muted" : "quiet"}>
+            {report.detection === "judge" ? "LLM judge" : "regex detection"}
+          </Badge>
+          {report.competitors.map((c) => (
+            <Badge key={c} variant="outline">
+              {c}
+            </Badge>
+          ))}
+        </div>
+
         <div className="no-print flex flex-col items-end gap-1.5">
           <div className="flex gap-2">
-          {runId && (
-            <Button
-              variant={report.detection === "judge" ? "outline" : "default"}
-              size="sm"
-              onClick={runJudge}
-              disabled={judging}
-              title={
-                report.detection === "judge"
-                  ? "Re-run the LLM judge over the stored answers (free if the judge cache is warm)"
-                  : "Run the LLM judge over the stored answers — free if you pre-judged this run on the subscription"
-              }
-            >
-              {judging ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Gavel className="h-4 w-4" />
-              )}
-              {judging
-                ? "Judging…"
-                : report.detection === "judge"
-                  ? "Re-judge"
-                  : "Judge"}
-              {!judging && allWarm ? " · free" : ""}
-            </Button>
-          )}
+          {/* Re-judge and Export moved to the page header — they are the two
+              actions the screen exists for. What is left here is the raw-data
+              trapdoor: the exports an analyst uses to check our arithmetic. */}
           {runId && (
             <>
               <Button
@@ -613,7 +650,7 @@ export function ReportView({
                 onClick={() => downloadAnswers("results.csv")}
                 title="Every query and the full model response, one row per call"
               >
-                <FileSpreadsheet className="h-4 w-4" /> Answers CSV
+                <FileSpreadsheet className="h-4 w-4" aria-hidden /> Answers CSV
               </Button>
               <Button
                 variant="outline"
@@ -621,15 +658,12 @@ export function ReportView({
                 onClick={() => downloadAnswers("answers.md")}
                 title="Readable answers doc with the judge's verdict inline"
               >
-                <FileText className="h-4 w-4" /> Answers MD
+                <FileText className="h-4 w-4" aria-hidden /> Answers MD
               </Button>
             </>
           )}
           <Button variant="outline" size="sm" onClick={downloadJson}>
-            <Download className="h-4 w-4" /> JSON
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" /> Export
+            <Download className="h-4 w-4" aria-hidden /> JSON
           </Button>
           </div>
           {runId && status && (
@@ -650,7 +684,6 @@ export function ReportView({
             </p>
           )}
         </div>
-      </div>
 
       {judgeError && (
         <Notice tone="problem" className="no-print">
@@ -712,68 +745,55 @@ export function ReportView({
         </section>
       )}
 
-      {/* §1 Scorecard — four tiles, every one COUNTED or MEASURED.
-          No letter grade and no composite score. See ScorecardPayload in
+      {/* §1 The overview — four panels, charts first.
+          The headline panel IS the scorecard: one measured hero and three
+          counted tiles (open findings, share of model, oldest still open). No
+          letter grade and no composite score — see ScorecardPayload in
           src/api/reports.py for why that stays true. */}
-      <section className="space-y-3">
-        <SectionTitle icon={<Trophy className="h-3.5 w-3.5" />}>Scorecard</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            icon={<Target className="h-3.5 w-3.5" />}
-            label="AI visibility"
-            delta={overall && <DeltaChip movement={overall} />}
-            muted={!visibility || visibility.n === 0}
-            value={
-              visibility && visibility.n > 0
-                ? `${visibility.successes} of ${visibility.n}`
-                : "Insufficient data"
-            }
-            sub={
-              visibility && visibility.n > 0
-                ? `sampled answers across ${report.engines.length} surfaces · 95% CI ${pct(
-                    visibility.ci_low,
-                  )}–${pct(visibility.ci_high)}`
-                : "no surface returned an answer"
-            }
-          />
-          <MetricCard
-            icon={<PieIcon className="h-3.5 w-3.5" />}
-            label="Share of model"
-            value={pct(s.share_of_model_client)}
-            sub={
-              topComp ? `vs ${topComp} ${pct(s.top_competitor_share)}` : "no competitors configured"
-            }
-          />
-          <MetricCard
-            icon={<ShieldCheck className="h-3.5 w-3.5" />}
-            label="Open findings"
-            muted={!s.accuracy_assessed}
-            value={s.accuracy_assessed ? (open?.themes ?? 0) : "Not assessed"}
-            sub={
-              s.accuracy_assessed
-                ? `${open?.critical ?? 0} critical · ${open?.instances ?? 0} observations`
-                : report.detection === "judge"
-                  ? "needs a fact sheet"
-                  : "needs the LLM judge"
-            }
-          />
-          {/* Replaces the grade, and does its job better: SLA-style aging is what
-              creates pressure to act, and it is a count rather than an opinion.
-              Renders "—" until the lifecycle engine lands (P2-T2) — an age we
-              cannot compute is not one we may guess. */}
-          <MetricCard
-            icon={<Repeat2 className="h-3.5 w-3.5" />}
-            label="Oldest still open"
-            muted={!s.oldest_open}
-            value={s.oldest_open ? s.oldest_open.title : "—"}
-            sub={
-              s.oldest_open
-                ? s.oldest_open.occurrence.phrase
-                : "needs a prior cycle to measure against"
-            }
-          />
-        </div>
+      <section id="overview" className="report-section scroll-mt-6">
+        <HeadlinePanel
+          clientName={report.client_name}
+          visibility={visibility}
+          surfaces={report.engines.length}
+          delta={overall ? <DeltaChip movement={overall} /> : undefined}
+          themes={open?.themes ?? 0}
+          critical={open?.critical ?? 0}
+          accuracyAssessed={s.accuracy_assessed}
+          shareOfModel={s.share_of_model_client}
+          topCompetitor={topComp}
+          topCompetitorShare={s.top_competitor_share}
+          oldestOpen={s.oldest_open ?? null}
+          trend={trend}
+          perSurface={clientBySurface}
+        />
       </section>
+
+      <section id="competitive" className="report-section scroll-mt-6">
+        <CompetitivePanel
+          leaderboard={report.leaderboard}
+          bySeverity={bySeverity}
+          totalFindings={open?.themes ?? groups.length}
+          buckets={report.by_bucket}
+          accuracyAssessed={s.accuracy_assessed}
+        />
+      </section>
+
+      <section id="presence" className="report-section scroll-mt-6">
+        <PresencePanel
+          matrix={report.engine_matrix ?? []}
+          engines={report.engines}
+          clientName={report.client_name}
+          clientDomains={report.client_domains}
+          sources={report.sources}
+        />
+      </section>
+
+      <FindingsPanel
+        groups={visibleGroups}
+        engines={report.engines}
+        criticalCount={visibleBySeverity.critical ?? 0}
+        onSeeAll={() => scrollTo("findings")}
+      />
 
       {/* §1b This cycle's priority actions — above the findings, because a
           reader who stops after one section should stop after the plan. 3–7
@@ -816,44 +836,18 @@ export function ReportView({
         </section>
       )}
 
-      {/* §2 Competitive position — donut + bars */}
+      {/* §2 The leaderboard table.
+          The CHARTS that used to open this section — stacked share, paired
+          leaderboard bars, the brand × surface heatmap — are now the
+          Competitive and Presence panels above. What survives here is the
+          table: the exact figures behind those marks, for a reader who wants to
+          check them rather than scan them. The paired "prior cycle" bar is not
+          missed — the only series it ever carried was the client's, and that is
+          the delta chip on the headline. */}
       <section className="space-y-3">
-        <SectionTitle icon={<PieIcon className="h-3.5 w-3.5" />}>Competitive position</SectionTitle>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="card">
-            <CardHeader>
-              <CardTitle className="text-base">Share of model</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ShareStackedBar rows={report.leaderboard} />
-            </CardContent>
-          </Card>
-          <Card className="card">
-            <CardHeader>
-              <CardTitle className="text-base">Visibility leaderboard</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LeaderboardChart rows={report.leaderboard} prior={priorShares} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Brand x surface. The most decision-relevant split in the data, and
-            nothing showed it before. */}
-        {(report.engine_matrix?.length ?? 0) > 0 && (
-          <Card className="card">
-            <CardHeader>
-              <CardTitle className="text-base">Where each brand appears, by surface</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EngineHeatmap
-                rows={report.engine_matrix ?? []}
-                engines={report.engines}
-                clientName={report.client_name}
-              />
-            </CardContent>
-          </Card>
-        )}
+        <SectionTitle icon={<Scale className="h-3.5 w-3.5" />}>
+          Competitive position, in figures
+        </SectionTitle>
         <Card>
           <CardContent className="pt-6">
             <Table>
@@ -889,7 +883,10 @@ export function ReportView({
         </Card>
       </section>
 
-      {/* §3 Funnel stage + accuracy */}
+      {/* §3 Funnel stage + accuracy.
+          The BARS are the Competitive panel's third cell; this is the table
+          behind them, which also carries the citation rate — a second series
+          the panel deliberately does not spend a hue on. */}
       <section className="space-y-3">
         <SectionTitle icon={<BarChart3 className="h-3.5 w-3.5" />}>
           Visibility by funnel stage
@@ -900,8 +897,7 @@ export function ReportView({
               <CardTitle className="text-base">Mention &amp; citation by intent</CardTitle>
             </CardHeader>
             <CardContent>
-              <BucketChart rows={report.by_bucket} />
-              <Table className="mt-4">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Bucket</TableHead>
@@ -958,7 +954,7 @@ export function ReportView({
           there, and that is the design intent rather than a failure. Full cards
           for Critical and High only; Medium and Low collapse into a table. */}
       {s.accuracy_assessed && (
-        <section className="report-section space-y-4">
+        <section id="findings" className="report-section scroll-mt-6 space-y-4">
           <SectionTitle icon={<ShieldCheck className="h-3.5 w-3.5" />}>
             What the models get wrong
           </SectionTitle>
@@ -1130,9 +1126,10 @@ export function ReportView({
               <CardTitle className="text-base">Sources behind the category</CardTitle>
             </CardHeader>
             <CardContent>
-              <SourcesChart rows={report.sources} />
+              {/* The BARS are the Presence panel's second cell (top 7); this is
+                  the full list. */}
               {report.sources.length > 0 && (
-                <Table className="mt-4">
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Domain</TableHead>
@@ -1256,6 +1253,7 @@ export function ReportView({
           </CardContent>
         </Card>
       </section>
+      </Page>
     </div>
   );
 }

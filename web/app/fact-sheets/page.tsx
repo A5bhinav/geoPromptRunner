@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/notice";
+import Link from "next/link";
+import { Page, PageHeader } from "@/components/page";
 import { INPUT_CLS } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -43,11 +45,16 @@ const VERIFICATION_LABEL: Record<FactSheetVerification, string> = {
   client_confirmed: "client-confirmed",
 };
 
+// TWO TABS. There is no Rejected tab and no Reject button: the only exits from
+// the queue are APPROVE and LEAVE IT THERE. A sheet a reviewer turned down is a
+// sheet whose facts need confirming, and the way to confirm a fact is the
+// intake — not a second lifecycle state that dead-ends. `rejected` still exists
+// in the database and `reject_fact_sheet` still works; nothing in this screen
+// reaches for it, and the detail pane below explains a rejected row if one is
+// already stored.
 const STATE_TABS: { value: FactSheetState; label: string }[] = [
   { value: "draft", label: "Needs review" },
   { value: "active", label: "Active" },
-  { value: "rejected", label: "Rejected" },
-  { value: "superseded", label: "Superseded" },
 ];
 
 // Weight, not hue: active is the heaviest chip, rejected an outline, the rest
@@ -101,17 +108,18 @@ export default function FactSheetQueuePage() {
   };
 
   return (
-    // Was a <main> nested inside the layout's <main> — an a11y bug as well as a
-    // duplicated container.
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <p className="label">Fact sheets</p>
-        <h1 className="display text-[34px] leading-tight">Ground truth for the judge</h1>
-        <p className="max-w-xl text-[13px] leading-relaxed text-[color:var(--ink-secondary)]">
-          Generated sheets are drafts. Approving one makes it the reference every accuracy
-          finding for that domain is measured against — check the quotes before you do.
-        </p>
-      </div>
+    <Page className="gap-6">
+      <PageHeader
+        eyebrow="Fact sheets"
+        title="Ground truth for the judge"
+        helper={
+          <>
+            A crawled sheet is a draft nobody has vouched for, and a sheet nobody has vouched for
+            can only ever flag low and medium issues. Run the intake and the owner confirms it line
+            by line — that is what unlocks the serious findings.
+          </>
+        }
+      />
 
       <div className="flex flex-wrap gap-2">
         {STATE_TABS.map((t) => (
@@ -146,7 +154,7 @@ export default function FactSheetQueuePage() {
 
       <div className="grid gap-3">
         {rows.map((row) => (
-          <Card key={row.id} className="cursor-pointer" onClick={() => open(row.id)}>
+          <Card key={row.id}>
             <CardHeader className="flex flex-row items-start justify-between gap-4 pb-2">
               <div>
                 <CardTitle className="text-base">
@@ -181,6 +189,24 @@ export default function FactSheetQueuePage() {
                 <p className="text-[11px] text-harbour">Rejected: {row.reject_reason}</p>
               </CardContent>
             )}
+            {/* The row's job is to get this sheet INTO the intake — that is the
+                only thing that can raise its tier, and the tier is what decides
+                whether a serious finding is allowed to appear at all. */}
+            <CardContent className="flex flex-wrap items-center gap-2 pt-0">
+              <Link href={`/fact-sheets/${encodeURIComponent(row.id)}/intake`}>
+                <Button size="sm">
+                  {row.state === "active" ? "Edit with the owner" : "Start intake"}
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={() => open(row.id)}>
+                Read the claims
+              </Button>
+              {row.verification_tier !== "client_confirmed" && (
+                <span className="text-[11px] text-harbour">
+                  Until the owner confirms these, this sheet can only flag low and medium issues.
+                </span>
+              )}
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -278,6 +304,6 @@ export default function FactSheetQueuePage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </Page>
   );
 }

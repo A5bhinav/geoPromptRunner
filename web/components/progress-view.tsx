@@ -1,38 +1,88 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle, Ban, AlertTriangle } from "lucide-react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/notice";
-import { Progress } from "@/components/ui/progress";
+import { Page, PageHeader, Panel } from "@/components/page";
+import { SidebarSlot } from "@/components/app-shell";
+import { AreaChart, Donut, MeterRow, RAMP } from "@/components/marks";
 import { cn } from "@/lib/utils";
 import type { EngineStatus, RunStatus } from "@/lib/api";
 
-function EngineChip({ engine }: { engine: EngineStatus }) {
-  // No alert hue in Sable — a failed engine is marked by the glyph and by a
-  // heavier navy rule, never by colour.
-  const icon =
-    engine.state === "done" ? (
-      <CheckCircle2 className="h-4 w-4 text-navy" />
-    ) : engine.state === "failed" ? (
-      <XCircle className="h-4 w-4 text-navy" />
-    ) : (
-      <Loader2 className="h-4 w-4 animate-spin text-harbour" />
-    );
+/**
+ * The Running screen.
+ *
+ * It answers three questions and refuses to answer a fourth: how far along, what
+ * is stuck, and how much is left. It does NOT show partial results — a mention
+ * rate computed off 204 of 348 calls is not a smaller version of the real
+ * number, it is a different number, and putting one on screen mid-run is how a
+ * figure nobody stands behind ends up quoted in a meeting.
+ */
+
+function elapsedLabel(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+/** One surface's progress. A FAILED surface gets the hatched track, because its
+ * bar is not "0% done" — it is a measurement that will not arrive, and a flat
+ * empty track says the former. */
+function SurfaceRow({ engine }: { engine: EngineStatus }) {
+  const failed = engine.state === "failed";
+  const pct = engine.total > 0 ? (engine.completed / engine.total) * 100 : 0;
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-md border border-[var(--rule)] bg-white px-3 py-2",
-        engine.state === "failed" && "border-navy/40 bg-navy/[0.04]",
-      )}
-      title={engine.detail ?? undefined}
-    >
-      {icon}
-      <span className="text-[13px] font-medium text-navy">{engine.name}</span>
-      <span className="text-[13px] tabular-nums text-harbour">
-        {engine.state === "failed"
-          ? (engine.detail ?? "failed")
-          : `${engine.completed} / ${engine.total}`}
+    <MeterRow
+      label={engine.name}
+      labelWidth={92}
+      valueWidth={62}
+      pct={pct}
+      striped={failed}
+      // Done is the darkest step, in flight is the next one down: the eye should
+      // land on what is finished, not on what is still moving.
+      tone={engine.state === "done" ? RAMP[0] : RAMP[1]}
+      emphasis={failed}
+      value={failed ? "stopped" : `${engine.completed}/${engine.total}`}
+    />
+  );
+}
+
+/** The four-step plan. Only the first step is observable from a run's status, so
+ * the other three are drawn as PENDING and never as done — the screen would
+ * otherwise be claiming a judge pass happened because the layout has a row for
+ * it. */
+function PipelineStep({
+  label,
+  state,
+  last,
+}: {
+  label: string;
+  state: "done" | "current" | "pending";
+  last?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex shrink-0 flex-col items-center">
+        <span
+          className={cn(
+            "h-3 w-3 rounded-full",
+            state === "done" && "bg-navy",
+            state === "current" && "border-2 border-navy bg-white",
+            state === "pending" && "border-2 border-navy/25 bg-white",
+          )}
+        />
+        {last ? null : (
+          <span
+            className="w-0.5"
+            style={{
+              height: 26,
+              background: state === "done" ? RAMP[0] : "rgb(14 35 64 / 0.15)",
+            }}
+          />
+        )}
+      </span>
+      <span className={cn("text-[13px]", state === "pending" ? "text-harbour" : "font-medium")}>
+        {label}
       </span>
     </div>
   );
@@ -47,70 +97,162 @@ export function ProgressView({
   elapsed: number;
   onCancel: () => void;
 }) {
-  const pctDone = status.total > 0 ? (status.completed / status.total) * 100 : 0;
+  const pct = status.total > 0 ? (status.completed / status.total) * 100 : 0;
   const cancelled = status.state === "cancelled";
   const failed = status.state === "failed";
   const interrupted = status.state === "interrupted";
   const stopped = cancelled || failed || interrupted;
+  const live = status.state === "running" || status.state === "queued";
+
+  // The curve is sampled from the poll, not fetched: the API has no time series
+  // for a run in flight, and one built here is honest about being a view of what
+  // this tab has seen. It resets on reload, which is why the exact figure sits
+  // above it at 38px where the chart cannot mislead about it.
+  const [series, setSeries] = React.useState<number[]>([]);
+  React.useEffect(() => {
+    setSeries((prev) =>
+      prev.length && prev[prev.length - 1] === status.completed
+        ? prev
+        : [...prev, status.completed].slice(-60),
+    );
+  }, [status.completed]);
+
+  const surfacesLive = status.per_engine.filter((e) => e.state === "running").length;
+  const stalled = status.per_engine.filter((e) => e.state === "failed");
+
+  const eyebrow = cancelled
+    ? "Cancelled"
+    : interrupted
+      ? "Abandoned"
+      : failed
+        ? "Failed"
+        : `Running · ${elapsedLabel(elapsed)}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {cancelled ? (
-            <Ban className="h-5 w-5 text-harbour" />
-          ) : interrupted ? (
-            <AlertTriangle className="h-5 w-5 text-navy" />
-          ) : failed ? (
-            <XCircle className="h-5 w-5 text-navy" />
-          ) : (
-            <Loader2 className="h-5 w-5 animate-spin text-harbour" />
-          )}
-          {cancelled
-            ? "Audit cancelled"
-            : interrupted
-              ? // "interrupted" is written in exactly one place: the API's
-                // startup scan, when it finds a non-terminal row it cannot
-                // rebuild. That is TERMINAL and unrecoverable — the old
-                // "Audit interrupted" read as transient and retryable.
-                "Audit abandoned — cannot resume"
-              : failed
-                ? "Audit failed"
-                : `Running audit — ${status.client_name}`}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {stopped && status.error && <Notice tone="problem">{status.error}</Notice>}
-
+    <Page>
+      {/* The rail carries the run while you are on another screen. */}
+      <SidebarSlot slot="footer">
         <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <span className="text-[13px] tabular-nums text-harbour">
-              {status.completed} / {status.total} engine calls
-            </span>
-            <span className="text-[13px] font-medium tabular-nums text-navy">
-              {pctDone.toFixed(0)}%
+          <div className="mb-[7px] flex items-baseline justify-between gap-2">
+            <span className="truncate text-[12.5px]">{status.client_name}</span>
+            <span
+              className="shrink-0 text-[12px] tabular-nums"
+              style={{ color: "var(--sky)" }}
+            >
+              {Math.round(pct)}%
             </span>
           </div>
-          <Progress value={pctDone} />
+          <div className="h-1 overflow-hidden rounded-full bg-white/[0.16]">
+            <div
+              className="h-full"
+              style={{ width: `${pct}%`, background: "var(--sky)" }}
+            />
+          </div>
         </div>
+      </SidebarSlot>
 
-        <div className="flex flex-wrap gap-2">
-          {status.per_engine.map((e) => (
-            <EngineChip key={e.name} engine={e} />
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] tabular-nums text-harbour">
-            Elapsed {Math.floor(elapsed / 60)}m {elapsed % 60}s
-          </span>
-          {(status.state === "running" || status.state === "queued") && (
-            <Button variant="outline" size="sm" onClick={onCancel}>
+      <PageHeader
+        eyebrow={eyebrow}
+        title={status.client_name}
+        actions={
+          live ? (
+            <Button variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-          )}
+          ) : null
+        }
+      />
+
+      {stopped && status.error ? (
+        <Notice
+          tone="problem"
+          title={
+            interrupted
+              ? // "interrupted" is written in exactly one place: the API's startup
+                // scan, when it finds a non-terminal row it cannot rebuild. That
+                // is TERMINAL — "interrupted" alone reads as retryable.
+                "This run was abandoned and cannot be resumed"
+              : cancelled
+                ? "This run was cancelled"
+                : "This run failed"
+          }
+        >
+          {status.error}
+        </Notice>
+      ) : null}
+
+      <div className="flex gap-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <Panel className="flex items-center gap-7 p-5">
+            <Donut pct={pct} caption={`${status.completed} of ${status.total}`} />
+            <div className="flex flex-1 flex-col gap-3">
+              {status.per_engine.length === 0 ? (
+                <p className="text-[13px] text-harbour">Waiting for the first surface to start…</p>
+              ) : (
+                status.per_engine.map((e) => <SurfaceRow key={e.name} engine={e} />)
+              )}
+              {stalled.map((e) => (
+                // 3px navy left rule + the sentence. There is no Retry: nothing
+                // in the API can restart one surface of a live run, and a button
+                // that silently does nothing is worse than its absence.
+                <div
+                  key={e.name}
+                  className="flex items-center gap-2.5 border-l-[3px] border-navy pl-3 text-[12.5px]"
+                >
+                  <span>
+                    {e.name} stopped{e.detail ? ` — ${e.detail}` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel className="px-5 py-[18px]">
+            <div className="mb-3 flex items-baseline justify-between">
+              <span className="section-label">Calls completed</span>
+              <span className="text-[38px] font-semibold leading-[0.95] tracking-[-0.02em] tabular-nums">
+                {status.completed}
+              </span>
+            </div>
+            <AreaChart
+              values={series}
+              ariaLabel={`${status.completed} of ${status.total} calls completed so far`}
+            />
+          </Panel>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="flex w-[300px] shrink-0 flex-col gap-4">
+          <Panel className="px-5 py-[18px]">
+            <p className="mb-4 text-[14px] font-medium">Pipeline</p>
+            <PipelineStep
+              label="Answers"
+              state={status.state === "done" ? "done" : live ? "current" : "pending"}
+            />
+            <PipelineStep label="Judge" state="pending" />
+            <PipelineStep label="Site crawl" state="pending" />
+            <PipelineStep label="Report" state="pending" last />
+          </Panel>
+
+          <Panel className="flex flex-col gap-3 px-5 py-[18px]">
+            <span className="text-[14px] font-medium">This run</span>
+            <Stat label="Elapsed" value={elapsedLabel(elapsed)} />
+            <Stat label="Calls left" value={Math.max(0, status.total - status.completed)} />
+            <Stat
+              label="Surfaces live"
+              value={`${surfacesLive} of ${status.per_engine.length}`}
+            />
+          </Panel>
+        </div>
+      </div>
+    </Page>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between text-[12.5px]">
+      <span className="text-harbour">{label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
+    </div>
   );
 }

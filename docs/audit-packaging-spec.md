@@ -52,9 +52,66 @@ P0-T1 (flag identity + provenance)  ──┬── P0-T2 (4-level severity)
    P2-T3 (Wilson CIs) ──► P2-T4 (significance gating) ──► P2-T5
    P0-T1 ──► P2-T7 (evidence bundle) ──► P3-T1 (drill-down)
    Phase 3 needs Phase 2 complete. Phases 4 and 5 are independent of each other.
+
+   TR-T0 (kill the prominence composite) ──► TR-T5, TR-T6
+   TR-T2 (pp vs %) — independent, do first, one session
+   TR-T11 (section registry) — do alongside TR-T1; it is what makes tiering cheap later
+   P0-T4 + P2-T3 ──► TR-T1 (exec snapshot)
+   P2-T1 ──► TR-T3 (trend)      P2-T4 ──► TR-T6      P2-T7 ──► TR-T8
+   P1-T7 + P1-T8 ──► TR-T10 (back matter, last task in Phase T)
 ```
 
 ---
+
+---
+
+## The report contract (added 2026-08-04)
+
+This is the deliverable, in delivery order. It supersedes `audit-packaging-research.md` §6, whose
+row 4 still carries the retired scorecard framing. **Sections are data, not component structure**
+(see TR-T11) — the order below lives in a registry, so changing it never means editing a component.
+
+**Front matter — the analysis (13–16 pp).** Independently readable; a reader who never opens the
+back matter still gets a complete report.
+
+| # | Section | Length | Built by |
+|---|---|---|---|
+| 0 | Cover — client logo + Sable, "Prepared for X · Cycle of Y." No data. | ⅓ pg | P0-T4 |
+| 1 | **Executive snapshot** — six measured tiles + one neutral sentence + the action clause | 1 pg | TR-T1, P1-T5 |
+| 2 | **Visibility trend** — mention rate, SoV, citation rate, prominence, by cycle | 1 pg | TR-T3 |
+| 3 | **Results by question type** — per intent bucket, family-aware | 1 pg | TR-T4 |
+| 4 | **Results by surface** — per engine, incl. attempted vs returned | 1 pg | TR-T5 |
+| 5 | **Competitive position** — leaderboard, SoV, movement | 1–2 pg | TR-T6 |
+| 6 | **Citation results** — client domain, top domains, source types | 1 pg | TR-T7 |
+| 7 | **Accuracy findings** — themed groups + severity bar | 3–5 pg | P1-T1, P1-T2 |
+| 8 | **This cycle's priority actions** — 3–7 ranked rows with owner and effort | 1 pg | P1-T4 |
+| 9 | **Representative answers** — five slots, deterministic selection | 1–2 pg | TR-T8 |
+| 10 | **Methodology note** | 1 pg | TR-T9 |
+
+**Back matter — the outputs (12–20 pp).** Dense tables, own mini-TOC, page-numbered.
+
+| # | Appendix | Built by |
+|---|---|---|
+| A1 | Citation ledger — every citation: URL, surface, query, run | TR-T10 |
+| A2 | Query × surface × run outcome matrix | TR-T10 |
+| A3 | Full findings table — every flag with `cluster_id`, theme, severity, status | TR-T10 |
+| A4 | Competitor mention ledger | TR-T10 |
+| A5 | The verbatim, versioned query set | TR-T10 |
+
+**Verbatim answer text is not printed.** At 6 surfaces × 25 queries × 3 runs that is 450 answers —
+90–150 pages inline, which recreates exactly the blob this work exists to kill. It goes to the
+CSV/portal export, linked from A2.
+
+**Total: 26–38 pages.** Front matter alone: 13–16.
+
+**Voice rule for sections 1–6 and the back matter: descriptive only.** "youtube.com was cited 31
+times," never "you need a YouTube strategy." Interpretation is confined to sections 7–8, which are
+labelled as such. See SKILL.md.
+
+**Tiering.** Every section ships in base **Track** for now. The registry carries a `tier` field so
+sections 7 and 8 can move to **Track Pro** later as a one-line change. Do not build tier gating
+logic beyond that field.
+
 
 # Phase 0 — Foundation
 
@@ -754,6 +811,147 @@ refresh frequency.
 
 ---
 
+---
+
+# Phase T — the Track report (added 2026-08-04)
+
+Implements the report contract above. **Most of the metrics already exist** — `metrics.py` exports
+`mention_rate`, `mention_rate_by_bucket`, `citation_rate`, `citation_rate_by_bucket`,
+`share_of_voice`, `competitive_ranking`, `top_cited_domains`, `coverage_by_engine`, `losing_queries`;
+`judge_metrics.py` carries the `Prominence` five-level read; `trend.py` carries `compare_runs` and
+`is_real_move`. This phase is mostly **presentation and one deletion**, not new measurement.
+
+## TR-T0 — [KEYSTONE for Phase T] Remove the prominence-weighted composite
+
+**Problem:** `judge_metrics.visibility_score()` returns a prominence-weighted 0–1 number from
+`_PROM_SCORE = {recommended_first: 1.0, mid_pack: 0.6, buried: 0.3, also_ran: 0.1, absent: 0.0}`.
+Nothing derives those weights. Worse, `leaderboard()` **sorts by it** — so the competitor ranking a
+client reads is ordered by an invented composite. This violates the "No invented scores" rule in
+SKILL.md and Definition-of-done item 6. Still live alongside it: `GradePolicy`, `grade_from`,
+`visibility_grade`, `VisibilityGrade`, `grade_penalty_flags`. P1-T6 removes the grade from the
+render but leaves the computation in place, so it can silently come back.
+
+**Change:**
+- `leaderboard()` sorts by **mention rate**, descending. Prominence travels as its own column and is
+  never the sort key.
+- Replace `visibility_score` on every client-facing path with two reported quantities: (a) the
+  **prominence distribution** — counts across the five levels; (b) **median prominence rank when
+  present**, from `_PROM_RANK`, reported as an ordinal label ("mid-pack"), never as a decimal.
+- Delete `_PROM_SCORE`, `GradePolicy`, `grade_from`, `visibility_grade`, `VisibilityGrade`,
+  `grade_penalty_flags` — or move them to a dev-only module no API path imports.
+
+**Test:** `grep -rn "visibility_score\|visibility_grade" src/ web/` returns nothing outside tests.
+Leaderboard order for a fixture where prominence and mention rate disagree follows mention rate.
+
+## TR-T1 — [Depends: P0-T4, P2-T3] Executive snapshot
+
+Six measured tiles, one neutral sentence, then the P1-T5 action clause. No composite, no grade.
+
+| Tile | Source |
+|---|---|
+| Mention rate + Wilson interval | `judge_metrics.mention_rate`, P2-T3 |
+| Change vs prior cycle, in **percentage points** | `trend.compare_runs`, TR-T2 |
+| Share of voice | `metrics.share_of_voice` |
+| Citation rate | `metrics.citation_rate` |
+| Prominence distribution | `Prominence` / `_PROM_RANK` |
+| Surfaces and answers measured — "N surfaces × Q queries × R runs = A answers" | `coverage_by_engine` |
+
+**Thin data:** first cycle → the change tile renders "Baseline — no prior cycle", never "0.0 pp".
+
+## TR-T2 — [Independent, do first] Percentage points vs percent
+
+**Problem:** a rate moving 42% → 48% is "+6.0 pp", not "+14%". Both appear in the wild and mixing
+them is the fastest way to lose a numerate reader.
+
+**Change:** one formatter, `fmt_delta(before, after, unit)`. Rate changes are always pp. Percent
+change only where the base is a count. No ad-hoc `%` string building in components. Add the rule to
+SKILL.md.
+
+**Test:** 0.42 → 0.48 renders "+6.0 pp"; a count 120 → 150 renders "+25%".
+
+## TR-T3 — [Depends: P2-T1, TR-T2] Visibility trend
+
+Four series by cycle: mention rate, share of voice, citation rate, prominence. `trend.compare_runs`
+covers two cycles; this needs an N-cycle series over comparable runs (P2-T1's coverage gate decides
+which runs qualify).
+
+**Thin data:** <2 cycles → a single-point baseline statement, not an empty chart. <4 cycles → plot
+points only, no connecting line — a line through two points asserts a trend the data cannot support.
+
+## TR-T4 — [Depends: TR-T2] Results by question type
+
+**Must be family-aware.** `IntentBucket` carries two families: `CONSUMER_BUCKETS` (problem_aware,
+category, comparison, brand, adjacent_authority) and `LOCAL_BUCKETS` (local_intent, hybrid,
+informational, brand). Read the family from the client's business kind. **Do not hardcode the
+consumer five** — every local-service client would render an empty section.
+
+Per bucket: mention rate, citation rate, n, change. Name the best and weakest bucket.
+`mention_rate_by_bucket` and `citation_rate_by_bucket` already exist.
+
+**Thin data:** a bucket below the P2-T3 minimum renders its count and suppresses the rate.
+
+## TR-T5 — [Depends: TR-T0, TR-T2] Results by surface
+
+Per engine: mention rate, citation rate, prominence distribution, change vs prior cycle, and
+**attempted vs returned**. A surface that failed its coverage gate is labelled as such, never
+silently averaged into the total.
+
+## TR-T6 — [Depends: TR-T0, P2-T4] Competitive position
+
+Leaderboard sorted by mention rate. Columns: brand, mention rate, share of voice, change in pp,
+prominence. Movement since prior cycle; who gained and who lost. **Only significance-gated moves get
+a direction arrow** — everything else renders flat with the interval shown.
+
+## TR-T7 — Citation results
+
+Client-domain citation count and rate; top cited domains (`metrics.top_cited_domains`); source-type
+classification (owned / earned / directory / social / video / competitor); change in pattern.
+
+**Voice: descriptive only.** "youtube.com was cited 31 times." Never "you need a YouTube strategy."
+Add this to the SKILL.md voice section — it applies to sections 1–6 and all back matter.
+
+## TR-T8 — [Depends: P2-T7] Representative answers
+
+Five slots: a strong appearance, a weak or buried appearance, a missing appearance, a citation, an
+inaccurate statement.
+
+**Selection must be deterministic and published.** These are the examples a client will read most
+closely, and "why did you pick this one" must have an answer that is not "we liked it". Define the
+rule per slot (e.g. strong = highest-prominence present cell, ties broken by
+`(query_id, engine_name, run_index)` ascending) and print the rule in the methodology note.
+
+**Thin data:** a slot with no qualifying answer renders "No qualifying example this cycle." Never
+substitute one from another slot.
+
+## TR-T9 — Methodology note
+
+Measurement window dates · query-set version · N queries × R repetitions · surfaces with pinned model
+ids · geography and account configuration · a definition for every metric on page 1 · **methodology
+changes since last cycle** (diff the query-set version and the engine pins) · limitations and
+non-guarantees · the non-reproducibility disclosure verbatim from SKILL.md · the TR-T8 selection rule.
+
+## TR-T10 — [Depends: P1-T7, P1-T8] The back matter
+
+Five appendix tables (A1–A5 per the contract), page-numbered, with their own mini-TOC.
+
+**Verbatim answer text is not printed** — it goes to the CSV/portal export, linked from A2.
+
+**Test:** back matter renders from the Fort fixture in ≤20 pages; every A3 row joins to a
+front-matter theme by `cluster_id`; total document lands inside the 26–38 page band.
+
+## TR-T11 — [Blocks nothing; do alongside TR-T1] Section registry and tier tags
+
+**Problem:** the section order currently lives in JSX. Changing what the report contains, or moving a
+section behind a tier, means editing a component — which is the thing standing rule 1 forbids.
+
+**Change:** a registry — an ordered list of `{id, title, tier, render, thin_data_fallback}`. `tier` is
+`track` | `track_pro`; **everything ships as `track` now.** Moving sections 7 and 8 to Pro later is a
+one-line registry change. Build no tier gating beyond reading that field.
+
+**Test:** reordering or disabling a section is a registry edit with no component diff; a snapshot test
+asserts rendered order matches the registry; every section has a non-null `thin_data_fallback`.
+
+
 ## Global acceptance
 
 ### Two standing rules added 2026-08-02
@@ -808,4 +1006,10 @@ The Phase 1–2 slice is done when a second run of the same client produces a re
    percentage without its denominator.
 8. Uses **one counting unit** in client-facing views (themes), with the accountability arithmetic
    closing exactly: `opening = resolved + still_open`, `closing = still_open + new + regressed`.
-7. Fits in roughly 13–18 pages with the appendix moved to CSV.
+7. Fits the **26–38 page** band: 13–16 pages of front matter that reads independently, plus
+   12–20 pages of back-matter tables. Verbatim answer text is never printed — it lives in the
+   CSV/portal export linked from A2.
+9. Renders every section from the registry, with a non-null thin-data fallback on each, and
+   reads the intent-bucket family from the client's business kind rather than hardcoding the
+   consumer five.
+10. States every rate change in **percentage points**, never as a percent change.
