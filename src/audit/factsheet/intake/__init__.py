@@ -15,6 +15,7 @@ Layout mirrors the data's path through it:
     plan.py        the ordered plan for one session
     assertions.py  an answer → the exact sentence the owner is quoted on
     claims.py      that sentence → a FactClaim, plus the run inputs that aren't
+    prefill.py     a crawl's claims → a draft answer, so a card is a confirm
 
 Every module here is INERT in the same sense the extractor is: no fetching, no
 clock, no model. ``as_of`` is a parameter. That is what lets the API and the UI
@@ -39,6 +40,12 @@ from src.audit.factsheet.intake.claims import (
     upgrade_confirmed,
 )
 from src.audit.factsheet.intake.plan import build_plan
+from src.audit.factsheet.intake.prefill import (
+    PREFILLED_QUESTIONS,
+    has_prefill,
+    prefill_answer,
+    prefilled_keys,
+)
 from src.audit.factsheet.intake.questions import (
     BY_ID,
     MAX_CARDS,
@@ -66,6 +73,10 @@ __all__ = [
     "MAX_CARDS",
     "question",
     "build_plan",
+    "PREFILLED_QUESTIONS",
+    "prefill_answer",
+    "has_prefill",
+    "prefilled_keys",
     "assertions_for",
     "to_assertion",
     "unfalsifiable_terms",

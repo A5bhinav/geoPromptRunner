@@ -41,6 +41,7 @@ async def crawl_domain(
     config: FetchConfig | None = None,
     business_kind: str = "product",
     persist: bool = True,
+    identity_only: bool = False,
 ) -> CrawlResult:
     """Crawl one domain's priority page set into a :class:`CrawlResult`.
 
@@ -50,6 +51,12 @@ async def crawl_domain(
     page never sinks the phase. The browser is launched and closed within this
     coroutine only; a launch failure degrades to a raw-only crawl rather than
     aborting.
+
+    ``identity_only=True`` narrows the page set to the homepage and the contact
+    page — the only two the fact-sheet extractor reads facts from. It is for the
+    intake, where a crawl that takes six minutes has already lost to the owner
+    answering by hand; the audit never sets it, because structure is graded
+    across the pages this drops.
 
     ``persist=False`` skips the cache write for callers with no parent
     ``audit_runs`` row — the standalone fact-sheet generator (``geo factsheet``)
@@ -82,6 +89,21 @@ async def crawl_domain(
     selected = select_pages(
         domain, sitemap_urls=result.sitemap_urls, business_kind=business_kind
     )
+    if identity_only:
+        # THE PAGES A BUSINESS STATES ITS OWN FACTS ON, and nothing else. The
+        # full set is tuned for the AUDIT, which grades structure across service
+        # and pricing pages — 20 of them, and on blackpropeller.com that is 377
+        # seconds. The fact-sheet extractor reads `LocalBusiness`/`Organization`
+        # markup and a NAP block, which live on the homepage and the contact
+        # page; the other eighteen contributed nothing but illegible hours
+        # blocks. Two pages is ~40s, which is the difference between a crawl that
+        # lands while someone reads the opener and one that lands after they have
+        # answered every card by hand.
+        selected = [
+            (url, category)
+            for url, category in selected
+            if category in (PageCategory.HOMEPAGE, PageCategory.CONTACT)
+        ]
     pages = []
     for url, category in selected:
         if not policy.allowed(url):
@@ -165,6 +187,7 @@ def run_site_audit_blocking(
     config: FetchConfig | None = None,
     business_kind: str = "product",
     persist: bool = True,
+    identity_only: bool = False,
 ) -> CrawlResult:
     """Synchronous entrypoint for the threaded runner — wraps the async crawl.
 
@@ -177,7 +200,9 @@ def run_site_audit_blocking(
     """
     cfg = config or FetchConfig()
     logger.info("site-audit crawl starting: run_id=%s domain=%s", run_id, domain)
-    return asyncio.run(crawl_domain(run_id, domain, cfg, business_kind, persist))
+    return asyncio.run(
+        crawl_domain(run_id, domain, cfg, business_kind, persist, identity_only)
+    )
 
 
 if __name__ == "__main__":

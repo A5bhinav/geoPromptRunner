@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { Panel } from "@/components/page";
 import { TierMeter } from "@/components/marks";
+import { ClaimEditor } from "@/components/intake/claim-editor";
 import { cn } from "@/lib/utils";
-import type { IntakeReview } from "@/lib/api";
+import type { IntakeQuestion, IntakeReview, IntakeStoredAnswer } from "@/lib/api";
 
 /**
  * The approve gate — the last human check before a sheet becomes the reference
@@ -20,6 +21,14 @@ import type { IntakeReview } from "@/lib/api";
  * says so in plain words, names the count, offers the way out — and Approve is
  * disabled WITH THE REASON STATED. A disabled button with no explanation is the
  * failure mode this screen is built to avoid.
+ *
+ * AND IT IS A GATE, NOT A RECEIPT. This screen used to render every claim as
+ * static text while the header promised "editable until you approve" — so an
+ * owner who spotted "operated since 899" had no way to fix it short of deleting
+ * the session and starting over. Every claim that came from a card now opens
+ * that card in place (`ClaimEditor`). The questions stay read-only on purpose:
+ * they are derived from the answers and regenerated on every save, so a
+ * hand-edited row would be overwritten by the next fix to the sheet.
  */
 
 const SECTION_TITLES: Record<string, string> = {
@@ -77,22 +86,49 @@ function downloadCsv(csv: string, domain: string): void {
 export function ReviewStage({
   review,
   domain,
+  sessionId,
+  plan,
+  answers,
   approving,
   error,
   onApprove,
   onBackToConversation,
   onFixUnconfirmed,
+  onEdited,
 }: {
   review: IntakeReview;
   domain: string;
+  sessionId: string;
+  /** The session's cards, so a claim can re-open the one that produced it. */
+  plan: IntakeQuestion[];
+  answers: Record<string, IntakeStoredAnswer>;
   approving: boolean;
   error: string | null;
   onApprove: () => void;
   onBackToConversation: () => void;
   onFixUnconfirmed: () => void;
+  /** Re-fetch the session and rebuild the review after a saved edit. */
+  onEdited: () => Promise<void>;
 }) {
   const [showAllClaims, setShowAllClaims] = React.useState(false);
   const [showAllQueries, setShowAllQueries] = React.useState(false);
+  const [editing, setEditing] = React.useState<string | null>(null);
+
+  const byQuestion = React.useMemo(
+    () => new Map(plan.map((q) => [q.id, q])),
+    [plan],
+  );
+
+  // The other lines a card carries, so opening one from a single claim can say
+  // what else it covers instead of silently rewriting the siblings.
+  const siblings = React.useMemo(() => {
+    const out = new Map<string, string[]>();
+    for (const c of review.claims) {
+      if (!c.question_id) continue;
+      out.set(c.question_id, [...(out.get(c.question_id) ?? []), c.value]);
+    }
+    return out;
+  }, [review.claims]);
 
   const grouped = React.useMemo(() => {
     const out = new Map<string, IntakeReview["claims"]>();
@@ -148,13 +184,32 @@ export function ReviewStage({
                   {claims.map((claim) => {
                     if (rendered >= shownClaims) return null;
                     rendered += 1;
+                    const card = byQuestion.get(claim.question_id);
+                    const open = editing === claim.claim_id;
                     return (
                       <div
                         key={claim.claim_id}
                         className="border-t border-[var(--rule-inner)] px-[18px] py-3.5"
                       >
-                        {/* The assertion, exactly as the judge will read it. */}
-                        <p className="text-[14px] font-medium leading-snug">{claim.value}</p>
+                        <div className="flex items-start gap-3">
+                          {/* The assertion, exactly as the judge will read it. */}
+                          <p className="min-w-0 flex-1 text-[14px] font-medium leading-snug">
+                            {claim.value}
+                          </p>
+                          {/* Only a claim with a card behind it can be edited —
+                              a crawl claim carried over from the last sheet has
+                              no answer to re-open, and offering Edit on one
+                              would promise something the flow cannot do. */}
+                          {card && !open ? (
+                            <button
+                              type="button"
+                              onClick={() => setEditing(claim.claim_id)}
+                              className="shrink-0 text-[11.5px] text-blue hover:underline"
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                        </div>
                         {/* The owner's own words. Not the same string as the
                             assertion — the quote is the evidence FOR it, and
                             collapsing the two makes the provenance decorative. */}
@@ -164,6 +219,21 @@ export function ReviewStage({
                         <p className="mt-2 text-[11px] text-harbour">
                           {claim.claim_id} · you confirmed this · {claim.as_of}
                         </p>
+                        {card && open ? (
+                          <ClaimEditor
+                            sessionId={sessionId}
+                            question={card}
+                            stored={answers[card.id]}
+                            alsoAffects={(siblings.get(card.id) ?? []).filter(
+                              (v) => v !== claim.value,
+                            )}
+                            onCancel={() => setEditing(null)}
+                            onSaved={async () => {
+                              await onEdited();
+                              setEditing(null);
+                            }}
+                          />
+                        ) : null}
                       </div>
                     );
                   })}
@@ -220,6 +290,13 @@ export function ReviewStage({
                     {shape.engines.map((e) => ENGINE_LABELS[e] ?? e).join(", ")}
                   </p>
                 ) : null}
+                {/* Said out loud, because the table looks editable and isn't.
+                    The set is derived from the answers and rebuilt on every
+                    save, so the way to change a question is to change the fact
+                    it was written from. */}
+                <p className="mt-1 text-[11px] text-harbour">
+                  Written from the sheet — edit a fact on the left and these rebuild.
+                </p>
               </div>
 
               <table className="w-full">

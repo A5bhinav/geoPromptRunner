@@ -1003,6 +1003,52 @@ export async function downloadAudit(
   await saveBlob(res, `geo-audit-${runId}-answers.${ext}`);
 }
 
+/** The client PDF, built by the server-side worker — NOT `window.print()`.
+ *
+ * The two are different documents, which is the whole reason this exists. The
+ * worker opens `/audits/{id}?mode=print`, and `mode=print` is what turns on the
+ * navy cover, expands every disclosure, and drops the workbench chrome; it also
+ * supplies the running header, the page numbers and the per-page independence
+ * footer, none of which a browser print can produce. A `window.print()` on the
+ * live page silently ships a coverless report with the Judge and Export buttons
+ * on page 1.
+ *
+ * `base_url` is OUR origin, not the endpoint's `http://localhost:3000` default —
+ * the worker has to fetch the same app the operator is looking at, and the
+ * default is only correct on a dev box.
+ *
+ * DEGRADES RATHER THAN FAILS, matching the endpoint: when Chromium is missing it
+ * 302s to the print-ready route. `fetch` follows that transparently, so the test
+ * is the content type of what actually came back — anything that is not a PDF
+ * means we did not get a PDF, and the honest response is to hand the operator
+ * the printable page rather than save an HTML file with a `.pdf` on the end.
+ *
+ * @returns `"pdf"` when a PDF was saved, `"print-page"` when it fell back.
+ */
+export async function downloadReportPdf(runId: string): Promise<"pdf" | "print-page"> {
+  const printUrl = `${window.location.origin}/audits/${encodeURIComponent(runId)}?mode=print`;
+  const res = await fetch(
+    `${API_BASE}/audits/${encodeURIComponent(runId)}/report.pdf` +
+      `?base_url=${encodeURIComponent(window.location.origin)}`,
+    { cache: "no-store", headers: authHeaders() },
+  );
+  if (!res.ok) {
+    // The endpoint's own message is the useful one — "run is still running;
+    // export once it finishes" beats "download failed (409)".
+    const detail = await res
+      .json()
+      .then((b: { detail?: string }) => b.detail)
+      .catch(() => null);
+    throw new Error(detail || `PDF render failed (${res.status})`);
+  }
+  if (!(res.headers.get("content-type") ?? "").includes("application/pdf")) {
+    window.open(printUrl, "_blank", "noopener");
+    return "print-page";
+  }
+  await saveBlob(res, `geo-report-${runId}.pdf`);
+  return "pdf";
+}
+
 export async function listTrades(): Promise<string[]> {
   const res = await fetch(`${API_BASE}/trades`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) return [];
@@ -1505,6 +1551,12 @@ export interface IntakeQuestion {
   negativeFirst: boolean;
   producesClaims: boolean;
   prefill: Record<string, IntakePrefillEntry>;
+  /** What a crawl of the owner's site already answers for this card, in the
+   * exact shape `/answer` stores — so the same seeding path serves a fresh card,
+   * a re-answered one, and a crawled one. `null` means the card arrives blank,
+   * which is most of them: nothing in markup says what you *don't* do or who
+   * people confuse you with. */
+  prefillAnswer: unknown;
 }
 
 /** done | current | skipped | todo. `skipped` renders as visibly ADDRESSED —
@@ -1535,6 +1587,13 @@ export interface IntakeSession {
   business_name: string;
   business_kind: string;
   state: string;
+  /** The background crawl of the owner's own site, which fills `prefill` while
+   * they read the opener. `null` on a session that never started one (opened
+   * from an existing sheet, or from a business name with no website).
+   *
+   * STORED RATHER THAN INFERRED FROM `prefill`: "found nothing" and "not
+   * finished yet" are the same empty map and two different things to say. */
+  crawl_state: "running" | "done" | "nothing_found" | "failed" | null;
   fact_sheet_id: string | null;
   approved_fact_sheet_id: string | null;
   plan: IntakeQuestion[];
@@ -1569,6 +1628,11 @@ export interface IntakeReviewClaim {
   polarity: string;
   as_of: string;
   verification: string;
+  /** The card that produced this line, so "fix this" can re-open it. Empty for
+   * a claim with no card behind it — a crawl claim carried over from the
+   * previous sheet, which can be confirmed or dropped but never edited in
+   * place, because the sentence would stop matching anything anyone said. */
+  question_id: string;
 }
 
 export interface IntakeQueryRow {

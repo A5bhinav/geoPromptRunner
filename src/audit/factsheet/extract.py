@@ -52,6 +52,7 @@ __all__ = [
     "LEAD_FORM_SOURCE_URL",
     "INTAKE_SOURCE_URL_PREFIX",
     "intake_source_url",
+    "intake_question_id",
     "LOCAL_BUSINESS_TYPES",
     "ORGANIZATION_TYPES",
     "BUSINESS_NODE_TYPES",
@@ -318,6 +319,80 @@ ORGANIZATION_TYPES: frozenset[str] = frozenset(
 
 #: Every node type the fact-sheet extractor will read business facts from.
 BUSINESS_NODE_TYPES: frozenset[str] = LOCAL_BUSINESS_TYPES | ORGANIZATION_TYPES
+
+#: Types too generic to be what anyone would CALL their business. `@type` is the
+#: only machine-readable statement of category most sites make, and for a plumber
+#: it is exactly right — but "Organization" and "ProfessionalService" answer "what
+#: are you filed as", not "what would a customer search for", and the intake card
+#: (`Q-WHAT-01.identity_category`) wants the second. Emitting the first would put
+#: "It is a professional service." on the sheet: unfalsifiable, so it can never
+#: fire, and it displaces the line that could have.
+_UNSPECIFIC_TYPES: frozenset[str] = frozenset(
+    {
+        "LocalBusiness",
+        "Organization",
+        "Corporation",
+        "ProfessionalService",
+        "HomeAndConstructionBusiness",
+        "MedicalBusiness",
+        "AutomotiveBusiness",
+        "OnlineBusiness",
+        "Store",
+    }
+)
+
+#: Schema type → what a customer would call it. Only where the CamelCase split is
+#: not already the answer: `Plumber` → "plumber" needs no entry, `HVACBusiness` →
+#: "hvac business" is wrong.
+_TYPE_CATEGORY_OVERRIDES: dict[str, str] = {
+    "HVACBusiness": "HVAC contractor",
+    "RoofingContractor": "roofing contractor",
+    "GeneralContractor": "general contractor",
+    "HousePainter": "house painter",
+    "MovingCompany": "moving company",
+    "DryCleaningOrLaundry": "dry cleaner",
+    "SelfStorage": "self-storage facility",
+    "ChildCare": "childcare provider",
+    "RealEstateAgent": "real estate agent",
+    "LegalService": "law firm",
+    "AutoRepair": "auto repair shop",
+    "EmergencyService": "emergency service",
+    "NGO": "nonprofit",
+    "EducationalOrganization": "school",
+    "NewsMediaOrganization": "news organization",
+    "OnlineStore": "online store",
+    "PerformingGroup": "performing group",
+    "SportsOrganization": "sports organization",
+    "GovernmentOrganization": "government body",
+}
+
+_CAMEL_BOUNDARY_RE = re.compile(r"(?<=[a-z])(?=[A-Z])")
+
+
+def _category_from_types(node: Mapping[str, Any]) -> tuple[str, str] | None:
+    """``(category, property)`` for the intake's "what you'd call it", or None.
+
+    ``additionalType`` wins when present: a site that bothers to declare one is
+    saying something more specific than its `@type`, which is frequently the
+    generic parent the CMS emitted. A node whose only types are in
+    :data:`_UNSPECIFIC_TYPES` yields NOTHING rather than a filed-under label —
+    blank is safe, and the owner is asked the question instead.
+    """
+    extra = node.get("additionalType")
+    for raw in _as_list(extra):
+        if isinstance(raw, str) and raw.strip():
+            # A URL is how schema.org spells additionalType; the tail is the word.
+            token = raw.strip().rstrip("/").rsplit("/", 1)[-1]
+            if token and token not in _UNSPECIFIC_TYPES:
+                return _humanize_type(token), "additionalType"
+    for token in sorted(_types_of(node) & BUSINESS_NODE_TYPES):
+        if token not in _UNSPECIFIC_TYPES:
+            return _humanize_type(token), "@type"
+    return None
+
+
+def _humanize_type(token: str) -> str:
+    return _TYPE_CATEGORY_OVERRIDES.get(token) or _CAMEL_BOUNDARY_RE.sub(" ", token).lower()
 
 _DAYS: tuple[str, ...] = (
     "monday",
@@ -640,6 +715,15 @@ def _claims_from_business_node(
         claims.append(
             build(SheetSection.IDENTITY, "identity_founded", f"Founded {founded}.", "foundingDate")
         )
+    # WHAT A CUSTOMER WOULD CALL IT — the words an AI gets asked for, and the one
+    # identity field the intake had no way to pre-fill, so every owner typed it
+    # from scratch. Read from the markup rather than guessed: `@type` is a
+    # machine-readable category statement and the quote is the property itself,
+    # so it faces the §4.1 gate like everything else.
+    category = _category_from_types(node)
+    if category is not None:
+        label, prop = category
+        claims.append(build(SheetSection.IDENTITY, "identity_category", f"It is a {label}.", prop))
 
     rating = _aggregate_rating(node)
     if rating is not None:
@@ -1144,6 +1228,22 @@ INTAKE_SOURCE_URL_PREFIX: str = "intake://"
 def intake_source_url(session_id: str, question_id: str) -> str:
     """The provenance URL for a claim the owner stated in an intake session."""
     return f"{INTAKE_SOURCE_URL_PREFIX}{session_id}/{question_id}"
+
+
+def intake_question_id(source_url: str) -> str:
+    """The question a CLIENT claim came from, or ``""`` for any other source.
+
+    The inverse of :func:`intake_source_url`, and the reason the review screen
+    can offer an edit at all: a claim knows which card produced it, so "fix
+    this" means re-answering that card rather than editing the sentence. A
+    crawl claim has no question behind it and correctly returns ``""`` — it can
+    be confirmed or dropped, never edited in place.
+    """
+    if not source_url.startswith(INTAKE_SOURCE_URL_PREFIX):
+        return ""
+    _, _, tail = source_url.partition(INTAKE_SOURCE_URL_PREFIX)
+    _, _, question_id = tail.partition("/")
+    return question_id
 
 
 def verify_quotes(

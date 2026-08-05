@@ -76,6 +76,21 @@ create table if not exists factsheet_intake_sessions (
   completed_at             timestamptz
 );
 
+-- null | running | done | nothing_found | failed. The background crawl that
+-- fills `prefill` for a cold-start intake.
+--
+-- ADDED AFTER THE TABLE SHIPPED, so an `alter` rather than a line in the
+-- `create` above: an existing project has to pick this up without being dropped.
+--
+-- WHY THE STATE IS STORED AT ALL rather than inferred from `prefill`. "The crawl
+-- found nothing" and "the crawl has not finished" produce an identical empty
+-- map, and the owner is told two different things: one is "start answering, I'm
+-- still reading your site", the other is "your site is behind a firewall we
+-- can't get through — every card is blank and that's fine". A UI that cannot
+-- tell them apart shows a spinner forever on a site we were 403'd from.
+alter table factsheet_intake_sessions
+  add column if not exists crawl_state text;
+
 -- ONE LIVE INTAKE PER DOMAIN, for the same reason uq_factsheet_jobs_inflight
 -- exists: two people starting the same sheet in the same minute is ordinary,
 -- and the loser should be handed the EXISTING session rather than a second one

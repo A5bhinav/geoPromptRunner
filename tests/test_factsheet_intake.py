@@ -24,7 +24,12 @@ from dataclasses import replace
 
 import pytest
 
-from src.audit.factsheet.extract import INTAKE_SOURCE_URL_PREFIX, verify_quotes
+from src.audit.factsheet.extract import (
+    INTAKE_SOURCE_URL_PREFIX,
+    intake_question_id,
+    intake_source_url,
+    verify_quotes,
+)
 from src.audit.factsheet.intake import (
     MAX_CARDS,
     REGISTRY,
@@ -595,6 +600,34 @@ def test_claims_are_client_confirmed_and_carry_session_provenance() -> None:
         assert c.confidence is Confidence.HIGH
         assert c.source_url.startswith(INTAKE_SOURCE_URL_PREFIX)
         assert SESSION in c.source_url
+
+
+def test_every_claim_names_the_card_that_produced_it() -> None:
+    """The review screen edits a claim by RE-ANSWERING its card, so every claim
+    has to be able to say which card that was. Without this round trip the
+    approve gate is read-only and a wrong founding date can only be fixed by
+    deleting the session and starting over."""
+    claims = claims_from_answers(
+        _answers(), session_id=SESSION, as_of=AS_OF, business_name=BUSINESS
+    )
+    assert claims
+    answered = {a.question_id for a in _answers()}
+    for c in claims:
+        qid = intake_question_id(c.source_url)
+        assert qid in answered, f"{c.key} points at {qid!r}, which nobody answered"
+        # The id has to resolve to a real card, or the editor opens nothing.
+        assert question(qid).id == qid
+
+
+def test_a_claim_with_no_card_behind_it_is_not_editable() -> None:
+    """A crawl claim carried over from the previous sheet has no answer to
+    re-open. It reports "" rather than a plausible-looking id, because the
+    review screen decides whether to offer Edit on exactly this test — and an
+    Edit button that opens a card the owner never saw would rewrite facts they
+    did not touch."""
+    assert intake_question_id("https://example.com/about") == ""
+    assert intake_question_id("") == ""
+    assert intake_question_id(intake_source_url(SESSION, "Q-WHAT-01")) == "Q-WHAT-01"
 
 
 def test_run_inputs_are_not_claims() -> None:

@@ -243,6 +243,19 @@ def test_the_area_is_kept_exactly_as_typed() -> None:
 # --- L1a: JSON-LD ------------------------------------------------------------
 
 
+def _hours_only(claims: list[FactClaim]) -> list[FactClaim]:
+    """The hours claims out of a node's harvest.
+
+    NOT A WEAKENING OF THE TESTS BELOW. They each assert "this markup produces no
+    hours" or "exactly these seven days", and they used to say it as a claim on
+    the WHOLE list — which only worked while a bare `{"@type": "Plumber", ...}`
+    node happened to yield nothing else. It yields `identity_category` now, so
+    the incidental coupling has to go or the next harvested property breaks them
+    again. What each one checks is unchanged.
+    """
+    return [c for c in claims if c.section is SheetSection.HOURS]
+
+
 def test_local_business_subtype_inside_a_graph_is_harvested() -> None:
     claims = _by_key(claims_from_json_ld([_PLUMBER_BLOCK], _URL, _AS_OF))
     assert claims["identity_name"].value == "Fort Plumbing"
@@ -260,6 +273,56 @@ def test_opening_hours_specification_becomes_one_claim_per_open_day() -> None:
     assert claims["hours_monday"].value == "Open 07:30-17:00."
     assert claims["hours_saturday"].value == "Open 08:00-14:00."
     assert "hours_sunday" not in claims  # absence is not yet an assertion — see §4.4
+
+
+def test_the_schema_type_becomes_what_youd_call_it() -> None:
+    """`identity_category` is the framing the judge checks AND the slot the query
+    generator fills, and until now nothing produced it — so every owner typed it
+    from scratch and the query set was built from whatever they typed."""
+    claims = _by_key(claims_from_json_ld([_PLUMBER_BLOCK], _URL, _AS_OF))
+    assert claims["identity_category"].value == "It is a plumber."
+    assert claims["identity_category"].verbatim_quote == '"@type": "Plumber"'
+
+
+def test_a_generic_type_is_not_a_category() -> None:
+    """"Organization" and "ProfessionalService" answer "what are you filed as",
+    not "what would a customer search for". Emitting one puts an unfalsifiable
+    line on the sheet that can never fire and displaces the one that could."""
+    for generic in ("Organization", "LocalBusiness", "ProfessionalService"):
+        claims = _by_key(
+            claims_from_json_ld([{"@type": generic, "name": "Acme"}], _URL, _AS_OF)
+        )
+        assert "identity_category" not in claims, generic
+
+
+def test_a_declared_additional_type_beats_the_parent_type() -> None:
+    """A site that bothers to declare `additionalType` is being more specific
+    than the generic its CMS emitted."""
+    claims = _by_key(
+        claims_from_json_ld(
+            [
+                {
+                    "@type": "ProfessionalService",
+                    "name": "Marek & Sons",
+                    "additionalType": "https://schema.org/Attorney",
+                }
+            ],
+            _URL,
+            _AS_OF,
+        )
+    )
+    assert claims["identity_category"].value == "It is a attorney."
+
+
+def test_the_category_claim_survives_the_quote_gate() -> None:
+    """The quote is the `@type` pair itself, and `page_text_index` serializes
+    nodes the same way — so this faces the §4.1 gate like everything else rather
+    than riding in on an exemption."""
+    page = _page(json_ld=[_PLUMBER_BLOCK])
+    claims = [c for c in claims_from_json_ld(page.json_ld, page.url, _AS_OF)]
+    kept, dropped = verify_quotes(claims, page_text_index([page]))
+    assert [c.key for c in dropped] == []
+    assert "identity_category" in {c.key for c in kept}
 
 
 def test_a_schema_quote_is_the_json_fragment_it_came_from() -> None:
@@ -346,7 +409,7 @@ def test_legacy_opening_hours_strings_are_parsed_conservatively() -> None:
     # An unparseable schedule yields nothing rather than a guess — a
     # half-understood week would feed a wrong "Closed …" below.
     vague = {"@type": "Plumber", "openingHours": "By appointment"}
-    assert claims_from_json_ld([vague], _URL, _AS_OF) == []
+    assert _hours_only(claims_from_json_ld([vague], _URL, _AS_OF)) == []
 
 
 def test_a_day_that_opens_and_closes_at_the_same_time_is_not_open() -> None:
@@ -356,7 +419,7 @@ def test_a_day_that_opens_and_closes_at_the_same_time_is_not_open() -> None:
             {"dayOfWeek": "Sunday", "opens": "00:00", "closes": "00:00"},
         ],
     }
-    assert claims_from_json_ld([spec], _URL, _AS_OF) == []
+    assert _hours_only(claims_from_json_ld([spec], _URL, _AS_OF)) == []
 
 
 # --- §4.4: negatives, only from closed enumerations --------------------------
@@ -427,7 +490,7 @@ def test_a_seven_day_week_derives_nothing() -> None:
         "openingHours": "Mo-Su 00:00-23:59",
     }
     claims = claims_from_json_ld([always], _URL, _AS_OF)
-    assert len(claims) == 7
+    assert len(_hours_only(claims)) == 7
     assert derive_negative_claims(claims) == []
 
 

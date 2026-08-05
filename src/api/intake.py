@@ -17,12 +17,14 @@ before the button is enabled. The API is the backstop, not the only gate.
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException
 
+from src.audit.factsheet.extract import ThinTextError, build_sheet, intake_question_id
 from src.audit.factsheet.intake import (
     Answer,
     AnswerKind,
@@ -30,6 +32,7 @@ from src.audit.factsheet.intake import (
     assertions_for,
     build_plan,
     claims_from_answers,
+    prefill_answer,
     question,
     run_inputs_from_answers,
     unfalsifiable_terms,
@@ -125,6 +128,56 @@ def _norm_domain(raw: str) -> str:
     return text
 
 
+#: How long a crawl may claim to be running before the session stops believing
+#: it. A 20-page crawl with a render budget finishes well inside this; anything
+#: past it is not slow, it is gone.
+_CRAWL_DEADLINE_SECONDS = 300
+
+
+def _crawl_state(row: dict[str, Any]) -> str | None:
+    """The crawl's state as the UI should be told it — not always what is stored.
+
+    A THREAD THAT DIES WRITES NOTHING. The worker sets `running`, then writes a
+    terminal state on every exit path it can see — but a process restart, an OOM,
+    or `uvicorn --reload` picking up an edit takes the daemon thread with it and
+    no exit path runs at all. The row then says `running` forever and the UI
+    polls forever, which is a worse failure than the crawl not existing: a
+    spinner that never resolves reads as a broken product, and the owner is
+    waiting for facts that are never coming.
+
+    So "running" is believed only for as long as a crawl could plausibly take.
+    The clock is `created_at` and not `updated_at` on purpose: the crawl starts
+    within a second of the session being created, and `updated_at` is bumped by
+    every answer the owner gives — so a dead crawl would look alive for exactly
+    as long as somebody kept typing.
+    """
+    state = row.get("crawl_state")
+    if state != "running":
+        return str(state) if state else None
+    started = _parsed_time(row.get("created_at"))
+    if started is None:
+        return "running"
+    elapsed = (datetime.now(UTC) - started).total_seconds()
+    return "failed" if elapsed > _CRAWL_DEADLINE_SECONDS else "running"
+
+
+def _parsed_time(raw: Any) -> datetime | None:
+    """A timestamptz as PostgREST returns it, or ``None`` if it is unreadable.
+
+    Unreadable means the deadline cannot be applied, and the caller keeps
+    believing the stored state — a timestamp we cannot parse is not evidence
+    that a crawl died.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
 def _today() -> str:
     """The ``as_of`` stamp. The ONE clock in the intake stack.
 
@@ -208,6 +261,18 @@ def _question_json(
         # Only the keys this card can actually fill, so the UI does not have to
         # know the shape of the whole prefill map to render one confirm.
         "prefill": {k: prefill[k] for k in q.keys if k in prefill},
+        # A CRAWL'S ANSWER TO THIS CARD, in the exact shape `/answer` stores.
+        #
+        # The flat `prefill` map above could never fill most of a card: its keys
+        # are CLAIM keys and a composite card's controls are named by PART, so
+        # seven `hours_*` claims and a grid called `days` never met. And a claim's
+        # value is a finished sentence — dropping "Founded 1998." into the input
+        # produced "The business has operated since Founded 1998."
+        #
+        # `prefill_answer` takes those sentences apart into control values. It is
+        # the same shape a stored answer holds, so ONE seeding path serves a fresh
+        # card, a re-answered card, and a crawled one.
+        "prefillAnswer": prefill_answer(q, prefill),
     }
 
 
@@ -313,6 +378,12 @@ def _session_json(row: dict[str, Any]) -> dict[str, Any]:
         "business_name": _business_name(row),
         "business_kind": str(row.get("business_kind", "")),
         "state": str(row.get("state", "")),
+        # null | running | done | nothing_found | failed. STORED, not inferred
+        # from `prefill`: "the crawl found nothing" and "the crawl has not
+        # finished" are the same empty map and two different things to say. Read
+        # through `_crawl_state`, which stops believing a `running` a dead thread
+        # left behind.
+        "crawl_state": _crawl_state(row),
         "fact_sheet_id": row.get("fact_sheet_id"),
         "approved_fact_sheet_id": row.get("approved_fact_sheet_id"),
         "plan": [_question_json(q, prefill, kind) for q in plan],
@@ -384,6 +455,108 @@ def start_intake(sheet_id: str) -> dict[str, Any]:
     return _session_json(_session_row(session_id))
 
 
+def _crawl_into_session(session_id: str, domain: str, business: str, kind: BusinessKind) -> None:
+    """Read the owner's own site and turn what it says into prefill. IN A THREAD.
+
+    THE ACCELERATOR, NEVER A GATE. `/intake/start` used to say "NO CRAWL" and
+    mean it: a cold-start intake had nothing but the two things typed on the
+    Start screen, so an owner retyped their hours, their address and their
+    service list into a form while the answers sat in their own JSON-LD. The
+    crawl now runs — but it runs BESIDE the conversation, not in front of it. The
+    session is returned first, the opener takes ten seconds to read, and the
+    first card is usually seeded by the time anyone looks at it.
+
+    Everything about this stays true when it fails. A 403 from an edge WAF, a
+    site with no markup, a domain that does not resolve: every one of them ends
+    as a blank card, which is the state the intake was designed around. Rule 2 of
+    the registry — a blank is never wrong, a guess can be — is what makes a
+    best-effort crawl safe to run at all.
+
+    A thread, not the request coroutine: `run_site_audit_blocking` calls
+    `asyncio.run` and says in its own docstring that it must never be called from
+    a running loop.
+
+    NO MODEL, NO SPEND. `build_sheet` is L0+L1 — JSON-LD and NAP parsing — so
+    this costs a crawl and nothing else. The Tier-2 line (anything that calls a
+    model) is not crossed here and must not be.
+    """
+    from src.audit.crawl import run_site_audit_blocking
+
+    try:
+        db.update_intake_session(session_id, {"crawl_state": "running"})
+    except db.StorageError:
+        return
+
+    state = "failed"
+    claims: list[Any] = []
+    try:
+        crawl = run_site_audit_blocking(
+            run_id=session_id,  # the session IS this crawl's identity; no run row exists
+            domain=domain,
+            business_kind=kind.value,
+            persist=False,
+            # The homepage and the contact page, not the audit's twenty. Measured
+            # on blackpropeller.com: 377 seconds for the full set, and the
+            # eighteen service pages produced not one fact. A crawl that lands
+            # after the owner has answered by hand is a crawl that did not
+            # happen.
+            identity_only=True,
+        )
+        sheet = build_sheet(
+            business=business or domain,
+            website=domain,
+            pages=crawl.pages,
+            generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
+            business_kind=kind,
+        )
+        claims = list(sheet.claims)
+        state = "done" if claims else "nothing_found"
+    except ThinTextError:
+        # Blocked pages, a challenge interstitial, a one-page site with no prose.
+        # Named apart from a failure because the owner is told something
+        # different: nothing to check, rather than something went wrong.
+        state = "nothing_found"
+    except Exception as exc:
+        # The TYPE, never the message: a crawl error can echo page content, and
+        # this runs against a stranger's site.
+        logger.warning("intake crawl %s failed: %s", session_id, type(exc).__name__)
+        state = "failed"
+
+    try:
+        row = db.get_intake_session(session_id)
+        if row is None:
+            return
+        # Re-read rather than closing over the map: the owner has been answering
+        # for the whole length of the crawl, and writing the version we captured
+        # at the start would roll their session back.
+        prefill = _dict_of(dict(row), "prefill")
+        for claim in claims:
+            # WHAT THE OWNER TYPED WINS. The Start screen seeds the name and the
+            # website, and a `name` in someone's schema markup is regularly the
+            # legal entity rather than what they call themselves.
+            if claim.key in prefill:
+                continue
+            prefill[claim.key] = {
+                "value": claim.value,
+                "source_url": claim.source_url,
+                "source_kind": claim.source_kind.value,
+                "confidence": claim.confidence.value,
+            }
+        db.update_intake_session(session_id, {"prefill": prefill, "crawl_state": state})
+    except Exception as exc:
+        # Every exit path writes a terminal state, INCLUDING this one. A raise
+        # here would leave the row saying `running` with no thread behind it, and
+        # `_crawl_state`'s deadline is the backstop for the crashes we cannot
+        # catch — not a licence to leak the ones we can.
+        logger.warning(
+            "intake crawl %s: could not store prefill: %s", session_id, type(exc).__name__
+        )
+        try:
+            db.update_intake_session(session_id, {"crawl_state": "failed"})
+        except db.StorageError:
+            logger.warning("intake crawl %s: could not record the failure either", session_id)
+
+
 @router.post("/intake/start")
 def start_from_brand(payload: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
     """Open an intake from nothing but a brand. THE COLD-START ENTRY POINT.
@@ -393,13 +566,16 @@ def start_from_brand(payload: Annotated[dict[str, Any], Body()]) -> dict[str, An
     surface that can make a sheet client-confirmed was unreachable for a client
     who had simply walked in the door.
 
-    NO CRAWL, AND NO SHEET REQUIRED. `fact_sheet_id` is nullable precisely for
-    this: an intake for a domain the crawler has never seen is the case where
-    the owner's answers are the ONLY thing on the sheet, and that sheet is
-    already better than a crawled one because every line of it is
-    client-confirmed. A crawl can only ever add prefill — it is an accelerator,
-    never a gate, which also means a site behind Cloudflare does not stop
-    anybody.
+    NO SHEET REQUIRED. `fact_sheet_id` is nullable precisely for this: an intake
+    for a domain the crawler has never seen is the case where the owner's answers
+    are the ONLY thing on the sheet, and that sheet is already better than a
+    crawled one because every line of it is client-confirmed.
+
+    THE CRAWL RUNS, BUT IT NEVER BLOCKS. This route returns the session
+    immediately and reads the site in a thread (`_crawl_into_session`), because a
+    crawl is an accelerator and an accelerator that makes you wait for it is a
+    gate. A site behind Cloudflare still does not stop anybody: the cards simply
+    arrive blank, which is the state the whole registry is designed around.
     """
     business = str(payload.get("business") or "").strip()
     website = str(payload.get("website") or "").strip()
@@ -469,6 +645,23 @@ def start_from_brand(payload: Annotated[dict[str, Any], Body()]) -> dict[str, An
                 }
         patch["prefill"] = seeded
         db.update_intake_session(session_id, patch)
+
+    # Only when a WEBSITE was given. `_norm_domain` slugs a bare business name
+    # into a domain-shaped bucket key so a walk-in still gets its own row — and
+    # crawling that slug would fetch whatever stranger happens to own it.
+    if website:
+        threading.Thread(
+            target=_crawl_into_session,
+            args=(
+                session_id,
+                domain,
+                business,
+                (sheet.business_kind if sheet else BusinessKind.LOCAL_SERVICE),
+            ),
+            name=f"intake-crawl-{session_id[:8]}",
+            daemon=True,
+        ).start()
+
     return _session_json(_session_row(session_id))
 
 
@@ -890,6 +1083,13 @@ def review(session_id: str) -> dict[str, Any]:
                 "polarity": c.polarity.value,
                 "as_of": c.as_of,
                 "verification": c.verification.value,
+                # WHICH CARD SAID THIS. The review screen edits a claim by
+                # re-answering its card, never by editing the sentence — the
+                # line the owner is quoted on has to keep coming from an answer
+                # they gave. A claim with no card behind it (a crawl claim
+                # carried over from the previous sheet) returns "" and gets no
+                # edit affordance: it can be confirmed or dropped, not rewritten.
+                "question_id": intake_question_id(c.source_url),
             }
             for c in assigned_claims(claims)
         ],
@@ -914,11 +1114,17 @@ def review(session_id: str) -> dict[str, Any]:
 def patch_review(
     session_id: str, payload: Annotated[dict[str, Any], Body()]
 ) -> dict[str, Any]:
-    """Edit the queries or the run config, then revalidate.
+    """Edit the run config, then regenerate the question set from it.
 
     Claims are edited by RE-ANSWERING the card that produced them, not by
     editing the claim: the sentence the owner is quoted on has to keep coming
-    from an answer they gave, or the provenance trail stops being true.
+    from an answer they gave, or the provenance trail stops being true. That is
+    what `/answer` is for, and it stays open until approval.
+
+    THE QUESTIONS THEMSELVES ARE NOT EDITABLE, deliberately. The set is derived
+    from the answers and regenerated on every change; a hand-edited row would
+    be overwritten by the next edit to the sheet, which is a worse experience
+    than a read-only table. Change the answers and the questions follow.
     """
     row = _session_row(session_id)
     patch: dict[str, Any] = {}

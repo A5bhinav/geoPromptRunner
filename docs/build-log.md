@@ -1,3 +1,168 @@
+## The crawl reaches the intake — Completed 2026-08-04
+
+`POST /intake/start` said **"NO CRAWL, AND NO SHEET REQUIRED"** and meant both.
+So a cold-start intake had nothing but the two things typed on the Start screen,
+and an owner retyped their hours, their address and their service list into a
+form while the answers sat in their own JSON-LD. Crawling only ever happened in
+the lead worker, which polls the WEBSITE's `leads` table — someone typing into
+Start is not a lead, so no job was ever enqueued.
+
+Worse: turning the crawl on alone would have bought almost nothing, because the
+claim keys and the card keys did not line up. Of ~13 extractable facts, **5
+reached a card**. The extractor parsed `openingHoursSpecification` and derived
+"Closed Sunday." — the highest-value claim type on the sheet — and the intake
+threw all seven days away, because the claims are keyed `hours_monday…` and the
+card's grid is one part called `days`.
+
+### What changed
+
+**`prefill.py`** (new, pure) — crawled claims → a draft ANSWER, in the exact
+shape `/answer` stores. It exists because a `FactClaim.value` is a finished
+sentence ("Founded 1998.", "Serves Berkeley and Oakland.") and a control's value
+is a field ("1998", `["Berkeley", "Oakland"]`): seeding the sentence produced
+*"The business has operated since Founded 1998."* Six of the sixteen cards have a
+builder, and that is the honest number — nothing in markup says what you don't
+do, who people confuse you with, or what an AI already got wrong.
+
+Its patterns are ANCHORED, and a half-match yields nothing. A blank field costs
+one question; a mangled one is a wrong line the owner confirms with a tap.
+
+**One seeding path, three surfaces.** `prefillAnswer` is the same shape a stored
+answer holds, so a fresh card, a re-answered card (the review editor) and a
+crawled card are one code path instead of three that agreed by accident.
+`answer-draft.ts` is where the composer and the editor now both live; the
+composer's private opinion that a `list` answer is text split on commas — which
+tore "Berkeley, Albany" into two towns — is gone with it.
+
+**`identity_category`** now comes off `@type`/`additionalType`, through a
+curated specific-enough filter: `Plumber` is what a customer would search for,
+`Organization` and `ProfessionalService` are what you are filed as, and the
+second would put an unfalsifiable line on the sheet that can never fire.
+
+**List cards render chips**, so a crawled `hasOfferCatalog` is visible at all.
+
+**The background crawl.** `/intake/start` returns the session immediately and
+reads the site in a daemon thread. Beside the conversation, never in front of it:
+the opener takes ten seconds to read and the first card is usually seeded by the
+time anyone looks at it. Every failure ends as a blank card, which is the state
+the registry was designed around — rule 2 is what makes a best-effort crawl safe
+to run.
+
+**`crawl_state`** is stored rather than inferred from `prefill`, because "found
+nothing" and "not finished yet" are the same empty map and two different things
+to tell someone. The conversation says which one happened, once, including the
+failure — an owner watching blank cards arrive after "I'm reading your site now"
+concludes the product is broken rather than that their host blocked us, which is
+the common case and not a defect.
+
+### The bug the live test found
+
+A daemon thread that dies writes nothing, so `crawl_state` stayed `running`
+forever and the UI polled forever — a spinner that never resolves. `uvicorn
+--reload` picking up an edit is enough to cause it; so is any restart.
+`_crawl_state` now disbelieves a `running` older than `_CRAWL_DEADLINE_SECONDS`,
+clocked from `created_at` and NOT `updated_at`: the crawl starts within a second
+of the session, and `updated_at` is bumped by every answer, so a dead crawl would
+have looked alive for exactly as long as somebody kept typing.
+
+### The page set, which was the real problem
+
+A first live run took **377 seconds** — 20 pages, because the page set is tuned
+for the AUDIT, which grades structure across service and pricing pages. The
+eighteen non-identity pages produced not one fact between them; the log is
+nothing but "hours block not fully legible" from each service page's boilerplate
+schema. A crawl that lands after the owner has answered by hand is a crawl that
+did not happen.
+
+`crawl_domain(identity_only=True)` narrows the set to the homepage and the
+contact page — the only two `PageCategory` values the fact-sheet extractor reads
+facts from, and `CONTACT` exists for exactly this reason already. Positional
+truncation would have been wrong: the homepage sorts first but `/contact/` sorts
+twelfth, behind ten service pages, and the contact page is where the NAP is.
+
+**30 seconds** on the same domain, with the phone, the address, the price range
+and the social profiles — so `Q-REACH-01`, which the registry calls "the most
+important card here", now opens pre-filled with a real number instead of blank.
+The audit path is untouched: `identity_only` defaults to False.
+
+### Verified
+
+Live: 30s, `done`, four crawled facts, two cards seeded. Against known-good
+claims (blackpropeller.com's markup carries no `foundingDate`, no legible hours
+and no offer catalog): six cards seeded, the hours grid arriving with Sunday's
+Closed toggle already pressed, and sending it unchanged producing four
+client-confirmed claims including "Closed Sunday.".
+
+## The approve gate becomes editable — Completed 2026-08-04
+
+The review screen promised "Both are editable until you approve" and implemented
+neither. Every claim rendered as static text, the questions table was read-only,
+and "Back to the conversation" landed on a stage where `session.next` is `null`
+once all sixteen cards are answered — so there was no card, no composer, and no
+way back. An owner who spotted `The business has operated since 899.` could fix
+it by deleting the session and redoing the intake. That was the only path.
+
+The backend was already built for this and said so: `/intake/{id}/answer` is
+idempotent per question id, and its docstring names the three callers meant to
+use it — "Back, the launcher's 'Answer this one', and the review screen's inline
+edits". None of the three existed.
+
+### What changed
+
+**`extract.intake_question_id`** — the inverse of `intake_source_url`. A claim's
+provenance is `intake://{session}/{question}`, so a claim already knew which card
+produced it; nothing could read it back. A non-intake source returns `""`, which
+is what the review screen tests before offering Edit — a crawl claim carried over
+from the previous sheet has no answer to re-open, and an Edit button on one would
+rewrite facts the owner never saw.
+
+**`review()`** now returns `question_id` per claim.
+
+**`claim-editor.tsx`** (new) — re-answering one card, in place. EDITING IS
+RE-ANSWERING, NEVER EDITING THE SENTENCE: the claims are lines the owner will be
+quoted on and their provenance is "you said this, on this card, on this date".
+Edit the sentence directly and the quote stops matching anything anybody said. So
+the control opens the CARD, seeded from the stored answer, previews through the
+same server builder the composer uses, and saves through `/answer`.
+
+A CARD IS THE UNIT, NOT A CLAIM. `Q-WHAT-01` carries four facts and `Q-REACH-01`
+six; opening one from a single line has to show the whole card or saving would
+silently drop the siblings. `alsoAffects` names them above the controls.
+
+**`structured-answer.fromPayload`** — the inverse of `toPayload`, without which
+there is no editing: an editor that opens blank is a retype, and a retype of nine
+price rows is how an owner ends up approving a sheet they gave up on fixing. It
+deliberately does not fall back to prefill the way `emptyValue` does — a text
+part the owner cleared is absent from the payload, and re-seeding it from the
+crawl would resurrect the value they just deleted. `pairFields`/`unpairFields`
+now share one `pairKeys`, because the two disagreeing silently blanks a filled
+row.
+
+**A saved edit rebuilds both halves** — `complete` then `getIntake`, sequenced
+rather than raced. `complete` regenerates the query set, which is why the
+questions never need hand-editing: fix `identity_category` and `inf-03` goes from
+"how often should I have a ijiji check things" to "…a performance marketing
+agency check things" on its own.
+
+**The questions stay read-only, and now say so.** They are derived from the
+answers and rebuilt on every save; a hand-edited row would be overwritten by the
+next fix to the sheet. `patch_review`'s docstring claimed it accepted query edits
+and never did — corrected rather than implemented.
+
+**Enter is a newline everywhere in the intake.** The composer's textarea and its
+batch-confirm fields both committed on Enter, and "in one sentence, what does the
+business do?" is a two-or-three-sentence answer — a textarea that sends on the
+first Enter is a race against your own keyboard. Send is a click. `Chips` keeps
+Enter to add an item, which is adding to an answer rather than committing one.
+
+### What is still broken, deliberately untouched
+
+`POST /intake/{id}/back` writes `current_question_id` and `_next_question()` never
+reads it — it returns the first UNANSWERED card, so the endpoint is a no-op and
+`backIntake` in `lib/api.ts` has no caller. Fixing it means deciding what "back"
+means for the conversation stage (honouring the column naively would pin `next`
+to the just-answered card forever), and the review editor makes it non-urgent.
+
 ## The intake question set — one spine of sixteen — Completed 2026-08-04
 
 `docs/factsheet-questions.md` built into the code. The registry used to fork:

@@ -105,6 +105,42 @@ export function toPayload(q: IntakeQuestion, value: StructuredValue): unknown {
   return out;
 }
 
+/** The inverse of `toPayload`: a stored answer, back in its controls.
+ *
+ * WITHOUT THIS THERE IS NO EDITING. Re-opening a card the owner already
+ * answered has to show what they said — an editor that opens blank is a retype,
+ * and a retype of nine price rows is how you get an owner clicking Approve on a
+ * sheet they gave up on fixing.
+ *
+ * It deliberately does NOT fall back to prefill the way `emptyValue` does. A
+ * text part the owner cleared is absent from the payload, and seeding it from
+ * the crawl again would resurrect the value they just deleted.
+ */
+export function fromPayload(q: IntakeQuestion, stored: unknown): StructuredValue {
+  if (q.kind === "priced_rows") {
+    const rows = asPriced(stored).map((r) => ({ ...EMPTY_PRICED, ...r }));
+    return { rows: rows.length ? rows : [{ ...EMPTY_PRICED }] };
+  }
+  const payload = stored && typeof stored === "object" ? (stored as Record<string, unknown>) : {};
+  const out: StructuredValue = {};
+  for (const p of q.parts) {
+    const held = payload[p.key];
+    if (p.kind === "pairs") {
+      const rows = (Array.isArray(held) ? held : [])
+        .map((row) => unpairFields(p, row))
+        .filter((r) => r.a || r.b);
+      out[p.key] = rows.length ? rows : [{ ...EMPTY_PAIR }];
+    } else if (p.kind === "list") {
+      out[p.key] = asList(held);
+    } else if (p.kind === "days") {
+      out[p.key] = asDays(held);
+    } else {
+      out[p.key] = typeof held === "string" ? held : "";
+    }
+  }
+  return out;
+}
+
 /** True when the owner has actually put something in. An untouched composite
  * card must not commit — it would be a skip pretending to be an answer. */
 export function hasContent(q: IntakeQuestion, value: StructuredValue): boolean {
@@ -144,14 +180,26 @@ function visible(p: IntakePart, value: StructuredValue): boolean {
   return String(value[p.showWhen.part] ?? "") === p.showWhen.equals;
 }
 
-function pairFields(p: IntakePart, row: PairRow): Record<string, string> {
+/** Which two field names this part's rows are stored under. One place, because
+ * `pairFields` and `unpairFields` disagreeing is an edit that silently blanks a
+ * row the owner already filled in. */
+function pairKeys(p: IntakePart): readonly [string, string] {
   // `what`/`when`, `what`/`issuer`, `said`/`truth` — the builders accept a
   // couple of spellings each, so one generic mapping serves all three.
-  const [first, second] =
-    p.key === "watchlist" ? (["said", "truth"] as const) :
-    p.key === "credentials" ? (["what", "issuer"] as const) :
-    (["what", "when"] as const);
+  if (p.key === "watchlist") return ["said", "truth"] as const;
+  if (p.key === "credentials") return ["what", "issuer"] as const;
+  return ["what", "when"] as const;
+}
+
+function pairFields(p: IntakePart, row: PairRow): Record<string, string> {
+  const [first, second] = pairKeys(p);
   return { [first]: row.a.trim(), [second]: row.b.trim() };
+}
+
+function unpairFields(p: IntakePart, row: unknown): PairRow {
+  const [first, second] = pairKeys(p);
+  const held = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+  return { a: String(held[first] ?? ""), b: String(held[second] ?? "") };
 }
 
 function basisLabel(q: IntakeQuestion, value: string): string {
@@ -291,7 +339,11 @@ function ChoicePart({
   );
 }
 
-function Chips({
+/** Exported because the review editor renders `list` and `multi` cards with it
+ * too. ENTER ADDS A CHIP, it does not submit: nothing in this flow sends on
+ * Enter, and a control that did would be the one place a keystroke commits an
+ * answer the owner was still typing. */
+export function Chips({
   items,
   placeholder,
   onChange,
