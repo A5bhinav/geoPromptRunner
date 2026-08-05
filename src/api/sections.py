@@ -1299,17 +1299,71 @@ class AppendixTable(TypedDict):
 #: everything" when it is not.
 _MAX_APPENDIX_ROWS = 400
 
+#: A1 gets its own, much tighter cap. It is the only appendix that is both long
+#: (one row per citation, so hundreds on a normal run) and WIDE — a URL and the
+#: full question text in the same row wrap to two or three lines each, so A1
+#: prints at roughly 13 rows per page against ~19 for the narrow tables. At the
+#: shared 400 it alone was 30 of a 40-page PDF and blew the spec's "back matter
+#: ≤20 pages" budget (docs/audit-packaging-spec.md, TR-T10) on its own.
+#:
+#: 150 is measured, not guessed: it is what lands the back matter inside that
+#: budget on the reference run. The full ledger is in the CSV export, which is
+#: where a reader who wants all 400+ URLs is going anyway.
+_MAX_A1_ROWS = 150
+
+
+def _spread(groups: Sequence[Sequence[list[str]]], cap: int) -> list[list[str]]:
+    """Take `cap` rows across `groups`, evenly, instead of off the top.
+
+    A1 arrives sorted by question, so a plain `rows[:cap]` is an ALPHABETICAL
+    CLIFF: the first few questions keep every citation and the rest keep none.
+    A client reading a ledger that stops dead at question 4 of 10 does not
+    conclude "capped", they conclude "you didn't measure the rest" — and the
+    appendix exists precisely to show that we did.
+
+    So every group gets an equal share first, and whatever budget that leaves
+    over (from groups smaller than their share) is spent on the remainder in the
+    original order. Row order within a group is preserved.
+    """
+    if cap <= 0 or not groups:
+        return []
+    kept: list[list[str]] = []
+    leftovers: list[list[str]] = []
+    share = max(1, cap // len(groups))
+    for group in groups:
+        kept.extend(group[:share])
+        leftovers.extend(group[share:])
+    # `kept` can overshoot when share was rounded up to 1 for a large group
+    # count; trim before spending anything on the remainder.
+    kept = kept[:cap]
+    return kept + leftovers[: cap - len(kept)]
+
 
 def _table(
-    id_: str, title: str, columns: list[str], rows: list[list[str]], note: str = ""
+    id_: str,
+    title: str,
+    columns: list[str],
+    rows: list[list[str]],
+    note: str = "",
+    *,
+    cap: int = _MAX_APPENDIX_ROWS,
+    groups: Sequence[Sequence[list[str]]] | None = None,
+    spread_unit: str = "",
 ) -> AppendixTable:
+    """One appendix, capped and honest about it.
+
+    `groups` opts into even truncation across a partition of `rows` (see
+    `_spread`); `spread_unit` names that partition for the note, because "spread
+    across all 10 questions" is the part that tells a reader the ledger is a
+    sample of the whole run rather than a prefix of it.
+    """
     total = len(rows)
-    capped = rows[:_MAX_APPENDIX_ROWS]
+    capped = _spread(groups, cap) if groups is not None else rows[:cap]
     if total > len(capped):
-        note = (
-            f"{note} Showing the first {len(capped)} of {total} rows; the full set is in "
-            f"the CSV export."
-        ).strip()
+        how = f"Showing {len(capped)} of {total} rows"
+        if spread_unit:
+            how += f", spread evenly across all {len(groups or ())} {spread_unit}"
+        note = f"{note} {how}; the full set is in the CSV export.".strip()
     return AppendixTable(
         id=id_, title=title, columns=columns, rows=capped, note=note, total_rows=total
     )
@@ -1339,18 +1393,23 @@ def build_back_matter(
     """
     ordered = sorted(results, key=lambda r: (r["query_id"], r["engine_name"], r["run_index"]))
 
-    # A1 — every citation.
-    a1_rows = [
-        [
-            url,
-            engine_label(r["engine_name"]),
-            r["prompt"],
-            f"run {r['run_index']}",
-            str(r.get("timestamp") or "")[:19],
-        ]
-        for r in ordered
-        for url in r["citations"]
-    ]
+    # A1 — every citation, GROUPED BY QUESTION so the cap can be spread across
+    # all of them rather than taken off the top. `ordered` is sorted by
+    # query_id, so the groups come out in question order and the flattened rows
+    # are byte-identical to the old list comprehension when nothing is capped.
+    a1_groups: dict[str, list[list[str]]] = {}
+    for r in ordered:
+        for url in r["citations"]:
+            a1_groups.setdefault(r["query_id"], []).append(
+                [
+                    url,
+                    engine_label(r["engine_name"]),
+                    r["prompt"],
+                    f"run {r['run_index']}",
+                    str(r.get("timestamp") or "")[:19],
+                ]
+            )
+    a1_rows = [row for group in a1_groups.values() for row in group]
 
     # A2 — query x surface x run outcome.
     a2_rows = [
@@ -1423,6 +1482,9 @@ def build_back_matter(
                 ["URL", "Surface", "Question", "Run", "Observed"],
                 a1_rows,
                 "Every URL any surface cited, whoever it belongs to.",
+                cap=_MAX_A1_ROWS,
+                groups=list(a1_groups.values()),
+                spread_unit="questions",
             ),
             _table(
                 "A2",

@@ -53,27 +53,42 @@ def test_backgrounds_are_forced_or_the_severity_ramp_prints_blank() -> None:
 
 
 def test_exactly_one_margin_source() -> None:
-    """Mixing `@page { margin }` with Playwright's `margin` is an open bug.
+    """`@page` must declare NO margin at all — not even `0`.
 
-    The output is unpredictable and the usual symptom is a header clipped off the
-    top of page 1. `@page` declares zero here; the real margins live in
-    `page.pdf()`. Whichever side you change, change both in the same commit.
+    This test used to assert the opposite, and the assertion was wrong. `0` is a
+    value, and Chromium honours it over the `margin` passed to `page.pdf()`, so
+    the 0.9in/0.75in bands that reserve space for the header/footer templates
+    were never applied: every page printed edge-to-edge, the running header
+    overprinted the first line of body text, and the page number overprinted the
+    last. `preferCSSPageSize: false` does not save you — it governs the page
+    SIZE, not the margins.
+
+    So the rule is not "only one of the two may be non-zero", it is "only one of
+    the two may declare margins at all", and the one that does is `page.pdf()`.
     """
-    # Comments stripped first: this file necessarily QUOTES `@page { margin: 0 }`
-    # in the prose that explains the rule, and matching the explanation instead
-    # of the declaration is how a source-level guard passes while the rule is
-    # wrong.
+    # Comments stripped first: this file and the stylesheet both necessarily
+    # QUOTE `margin: 0` in the prose explaining why it is banned, and matching
+    # the explanation instead of the declaration is how a source-level guard
+    # passes while the rule is wrong.
     css = re.sub(r"/\*.*?\*/", "", SABLE_CSS.read_text(), flags=re.DOTALL)
     page_rules = re.findall(r"@page\s*\{[^}]*\}", css)
     assert page_rules, "the print stylesheet declares no @page rule"
     for rule in page_rules:
-        assert re.search(r"margin:\s*0\s*;", rule), (
-            f"@page must declare `margin: 0` — the real margins belong to page.pdf(): {rule}"
+        assert not re.search(r"\bmargin\b", rule), (
+            "@page must not declare a margin — a CSS margin (including `0`) wins "
+            f"over page.pdf()'s and collides the header/footer with the body: {rule}"
         )
 
     worker = PDF_WORKER.read_text()
-    assert "preferCSSPageSize: false" in worker, "the worker would honour @page margins too"
-    assert re.search(r"MARGIN\s*=\s*\{[^}]*top:", worker)
+    assert "preferCSSPageSize: false" in worker, "the worker would honour @page size too"
+    # The margins are real and reserve room for the two templates.
+    margin = re.search(r"MARGIN\s*=\s*\{([^}]*)\}", worker)
+    assert margin, "the worker declares no MARGIN"
+    for side in ("top", "bottom", "left", "right"):
+        found = re.search(rf"{side}:\s*\"([\d.]+)in\"", margin.group(1))
+        assert found and float(found.group(1)) > 0, (
+            f"MARGIN.{side} must be non-zero — it is the only margin source there is"
+        )
 
 
 def test_cards_and_tables_survive_pagination() -> None:

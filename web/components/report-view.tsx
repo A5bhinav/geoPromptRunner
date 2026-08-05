@@ -15,6 +15,7 @@ import { type SectionContext } from "@/components/report-contract";
 import { REPORT_SECTIONS, sectionsForTier, type SectionTier } from "@/lib/report-sections";
 import {
   downloadAudit,
+  downloadReportPdf,
   fetchJudgeStatus,
   judgeAudit,
   type JudgeStatus,
@@ -138,6 +139,38 @@ export function ReportView({
     void downloadAudit(runId, ext);
   };
 
+  // THE CLIENT PDF COMES FROM THE WORKER, NOT FROM `window.print()`.
+  //
+  // Both buttons used to call `window.print()`, which renders this route in
+  // SCREEN mode — no `?mode=print`, so no navy cover (`CoverSection` returns
+  // null off-print), the workbench header printed with the Judge and Export
+  // buttons in it, and no running header, page numbers or per-page independence
+  // footer, because those are the worker's Playwright templates. That is not the
+  // deliverable; it is a screenshot of the workbench.
+  //
+  // It is a server round-trip through headless Chromium, so it takes tens of
+  // seconds on a report with a long citation ledger — hence the pending state.
+  const [pdfBusy, setPdfBusy] = React.useState(false);
+  const [pdfNote, setPdfNote] = React.useState<string | null>(null);
+  const buildPdf = async () => {
+    if (!runId || pdfBusy) return;
+    setPdfBusy(true);
+    setPdfNote(null);
+    try {
+      const how = await downloadReportPdf(runId);
+      if (how === "print-page") {
+        setPdfNote(
+          "Chromium isn't installed on the API host, so the print-ready report opened in a new " +
+            "tab instead — print it from there with Cmd-P.",
+        );
+      }
+    } catch (e) {
+      setPdfNote(e instanceof Error ? e.message : "The PDF did not build.");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   const headerActions = (
     <>
       {runId && (
@@ -160,9 +193,21 @@ export function ReportView({
           {!judging && allWarm ? " · free" : ""}
         </Button>
       )}
-      <Button variant="outline" onClick={() => window.print()}>
-        <Printer className="h-4 w-4" aria-hidden /> Export
-      </Button>
+      {runId && (
+        <Button
+          variant="outline"
+          onClick={() => void buildPdf()}
+          disabled={pdfBusy}
+          title="Build the client PDF on the server — cover page, running header, page numbers"
+        >
+          {pdfBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Printer className="h-4 w-4" aria-hidden />
+          )}
+          {pdfBusy ? "Building…" : "Export PDF"}
+        </Button>
+      )}
     </>
   );
 
@@ -190,30 +235,51 @@ export function ReportView({
             ))}
         </div>
       </SidebarSlot>
-      <SidebarSlot slot="footer">
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="h-[34px] w-full rounded-full bg-white text-[12px] font-semibold text-navy transition-opacity hover:opacity-90"
-        >
-          Build PDF
-        </button>
-      </SidebarSlot>
+      {/* The rail's Build PDF and the header's Export PDF are ONE action, and
+          both go through the worker. A shared viewer has no runId and so gets
+          neither — by design: they get the report and nothing that spends
+          server time, and the sender is the one who exports the deliverable. */}
+      {runId && (
+        <SidebarSlot slot="footer">
+          <button
+            type="button"
+            onClick={() => void buildPdf()}
+            disabled={pdfBusy}
+            className="h-[34px] w-full rounded-full bg-white text-[12px] font-semibold text-navy transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {pdfBusy ? "Building…" : "Build PDF"}
+          </button>
+        </SidebarSlot>
+      )}
 
       <Page className="gap-[22px]">
+        {/* WORKBENCH CHROME, AND THE COVER IS THE FIRST PAGE.
+            Belt and braces: `isPrint` already drops this at `?mode=print`, which
+            is the only way the client PDF is built, but `no-print` also covers a
+            Cmd-P on the live page. A deliverable whose first page is the app's
+            own title block with a Judge button in it is a screenshot of the
+            workbench, not a report. */}
         {isPrint ? null : (
-          <PageHeader
-            eyebrow={`Report · ${report.run_date}`}
-            title={report.client_name}
-            href={report.client_domains[0] ? `https://${report.client_domains[0]}` : undefined}
-            hrefLabel={report.client_domains[0]}
-            actions={headerActions}
-          />
+          <div className="no-print">
+            <PageHeader
+              eyebrow={`Report · ${report.run_date}`}
+              title={report.client_name}
+              href={report.client_domains[0] ? `https://${report.client_domains[0]}` : undefined}
+              hrefLabel={report.client_domains[0]}
+              actions={headerActions}
+            />
+          </div>
         )}
 
-        {/* The instrument, in one line. Everything a reader needs to know a
-            number in this report is comparable to a number in the last one. */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-[color:var(--ink-secondary)]">
+        {/* The instrument, in one line — everything a reader needs to know a
+            number here is comparable to a number in the last cycle.
+            `no-print` because METHODOLOGY ALREADY SAYS ALL OF IT, at length and
+            in sentences ("We asked 4 AI surfaces the csv-… question set — 10
+            questions, 1 independent time each…"), and the competitor chips are
+            restated by the competitive-position table. Printed here it was
+            duplicate copy sitting ABOVE the navy cover, which is the one thing
+            page 1 of the deliverable is supposed to open on. */}
+        <div className="no-print flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-[color:var(--ink-secondary)]">
           <span>
             Query set {report.query_set_version} · {report.runs_per_query} run
             {report.runs_per_query === 1 ? "" : "s"} per question ·{" "}
@@ -282,6 +348,15 @@ export function ReportView({
         {judgeError && (
           <Notice tone="problem" className="no-print">
             {judgeError}
+          </Notice>
+        )}
+
+        {/* The PDF build is a server round-trip that can fail or degrade, and a
+            button that goes quiet for forty seconds and then does nothing is
+            indistinguishable from a broken one. */}
+        {pdfNote && (
+          <Notice tone="problem" className="no-print">
+            {pdfNote}
           </Notice>
         )}
 

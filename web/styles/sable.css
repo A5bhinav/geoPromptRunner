@@ -184,13 +184,22 @@
     background-color: var(--paper);
   }
 
-  /* EXACTLY ONE margin source. `@page { margin: 0 }` here, real margins in
-   * `page.pdf()` — mixing the two is an open Playwright bug with unpredictable
-   * results, and the failure mode is a header clipped off the top of page 1.
-   * If you change these, change `render-report-pdf.mjs` in the same commit. */
+  /* EXACTLY ONE margin source, and it is `page.pdf()` in
+   * `render-report-pdf.mjs`. DO NOT declare `margin` here — not even `0`.
+   *
+   * `0` is a value, and Chromium honours it over the `margin` passed to
+   * `page.pdf()`. The rule this block used to state ("only one of the two may be
+   * non-zero") is therefore wrong: with `margin: 0` here, the 0.9in/0.75in bands
+   * that reserve space for the header/footer templates were never applied, so
+   * every page printed edge-to-edge and the running header overprinted the first
+   * line of body text while the page number overprinted the last. Verified
+   * against a two-case Chromium probe — declaring nothing gives the correct
+   * bands, declaring `0` gives the collision.
+   *
+   * Size only. If the margins in `render-report-pdf.mjs` change, nothing here
+   * changes with them; that is the point. */
   @page {
     size: letter;
-    margin: 0;
   }
 
   .no-print {

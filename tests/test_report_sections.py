@@ -451,6 +451,45 @@ def test_verbatim_answer_text_is_never_printed_in_the_back_matter(
     assert "export" in a2["note"]
 
 
+def test_a1_truncation_is_spread_across_questions_not_an_alphabetical_cliff() -> None:
+    """A1 is capped, and the cap must not starve the questions sorted last.
+
+    `rows[:cap]` on a ledger sorted by question gives the first few questions
+    every citation and the rest none. A client reading a ledger that stops dead
+    at question 4 of 10 concludes "you didn't measure the rest", which is the
+    opposite of what the appendix is for.
+    """
+    from src.api.sections import _MAX_A1_ROWS, _spread, _table
+
+    # Ten questions, each with more citations than its even share of the cap.
+    per_question = _MAX_A1_ROWS  # comfortably over the share
+    groups = [[[f"q{q}-url{i}"] for i in range(per_question)] for q in range(10)]
+    rows = [row for g in groups for row in g]
+
+    table = _table(
+        "A1", "Citation ledger", ["URL"], rows, cap=_MAX_A1_ROWS, groups=groups,
+        spread_unit="questions",
+    )
+
+    assert len(table["rows"]) == _MAX_A1_ROWS
+    assert table["total_rows"] == len(rows)
+    # Every question is represented — the point of the whole exercise.
+    kept = {row[0].split("-")[0] for row in table["rows"]}
+    assert kept == {f"q{q}" for q in range(10)}, f"questions missing from the ledger: {kept}"
+    # And the note says both the count and that it is a spread, not a prefix.
+    assert f"Showing {_MAX_A1_ROWS} of {len(rows)} rows" in table["note"]
+    assert "spread evenly across all 10 questions" in table["note"]
+    assert "CSV export" in table["note"]
+
+    # Uncapped input is passed through untouched, in order.
+    small = [[["only-url"]]]
+    assert _table("A1", "t", ["URL"], [["only-url"]], cap=_MAX_A1_ROWS, groups=small)[
+        "rows"
+    ] == [["only-url"]]
+    # A cap larger than the data keeps everything; a zero cap keeps nothing.
+    assert _spread(groups, 0) == []
+
+
 def test_every_appendix_row_is_stringified_for_a_generic_renderer(
     report: ReportPayload,
 ) -> None:
