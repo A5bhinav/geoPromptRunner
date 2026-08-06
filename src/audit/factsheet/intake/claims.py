@@ -15,6 +15,7 @@ Pure. No clock (``as_of`` is passed), no network, no storage.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
@@ -61,6 +62,28 @@ class RunInputs:
     category: str = ""
     aliases: tuple[str, ...] = field(default_factory=tuple)
     competitors: tuple[str, ...] = field(default_factory=tuple)
+    #: What they sell, in the owner's words (``Q-OFFER-01``), and the places they
+    #: serve (``Q-REACH-02``). FAN-OUT SLOTS, not decoration: one shape times six
+    #: services is six real questions, which is what lifts a bank of ~30 lines
+    #: past a 50-question set. Every value is a line somebody confirmed, so the
+    #: extra questions are more specific rather than merely more numerous.
+    services: tuple[str, ...] = field(default_factory=tuple)
+    areas: tuple[str, ...] = field(default_factory=tuple)
+    #: Who it is for (``Q-PROOF-02``'s second half) — one segment, not a list.
+    segment: str = ""
+    #: ``local_service`` | ``product`` | ``""``. THE ANSWER TO ``Q-KIND-01``, and
+    #: the only source of it the query set is allowed to read — never the crawl,
+    #: never the session's stored column, which was stamped at creation before
+    #: anybody had been asked. Empty means unanswered or skipped, and unanswered
+    #: builds the general set: a local set is built around a city, and guessing
+    #: local is what produced "my digital marketing agency keeps breaking".
+    business_kind: str = ""
+
+
+#: How many values one fan-out slot may contribute. Six services is six good
+#: questions; twenty is twenty near-duplicates, a near_duplicate warning per
+#: pair, and a set that spends its whole budget on one dimension.
+_MAX_FANOUT = 6
 
 
 def _as_list(value: object) -> list[str]:
@@ -69,6 +92,32 @@ def _as_list(value: object) -> list[str]:
     if isinstance(value, (list, tuple)):
         return [str(v).strip() for v in value if str(v).strip()]
     return []
+
+
+def _as_names(value: object) -> list[str]:
+    """A list of BRAND NAMES, one per entry, however they were typed.
+
+    ONE CHIP CAN HOLD SIX COMPETITORS. The chip control does not split on commas
+    — deliberately, because "Berkeley, Albany" is one service area and tearing it
+    in two invented a town nobody serves. But a competitor field typed the same
+    way is six agencies in one string, and it reached the generator as a single
+    name: the set shipped ``"Black Propeller vs Tinuiti, Directive, KlientBoost,
+    Disruptive Advertising, Power Digital, JumpFly"`` as one question, and
+    ``_guarantee_comparison_coverage`` thought all six were covered because a
+    substring test passes against the joined string. Six head-to-heads — the
+    highest-value questions in the instrument — became two nobody would ask.
+
+    So names are split HERE, at the boundary, and only for the fields that hold
+    names. Commas, semicolons, newlines and a trailing " and " all separate;
+    ``_as_list`` is untouched and still keeps a place name whole.
+    """
+    out: list[str] = []
+    for entry in _as_list(value):
+        for part in re.split(r"[,;\n]| \band\b ", entry):
+            name = part.strip(" \t.")
+            if name:
+                out.append(name)
+    return out
 
 
 def _mapping(value: object) -> Mapping[str, object]:
@@ -167,8 +216,27 @@ def run_inputs_from_answers(
     aliases = _as_list(by_id["Q-WHAT-03"].value) if "Q-WHAT-03" in by_id else []
 
     competitors: list[str] = []
+    segment = ""
     if "Q-PROOF-02" in by_id:
-        competitors = _as_list(_mapping(by_id["Q-PROOF-02"].value).get("competitors"))
+        proof = _mapping(by_id["Q-PROOF-02"].value)
+        competitors = _as_names(proof.get("competitors"))
+        segment = str(proof.get("for") or "").strip()
+
+    # WHAT THEY SELL, AS THE QUALIFIER ON A CATEGORY QUESTION. "best {category}"
+    # is one question; "best {category} for {service}" is one per service, and
+    # methodology §3.2 asks for exactly that — a qualifier drawn from the sheet's
+    # real segments rather than a head term repeated. Capped, because the card
+    # asks for categories rather than SKUs but a coffee roaster can still type
+    # twenty, and twenty near-identical questions is a worse set than six.
+    services = _as_list(by_id["Q-OFFER-01"].value)[:_MAX_FANOUT] if "Q-OFFER-01" in by_id else []
+
+    # The kind, from the card that asks it and nowhere else. An unrecognised
+    # value is dropped rather than coerced: "" means we were not told, and the
+    # generator treats not-told as not-local.
+    kind = ""
+    if "Q-KIND-01" in by_id:
+        answered = str(by_id["Q-KIND-01"].value or "").strip()
+        kind = answered if answered in {"local_service", "product"} else ""
 
     # City and region ride inside Q-REACH-02's "specific places" answer — the
     # run's location anchor. `service_area_included` carries the falsifiable
@@ -189,6 +257,12 @@ def run_inputs_from_answers(
         city = str(area["city"]).strip()
     if area.get("region"):
         region = str(area["region"]).strip()
+    # The towns they named, as their own local questions. "{category} in
+    # Berkeley" and "{category} in Albany" are two different local packs and two
+    # different answers; one home city could only ever ask about one of them.
+    areas = [
+        a for a in _as_list(area.get("included"))[:_MAX_FANOUT] if a.casefold() != city.casefold()
+    ]
 
     return RunInputs(
         business=business,
@@ -199,6 +273,10 @@ def run_inputs_from_answers(
         category=category,
         aliases=tuple(aliases),
         competitors=tuple(competitors),
+        business_kind=kind,
+        services=tuple(services),
+        areas=tuple(areas),
+        segment=segment,
     )
 
 

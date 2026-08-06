@@ -4,7 +4,7 @@ This is the single source of truth for what the intake asks. The API serves it,
 the UI renders it, and neither hardcodes a question — a card that exists in the
 frontend but not here is a card whose answer has nowhere to go.
 
-ONE SPINE OF SIXTEEN, FOR EVERY BUSINESS. This registry used to fork:
+ONE SPINE OF SEVENTEEN, FOR EVERY BUSINESS. This registry used to fork:
 ``BusinessKind`` picked a local branch or a product branch and the two were
 maintained separately. That design had three faults and the third one is fatal.
 Two half-maintained trees drift. A ``show_if`` graph has to be re-reasoned about
@@ -23,7 +23,7 @@ worded the way they are and not a nicer way:
 2. **Blank is safe, and it is the default.** A skipped card produces ZERO
    claims. A dimension the sheet is silent on is not checked, so it can never
    produce a false flag. Coverage is not the metric — fourteen confirmed lines
-   beat forty with six guesses. **Every one of the sixteen is skippable**: there
+   beat forty with six guesses. **Every one of the seventeen is skippable**: there
    is no gate question, because a router that cannot be skipped is a router that
    produces guesses.
 3. **Negatives are where the value is.** *Closed Sunday.* *No after-hours
@@ -75,9 +75,9 @@ class AnswerKind(StrEnum):
     The UI renders one component per member. A card is not a field: a
     ``batch_confirm`` carries three to five facts and still costs the owner one
     decision, which is what keeps the median session at eleven cards rather than
-    sixteen.
+    seventeen.
 
-    ELEVEN KINDS COVER ALL SIXTEEN CARDS FOR EVERY BUSINESS. The test to apply
+    ELEVEN KINDS COVER ALL SEVENTEEN CARDS FOR EVERY BUSINESS. The test to apply
     before adding a twelfth is whether one control can hold a plumber's answer
     and a SaaS's answer — ``availability`` and ``priced_rows`` both exist
     because the naive version (a bare 7-day grid, a bare price field) could not.
@@ -104,11 +104,17 @@ class Option:
 
 @dataclass(frozen=True, kw_only=True)
 class Examples:
-    """The for-instance line, and THE ONLY THING ``business_kind`` may change.
+    """A for-instance, and THE ONLY KIND OF COPY ``business_kind`` may change.
 
     Never the prompt, never the helper, never the keys, never whether a card
     appears. ``neutral`` is required and is written to be true of anyone, so an
     unknown business kind is never a broken card.
+
+    A placeholder is a for-instance too — it is the same sentence in a fainter
+    voice — so ``placeholder`` fields take one of these as well. THEY HAVE TO
+    RESOLVE TOGETHER: a card whose helper reads "Stopped duct cleaning, January."
+    over a field reading "e.g. the Ring 5" is showing one business two different
+    businesses' examples, which is exactly the fork this type exists to prevent.
     """
 
     neutral: str
@@ -122,6 +128,16 @@ class Examples:
         if kind is BusinessKind.LOCAL_SERVICE and self.local:
             return self.local
         return self.neutral
+
+
+#: Copy that is either the same for everyone (a plain ``str``) or resolved per
+#: business kind. Resolved once, at serialisation, by :func:`pick_copy`.
+KindCopy = str | Examples
+
+
+def pick_copy(copy: KindCopy, kind: BusinessKind | None) -> str:
+    """One line of possibly kind-varying copy, for one business kind."""
+    return copy.pick(kind) if isinstance(copy, Examples) else copy
 
 
 class PartKind(StrEnum):
@@ -138,7 +154,7 @@ class PartKind(StrEnum):
 class Part:
     """One sub-control inside a composite card, and the key it writes.
 
-    WHY THIS EXISTS AT ALL. Six of the sixteen cards ask two things — *where do
+    WHY THIS EXISTS AT ALL. Six of the seventeen cards ask two things — *where do
     you serve* **and** *where don't you*, *what do you hold* **and** *what don't
     you*. Those halves are one card because they are one decision for the owner,
     but they are two shapes for the answer. Without a description of that shape
@@ -153,7 +169,9 @@ class Part:
     label: str
     kind: PartKind
     helper: str = ""
-    placeholder: str = ""
+    #: ``Examples`` when the for-instance in the field has to follow the one in
+    #: the helper — see :class:`Examples`.
+    placeholder: KindCopy = ""
     #: Column headings for a ``PAIRS`` part.
     labels: tuple[str, str] = ("", "")
     options: tuple[Option, ...] = ()
@@ -192,12 +210,12 @@ class IntakeQuestion:
     section: SheetSection | None = None
     keys: tuple[str, ...] = ()
     helper: str = ""
-    placeholder: str = ""
+    placeholder: KindCopy = ""
     options: tuple[Option, ...] = ()
     #: The sub-controls of a composite card, in render order. Empty means the
     #: card is a single control and ``kind`` alone describes it.
     parts: tuple[Part, ...] = ()
-    #: True for all sixteen. Kept as a field rather than deleted because the API
+    #: True for all seventeen. Kept as a field rather than deleted because the API
     #: refuses a skip on a card that says it cannot be skipped, and that backstop
     #: should keep working if a future card ever earns the exception.
     skippable: bool = True
@@ -242,6 +260,50 @@ REGISTRY: tuple[IntakeQuestion, ...] = (
             neutral=(
                 "“What you'd call it” is the words you'd want an AI to use — "
                 "“employment law firm”, not “professional services company”."
+            ),
+        ),
+    ),
+    # ASKED, NEVER INFERRED. This is the second card in the spine because it is
+    # the input with the widest blast radius in the whole intake: it picks the
+    # for-instance line on every card after it, and it picks the query
+    # allocation afterwards. It used to be neither asked nor inferred — the
+    # session was stamped `local_service` at creation and nothing ever revisited
+    # it, so a B2B agency was shown a plumber's examples and then measured with
+    # "my digital marketing agency keeps breaking".
+    #
+    # THE QUESTION IS GEO-DEPENDENCE, NOT INDUSTRY. "Are you a product or a
+    # local service" is unanswerable for an agency, a clinic or a nonprofit —
+    # which is exactly why the old routing died. "Does where the customer is
+    # change whether they'd pick you" has a true answer for every business
+    # alive, and it is the only thing the query set needs from this axis: a
+    # local set is built around a city, and a set that isn't must never be.
+    #
+    # Skippable like every other card. A skip means UNKNOWN, and unknown builds
+    # the general set — never the local one. Guessing local is how the whole
+    # failure started.
+    IntakeQuestion(
+        id="Q-KIND-01",
+        group="WHAT",
+        kind=AnswerKind.CHOICE,
+        prompt="Does where a customer is change whether they'd pick {business}?",
+        why="It decides whether the AIs get asked local questions or national ones.",
+        helper=(
+            "A shop people drive to, or a crew that comes out to them, is a local one. "
+            "An agency, a tool, a brand people buy from anywhere is not."
+        ),
+        options=(
+            Option(value="local_service", label="Yes — we serve an area"),
+            Option(value="product", label="No — where they are doesn't matter"),
+        ),
+        # A run input, not a claim (agent plan §4.4). "The business is a local
+        # service." is a category we chose, not a line the judge can falsify
+        # against an AI answer, and putting it on the sheet spends a claim that
+        # can never fire.
+        produces_claims=False,
+        examples=Examples(
+            neutral=(
+                "a barber or a plumber is local. A studio taking clients anywhere, "
+                "or anything shipped nationally, is not."
             ),
         ),
     ),
@@ -359,11 +421,21 @@ REGISTRY: tuple[IntakeQuestion, ...] = (
             "an AI recommending a service you dropped sends a customer to a dead end."
         ),
         parts=(
+            # NOT "newest version or release" — that label was written for
+            # software and means nothing to an agency, a restaurant or a law
+            # firm, which is most of who fills this in. "The newest thing you've
+            # launched" holds a Ring 5, a new service line, a second location
+            # and a winter menu in one line, and the placeholder follows the
+            # business kind the same way the helper's for-instance does.
             Part(
                 key="current",
-                label="Newest version or release, if you have one",
+                label="The newest thing you've launched",
                 kind=PartKind.TEXT,
-                placeholder="e.g. the Ring 5, released 2026-05-28",
+                placeholder=Examples(
+                    neutral="e.g. a new service line, launched in March",
+                    local="e.g. a second location, opened in March",
+                    product="e.g. the Ring 5, released 2026-05-28",
+                ),
             ),
             Part(
                 key="added",
@@ -392,7 +464,7 @@ REGISTRY: tuple[IntakeQuestion, ...] = (
         group="COST",
         kind=AnswerKind.PRICED_ROWS,
         section=SheetSection.SERVICES_PRICING,
-        keys=("pricing_rows",),
+        keys=("pricing_rows", "pricing_note"),
         prompt="What does it cost?",
         why="Prices are the single most-hallucinated thing about any business.",
         helper=(
@@ -770,6 +842,7 @@ KEY_LABELS: dict[str, str] = {
     "features_added": "Added lately",
     "features_removed": "Stopped doing",
     "pricing_rows": "Prices",
+    "pricing_note": "Other pricing terms",
     "pricing_mandatory_extra": "Paid on top",
     "pricing_free_option": "Free option",
     "licensing_credentials": "What you hold",
@@ -793,12 +866,15 @@ DAY_LABELS: tuple[tuple[str, str], ...] = (
 
 BY_ID: dict[str, IntakeQuestion] = {q.id: q for q in REGISTRY}
 
-#: The ceiling on one session, and also the floor: sixteen cards, always, for
+#: The ceiling on one session, and also the floor: seventeen cards, always, for
 #: every business. There is no trimming pass any more — the old one existed
 #: because trunk-plus-branch-plus-tail could overrun a budget, and one spine
-#: cannot. The median session is shorter than sixteen *decisions* because the two
-#: batch-confirm cards carry four facts each.
-MAX_CARDS = 16
+#: cannot. The median session is shorter than seventeen *decisions* because the
+#: two batch-confirm cards carry four facts each.
+#:
+#: Seventeen, not sixteen, since `Q-KIND-01`: the axis that used to be assumed at
+#: session creation is now asked out loud.
+MAX_CARDS = 17
 
 
 def question(question_id: str) -> IntakeQuestion:

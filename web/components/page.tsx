@@ -138,7 +138,7 @@ export function PanelCell({
 }
 
 /** The 10px tracked-uppercase label that opens a card, with an optional quiet
- * right-hand note ("29 questions", "14 total"). */
+ * right-hand note ("25 questions", "14 total"). */
 export function CardLabel({
   children,
   note,
@@ -161,7 +161,7 @@ export function CardLabel({
  * cells, hairline splits.
  *
  * One card and not three: three cards would give three objects of equal weight
- * to a reading that is one sentence — "29 questions across 6 surfaces is 522
+ * to a reading that is one sentence — "25 questions across 6 surfaces is 450
  * calls". The hairlines say the numbers belong to each other.
  */
 export function StatStrip({

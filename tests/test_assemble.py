@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 from src.prompts.assemble import DEFAULT_LOCAL_ENGINES, AssembleError, assemble_run_csv
+from src.prompts.query_set import QUERY_SET_SIZE
 from src.prompts.csv_loader import parse_csv_files
 
 
@@ -42,7 +43,10 @@ def test_the_assembled_csv_parses_through_the_real_loader() -> None:
     # moved the manual work rather than removed it.
     audit = _parsed()
     assert audit is not None
-    assert len(audit.query_set.queries) == 29
+    # The standard size, not a literal: 29 was one of four numbers this repo
+    # used to think a query set was, and a test asserting the old drift is how
+    # the drift comes back.
+    assert len(audit.query_set.queries) == QUERY_SET_SIZE
 
 
 def test_config_comes_from_the_lead() -> None:

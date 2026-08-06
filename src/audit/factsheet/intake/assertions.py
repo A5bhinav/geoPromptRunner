@@ -422,8 +422,17 @@ def _priced_rows(a: Answer, _business: str, as_of: str) -> list[Assertion]:
     "The price for …" is grammatical for every row a plumber, a law firm or a
     roaster can type, and it keeps the number — the falsifiable part — intact.
     """
+    # Two shapes. A bare list is what every answer stored before the free-text
+    # note existed looks like, and those must keep producing exactly the claims
+    # they produced before — the sheet they are on has already been approved.
+    value: object = a.value
+    note = ""
+    if isinstance(value, Mapping):
+        note = _clean(str(value.get("note", "")))
+        value = value.get("rows", [])
+
     out: list[Assertion] = []
-    for i, row in enumerate(_rows(a.value), start=1):
+    for i, row in enumerate(_rows(value), start=1):
         what = _field(row, "what", "name", "item")
         price = _field(row, "price")
         if not what or not price:
@@ -443,6 +452,16 @@ def _priced_rows(a: Answer, _business: str, as_of: str) -> list[Assertion]:
         if includes:
             body += f", which includes {includes}"
         out.extend(_positive(key, _stamped(_sentence(body), key, as_of), quote))
+
+    # The escape hatch, asserted in the owner's own words. NOT reformatted into
+    # the row frame: the whole reason it exists is that it did not fit one, and
+    # forcing "The price for … is …" onto "we bill in 15-minute increments"
+    # produces a sentence nobody said. Date-stamped like every other price claim
+    # — pricing is the most volatile thing on the sheet.
+    if note:
+        out.extend(
+            _positive("pricing_note", _stamped(_sentence(note), "pricing_note", as_of), note)
+        )
     return out
 
 

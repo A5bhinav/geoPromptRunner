@@ -2,7 +2,7 @@
 
 Under the branched design this module had two jobs — route to a branch, then
 trim the result back under a card budget. **It has neither now.** One spine of
-sixteen is asked of every business, in registry order, and sixteen is both the
+seventeen is asked of every business, in registry order, and seventeen is both
 ceiling and the floor. What is left is a seam: `build_plan` stays as the single
 place that decides what a session asks, so a future rule (drop a card the crawl
 already settled, surface a disagreement first) has somewhere to land that is not
@@ -13,7 +13,7 @@ product branch, and the businesses that are neither — an agency, a restaurant,
 clinic, a nonprofit, a marketplace — had no branch at all. It is now the
 for-instance line and the query allocation, and nothing structural.
 
-The session still gets SHORTER than sixteen decisions, just not by asking fewer
+The session still gets SHORTER than seventeen decisions, just not by asking fewer
 questions: the two batch-confirm cards carry four facts each, so a crawl that
 found JSON-LD collapses eight facts into two taps.
 
@@ -39,7 +39,7 @@ def build_plan(
     prefill: Prefill | None = None,
     answers: Mapping[str, object] | None = None,
 ) -> list[IntakeQuestion]:
-    """The ordered cards for one session: all sixteen, in registry order.
+    """The ordered cards for one session: all seventeen, in registry order.
 
     ``prefill`` and ``answers`` are accepted and currently unused. They are not
     dead weight — they are the two inputs any future shortening rule would need,

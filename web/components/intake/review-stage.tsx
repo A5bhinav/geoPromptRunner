@@ -278,13 +278,23 @@ export function ReviewStage({
                     already wrong — the assembler emits five surfaces — and would
                     have gone on being wrong for every run whose config differed.
                     The cost is priced per engine, because a search surface can
-                    cost 27x a parametric one. */}
+                    cost 27x a parametric one — AND IT INCLUDES THE JUDGE. This
+                    line quoted engine calls only, so it said $5.14 for a run
+                    that costs $8.81: the judge runs once per answer and is 42%
+                    of the bill. The split is shown because the two halves scale
+                    differently, and because a total nobody can decompose is a
+                    total nobody trusts twice. */}
                 <p className="mt-2.5 text-[13px] tabular-nums">
                   {shape.questions} question{shape.questions === 1 ? "" : "s"} ·{" "}
                   {shape.surfaces} assistant{shape.surfaces === 1 ? "" : "s"} ·{" "}
                   {shape.runs_per_query} run{shape.runs_per_query === 1 ? "" : "s"} each ·{" "}
                   {shape.calls} calls · about ${shape.estimated_usd.toFixed(2)}
                 </p>
+                {shape.engine_usd !== undefined && shape.judge_usd !== undefined ? (
+                  <p className="mt-1 text-[11px] tabular-nums text-harbour">
+                    ${shape.engine_usd.toFixed(2)} asking · ${shape.judge_usd.toFixed(2)} judging
+                  </p>
+                ) : null}
                 {shape.engines.length > 0 ? (
                   <p className="mt-1 text-[11px] text-harbour">
                     {shape.engines.map((e) => ENGINE_LABELS[e] ?? e).join(", ")}

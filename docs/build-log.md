@@ -1,3 +1,404 @@
+## A product sheet's claims never persisted — Completed 2026-08-05
+
+**The symptom was total data loss, and nothing was lost.** A fully generated
+sheet for blackpropeller.com displayed as empty on the review screen — the sheet
+row was there, the markdown was there, and `fact_claims` had zero rows in the
+entire table. It read as "I deleted my fact sheet".
+
+**`SheetSection` grew and the CHECK constraint did not.** The product branch of
+the intake appended `features`, `positioning` and `watchlist` to the enum
+(`models.py`, under a comment explaining that appending is safe). It is safe for
+claim IDs. It was not safe for the database, where
+`fact_claims_section_check` still listed only the seven local sections. Nothing
+failed at import, at generation or at render — the sheet built correctly and its
+markdown is complete.
+
+**One batch, all or nothing.** `save_fact_sheet` inserts the sheet row in one
+`_execute` and then upserts ALL of its claims in a second. A product sheet
+carries `features_*` and `positioning_*` claims, so that upsert tripped 23514 and
+rolled back whole. The sheet row had already committed. That split is what turned
+a constraint violation into a sheet that exists, renders, and has no claims —
+and, because the review screen renders from `claims` and never from `markdown`,
+into a screen showing nothing at all. Worth naming: the failure was loud in the
+API log and silent everywhere a person was looking.
+
+**The fix, and the recovery.** `data/schema_factsheets.sql` widens the
+constraint by drop-then-add (Postgres cannot widen a check in place), as an
+`alter` after the table rather than an edit to the `create`, so existing projects
+pick it up — the same shape `schema_factsheet_intake.sql` uses for `crawl_state`.
+Applied with `scripts/apply_schema`.
+
+The 18 lost claims were rebuilt from `rendered_md`, which turns out to be a
+complete record: the body lines carry key, value, claim ID and section, and the
+provenance appendix carries quote, source URL, as-of and verification. Only
+`polarity` and `confidence` are unrendered — polarity was reapplied from the
+`_negative` builders in `intake/assertions.py`, confidence from the column
+default. Re-rendering the rebuilt sheet reproduces the stored markdown
+byte-for-byte apart from one meta-line timestamp format, so the claims are the
+originals rather than an approximation.
+
+**Still open.** Two things this exposed and did not fix: the claim upsert should
+not be able to half-write a sheet (the sheet row wants the same transaction as
+its claims, which PostgREST cannot give it — a Postgres function can), and the
+review screen should say "this sheet has no claim rows" rather than drawing an
+empty list, because those are different facts. Also `FS-14` on this sheet reads
+"Does not offer Nothing on their site says what they turn down." — a real
+extraction bug, restored verbatim rather than silently corrected.
+
+## Four intake fixes found by using it — Completed 2026-08-04
+
+**A composite card rendered twice.** `Q-REACH-01` is `batch_confirm` AND has
+parts; `Q-PROOF-02` is `list` AND has parts. `StructuredAnswer` draws a composite
+card from its parts, and `usesFields`/`usesChips` tested `kind` alone — so
+Phone/Email/Booking/Address were drawn a second time underneath the first. Two
+sets of inputs for one answer and only one of them wired to anything. The
+`!isStructuredKind` guard existed in the original composer and was dropped in the
+refactor that gave the composer and the review editor a shared draft module; it
+now lives in that module, so all three surfaces get it.
+
+**A pasted list became one competitor.** An owner typed "Tinuiti, Directive,
+KlientBoost, Disruptive Advertising, Power Digital, JumpFly" into the chip input
+and `Chips.commit` stored the whole string as a SINGLE name. Three steps later
+`generate_query_set` had one competitor, could not build the two comparison
+questions that leave the client unnamed, and the lint disabled Approve with a
+message about comparison coverage — nothing on that screen pointed back at the
+chip. Commas split now, and a duplicate is dropped rather than added twice.
+
+**Two unnamed comparisons were unreachable from one competitor.** The guarantee
+walked `competitors` taking one shape each, so a single rival produced exactly
+one unnamed question and `no_unnamed_comparison` blocked approve permanently. Two
+shapes per competitor now. And naming NOBODY was a dead end of the same kind —
+`Q-PROOF-02` is skippable, "nobody, really" is a real answer, and there was
+nothing to build a comparison from; with no competitors the pair is now asked at
+category level ("who are the best {category} companies"), which tests the same
+thing: does the model volunteer this business when it was not told the name.
+
+**Repeatable rows had no delete, and prices had no escape hatch.** "Add another"
+was the only control on a priced or paired row, so a row added by accident could
+be blanked but never removed — and a blank row still reads as an unanswered
+question. Both controls now carry a remove button (the last row stays; a
+repeatable control with no rows has nowhere to type).
+
+The pricing card also gains a free-text box. Four columns hold a plumber's
+call-out fee and a SaaS's per-seat price; they do not hold "after 6pm the first
+hour is billed at 1.5x", which is exactly the class of term a customer is
+surprised by and an AI answer gets wrong. It is asserted in the owner's own words
+rather than forced into the row frame — "The price for … is …" wrapped around
+"we bill in 15-minute increments" is a sentence nobody said.
+
+`toPayload` emits `{rows, note}` ONLY when a note exists, and `_priced_rows`
+reads both shapes, so every pricing answer stored before today produces
+byte-identical claims. A test pins that: those sheets are already approved, and
+re-keying their claims would invalidate every cached verdict measured against
+them.
+
+### Still open
+
+`start_from_brand` defaults `business_kind` to `LOCAL_SERVICE` when there is no
+sheet. Black Propeller is a marketing agency with no city, so it gets the LOCAL
+allocation, cannot fill a single local or hybrid shape, and the set is topped up
+from consumer buckets — approvable, and reported as two allocation warnings, but
+the wrong instrument for the business. The fix is asking or inferring the kind at
+start; not done here.
+
+## One query-set size: 25, everywhere — Completed 2026-08-04
+
+The repo held four opinions about how big a query set is, and produced a fifth
+number at runtime.
+
+| | was |
+|---|---|
+| `DEFAULT_QUERY_COUNT` (intake API) | 30 |
+| `data/queries_plumbing.json`, `queries_hvac.json` | 29 |
+| `data/queries_barbershop.json` | 28 |
+| what `generate_query_set` actually returned | anything |
+
+The last row is the one that mattered. The allocation loop stops at the first
+shape it cannot fill — every local shape needs `{city}`, so a session without one
+fills none of them — and the bucket simply came up short. A real session asked
+for 30 and got **eleven**, which then reported "local intent is 9% of the set
+against a target of 45%" and looked like a broken allocation rather than a
+missing slot. The comparison guarantee pushes the other way and can overshoot.
+
+That number is the denominator under every rate in the report, the multiplier in
+the cost estimate on the review screen, and the cell count `engine-repin-spec.md`
+prices the product from. Four sizes is four prices for one product.
+
+**25 is not new.** `docs/search-set-costs-25q.md`, `docs/engine-repin-spec.md`
+and the `MAX_TOTAL_SPEND` reasoning in `settings.py` were all written against 25
+× K=3 × 6 surfaces = 450 cells. The generators had drifted off the spec; this
+brings them back rather than inventing a target.
+
+### What changed
+
+**`QUERY_SET_SIZE = 25`** in `query_set.py`, alone, imported by the generator,
+the intake and the lint.
+
+**`_resize`** makes the generator return exactly that. Short: refill from shapes
+the buckets never reached, in allocation order, then from ANY bucket the bank has
+— without that second pass the top-up is capped by the same empty slot that
+caused the shortfall (a local set with no city measured 14 of 25). Long: drop
+from the most over-allocated bucket, and NEVER a comparison — those carry the two
+constraints the generator enforces, and trimming one to hit a round number
+deletes the measurement the product is sold on.
+
+**The bank gained four shapes** (3 local_intent, 1 hybrid). It had 8 local shapes
+and the 45% allocation needs 11, so the local path could not reach 25 no matter
+what `_resize` did. The additions are modelled on phrasings already proven in the
+trade templates, not invented.
+
+**All three trade templates cut to 25** with the 11/6/5/3 mix the local
+allocation implies, so a hand-written set and a generated one are the same
+instrument. Every cut is a near-duplicate of a survivor ("24 hour plumbing
+service" against "emergency plumber"; "best barbershop" against "best barber") or
+the lowest commercial intent in its bucket. Surviving questions keep their ids.
+
+**Versions bumped to `local-*-v2`.** Cutting four questions changes the
+instrument, and a run is comparable only to a run with the same
+`query_set_version` (audit-packaging: only compare like instruments).
+`reports.py` already refuses to compare across it; the bump is what makes that
+refusal fire instead of silently diffing 29 questions against 25.
+
+**The lint blocks a wrong-sized set** rather than warning. The generator hits the
+size on every path it has, so a set that misses it was hand-edited or came from a
+template nobody resized — both need a person.
+
+### Not changed, deliberately
+
+`teaser/src/queryset/ClaudeQuerySetGenerator.ts` still asks for **7–9**. The
+teaser is the free outreach demo, not a fact sheet; taking it to 25 would roughly
+triple the cost of every prospect teaser, which is a spend decision and not this
+change.
+
+`docs/model-selection-2026-08.md` keeps its 29-query cost table with a
+supersession note. Its arithmetic is computed from 29 and the ranking it exists
+to show is unchanged — rebasing the numbers would falsify a dated measurement.
+
+### The edge that stays
+
+With no `category` answered the bank can fill almost nothing (every category and
+local shape needs it) and a draft set comes out at 9. The lint blocks it, so no
+fact sheet is ever produced at that size — approve is off until the owner answers
+the identity card, which is card one. Verified live: a session with the category,
+city and competitors answered produces 25 questions, 375 calls, $5.14, no blocks
+and no warnings.
+
+## The bank had a ceiling of 31 — Completed 2026-08-04
+
+Two things, both from the tier/size conversation.
+
+**The cost line was under by 42%.** `_run_shape` priced engine calls only, so the
+review screen said **$5.14** for a run that costs **$8.81** — and that is the
+number a retainer gets priced from. The judge runs once per answer
+(`JUDGE_COST_PER_CALL`, no dedup assumed) and is 42% of the bill; it is now in
+the total, with the split shown ("$5.14 asking · $3.67 judging") because the two
+halves scale differently and a total nobody can decompose is a total nobody
+trusts twice. At the sizes under discussion: **25 q → $8.81 · 50 q → $17.62 ·
+100 q → $35.25.**
+
+**The bank could not have produced 50 questions.** Measured before touching
+anything: **31 max** for a local business with a city and three competitors,
+**30** for a general one with two. The cause was one line of design — every slot
+except `{competitor}` was single-valued, so `best {category} in {city}` yields
+exactly ONE question however rich the sheet is. **The maximum size of a set was
+the number of lines in `query_templates.json`.** Setting `QUERY_SET_SIZE = 50`
+would have blocked every audit, correctly, on the short-and-blocked rule landed
+earlier today.
+
+### What changed
+
+**Fan-out slots.** `{competitor}` was already one and was hardcoded into the
+comparison bucket; it is now the general case. `generate_query_set` takes
+`lists=` alongside `slots=`, and any slot named there fans a shape out over its
+values. `RunInputs` carries `services` (`Q-OFFER-01`), `areas` (`Q-REACH-02`'s
+included towns, minus the home city) and `segment` (`Q-PROOF-02`'s "who is it
+for"), capped at six values each.
+
+Eight shapes use them — `best {category} for {service}`, `{category} in {area}`,
+`how much should {service} cost`, `how much does {service} cost in {city}` and so
+on — all marked `constructed`, honestly: they are shapes, not sourced phrasings,
+and §6's human lock signs them off. Ceiling after: **55** general, **65** local.
+
+**Breadth first.** A bucket almost always truncates, so the binding ORDER decides
+what the set covers. The nested product walked every town for the first service
+before touching the second — measured, "best drain cleaning in Albany / Oakland /
+El Cerrito" then the same three for water heater install, covering two of six
+services. `_bindings` now walks the diagonal: every service is seen once before
+any is seen twice. Deterministic either way, which is the constraint that
+actually binds — two cycles that disagree about which questions they contain are
+two instruments.
+
+**Bank order is priority order**, and the new shapes were appended, so a
+25-question set never reached them. The qualifier shapes now sit directly behind
+the head query, per §3.2 — one head term, then qualifiers from the sheet's real
+segments, with the year-stamp kept for freshness bait.
+
+A plumber's 25 now reads `plumber in Albany` · `best drain cleaning in Oakland` ·
+`how much does repiping cost in Berkeley`. An agency's reads `best digital
+marketing agency for Google Ads management` · `how much should paid social cost`.
+
+**The remaining half of the bank work is sourcing**, and it is unchanged by any
+of this: `problem_aware`, and the language INSIDE the head shapes, are still a
+local trade's. `docs/query-generation-plan.md` §0.5.3b documents the ceiling and
+the mechanism; §0.5.2 still calls for a per-field bank behind the shared brand
+and comparison spine.
+
+Gate: mypy, ruff, 1454 tests.
+
+---
+
+## The query set was measuring the wrong business — Completed 2026-08-04
+
+A live set for **Black Propeller**, a B2B paid-media agency: 25 questions, 375
+calls, $5.14, and it asked
+
+> `my Digital Marketing Agency keeps breaking, what should I do`
+> `is this an emergency or can it wait until Monday`
+> `what does a Digital Marketing Agency actually do on a first visit`
+> `Black Propeller vs Tinuiti, Directive, KlientBoost, Disruptive Advertising, Power Digital, JumpFly`
+
+Reproduced exactly from the stored inputs in one call, so none of what follows is
+inference. Five faults, stacked:
+
+**1. Every session was a plumber.** `create_intake_session` stamped
+`business_kind=local_service` at creation and `_kind_of` defaulted a miss to the
+same thing. Nothing ever asked, and nothing ever revisited it. That one value
+picks the for-instance line on every intake card AND the query allocation — so a
+B2B agency was shown "Stopped duct cleaning, January." while answering, then
+measured with the local funnel (45% local intent, 25% hybrid).
+
+**2. The bank is a break/fix trade bank** and `{category}` is blind
+substitution. 11 of the 25 were trade language with an agency's name in the slot.
+
+**3. No city, so the set became a mongrel.** Every `{city}` shape dropped, and
+`_resize` topped the set back up to 25 from *any* bucket in the bank — including
+the other funnel's. 13 of 25 questions came from buckets that allocation does not
+contain. The mix landed at 1 local and 1 hybrid against targets of 11 and 6.
+
+**4. Six competitors arrived as one string.** The chip control does not split on
+commas (deliberately — "Berkeley, Albany" is one service area), so six agencies
+typed into one chip reached the generator as a single name.
+`_guarantee_comparison_coverage` then believed all six were covered, because a
+substring test passes against the joined string. Six head-to-heads — the highest
+-value questions in the instrument — became two nobody would ask.
+
+**5. Three questions could not measure anything.** "how do I stop this from
+happening again", "is this an emergency or can it wait until Monday", "what does
+it usually cost to fix this myself vs hiring someone" carry no slot at all. No
+answer to them could mention the client: a guaranteed zero in the numerator and a
+live +1 in the denominator of a rate the client is quoted.
+
+The lint caught none of it — two `allocation_drift` warnings, nothing blocking.
+
+### What changed
+
+**`Q-KIND-01`, the seventeenth card.** The spine grows for the first time since
+it became one spine, because the for-instance line cannot absorb this one: the
+business kind is what *selects* the for-instance line. It asks geo-dependence,
+not industry — "does where a customer is change whether they'd pick you" has a
+true answer for an agency, a clinic and a nonprofit, which "product or local
+service" never did. Skippable like everything else, and **a skip means the
+general set, never the local one.**
+
+**The kind now comes from the answer and nowhere else.** `_kind_of` reads
+`run_inputs.business_kind` and returns `None` when nobody has been asked;
+`_sheet_kind` supplies the concrete value a `FactSheet` needs. The stored column
+is no longer read for anything that matters.
+
+**`_as_names` splits a name field at the boundary** — commas, semicolons,
+newlines, trailing "and" — and only for fields that hold names. `_as_list` is
+untouched, so a service area stays whole. Backstopped by a
+`competitor_list_in_one_field` block for hand-edited CSVs.
+
+**The top-up stays inside its funnel.** `_resize` takes the family and refills
+only from it. A set that cannot be filled now comes back SHORT and blocked,
+which `wrong_size` and the new `local_without_city` explain. Short and blocked
+beats full and wrong: nobody reviews a number that looks right.
+
+**Slotless shapes are dropped structurally** (`_anchored`), and the three that
+existed are out of the bank. **The category is lowered where it is title case**
+(`_natural`) — "best digital marketing agency", not "best Digital Marketing
+Agency". New `unanchored_query` warning for queries naming neither client nor
+category.
+
+Same inputs now produce: six real head-to-heads, two unnamed alternatives, no
+emergencies, no permits, no first visits.
+
+**Patch, same day: `local_only`.** `my digital marketing agency keeps breaking`
+survived the first pass, because the shared buckets are used by both funnels and
+two of their shapes were sourced from a buyer whose thing physically breaks —
+that one and "how long should a {category} job take". Both are now tagged
+`local_only` in the bank and skipped when the set is not local, and "is it worth
+paying for {category}" gained the article it was missing. A stopgap that must
+stay small: it stops the trade bank leaking into a set it was never sourced for,
+and it cannot make the remaining shapes anybody's actual words.
+
+**What is NOT fixed, and cannot be from here:** the bank is still local-trade
+language, and a code fix cannot source a field's real buyer vocabulary. `query-generation-plan.md` §0.5 is new and says so: a set is
+generated for a business in a field, one bank per field, brand and comparison
+shared, sourcing widened by a model but never originated by one, and a **field-fit
+gate** at the human lock — "would somebody who buys this kind of business, in this
+field, type this?" The bank file is now labelled local-trade in its own README.
+
+Gate: mypy, ruff, 1449 tests.
+
+---
+
+## Intake card — design review patch — Completed 2026-08-04
+
+Five findings from a read of the live question card. Four were fixed as stated;
+one was a different bug than the report assumed, and is noted as such.
+
+**The constellation is gone.** The node graph behind the conversation drew across
+the helper line and through the top edge of the card — the one paragraph that
+says why a question is being asked — and a network of nodes is not in the
+identity: the mark is three plumes on a shared baseline, and the guide's Don'ts
+cover clearspace and anything outside the palette. It is not replaced by lower-
+alpha texture; the austerity is the brand. `components/intake/constellation.tsx`
+deleted, and the five keyframes that existed only for it (`node-pop`,
+`edge-draw`, `edge-trace`, `ghost-pulse`, `web-spin`) are out of `motion.css`.
+The view toggle it fed is now **Conversation | Sheet** rather than
+Overview | Details, because "overview" named a graphic that no longer exists.
+What it signalled — facts accumulating — was already in words twice: the
+sidebar's "N facts confirmed" and the Sheet list.
+
+**There was never a second Skip.** The "Skip this one" floating top-right is the
+owner's own turn in the transcript, echoed back — right-aligned, and two turns
+deep at 22% opacity. THE CONTRAST FAILURE IS REAL ANYWAY: opacity fades the navy
+fill and the white type together, landing at roughly 1.8:1, and the phrase it
+most often spells out is the one an owner wants to read back. Translucency can't
+be fixed by choosing a better text colour, so the ghosted turns drop the bubble
+entirely and become quiet lines in `--ink-secondary` (5.59:1 on Paper).
+Alignment still says who spoke; only the live turn is a filled bubble. The
+action-bar Skip — the one next to Send, where the decision is made — is
+unchanged and remains the only skip control.
+
+**A placeholder is a for-instance too.** `Q-OFFER-03` resolved its helper for a
+plumber ("Stopped duct cleaning, January.") over a field hardcoded to "e.g. the
+Ring 5" — one owner, two businesses' examples. `Part.placeholder` and
+`IntakeQuestion.placeholder` now take a `str` **or** an `Examples`, and
+`pick_copy()` resolves both in `_question_json` alongside the example line. One
+resolution point, so the two cannot drift again.
+
+**"Newest version or release" was written for software.** An agency, a
+restaurant and a law firm have no version. The label is now **"The newest thing
+you've launched"**, which holds a Ring 5, a new service line, a second location
+and a winter menu; the placeholder under it follows the business kind.
+
+**Focus on arrival.** Two paths could move it off the card container: the
+`autoFocus` on the choice part's revealed input, which fires on mount — so a
+crawl-seeded card stole focus the moment it rendered — and the container focus
+riding along with the seeding effect, which re-runs every time the crawl poll
+lands and so yanked focus out of a field mid-sentence. The reveal input now
+focuses only on the false→true transition, and the container focus is its own
+effect keyed on the card alone, deferred a frame so anything mounting inside
+cannot land after it. Arrival is the card (screen readers hear the question
+first); the first Tab goes forward into the first field.
+
+Gate: mypy, ruff, 1424 tests, `tsc --noEmit`, `next build`.
+
+---
+
 ## The crawl reaches the intake — Completed 2026-08-04
 
 `POST /intake/start` said **"NO CRAWL, AND NO SHEET REQUIRED"** and meant both.

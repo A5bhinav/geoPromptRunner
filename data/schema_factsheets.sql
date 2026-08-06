@@ -124,6 +124,32 @@ create table if not exists public.fact_claims (
 create index if not exists idx_fact_claims_sheet on public.fact_claims (fact_sheet_id);
 create index if not exists idx_fact_claims_section on public.fact_claims (section);
 
+-- THE SECTION LIST ABOVE IS LOCAL-SHAPED, and the product branch of the intake
+-- appended three more members to `SheetSection` (src/audit/factsheet/models.py)
+-- without widening this constraint: `features`, `positioning`, `watchlist`.
+--
+-- WHAT THAT COST. `save_fact_sheet` inserts the sheet row and then upserts ALL
+-- of its claims in ONE statement. A product sheet carries features_* and
+-- positioning_* claims, so that upsert hit `fact_claims_section_check` (23514)
+-- and rolled back as a batch — leaving the `fact_sheets` row present, its
+-- `rendered_md` complete, and ZERO claim rows. The review screen renders from
+-- the claims, so a sheet that generated perfectly displayed as empty and read
+-- as data loss. blackpropeller.com v1/v2 is exactly this.
+--
+-- AN ALTER RATHER THAN AN EDIT TO THE `create` ABOVE, for the same reason
+-- schema_factsheet_intake.sql alters in its `crawl_state` column: an existing
+-- project has to pick this up without being dropped. Drop-then-add rather than
+-- `if not exists`, because Postgres has no way to widen a check in place.
+--
+-- Widening only. Every value the old constraint accepted, this one accepts.
+alter table public.fact_claims
+    drop constraint if exists fact_claims_section_check;
+alter table public.fact_claims
+    add constraint fact_claims_section_check
+    check (section in ('identity', 'contact', 'hours', 'service_area',
+                       'licensing', 'services_pricing', 'presence',
+                       'features', 'positioning', 'watchlist'));
+
 -- ---------------------------------------------------------------------------
 -- factsheet_jobs — the queue, and where the limiter actually lives.
 -- ---------------------------------------------------------------------------

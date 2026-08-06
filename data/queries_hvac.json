@@ -1,38 +1,161 @@
 {
-  "version": "local-hvac-v1",
-  "locked_at": "2026-07-27",
+  "version": "local-hvac-v2",
+  "locked_at": "2026-08-04",
   "category": "HVAC contractor",
   "client": "{brand}",
   "competitors": [],
   "queries": [
-    { "query_id": "loc-01", "intent": "local_intent", "text": "best HVAC company in {city}", "weight": 2.0 },
-    { "query_id": "loc-02", "intent": "local_intent", "text": "who is the best air conditioning repair company in {city}?", "weight": 2.0 },
-    { "query_id": "loc-03", "intent": "local_intent", "text": "top rated furnace repair in {city}", "weight": 2.0 },
-    { "query_id": "loc-04", "intent": "local_intent", "text": "emergency AC repair in {city}", "weight": 2.0, "persona": "homeowner with a failed unit" },
-    { "query_id": "loc-05", "intent": "local_intent", "text": "who should I call for AC replacement in {city}?", "weight": 2.0 },
-    { "query_id": "loc-06", "intent": "local_intent", "text": "most trusted heating contractor in {city}", "weight": 1.8 },
-    { "query_id": "loc-07", "intent": "local_intent", "text": "affordable HVAC service in {city}", "weight": 1.8 },
-    { "query_id": "loc-08", "intent": "local_intent", "text": "licensed HVAC contractor near {city}", "weight": 1.8 },
-    { "query_id": "loc-09", "intent": "local_intent", "text": "same day AC repair {city}", "weight": 1.8 },
-    { "query_id": "loc-10", "intent": "local_intent", "text": "best heat pump installers in {city}", "weight": 1.8 },
-    { "query_id": "loc-11", "intent": "local_intent", "text": "HVAC maintenance plans in {city}", "weight": 1.5 },
-    { "query_id": "loc-12", "intent": "local_intent", "text": "who does ductwork replacement in {city}?", "weight": 1.5 },
-    { "query_id": "loc-13", "intent": "local_intent", "text": "HVAC company near me", "weight": 1.2, "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)" },
-    { "query_id": "hyb-01", "intent": "hybrid", "text": "average cost of AC replacement in {city}", "weight": 1.6 },
-    { "query_id": "hyb-02", "intent": "hybrid", "text": "how much does a new furnace cost in {city}?", "weight": 1.6 },
-    { "query_id": "hyb-03", "intent": "hybrid", "text": "typical HVAC service call fee in {city}", "weight": 1.4 },
-    { "query_id": "hyb-04", "intent": "hybrid", "text": "heat pump rebates and incentives in {city}", "weight": 1.4 },
-    { "query_id": "hyb-05", "intent": "hybrid", "text": "what size AC unit do I need for a house in {city}?", "weight": 1.3 },
-    { "query_id": "hyb-06", "intent": "hybrid", "text": "is it worth repairing or replacing an old AC in {city}?", "weight": 1.3 },
-    { "query_id": "hyb-07", "intent": "hybrid", "text": "do I need a permit for HVAC replacement in {city}?", "weight": 1.2 },
-    { "query_id": "inf-01", "intent": "informational", "text": "how often should a furnace be serviced?", "weight": 1.0 },
-    { "query_id": "inf-02", "intent": "informational", "text": "why is my air conditioner blowing warm air?", "weight": 1.0 },
-    { "query_id": "inf-03", "intent": "informational", "text": "how long does an HVAC system last?", "weight": 1.0 },
-    { "query_id": "inf-04", "intent": "informational", "text": "signs your furnace needs to be replaced", "weight": 1.0 },
-    { "query_id": "inf-05", "intent": "informational", "text": "what does HVAC tune-up include?", "weight": 0.9 },
-    { "query_id": "inf-06", "intent": "informational", "text": "heat pump vs furnace: which is better?", "weight": 0.9 },
-    { "query_id": "brd-01", "intent": "brand", "text": "is {brand} a good HVAC company?", "weight": 2.0 },
-    { "query_id": "brd-02", "intent": "brand", "text": "{brand} reviews and complaints", "weight": 2.0 },
-    { "query_id": "brd-03", "intent": "brand", "text": "is {brand} licensed and insured?", "weight": 1.8 }
+    {
+      "query_id": "loc-01",
+      "intent": "local_intent",
+      "text": "best HVAC company in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-02",
+      "intent": "local_intent",
+      "text": "who is the best air conditioning repair company in {city}?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-03",
+      "intent": "local_intent",
+      "text": "top rated furnace repair in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-04",
+      "intent": "local_intent",
+      "text": "emergency AC repair in {city}",
+      "weight": 2.0,
+      "persona": "homeowner with a failed unit"
+    },
+    {
+      "query_id": "loc-05",
+      "intent": "local_intent",
+      "text": "who should I call for AC replacement in {city}?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-06",
+      "intent": "local_intent",
+      "text": "most trusted heating contractor in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-07",
+      "intent": "local_intent",
+      "text": "affordable HVAC service in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-08",
+      "intent": "local_intent",
+      "text": "licensed HVAC contractor near {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-10",
+      "intent": "local_intent",
+      "text": "best heat pump installers in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-12",
+      "intent": "local_intent",
+      "text": "who does ductwork replacement in {city}?",
+      "weight": 1.5
+    },
+    {
+      "query_id": "loc-13",
+      "intent": "local_intent",
+      "text": "HVAC company near me",
+      "weight": 1.2,
+      "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)"
+    },
+    {
+      "query_id": "hyb-01",
+      "intent": "hybrid",
+      "text": "average cost of AC replacement in {city}",
+      "weight": 1.6
+    },
+    {
+      "query_id": "hyb-02",
+      "intent": "hybrid",
+      "text": "how much does a new furnace cost in {city}?",
+      "weight": 1.6
+    },
+    {
+      "query_id": "hyb-03",
+      "intent": "hybrid",
+      "text": "typical HVAC service call fee in {city}",
+      "weight": 1.4
+    },
+    {
+      "query_id": "hyb-05",
+      "intent": "hybrid",
+      "text": "what size AC unit do I need for a house in {city}?",
+      "weight": 1.3
+    },
+    {
+      "query_id": "hyb-06",
+      "intent": "hybrid",
+      "text": "is it worth repairing or replacing an old AC in {city}?",
+      "weight": 1.3
+    },
+    {
+      "query_id": "hyb-07",
+      "intent": "hybrid",
+      "text": "do I need a permit for HVAC replacement in {city}?",
+      "weight": 1.2
+    },
+    {
+      "query_id": "inf-01",
+      "intent": "informational",
+      "text": "how often should a furnace be serviced?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-02",
+      "intent": "informational",
+      "text": "why is my air conditioner blowing warm air?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-03",
+      "intent": "informational",
+      "text": "how long does an HVAC system last?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-04",
+      "intent": "informational",
+      "text": "signs your furnace needs to be replaced",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-05",
+      "intent": "informational",
+      "text": "what does HVAC tune-up include?",
+      "weight": 0.9
+    },
+    {
+      "query_id": "brd-01",
+      "intent": "brand",
+      "text": "is {brand} a good HVAC company?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-02",
+      "intent": "brand",
+      "text": "{brand} reviews and complaints",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-03",
+      "intent": "brand",
+      "text": "is {brand} licensed and insured?",
+      "weight": 1.8
+    }
   ]
 }

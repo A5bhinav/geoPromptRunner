@@ -7,7 +7,34 @@ from pathlib import Path
 
 from src.prompts.intent import IntentBucket
 
-__all__ = ["Query", "QuerySet", "load_query_set", "bucket_counts"]
+__all__ = ["QUERY_SET_SIZE", "Query", "QuerySet", "load_query_set", "bucket_counts"]
+
+
+#: HOW MANY QUESTIONS ONE AUDIT ASKS. Twenty-five, for every business, on every
+#: path — the generated set, all three trade templates, and anything a fact sheet
+#: produces.
+#:
+#: It lives here, alone, because it used to live in four places that disagreed:
+#: `DEFAULT_QUERY_COUNT = 30` in the intake API, 29 in the plumbing and HVAC
+#: templates, 28 in the barbershop one — and the set the generator actually
+#: returned was a fourth number again, because a bucket it could not fill was
+#: silently short (a real session produced ELEVEN). The cost estimate on the
+#: review screen, the per-cell counts in `engine-repin-spec.md`, and every price
+#: quoted to a client are all computed from this number, so four numbers meant
+#: four prices for one product.
+#:
+#: 25 is not arbitrary and not new: `docs/search-set-costs-25q.md`,
+#: `docs/engine-repin-spec.md` and `MAX_TOTAL_SPEND` reasoning in
+#: `src/config/settings.py` were all written against 25 queries x K=3 x 6
+#: surfaces = 450 cells. The generators had drifted off the spec; this brings
+#: them back to it rather than inventing a new target.
+#:
+#: CHANGING IT CHANGES THE INSTRUMENT. A run is comparable only to a run with the
+#: same `query_set_version` (audit-packaging: "only compare like instruments"), so
+#: any change here must bump the version of every set it resizes, and the
+#: comparison paths must refuse to compare across it rather than silently
+#: reporting a delta between two different measurements.
+QUERY_SET_SIZE: int = 25
 
 
 @dataclass(frozen=True)

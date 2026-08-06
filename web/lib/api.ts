@@ -1056,7 +1056,7 @@ export async function listTrades(): Promise<string[]> {
 }
 
 /**
- * The starter CSV. With a trade, a filled local query set (29 questions) instead
+ * The starter CSV. With a trade, a filled local query set (25 questions) instead
  * of the 4-query consumer starter — the trade templates existed behind the
  * endpoint and were unreachable because it never passed one through.
  */
@@ -1657,7 +1657,10 @@ export interface IntakeRunShape {
   surfaces: number;
   runs_per_query: number;
   calls: number;
+  /** Asking AND judging. The judge runs once per answer and is ~42% of it. */
   estimated_usd: number;
+  engine_usd?: number;
+  judge_usd?: number;
 }
 
 export interface IntakeReview {

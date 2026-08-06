@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from src.prompts.csv_loader import KNOWN_ENGINES, REQUIRED_CONFIG_KEYS, parse_csv_files
 from src.prompts.generate import GeneratedQuery, QuerySet
 from src.prompts.intent import IntentBucket
+from src.prompts.query_set import QUERY_SET_SIZE
 
 __all__ = ["LintItem", "lint_query_set", "ABBREVIATED_REGION_RE"]
 
@@ -79,6 +80,8 @@ def lint_query_set(
     engines: Sequence[str],
     region: str = "",
     allocation: Mapping[IntentBucket, float] | None = None,
+    local: bool = False,
+    city: str = "",
 ) -> list[LintItem]:
     """Every check, most severe first. An empty list means approve is allowed."""
     out: list[LintItem] = []
@@ -93,6 +96,28 @@ def lint_query_set(
                 level="block",
                 code="empty_set",
                 message="The question set is empty. A run with no questions measures nothing.",
+            )
+        )
+    elif len(queries) != QUERY_SET_SIZE:
+        # A BLOCK, NOT A WARNING. Every audit asks the same number of questions,
+        # because that number is the denominator under every rate in the report
+        # and the multiplier in the price quoted for the run. A set of 22 sold
+        # against a cost estimate for 25 is a wrong invoice; a set of 29 compared
+        # against a set of 25 is two different instruments reported as one trend.
+        #
+        # It reads as a warning-shaped problem and is not: the generator can hit
+        # the size on every path it has, so a set that misses it was hand-edited
+        # or came from a template nobody resized, and both need a person.
+        out.append(
+            LintItem(
+                level="block",
+                code="wrong_size",
+                message=(
+                    f"The set has {len(queries)} questions; every audit asks "
+                    f"{QUERY_SET_SIZE}. Add or remove {abs(len(queries) - QUERY_SET_SIZE)} "
+                    "— the cost estimate and every rate in the report are computed "
+                    "from that number."
+                ),
             )
         )
 
@@ -170,6 +195,44 @@ def lint_query_set(
                     f"Only {len(unnamed)} comparison question leaves {client or 'the client'} "
                     "unnamed; two are needed. These are the ones that test whether a model "
                     "volunteers you unprompted, which is the measurement that matters most."
+                ),
+            )
+        )
+
+    # SEVERAL NAMES IN ONE FIELD IS NOT ONE COMPETITOR. The chip control does
+    # not split on commas — "Berkeley, Albany" is one service area — so six
+    # agencies typed into one chip arrived as a single name and produced
+    # "{client} vs A, B, C, D, E, F" as one question. `_as_names` splits this at
+    # the intake boundary; this is the backstop for a hand-edited CSV, where
+    # nothing has.
+    joined = [c for c in competitors if re.search(r"[,;]", c)]
+    if joined:
+        out.append(
+            LintItem(
+                level="block",
+                code="competitor_list_in_one_field",
+                message=(
+                    f"{joined[0]!r} looks like several competitors in one field. Each name "
+                    "needs its own entry — a comma-joined string becomes one question no "
+                    "buyer would ask, and it costs you a head-to-head for every name in it."
+                ),
+            )
+        )
+
+    # A LOCAL SET IS BUILT AROUND A CITY. Without one, every geo shape in the
+    # bank is unfillable, the local and hybrid buckets collapse, and the set
+    # gets topped up from whatever else the bank holds. That is how a set
+    # allocated 45% local intent shipped with one local question in it.
+    if local and not city.strip():
+        out.append(
+            LintItem(
+                level="block",
+                code="local_without_city",
+                message=(
+                    "This is a local business but no city was given. Local questions are "
+                    "built around one — without it the set cannot ask the questions that "
+                    "decide a local audit. Answer the service-area card, or say the "
+                    "business is not location-dependent."
                 ),
             )
         )
@@ -256,6 +319,33 @@ def lint_query_set(
                         f"{len(named_outside)} question(s) outside the brand and comparison "
                         "stages name the client. Those can only measure how well a model "
                         "reads a prompt back."
+                    ),
+                )
+            )
+
+        # A QUESTION THAT NAMES NEITHER YOU NOR YOUR CATEGORY CAN ONLY MEASURE A
+        # VOLUNTEERED MENTION. That is a legitimate test — §3.1's problem-aware
+        # questions are meant to describe a pain and name nothing — but it is
+        # only a test if the pain is specific. "how do I stop this from
+        # happening again" names nothing and describes nothing: no answer to it
+        # could mention the client, so it scores a guaranteed zero and still
+        # counts in the denominator of every rate the client is shown. Warned,
+        # not blocked, because the honest version of this question is one of the
+        # most valuable in the set.
+        anchors = [a.casefold() for a in (client, category) if a.strip()]
+        floating = [
+            q.query_id for q in queries if not any(a in q.text.casefold() for a in anchors)
+        ]
+        if floating:
+            out.append(
+                LintItem(
+                    level="warn",
+                    code="unanchored_query",
+                    message=(
+                        f"{len(floating)} question(s) name neither {client or 'the client'} nor "
+                        f"the category ({', '.join(floating[:3])}). Those only score if a model "
+                        "volunteers the brand — check each one describes a real, specific "
+                        "problem rather than a pronoun with no antecedent."
                     ),
                 )
             )

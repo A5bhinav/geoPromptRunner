@@ -29,7 +29,9 @@ def _generate(**overrides: object) -> object:
         "category": CATEGORY,
         "competitors": COMPETITORS,
         "slots": SLOTS,
-        "n": 30,
+        # No explicit `n`: the default IS the standard size, and a fixture that
+        # pinned 30 was asserting the drift this repo just removed — the lint now
+        # blocks any set that is not `QUERY_SET_SIZE`.
     }
     kwargs.update(overrides)
     return generate_query_set(**kwargs)  # type: ignore[arg-type]  # literal mapping above

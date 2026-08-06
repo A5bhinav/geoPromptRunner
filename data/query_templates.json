@@ -12,81 +12,279 @@
     "  near_verbatim  a real phrasing with the brand or place swapped out",
     "  constructed    a pure shape nobody said in these words",
     "",
+    "WHOSE LANGUAGE IS THIS? A LOCAL TRADE'S. Read the problem_aware and",
+    "informational shapes: something breaks, somebody comes out, there is a first",
+    "visit and a permit. That is the only field this bank was sourced for, and",
+    "substituting a different {category} into it does not make it that field's",
+    "questions — it produced \"my digital marketing agency keeps breaking\" for a",
+    "B2B agency. Per query-generation-plan.md §0.5.2, brand and comparison are",
+    "field-independent and belong to everyone; every other bucket here is",
+    "local-trade language awaiting a per-field twin. Do not treat this file as the",
+    "default bank for a business that is not a local trade.",
+    "",
+    "EVERY SHAPE MUST CARRY AT LEAST ONE SLOT. A shape with none is the same",
+    "string for every client alive: it cannot be traced to a line the owner",
+    "confirmed, and no answer to it could mention them. Three used to be here —",
+    "\"how do I stop this from happening again\", \"is this an emergency or can it",
+    "wait until Monday\", \"what does it usually cost to fix this myself vs hiring",
+    "someone\" — each a guaranteed zero in the numerator and a live +1 in the",
+    "denominator of a rate a client is quoted. generate.py drops them now, so a",
+    "slotless shape added here would silently never be used.",
+    "",
     "A shape whose slots cannot all be filled is DROPPED, never partially filled:",
     "a literal {city} reaching an engine scores as a loss on a question nobody",
     "asked. Keys are IntentBucket values; both funnels live in one file because",
     "the local fallback and the product path share the brand and comparison banks."
   ],
-
   "problem_aware": [
-    { "shape": "my {category} keeps breaking, what should I do", "provenance": "near_verbatim", "persona": "first-time buyer" },
-    { "shape": "how do I know when I need a {category}", "provenance": "near_verbatim" },
-    { "shape": "is it worth paying for {category} or should I do it myself", "provenance": "near_verbatim" },
-    { "shape": "what does it usually cost to fix this myself vs hiring someone", "provenance": "constructed" },
-    { "shape": "how do I choose between {category} options without getting ripped off", "provenance": "near_verbatim" }
+    {
+      "shape": "my {category} keeps breaking, what should I do",
+      "provenance": "near_verbatim",
+      "persona": "first-time buyer",
+      "local_only": true
+    },
+    {
+      "shape": "how do I know when I need a {category}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "is it worth paying for a {category} or should I do it myself",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how do I choose between {category} options without getting ripped off",
+      "provenance": "near_verbatim"
+    }
   ],
-
   "category": [
-    { "shape": "best {category}", "provenance": "verbatim" },
-    { "shape": "best {category} in {city}", "provenance": "verbatim" },
-    { "shape": "most reliable {category} for someone on a budget", "provenance": "near_verbatim" },
-    { "shape": "top rated {category} {year}", "provenance": "near_verbatim" },
-    { "shape": "who are the leading {category} providers right now", "provenance": "constructed" },
-    { "shape": "{category} recommendations for a first-time buyer", "provenance": "near_verbatim" },
-    { "shape": "what should I look for in a {category}", "provenance": "near_verbatim" },
-    { "shape": "cheapest decent {category}", "provenance": "near_verbatim" },
-    { "shape": "{category} near {city} that people actually recommend", "provenance": "near_verbatim" }
+    {
+      "shape": "best {category}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "top rated {category} {year}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "best {category} for {service}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "best {category} for {segment}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "who is best for {service}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "best {category} in {city}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "most reliable {category} for someone on a budget",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "who are the leading {category} providers right now",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "{category} recommendations for a first-time buyer",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "what should I look for in a {category}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "cheapest decent {category}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "{category} near {city} that people actually recommend",
+      "provenance": "near_verbatim"
+    }
   ],
-
   "comparison": [
-    { "shape": "{client} vs {competitor}", "provenance": "verbatim" },
-    { "shape": "is {client} better than {competitor}", "provenance": "near_verbatim" },
-    { "shape": "best alternative to {competitor}", "provenance": "verbatim" },
-    { "shape": "{competitor} alternatives that cost less", "provenance": "near_verbatim" },
-    { "shape": "how does {client} compare to {competitor} on price", "provenance": "near_verbatim" }
+    {
+      "shape": "{client} vs {competitor}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "is {client} better than {competitor}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "best alternative to {competitor}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "{competitor} alternatives that cost less",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how does {client} compare to {competitor} on price",
+      "provenance": "near_verbatim"
+    }
   ],
-
   "brand": [
-    { "shape": "is {client} any good", "provenance": "verbatim" },
-    { "shape": "how much does {client} cost", "provenance": "verbatim" },
-    { "shape": "{client} reviews", "provenance": "verbatim" },
-    { "shape": "is {client} legit", "provenance": "verbatim" },
-    { "shape": "what does {client} actually offer", "provenance": "near_verbatim" },
-    { "shape": "does {client} have any hidden fees", "provenance": "near_verbatim" }
+    {
+      "shape": "is {client} any good",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "how much does {client} cost",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "{client} reviews",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "is {client} legit",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "what does {client} actually offer",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "does {client} have any hidden fees",
+      "provenance": "near_verbatim"
+    }
   ],
-
   "adjacent_authority": [
-    { "shape": "how does {category} pricing usually work", "provenance": "near_verbatim" },
-    { "shape": "what questions should I ask before hiring a {category}", "provenance": "near_verbatim" },
-    { "shape": "common mistakes people make with {category}", "provenance": "constructed" },
-    { "shape": "how long should a {category} job take", "provenance": "near_verbatim" },
-    { "shape": "signs you are being overcharged for {category}", "provenance": "near_verbatim" }
+    {
+      "shape": "how does {category} pricing usually work",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how much should {service} cost",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "what questions should I ask before hiring a {category}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "what should I look for in {service}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "common mistakes people make with {category}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "how long should a {category} job take",
+      "provenance": "near_verbatim",
+      "local_only": true
+    },
+    {
+      "shape": "signs you are being overcharged for {category}",
+      "provenance": "near_verbatim"
+    }
   ],
-
   "local_intent": [
-    { "shape": "{category} near me", "provenance": "verbatim" },
-    { "shape": "{category} in {city}", "provenance": "verbatim" },
-    { "shape": "emergency {category} {city} open now", "provenance": "verbatim" },
-    { "shape": "best {category} in {city} {region}", "provenance": "verbatim" },
-    { "shape": "24 hour {category} near {city}", "provenance": "near_verbatim" },
-    { "shape": "affordable {category} {city}", "provenance": "near_verbatim" },
-    { "shape": "who is the most trusted {category} in {city}", "provenance": "near_verbatim" },
-    { "shape": "{category} {city} same day appointment", "provenance": "near_verbatim" }
+    {
+      "shape": "{category} near me",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "{category} in {city}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "{category} in {area}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "best {service} in {area}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "emergency {category} {city} open now",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "best {category} in {city} {region}",
+      "provenance": "verbatim"
+    },
+    {
+      "shape": "24 hour {category} near {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "affordable {category} {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "who is the most trusted {category} in {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "{category} {city} same day appointment",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "top rated {category} in {city}",
+      "persona": "",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "licensed {category} near {city}",
+      "persona": "",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "who should I call for a {category} problem in {city}",
+      "persona": "",
+      "provenance": "constructed"
+    }
   ],
-
   "hybrid": [
-    { "shape": "how much does a {category} charge in {city}", "provenance": "near_verbatim" },
-    { "shape": "do I need a licensed {category} in {region}", "provenance": "near_verbatim" },
-    { "shape": "what is a fair call-out fee for a {category} in {city}", "provenance": "near_verbatim" },
-    { "shape": "is it cheaper to use a local {category} or a national chain", "provenance": "near_verbatim" },
-    { "shape": "how quickly can a {category} get out to me in {city}", "provenance": "near_verbatim" }
+    {
+      "shape": "how much does a {category} charge in {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how much does {service} cost in {city}",
+      "provenance": "constructed"
+    },
+    {
+      "shape": "do I need a licensed {category} in {region}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "what is a fair call-out fee for a {category} in {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "is it cheaper to use a local {category} or a national chain",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how quickly can a {category} get out to me in {city}",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "is a permit required for {category} work in {city}",
+      "persona": "",
+      "provenance": "constructed"
+    }
   ],
-
   "informational": [
-    { "shape": "how do I stop this from happening again", "provenance": "near_verbatim" },
-    { "shape": "what does a {category} actually do on a first visit", "provenance": "near_verbatim" },
-    { "shape": "how often should I have a {category} check things", "provenance": "near_verbatim" },
-    { "shape": "is this an emergency or can it wait until Monday", "provenance": "verbatim" },
-    { "shape": "what permits does {category} work need in {region}", "provenance": "near_verbatim" }
+    {
+      "shape": "what does a {category} actually do on a first visit",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "how often should I have a {category} check things",
+      "provenance": "near_verbatim"
+    },
+    {
+      "shape": "what permits does {category} work need in {region}",
+      "provenance": "near_verbatim"
+    }
   ]
 }

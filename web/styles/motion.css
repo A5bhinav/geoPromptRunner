@@ -4,14 +4,17 @@
  *
  * THE RULE THAT GOVERNS ALL OF IT: nothing informational is carried by motion
  * alone. Turn animation off and every screen is still complete and legible — the
- * progress rail still shows which marks are answered, the constellation still
- * shows every confirmed fact, the thinking indicator is still three plumes in a
+ * progress rail still shows which marks are answered, the sheet still lists
+ * every confirmed fact, the thinking indicator is still three plumes in a
  * bubble. That is what makes the reduced-motion block at the bottom a one-liner
  * rather than a second design.
  *
- * Durations: 120ms taps, 220ms legs, 420ms ceiling for a full transition. The
- * long loops (edge-trace, web-spin, ghost-pulse) are ambient, not transitional,
- * and are deliberately far slower than anything the user is waiting on.
+ * Durations: 120ms taps, 220ms legs, 420ms ceiling for a full transition.
+ *
+ * The five constellation animations (node-pop, edge-draw, edge-trace,
+ * ghost-pulse, web-spin) went with the graphic they existed for: a node graph is
+ * not in the identity — the mark is three plumes on a shared baseline — and it
+ * drew across the type it sat behind. Nothing ambient replaced it.
  */
 
 :root {
@@ -35,70 +38,7 @@
   }
 }
 
-/** A fact landing in the constellation. Needs `transform-box: fill-box` and
- * `transform-origin: center` on the SVG circle or it scales from the viewBox
- * origin and flies in from the corner. */
-@keyframes node-pop {
-  from {
-    transform: scale(0.2);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/** A new connection. Pairs with stroke-dasharray set to the line's own length,
- * so the dash is exactly one segment and the offset draws it end to end. */
-@keyframes edge-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 /* --- ambient: the surface is alive while nothing is happening --- */
-
-/** The idle constellation's edges. Staggered 620ms so the web traces rather
- * than pulsing in unison. */
-@keyframes edge-trace {
-  0% {
-    stroke-dashoffset: 420;
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  65% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-/** The idle constellation's nodes. */
-@keyframes ghost-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-
-/** The whole constellation group, 90s per turn — slow enough that you notice it
- * only if you look, which is the intent. */
-@keyframes web-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /** The CURRENT mark on the progress rail, and the live status dot. One plume
  * breathing is how "we are waiting on you" is said without a spinner. */
@@ -127,25 +67,6 @@
  * and drifts from the spec above. */
 .anim-bubble-in {
   animation: bubble-in 260ms var(--ease-arrive);
-}
-.anim-node-pop {
-  animation: node-pop 520ms var(--ease-arrive) backwards;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.anim-edge-draw {
-  animation: edge-draw 900ms 120ms ease-out forwards;
-}
-.anim-edge-trace {
-  animation: edge-trace 5200ms linear infinite;
-}
-.anim-ghost-pulse {
-  animation: ghost-pulse 2400ms ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.anim-web-spin {
-  animation: web-spin 90s linear infinite;
 }
 .anim-plume-breathe {
   animation: plume-breathe 1800ms ease-in-out infinite alternate;

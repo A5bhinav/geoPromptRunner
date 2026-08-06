@@ -1,38 +1,161 @@
 {
-  "version": "local-plumbing-v1",
-  "locked_at": "2026-07-27",
+  "version": "local-plumbing-v2",
+  "locked_at": "2026-08-04",
   "category": "plumbing service",
   "client": "{brand}",
   "competitors": [],
   "queries": [
-    { "query_id": "loc-01", "intent": "local_intent", "text": "best plumber in {city}", "weight": 2.0 },
-    { "query_id": "loc-02", "intent": "local_intent", "text": "who is the most reliable plumber in {city}?", "weight": 2.0 },
-    { "query_id": "loc-03", "intent": "local_intent", "text": "emergency plumber in {city}", "weight": 2.0, "persona": "homeowner with an active leak" },
-    { "query_id": "loc-04", "intent": "local_intent", "text": "24 hour plumbing service {city}", "weight": 2.0 },
-    { "query_id": "loc-05", "intent": "local_intent", "text": "top rated drain cleaning in {city}", "weight": 1.8 },
-    { "query_id": "loc-06", "intent": "local_intent", "text": "who should I call for a burst pipe in {city}?", "weight": 2.0 },
-    { "query_id": "loc-07", "intent": "local_intent", "text": "affordable plumber in {city}", "weight": 1.8 },
-    { "query_id": "loc-08", "intent": "local_intent", "text": "licensed plumbing contractor near {city}", "weight": 1.8 },
-    { "query_id": "loc-09", "intent": "local_intent", "text": "best water heater installation in {city}", "weight": 1.8 },
-    { "query_id": "loc-10", "intent": "local_intent", "text": "sewer line repair companies in {city}", "weight": 1.6 },
-    { "query_id": "loc-11", "intent": "local_intent", "text": "who does repiping in {city}?", "weight": 1.5 },
-    { "query_id": "loc-12", "intent": "local_intent", "text": "plumber for a bathroom remodel in {city}", "weight": 1.5 },
-    { "query_id": "loc-13", "intent": "local_intent", "text": "plumber near me", "weight": 1.2, "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)" },
-    { "query_id": "hyb-01", "intent": "hybrid", "text": "how much does a plumber cost in {city}?", "weight": 1.6 },
-    { "query_id": "hyb-02", "intent": "hybrid", "text": "average water heater replacement cost in {city}", "weight": 1.6 },
-    { "query_id": "hyb-03", "intent": "hybrid", "text": "typical drain cleaning price in {city}", "weight": 1.4 },
-    { "query_id": "hyb-04", "intent": "hybrid", "text": "emergency plumber call-out fee in {city}", "weight": 1.4 },
-    { "query_id": "hyb-05", "intent": "hybrid", "text": "sewer line replacement cost in {city}", "weight": 1.3 },
-    { "query_id": "hyb-06", "intent": "hybrid", "text": "do plumbers in {city} need a licence?", "weight": 1.2 },
-    { "query_id": "hyb-07", "intent": "hybrid", "text": "is a permit required for a water heater swap in {city}?", "weight": 1.2 },
-    { "query_id": "inf-01", "intent": "informational", "text": "why is my water pressure suddenly low?", "weight": 1.0 },
-    { "query_id": "inf-02", "intent": "informational", "text": "how long does a water heater last?", "weight": 1.0 },
-    { "query_id": "inf-03", "intent": "informational", "text": "what to do when a pipe bursts", "weight": 1.0 },
-    { "query_id": "inf-04", "intent": "informational", "text": "signs you have a slab leak", "weight": 1.0 },
-    { "query_id": "inf-05", "intent": "informational", "text": "tankless vs tank water heater: which is better?", "weight": 0.9 },
-    { "query_id": "inf-06", "intent": "informational", "text": "how to stop a running toilet", "weight": 0.9 },
-    { "query_id": "brd-01", "intent": "brand", "text": "is {brand} a good plumbing company?", "weight": 2.0 },
-    { "query_id": "brd-02", "intent": "brand", "text": "{brand} reviews and complaints", "weight": 2.0 },
-    { "query_id": "brd-03", "intent": "brand", "text": "is {brand} licensed and insured?", "weight": 1.8 }
+    {
+      "query_id": "loc-01",
+      "intent": "local_intent",
+      "text": "best plumber in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-02",
+      "intent": "local_intent",
+      "text": "who is the most reliable plumber in {city}?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-03",
+      "intent": "local_intent",
+      "text": "emergency plumber in {city}",
+      "weight": 2.0,
+      "persona": "homeowner with an active leak"
+    },
+    {
+      "query_id": "loc-05",
+      "intent": "local_intent",
+      "text": "top rated drain cleaning in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-06",
+      "intent": "local_intent",
+      "text": "who should I call for a burst pipe in {city}?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-07",
+      "intent": "local_intent",
+      "text": "affordable plumber in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-08",
+      "intent": "local_intent",
+      "text": "licensed plumbing contractor near {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-09",
+      "intent": "local_intent",
+      "text": "best water heater installation in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-10",
+      "intent": "local_intent",
+      "text": "sewer line repair companies in {city}",
+      "weight": 1.6
+    },
+    {
+      "query_id": "loc-11",
+      "intent": "local_intent",
+      "text": "who does repiping in {city}?",
+      "weight": 1.5
+    },
+    {
+      "query_id": "loc-13",
+      "intent": "local_intent",
+      "text": "plumber near me",
+      "weight": 1.2,
+      "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)"
+    },
+    {
+      "query_id": "hyb-01",
+      "intent": "hybrid",
+      "text": "how much does a plumber cost in {city}?",
+      "weight": 1.6
+    },
+    {
+      "query_id": "hyb-02",
+      "intent": "hybrid",
+      "text": "average water heater replacement cost in {city}",
+      "weight": 1.6
+    },
+    {
+      "query_id": "hyb-03",
+      "intent": "hybrid",
+      "text": "typical drain cleaning price in {city}",
+      "weight": 1.4
+    },
+    {
+      "query_id": "hyb-04",
+      "intent": "hybrid",
+      "text": "emergency plumber call-out fee in {city}",
+      "weight": 1.4
+    },
+    {
+      "query_id": "hyb-06",
+      "intent": "hybrid",
+      "text": "do plumbers in {city} need a licence?",
+      "weight": 1.2
+    },
+    {
+      "query_id": "hyb-07",
+      "intent": "hybrid",
+      "text": "is a permit required for a water heater swap in {city}?",
+      "weight": 1.2
+    },
+    {
+      "query_id": "inf-01",
+      "intent": "informational",
+      "text": "why is my water pressure suddenly low?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-02",
+      "intent": "informational",
+      "text": "how long does a water heater last?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-03",
+      "intent": "informational",
+      "text": "what to do when a pipe bursts",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-04",
+      "intent": "informational",
+      "text": "signs you have a slab leak",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-06",
+      "intent": "informational",
+      "text": "how to stop a running toilet",
+      "weight": 0.9
+    },
+    {
+      "query_id": "brd-01",
+      "intent": "brand",
+      "text": "is {brand} a good plumbing company?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-02",
+      "intent": "brand",
+      "text": "{brand} reviews and complaints",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-03",
+      "intent": "brand",
+      "text": "is {brand} licensed and insured?",
+      "weight": 1.8
+    }
   ]
 }

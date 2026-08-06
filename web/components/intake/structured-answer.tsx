@@ -71,7 +71,7 @@ export function emptyValue(q: IntakeQuestion): StructuredValue {
  * claim asserting nothing. */
 export function toPayload(q: IntakeQuestion, value: StructuredValue): unknown {
   if (q.kind === "priced_rows") {
-    return asPriced(value.rows)
+    const rows = asPriced(value.rows)
       .filter((r) => r.what.trim() && r.price.trim())
       .map((r) => ({
         what: r.what.trim(),
@@ -79,6 +79,18 @@ export function toPayload(q: IntakeQuestion, value: StructuredValue): unknown {
         basis: r.basis,
         includes: r.includes.trim(),
       }));
+    // THE ESCAPE HATCH, and it only appears when it was used. Four columns hold
+    // a plumber's call-out fee and a SaaS's per-seat price, and they do not hold
+    // "first hour billed at 1.5x after 6pm" or "we bill in 15-minute increments
+    // after the first hour". Without somewhere to put those, an owner either
+    // mangles them into the What column or leaves out the term a customer is
+    // most likely to be surprised by.
+    //
+    // A bare array when there is no note: every answer stored before this shape
+    // existed is an array, and `_priced_rows` reads both, so nothing already on
+    // a sheet has to be migrated.
+    const note = String(value.note ?? "").trim();
+    return note ? { rows, note } : rows;
   }
   const out: Record<string, unknown> = {};
   for (const p of q.parts) {
@@ -118,8 +130,17 @@ export function toPayload(q: IntakeQuestion, value: StructuredValue): unknown {
  */
 export function fromPayload(q: IntakeQuestion, stored: unknown): StructuredValue {
   if (q.kind === "priced_rows") {
-    const rows = asPriced(stored).map((r) => ({ ...EMPTY_PRICED, ...r }));
-    return { rows: rows.length ? rows : [{ ...EMPTY_PRICED }] };
+    // Either shape: a bare array (what every answer stored before the note
+    // existed looks like) or `{rows, note}`.
+    const held =
+      stored && typeof stored === "object" && !Array.isArray(stored)
+        ? (stored as Record<string, unknown>)
+        : { rows: stored, note: "" };
+    const rows = asPriced(held.rows).map((r) => ({ ...EMPTY_PRICED, ...r }));
+    return {
+      rows: rows.length ? rows : [{ ...EMPTY_PRICED }],
+      note: String(held.note ?? ""),
+    };
   }
   const payload = stored && typeof stored === "object" ? (stored as Record<string, unknown>) : {};
   const out: StructuredValue = {};
@@ -146,19 +167,26 @@ export function fromPayload(q: IntakeQuestion, stored: unknown): StructuredValue
 export function hasContent(q: IntakeQuestion, value: StructuredValue): boolean {
   const payload = toPayload(q, value);
   if (Array.isArray(payload)) return payload.length > 0;
-  return Object.keys(payload as object).length > 0;
+  const held = payload as Record<string, unknown>;
+  // A `{rows: [], note: ""}` object has keys and no content. Counting keys alone
+  // would let an untouched priced-rows card commit as an answer.
+  if ("rows" in held) {
+    return asPriced(held.rows).length > 0 || Boolean(String(held.note ?? "").trim());
+  }
+  return Object.keys(held).length > 0;
 }
 
 /** The user's own bubble in the transcript, and the claim's verbatim quote. */
 export function summarize(q: IntakeQuestion, value: StructuredValue): string {
-  const payload = toPayload(q, value);
+  let payload = toPayload(q, value);
+  if (q.kind === "priced_rows" && !Array.isArray(payload)) {
+    const held = payload as { rows?: unknown; note?: unknown };
+    const rows = summarizePriced(q, asPriced(held.rows));
+    const note = String(held.note ?? "").trim();
+    return [rows, note].filter(Boolean).join("; ");
+  }
   if (Array.isArray(payload)) {
-    return payload
-      .map((r) => {
-        const row = r as PricedRow;
-        return [row.what, row.price, basisLabel(q, row.basis)].filter(Boolean).join(" · ");
-      })
-      .join("; ");
+    return summarizePriced(q, payload as PricedRow[]);
   }
   return Object.entries(payload as Record<string, unknown>)
     .map(([key, v]) => {
@@ -171,6 +199,12 @@ export function summarize(q: IntakeQuestion, value: StructuredValue): string {
       return `${part?.label ?? key}: ${text}`;
     })
     .join(" · ");
+}
+
+function summarizePriced(q: IntakeQuestion, rows: PricedRow[]): string {
+  return rows
+    .map((row) => [row.what, row.price, basisLabel(q, row.basis)].filter(Boolean).join(" · "))
+    .join("; ");
 }
 
 // --- helpers ------------------------------------------------------------------
@@ -227,8 +261,10 @@ export function StructuredAnswer({ question, value, onChange }: Props) {
     return (
       <PricedRows
         rows={asPriced(value.rows)}
+        note={String(value.note ?? "")}
         basisOptions={question.basisOptions ?? []}
         onChange={(rows) => set("rows", rows)}
+        onNoteChange={(note) => set("note", note)}
       />
     );
   }
@@ -294,6 +330,19 @@ function ChoicePart({
   const revealed = Boolean(value) && !ids.has(value);
   const [open, setOpen] = React.useState(revealed);
 
+  // FOCUS ON REVEAL, NEVER ON ARRIVAL. This used to be `autoFocus`, which fires
+  // on mount too — so a card that arrived already revealed (the crawl filled it
+  // in) stole focus from the card container the moment it rendered, and a screen
+  // reader landed in a text field without having heard the question. Focusing
+  // only on the false→true transition keeps the tap-to-reveal behaviour and
+  // leaves arrival to the composer.
+  const input = React.useRef<HTMLInputElement>(null);
+  const mounted = React.useRef(false);
+  React.useEffect(() => {
+    if (mounted.current && open) input.current?.focus();
+    mounted.current = true;
+  }, [open]);
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">
@@ -328,7 +377,7 @@ function ChoicePart({
       </div>
       {open || revealed ? (
         <input
-          autoFocus
+          ref={input}
           value={ids.has(value) ? "" : value}
           placeholder={part.placeholder}
           onChange={(e) => onChange(e.target.value)}
@@ -354,9 +403,23 @@ export function Chips({
 }) {
   const [draft, setDraft] = React.useState("");
   const commit = () => {
-    const text = draft.trim();
-    if (!text) return;
-    onChange([...items, text]);
+    // COMMAS SPLIT. People paste a list, because a list is what was asked for:
+    // one owner typed "Tinuiti, Directive, KlientBoost, Disruptive Advertising,
+    // Power Digital, JumpFly" and it became a SINGLE competitor whose name was
+    // that whole string. Downstream, `generate_query_set` then had one
+    // competitor to build comparison questions from, could not produce the two
+    // that leave the client unnamed, and the lint blocked approve with a message
+    // about comparison coverage — three steps away from the chip that caused it.
+    const parts = draft
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((s) => !items.some((existing) => existing.toLowerCase() === s.toLowerCase()));
+    if (!parts.length) {
+      setDraft("");
+      return;
+    }
+    onChange([...items, ...parts]);
     setDraft("");
   };
   return (
@@ -403,6 +466,31 @@ export function Chips({
   );
 }
 
+/** Remove one repeatable row.
+ *
+ * A REPEATABLE CONTROL WITHOUT A DELETE IS A TRAP. "Add another" was the only
+ * button on these rows, so a mistyped price row or an "Add another" tapped by
+ * accident could be blanked but never removed — and a blank row still renders,
+ * still looks like an unanswered question, and is the reason a card that is
+ * finished does not look finished.
+ *
+ * The last row stays: a repeatable control with nothing in it has nowhere to
+ * type, and clearing is what the fields are for.
+ */
+function RemoveRow({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="shrink-0 rounded-md p-1.5 text-harbour transition-colors hover:bg-navy/[0.06] hover:text-navy"
+    >
+      <X className="h-3.5 w-3.5" aria-hidden />
+    </button>
+  );
+}
+
 function Pairs({
   rows,
   labels,
@@ -418,21 +506,29 @@ function Pairs({
   return (
     <div className="flex flex-col gap-1.5">
       {list.map((row, i) => (
-        <div key={i} className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          <input
-            value={row.a}
-            aria-label={labels[0]}
-            placeholder={labels[0]}
-            onChange={(e) => edit(i, { a: e.target.value })}
-            className={INPUT_CLS}
-          />
-          <input
-            value={row.b}
-            aria-label={labels[1]}
-            placeholder={labels[1]}
-            onChange={(e) => edit(i, { b: e.target.value })}
-            className={INPUT_CLS}
-          />
+        <div key={i} className="flex items-start gap-1.5">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5 sm:grid-cols-2">
+            <input
+              value={row.a}
+              aria-label={labels[0]}
+              placeholder={labels[0]}
+              onChange={(e) => edit(i, { a: e.target.value })}
+              className={INPUT_CLS}
+            />
+            <input
+              value={row.b}
+              aria-label={labels[1]}
+              placeholder={labels[1]}
+              onChange={(e) => edit(i, { b: e.target.value })}
+              className={INPUT_CLS}
+            />
+          </div>
+          {list.length > 1 ? (
+            <RemoveRow
+              label={`Remove row ${i + 1}`}
+              onClick={() => onChange(list.filter((_, j) => j !== i))}
+            />
+          ) : null}
         </div>
       ))}
       {list.length < MAX_ROWS ? (
@@ -444,12 +540,16 @@ function Pairs({
 
 function PricedRows({
   rows,
+  note,
   basisOptions,
   onChange,
+  onNoteChange,
 }: {
   rows: PricedRow[];
+  note: string;
   basisOptions: { value: string; label: string }[];
   onChange: (rows: PricedRow[]) => void;
+  onNoteChange: (note: string) => void;
 }) {
   const list = rows.length ? rows : [{ ...EMPTY_PRICED }];
   const edit = (i: number, patch: Partial<PricedRow>) =>
@@ -457,51 +557,83 @@ function PricedRows({
   return (
     <div className="flex flex-col gap-1.5">
       {list.map((row, i) => (
-        <div key={i} className="grid grid-cols-1 gap-1.5 sm:grid-cols-[2fr_1fr_1fr_2fr]">
-          <input
-            value={row.what}
-            aria-label="What"
-            placeholder="What"
-            onChange={(e) => edit(i, { what: e.target.value })}
-            className={INPUT_CLS}
-          />
-          <input
-            value={row.price}
-            aria-label="Price"
-            // Free, From $X, Varies by scope and Quote only are first-class
-            // values here, not fallbacks — a business with no fixed price still
-            // has a checkable fact to state.
-            placeholder="$89 / Free"
-            onChange={(e) => edit(i, { price: e.target.value })}
-            className={INPUT_CLS}
-          />
-          {/* THE BASIS IS WHAT MAKES THE PRICE CHECKABLE. "$450" is not a claim
-              the judge can grade; "$450 per hour" is. */}
-          <select
-            value={row.basis}
-            aria-label="Basis"
-            onChange={(e) => edit(i, { basis: e.target.value })}
-            className={INPUT_CLS}
-          >
-            <option value="">Basis…</option>
-            {basisOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <input
-            value={row.includes}
-            aria-label="What's included"
-            placeholder="What's included"
-            onChange={(e) => edit(i, { includes: e.target.value })}
-            className={INPUT_CLS}
-          />
+        <div key={i} className="flex items-start gap-1.5">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5 sm:grid-cols-[2fr_1fr_1fr_2fr]">
+            <input
+              value={row.what}
+              aria-label="What"
+              placeholder="What"
+              onChange={(e) => edit(i, { what: e.target.value })}
+              className={INPUT_CLS}
+            />
+            <input
+              value={row.price}
+              aria-label="Price"
+              // Free, From $X, Varies by scope and Quote only are first-class
+              // values here, not fallbacks — a business with no fixed price still
+              // has a checkable fact to state.
+              placeholder="$89 / Free"
+              onChange={(e) => edit(i, { price: e.target.value })}
+              className={INPUT_CLS}
+            />
+            {/* THE BASIS IS WHAT MAKES THE PRICE CHECKABLE. "$450" is not a claim
+                the judge can grade; "$450 per hour" is. */}
+            <select
+              value={row.basis}
+              aria-label="Basis"
+              onChange={(e) => edit(i, { basis: e.target.value })}
+              className={INPUT_CLS}
+            >
+              <option value="">Basis…</option>
+              {basisOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <input
+              value={row.includes}
+              aria-label="What's included"
+              placeholder="What's included"
+              onChange={(e) => edit(i, { includes: e.target.value })}
+              className={INPUT_CLS}
+            />
+          </div>
+          {list.length > 1 ? (
+            <RemoveRow
+              label={`Remove price row ${i + 1}`}
+              onClick={() => onChange(list.filter((_, j) => j !== i))}
+            />
+          ) : null}
         </div>
       ))}
       {list.length < MAX_ROWS ? (
         <AddRow onClick={() => onChange([...list, { ...EMPTY_PRICED }])} />
       ) : null}
+
+      {/* THE EDGE CASES THE FOUR COLUMNS CANNOT HOLD. "First hour billed at
+          1.5x after 6pm", "we bill in 15-minute increments", "materials at cost
+          plus 15%" — terms a customer is surprised by, which is exactly the
+          class of fact an AI answer gets wrong and the sheet exists to catch.
+          Without somewhere to put them they get mangled into the What column or
+          left out entirely.
+
+          Optional, and last: the columns are still the better answer when they
+          fit, because a price with a basis is checkable and a paragraph is
+          harder to grade. */}
+      <label className="mt-1 block">
+        <span className={FIELD_LABEL_CLS}>Anything else about the pricing</span>
+        <span className={cn(FIELD_HINT_CLS, "block")}>
+          Optional. For terms the columns don&rsquo;t fit — minimums, surcharges, how you bill.
+        </span>
+        <textarea
+          rows={2}
+          value={note}
+          placeholder="e.g. after 6pm the first hour is billed at 1.5x"
+          onChange={(e) => onNoteChange(e.target.value)}
+          className={cn(INPUT_CLS, "mt-1 resize-y leading-normal")}
+        />
+      </label>
     </div>
   );
 }

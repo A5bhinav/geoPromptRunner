@@ -11,7 +11,7 @@ can set ``Verification.CLIENT_CONFIRMED``.
 
 Layout mirrors the data's path through it:
 
-    questions.py   the registry — the sixteen cards asked of every business
+    questions.py   the registry — the seventeen cards asked of every business
     plan.py        the ordered plan for one session
     assertions.py  an answer → the exact sentence the owner is quoted on
     claims.py      that sentence → a FactClaim, plus the run inputs that aren't

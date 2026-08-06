@@ -200,6 +200,12 @@ temperature.** Staying on 4.5 buys determinism until late September and no longe
 
 ### Per-audit engine spend (29 queries × K=5 = 145 cells per engine)
 
+> **Superseded 2026-08-04.** Every audit now asks **25** questions
+> (`QUERY_SET_SIZE`), so a K=5 run is 125 cells per engine, not 145 — multiply
+> the per-set figures below by 25/29. The numbers are left as they were measured
+> rather than rebased: the comparison between sets is what this table is for, and
+> that ranking is unchanged.
+
 | Set | Cost | Δ |
 |---|---|---|
 | Current 4-engine parametric set | $2.02 | — |

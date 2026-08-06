@@ -64,7 +64,7 @@ AS_OF = "2026-08-04"
 BUSINESS = "Albert Nahman Plumbing"
 SESSION = "11111111-2222-3333-4444-555555555555"
 
-_ID_RE = re.compile(r"^Q-(WHAT|OFFER|COST|REACH|PROOF|AI)-\d\d$")
+_ID_RE = re.compile(r"^Q-(WHAT|KIND|OFFER|COST|REACH|PROOF|AI)-\d\d$")
 
 _RUN_CSV = """block,key,value,intent,persona
 config,client_name,Albert Nahman Plumbing,,
@@ -81,14 +81,24 @@ def test_every_question_id_is_unique_and_well_formed() -> None:
     ids = [q.id for q in REGISTRY]
     assert len(ids) == len(set(ids)), "duplicate question id in the registry"
     for qid in ids:
-        assert _ID_RE.match(qid), f"{qid} is not in the Q-(WHAT|OFFER|COST|REACH|PROOF|AI)-nn space"
+        assert _ID_RE.match(qid), (
+            f"{qid} is not in the Q-(WHAT|KIND|OFFER|COST|REACH|PROOF|AI)-nn space"
+        )
 
 
-def test_the_spine_is_exactly_sixteen_cards() -> None:
-    """Sixteen is the ceiling AND the floor. A seventeenth would have to displace
-    one of these, and every fix in the last pass was a widening rather than an
-    addition — the for-instance line absorbed all of it."""
-    assert len(REGISTRY) == MAX_CARDS == 16
+def test_the_spine_is_exactly_seventeen_cards() -> None:
+    """Seventeen is the ceiling AND the floor.
+
+    It was sixteen, and the rule was that a new card has to displace one because
+    every fix so far had been a widening rather than an addition — the
+    for-instance line absorbed all of it. `Q-KIND-01` is the exception that
+    earned its place: the for-instance line CANNOT absorb it, because the
+    business kind is what SELECTS the for-instance line, and it also selects the
+    query allocation. Left unasked it was defaulted to `local_service` at session
+    creation, and a B2B agency was measured with "my digital marketing agency
+    keeps breaking, what should I do".
+    """
+    assert len(REGISTRY) == MAX_CARDS == 17
 
 
 @pytest.mark.parametrize("q", REGISTRY, ids=lambda q: q.id)
@@ -600,6 +610,58 @@ def test_claims_are_client_confirmed_and_carry_session_provenance() -> None:
         assert c.confidence is Confidence.HIGH
         assert c.source_url.startswith(INTAKE_SOURCE_URL_PREFIX)
         assert SESSION in c.source_url
+
+
+def test_a_pricing_note_is_asserted_in_the_owners_own_words() -> None:
+    """The escape hatch for terms four columns cannot hold — "we bill in
+    15-minute increments", "first hour 1.5x after 6pm". It is NOT reformatted
+    into the row frame: forcing "The price for … is …" onto it produces a
+    sentence nobody said, and the whole reason the box exists is that the answer
+    did not fit a row."""
+    built = assertions_for(
+        question("Q-COST-01"),
+        Answer(
+            question_id="Q-COST-01",
+            value={
+                "rows": [{"what": "Diagnostic visit", "price": "$89", "basis": "per_visit"}],
+                "note": "After 6pm the first hour is billed at 1.5x",
+            },
+        ),
+        as_of=AS_OF,
+        business_name=BUSINESS,
+    )
+    keys = {a.key for a in built}
+    assert "pricing_note" in keys
+    note = next(a for a in built if a.key == "pricing_note")
+    assert note.value.startswith("After 6pm the first hour is billed at 1.5x")
+    # Date-stamped like every other price claim: pricing is the most volatile
+    # thing on the sheet.
+    assert AS_OF in note.value
+    # And the rows still produce their own claims alongside it.
+    assert any(k.startswith("pricing_row_") for k in keys)
+
+
+def test_a_pricing_answer_stored_before_the_note_existed_is_unchanged() -> None:
+    """A bare list is what every already-approved sheet holds. Those claims must
+    come out byte-identical — the owner signed them, and re-keying a stored
+    sheet's claims would invalidate every cached verdict measured against it."""
+    rows = [{"what": "Diagnostic visit", "price": "$89", "basis": "per_visit"}]
+    legacy = assertions_for(
+        question("Q-COST-01"),
+        Answer(question_id="Q-COST-01", value=rows),
+        as_of=AS_OF,
+        business_name=BUSINESS,
+    )
+    wrapped = assertions_for(
+        question("Q-COST-01"),
+        Answer(question_id="Q-COST-01", value={"rows": rows}),
+        as_of=AS_OF,
+        business_name=BUSINESS,
+    )
+    assert [(a.key, a.value, a.quote) for a in legacy] == [
+        (a.key, a.value, a.quote) for a in wrapped
+    ]
+    assert "pricing_note" not in {a.key for a in legacy}
 
 
 def test_every_claim_names_the_card_that_produced_it() -> None:

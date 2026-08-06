@@ -42,6 +42,7 @@ from src.audit.factsheet.intake.questions import (
     DAY_LABELS,
     KEY_LABELS,
     PartKind,
+    pick_copy,
 )
 from src.audit.factsheet.models import (
     BusinessKind,
@@ -49,13 +50,18 @@ from src.audit.factsheet.models import (
     Verification,
     assigned_claims,
 )
-from src.pipeline.cost import DEFAULT_COST_PER_CALL, ROUGH_COST_PER_CALL
+from src.pipeline.cost import (
+    DEFAULT_COST_PER_CALL,
+    JUDGE_COST_PER_CALL,
+    ROUGH_COST_PER_CALL,
+)
 from src.prompts.assemble import DEFAULT_LOCAL_ENGINES, assemble_run_csv
 from src.prompts.csv_loader import parse_csv_files
 from src.prompts.generate import generate_query_set
 from src.prompts.intent import LOCAL_BUCKET_ALLOCATION
 from src.prompts.lint import lint_query_set
 from src.prompts.local_templates import TRADES
+from src.prompts.query_set import QUERY_SET_SIZE
 from src.storage import db
 
 logger = logging.getLogger(__name__)
@@ -64,10 +70,6 @@ router = APIRouter()
 
 __all__ = ["router"]
 
-#: How many questions a generated set carries. Thirty is the working default:
-#: the local assembler emits 29, and matching it keeps the cost estimate on the
-#: review screen comparable between the two paths.
-DEFAULT_QUERY_COUNT = 30
 
 #: How many times each question is asked. Repeats are what make a rate
 #: reproducible, and this is the assembler's own default — named rather than
@@ -88,24 +90,39 @@ def _run_shape(csv_text: str, query_count: int) -> dict[str, Any]:
     Cost is priced per ENGINE, not per call: `openai_search` is ~27x `openai`
     because the hosted-tool fee dominates it, so a flat average would understate
     a search-heavy set by an order of magnitude.
+
+    AND THE JUDGE IS PART OF THE RUN. This line used to price engine calls only,
+    so the review screen said "$5.14" for a run that costs $8.81 — under by 42%,
+    on the one number a person reads before spending money and the number a
+    retainer is priced from. Every answer is judged (`JUDGE_COST_PER_CALL`, one
+    call per answer, no dedup assumed — conservative on purpose), so the judge is
+    not an overhead to be amortised somewhere else. It is 42% of the bill.
+
+    The split is returned as well as the total. A number you cannot decompose is
+    a number nobody trusts twice, and the two halves scale differently: engine
+    cost moves when the surface list changes, judge cost moves with call count
+    alone.
     """
     parsed = parse_csv_files([("generated.csv", csv_text)])
     config = parsed.audit.config if parsed.audit is not None else None
     engines = list(config.engines) if config else []
     runs = config.runs_per_query if config else DEFAULT_RUNS_PER_QUERY
     calls = query_count * len(engines) * runs
-    cost = (
+    engine_cost = (
         sum(ROUGH_COST_PER_CALL.get(name, DEFAULT_COST_PER_CALL) for name in engines)
         * query_count
         * runs
     )
+    judge_cost = JUDGE_COST_PER_CALL * calls
     return {
         "questions": query_count,
         "engines": engines,
         "surfaces": len(engines),
         "runs_per_query": runs,
         "calls": calls,
-        "estimated_usd": round(cost, 2),
+        "estimated_usd": round(engine_cost + judge_cost, 2),
+        "engine_usd": round(engine_cost, 2),
+        "judge_usd": round(judge_cost, 2),
     }
 
 
@@ -205,6 +222,11 @@ def _question_json(
     is allowed to change, and resolving it server-side means the client has no
     business-kind branch in it at all — which is what stops the fork growing back
     on the other side of the wire.
+
+    PLACEHOLDERS GO THROUGH THE SAME RESOLUTION. They are for-instances too, and
+    a card that resolved its helper for a plumber while its field kept a
+    hardcoded "e.g. the Ring 5" was showing one owner two businesses' examples.
+    One call, ``pick_copy``, on every piece of copy that may vary.
     """
     return {
         "id": q.id,
@@ -219,10 +241,10 @@ def _question_json(
         "why": q.why,
         "helper": q.helper,
         "example": q.examples.pick(kind),
-        "placeholder": q.placeholder,
+        "placeholder": pick_copy(q.placeholder, kind),
         "options": [{"value": o.value, "label": o.label} for o in q.options],
         # The sub-controls of a composite card, IN THE REGISTRY rather than in
-        # the frontend. Six of the sixteen ask two things — where do you serve
+        # the frontend. Six of the seventeen ask two things — where do you serve
         # and where don't you — and without this the client would have to know
         # which card is which, which is the contract this module exists to keep.
         "parts": [
@@ -231,7 +253,7 @@ def _question_json(
                 "label": p.label,
                 "kind": p.kind.value,
                 "helper": p.helper,
-                "placeholder": p.placeholder,
+                "placeholder": pick_copy(p.placeholder, kind),
                 "labels": list(p.labels) if any(p.labels) else None,
                 "options": [{"value": o.value, "label": o.label} for o in p.options],
                 "revealOn": p.reveal_on or None,
@@ -311,15 +333,43 @@ def _session_row(session_id: str) -> dict[str, Any]:
     return dict(row)
 
 
-def _kind_of(row: dict[str, Any]) -> BusinessKind:
+def _kind_of(row: dict[str, Any]) -> BusinessKind | None:
+    """The business kind AS ANSWERED, or ``None`` when nobody has been asked yet.
+
+    THE COLUMN IS NOT THE SOURCE OF TRUTH AND MUST NOT BECOME ONE AGAIN. It is
+    stamped at session creation — before a single question has been asked — and
+    this function used to read it and default a miss to ``local_service``. Two
+    things rode on that guess: every card's for-instance line, and the query
+    allocation. A B2B agency was therefore shown a plumber's examples and then
+    measured with "my digital marketing agency keeps breaking", "is this an
+    emergency or can it wait until Monday", and a set that was 70% allocated to
+    geography it does not have.
+
+    ``Q-KIND-01`` asks. Until it is answered — or if it is skipped, and every
+    card is skippable — the answer is ``None``, which resolves to the neutral
+    for-instance and the general query allocation. NEVER DEFAULT TO LOCAL: a
+    local set is built around a city, and inventing one is how this failed.
+    """
+    answered = str(_dict_of(row, "run_inputs").get("business_kind") or "")
     try:
-        return BusinessKind(str(row.get("business_kind") or BusinessKind.LOCAL_SERVICE.value))
+        return BusinessKind(answered) if answered else None
     except ValueError:
-        return BusinessKind.LOCAL_SERVICE
+        return None
+
+
+def _sheet_kind(row: dict[str, Any]) -> BusinessKind:
+    """The kind a FACT SHEET renders against, which cannot be ``None``.
+
+    ``PRODUCT`` is the general template — the one that does not print hours, a
+    service area or a call-out line — so an unanswered session renders against
+    it. It is a template choice and not a claim that the business sells a
+    product; the sheet asserts nothing about this axis either way.
+    """
+    return _kind_of(row) or BusinessKind.PRODUCT
 
 
 def _plan_for(row: dict[str, Any]) -> list[IntakeQuestion]:
-    """The plan for this session: all sixteen cards, in registry order.
+    """The plan for this session: all seventeen cards, in registry order.
 
     Still recomputed rather than stored, even now that it cannot vary by
     business kind. A stored plan is a second copy of the registry that goes
@@ -376,7 +426,10 @@ def _session_json(row: dict[str, Any]) -> dict[str, Any]:
         # UI never has to guess it from the domain — "blackpropeller.com is a
         # local business people call or visit" is not a sentence anyone signs.
         "business_name": _business_name(row),
-        "business_kind": str(row.get("business_kind", "")),
+        # AS ANSWERED, and "" until it is. This served the stored column, which
+        # is stamped `local_service` at creation — so the UI was told a business
+        # kind that nobody had been asked about yet.
+        "business_kind": kind.value if kind else "",
         "state": str(row.get("state", "")),
         # null | running | done | nothing_found | failed. STORED, not inferred
         # from `prefill`: "the crawl found nothing" and "the crawl has not
@@ -918,6 +971,12 @@ def _query_set_for(row: dict[str, Any]) -> tuple[str, list[dict[str, Any]], list
     because the sheet travels by ``fact_sheet_id`` and a run carrying both is
     refused. Everything else falls back to the bucket-generic generator, and the
     review screen says which path produced the set.
+
+    ``local`` COMES FROM THE ANSWER TO ``Q-KIND-01`` AND FROM NOWHERE ELSE. It
+    used to come from a column stamped at session creation and defaulted to
+    ``local_service``, so every business that had not been asked was measured as
+    a trade. Unanswered now means the general allocation, which needs no city
+    and asks nothing about call-out fees.
     """
     inputs = _dict_of(row, "run_inputs")
     business = str(inputs.get("business") or _business_name(row))
@@ -947,7 +1006,15 @@ def _query_set_for(row: dict[str, Any]) -> tuple[str, list[dict[str, Any]], list
         category=category,
         competitors=competitors,
         slots={"city": city, "region": region, "year": _today()[:4]},
-        n=DEFAULT_QUERY_COUNT,
+        # The fan-out lists. Every value is a line the owner confirmed, so a
+        # shape carrying one of these produces that many SPECIFIC questions —
+        # which is what lifts a bank of ~30 shapes past a 50-question set.
+        lists={
+            "service": [str(s) for s in (inputs.get("services") or [])],
+            "area": [str(a) for a in (inputs.get("areas") or [])],
+            "segment": [str(inputs.get("segment") or "")] if inputs.get("segment") else [],
+        },
+        n=QUERY_SET_SIZE,
         local=local,
         allocation=LOCAL_BUCKET_ALLOCATION if local else None,
     )
@@ -962,6 +1029,8 @@ def _query_set_for(row: dict[str, Any]) -> tuple[str, list[dict[str, Any]], list
         competitors=competitors,
         engines=list(DEFAULT_LOCAL_ENGINES),
         region=region,
+        local=local,
+        city=city,
     )
     rows = [
         {
@@ -1199,7 +1268,7 @@ def approve(session_id: str) -> dict[str, Any]:
     sheet = FactSheet(
         domain=domain,
         business_name=_business_name(row),
-        business_kind=_kind_of(row),
+        business_kind=_sheet_kind(row),
         claims=list(claims),
         generated_at=_today(),
     )

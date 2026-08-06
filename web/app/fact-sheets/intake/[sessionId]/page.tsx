@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/notice";
 import { SidebarLabel, SidebarSlot } from "@/components/app-shell";
 import { PlumeRail, ThinkingPlumes, TierMeter } from "@/components/marks";
-import { Constellation } from "@/components/intake/constellation";
 import { ReviewStage } from "@/components/intake/review-stage";
 import { Chips, StructuredAnswer, isStructuredKind } from "@/components/intake/structured-answer";
 import {
@@ -79,7 +78,11 @@ export default function IntakePage() {
   const [session, setSession] = React.useState<IntakeSession | null>(null);
   const [review, setReview] = React.useState<IntakeReview | null>(null);
   const [stage, setStage] = React.useState<Stage>("conversation");
-  const [view, setView] = React.useState<"overview" | "details">("overview");
+  // The ground behind the conversation, or the sheet so far. It used to be
+  // "overview | details", where "overview" meant an animated node graph — the
+  // graphic is gone (see the render), so the two views are now the conversation
+  // on bare Paper and the list of what has been confirmed.
+  const [view, setView] = React.useState<"conversation" | "sheet">("conversation");
   const [error, setError] = React.useState<string | null>(null);
 
   const [turns, setTurns] = React.useState<Turn[]>([]);
@@ -240,9 +243,25 @@ export default function IntakePage() {
   }, [session?.crawl_state, session]);
 
   // Focus the CARD, not the input, on each new question — so a screen reader
-  // hears the question before it lands in a text field.
+  // hears the question before it lands in a text field, and so the first Tab
+  // goes FORWARD into the first field instead of backwards out of the last one.
   //
-  // AND SEED IT FROM THE CRAWL. `prefillAnswer` is a whole draft answer in the
+  // KEYED ON THE CARD ALONE. This used to ride along with the seeding effect
+  // below, which also re-runs every time the crawl lands — so a poll arriving
+  // mid-sentence pulled focus out of the field somebody was typing in.
+  //
+  // Deferred a frame, because the card's children mount after this effect runs:
+  // anything inside that takes focus on mount would otherwise land after us and
+  // win. (`structured-answer.tsx` no longer has an `autoFocus` for exactly that
+  // reason; this is the belt to its braces.)
+  React.useEffect(() => {
+    if (stage !== "conversation" || !current) return;
+    const frame = requestAnimationFrame(() => cardRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, stage]);
+
+  // SEED THE CARD FROM THE CRAWL. `prefillAnswer` is a whole draft answer in the
   // shape `/answer` stores, so every kind seeds the same way — the grid arrives
   // with Sunday's Closed toggle already pressed, the service list arrives as
   // chips. The flat `prefill` map this used to read could only ever fill a
@@ -260,7 +279,6 @@ export default function IntakePage() {
     [current?.prefillAnswer],
   );
   React.useEffect(() => {
-    if (stage === "conversation" && current) cardRef.current?.focus();
     if (touched) return;
     setEditingKnown(false);
     setAnswer(current ? seedDraft(current, current.prefillAnswer) : EMPTY_DRAFT);
@@ -578,7 +596,7 @@ export default function IntakePage() {
           </span>
           {stage === "conversation" ? (
             <span className="inline-flex rounded-full border border-[var(--rule)] bg-navy/[0.04] p-[3px]">
-              {(["overview", "details"] as const).map((v) => (
+              {(["conversation", "sheet"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -614,7 +632,7 @@ export default function IntakePage() {
           }}
           onFixUnconfirmed={() => {
             setStage("conversation");
-            setView("details");
+            setView("sheet");
             setError(null);
           }}
           // A saved edit rebuilds BOTH halves: the session (so the editor
@@ -644,17 +662,22 @@ export default function IntakePage() {
         />
       ) : (
         <div className="relative flex min-h-0 flex-1 flex-col">
-          {view === "overview" ? (
-            // NO CAPTION. A constellation with no nodes already means "nothing
-            // yet"; a sentence explaining that is a label on an empty room, and
-            // it was the only text competing with the conversation for the top
-            // of the screen. Bounded to the upper 62% so the graph never crosses
-            // a word — see the mask in constellation.tsx.
-            <Constellation
-              count={confirmedFacts.length}
-              className="bottom-auto h-[62%] items-start pt-10"
-            />
-          ) : (
+          {/* THE GROUND IS BARE, AND THAT IS THE DESIGN.
+              A node graph used to sit here — one point per confirmed fact,
+              spinning on a 90s loop. It is gone and is not coming back in
+              another form:
+              · it drew lines across the helper line and through the top edge of
+                the card, and that helper is the one paragraph explaining why
+                the question is being asked. Texture that crosses type costs
+                legibility, however faint the alpha;
+              · it is not in the system. Sable's mark is three plumes on a
+                shared baseline, not a network, and the guide's Don'ts are
+                explicit about clearspace and about anything outside the
+                palette.
+              What it signalled — facts accumulating — is already said twice, in
+              words: the sidebar's "N facts confirmed" and the Sheet view below.
+              The austerity IS the brand. */}
+          {view === "sheet" ? (
             <div className="absolute inset-0 overflow-auto px-7 pb-[300px] pt-6">
               <div className="mx-auto flex max-w-[760px] flex-col gap-3.5">
                 <div className="flex items-center gap-3 rounded-r-[10px] border-l-[3px] border-navy bg-white px-3.5 py-2.5">
@@ -666,7 +689,10 @@ export default function IntakePage() {
                   </span>
                 </div>
                 {confirmedFacts.length === 0 ? (
-                  <p className="text-[12.5px] text-navy/55">
+                  // --ink-secondary, not navy/55: this line sits on Paper, and
+                  // a 55% navy on Paper is ~3.9:1. Same token rule as
+                  // globals.css — Harbour on white, --ink-secondary on Paper.
+                  <p className="text-[12.5px] text-[color:var(--ink-secondary)]">
                     No confirmed claims yet. Answer a question and it lands here.
                   </p>
                 ) : null}
@@ -688,13 +714,23 @@ export default function IntakePage() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* ------------------------------------------ conversation strip */}
+          {/* HISTORY RECEDES BY LOSING ITS FILL, NEVER BY GOING TRANSLUCENT.
+              The older two turns used to be the same bubbles at 50% and 22%
+              opacity — which fades the fill and the text together. On the user's
+              own turns that meant white type on navy-at-22% over Paper: about
+              1.8:1, and the thing it most often spelled out was "Skip this one",
+              a word an owner needs to be able to read back. A translucent bubble
+              cannot be fixed by picking a better text colour, so the ghosted
+              turns drop the bubble entirely and become quiet lines in
+              --ink-secondary (5.59:1 on Paper). Left/right alignment still says
+              who spoke; only the newest turn is a filled bubble, which is what
+              makes it read as the live one. */}
           <ol className="relative z-[2] mt-auto flex flex-col items-center gap-2 px-7">
             {turns.slice(-3).map((turn, i, shown) => {
-              const back = shown.length - 1 - i;
-              const opacity = back === 0 ? 1 : back === 1 ? 0.5 : 0.22;
+              const live = shown.length - 1 - i === 0;
               if (turn.role === "pending") {
                 return (
                   <li key={turn.id} className="flex w-[720px] max-w-full justify-start">
@@ -708,7 +744,6 @@ export default function IntakePage() {
               return (
                 <li
                   key={turn.id}
-                  style={{ opacity }}
                   className={cn(
                     "flex w-[720px] max-w-full",
                     isSable ? "justify-start" : "justify-end",
@@ -716,10 +751,12 @@ export default function IntakePage() {
                 >
                   <span
                     className={cn(
-                      "anim-bubble-in max-w-[84%] px-3.5 py-2.5 text-[13.5px] leading-normal",
-                      isSable
+                      "anim-bubble-in max-w-[84%] px-3.5 text-[13.5px] leading-normal",
+                      live ? "py-2.5" : "py-1 text-[color:var(--ink-secondary)]",
+                      live && isSable
                         ? "rounded-[16px_16px_16px_4px] border border-[var(--rule)] bg-white text-navy"
-                        : "rounded-[16px_16px_4px_16px] bg-navy text-white",
+                        : null,
+                      live && !isSable ? "rounded-[16px_16px_4px_16px] bg-navy text-white" : null,
                     )}
                   >
                     {turn.text}

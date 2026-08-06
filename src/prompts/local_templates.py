@@ -1,8 +1,13 @@
 """Per-trade local query templates (W2.2).
 
-The local query space is genuinely small — a trade has on the order of 30 questions
-that matter, not thousands — so these are hand-written per trade rather than
+The local query space is genuinely small — a trade has a few dozen questions that
+matter, not thousands — so these are hand-written per trade rather than
 LLM-generated, and the LLM path (the teaser's generator) falls back to them.
+
+Each template holds exactly ``QUERY_SET_SIZE`` questions, in the same intent mix
+the generator produces (11 local · 6 hybrid · 5 informational · 3 brand). A
+hand-written set and a generated one have to be the same instrument, or a local
+audit and a generic one cannot be read against each other.
 
 Each ``data/queries_<trade>.json`` is a real query set with ``{city}`` and ``{brand}``
 slots. It validates against the same schema as any other set; substitution just fills

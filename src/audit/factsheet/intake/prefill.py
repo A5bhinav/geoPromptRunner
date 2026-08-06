@@ -220,7 +220,7 @@ def _availability(prefill: Mapping[str, Any]) -> dict[str, Any]:
     return {"scope": "set_hours", "days": grid}
 
 
-#: Card → what a crawl can put in it. Only six of the sixteen appear, and that is
+#: Card → what a crawl can put in it. Only six of the seventeen appear, and that is
 #: the honest number: nothing in markup says what you *don't* do, who people
 #: confuse you with, or what an AI has already got wrong — which is why those
 #: cards are where the intake earns its keep.

@@ -48,16 +48,20 @@ export const EMPTY_DRAFT: Draft = {
 const asStrings = (v: unknown): string[] =>
   Array.isArray(v) ? v.map((x) => String(x ?? "")).filter(Boolean) : [];
 
-/** Chips, not a comma-split textarea. The composer used to build a list answer
- * from option pills PLUS text split on commas, which tore "Berkeley, Albany"
- * into two towns when it was one entry — and made a seeded list invisible,
- * because prefill was loaded into `fields` and `fields` is only rendered for
- * `batch_confirm`. */
+/** Chips, not a comma-split textarea — for the cards that are ONLY a list.
+ *
+ * BOTH OF THESE MUST EXCLUDE COMPOSITE CARDS, and forgetting it renders the card
+ * twice. `Q-REACH-01` is `batch_confirm` AND has parts; `Q-PROOF-02` is `list`
+ * AND has parts. A composite card is drawn by `StructuredAnswer` from its parts,
+ * so a second test on `kind` alone drew Phone/Email/Booking/Address a second time
+ * underneath the first — two sets of inputs for one answer, and only one of them
+ * wired to anything.
+ */
 export const usesChips = (q: IntakeQuestion): boolean =>
-  q.kind === "list" || q.kind === "multi";
+  !isStructuredKind(q) && (q.kind === "list" || q.kind === "multi");
 
 export const usesFields = (q: IntakeQuestion): boolean =>
-  q.kind === "batch_confirm" || q.kind === "links";
+  !isStructuredKind(q) && (q.kind === "batch_confirm" || q.kind === "links");
 
 /** A stored (or crawled) answer, back in its controls. */
 export function seedDraft(q: IntakeQuestion, value: unknown): Draft {

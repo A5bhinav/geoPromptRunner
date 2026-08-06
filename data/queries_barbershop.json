@@ -1,37 +1,161 @@
 {
-  "version": "local-barbershop-v1",
-  "locked_at": "2026-07-27",
+  "version": "local-barbershop-v2",
+  "locked_at": "2026-08-04",
   "category": "barbershop",
   "client": "{brand}",
   "competitors": [],
   "queries": [
-    { "query_id": "loc-01", "intent": "local_intent", "text": "best barber in {city}", "weight": 2.0 },
-    { "query_id": "loc-02", "intent": "local_intent", "text": "best barbershop in {city}", "weight": 2.0 },
-    { "query_id": "loc-03", "intent": "local_intent", "text": "where to get a good haircut in {city}", "weight": 2.0 },
-    { "query_id": "loc-04", "intent": "local_intent", "text": "top rated men's haircut in {city}", "weight": 1.8 },
-    { "query_id": "loc-05", "intent": "local_intent", "text": "best fade barber in {city}", "weight": 2.0 },
-    { "query_id": "loc-06", "intent": "local_intent", "text": "barbershop that takes walk-ins in {city}", "weight": 1.8 },
-    { "query_id": "loc-07", "intent": "local_intent", "text": "best beard trim in {city}", "weight": 1.6 },
-    { "query_id": "loc-08", "intent": "local_intent", "text": "hot towel shave in {city}", "weight": 1.5 },
-    { "query_id": "loc-09", "intent": "local_intent", "text": "kids haircut in {city}", "weight": 1.5, "persona": "parent" },
-    { "query_id": "loc-10", "intent": "local_intent", "text": "barbershop open on Sunday in {city}", "weight": 1.6 },
-    { "query_id": "loc-11", "intent": "local_intent", "text": "best barber for curly hair in {city}", "weight": 1.5 },
-    { "query_id": "loc-12", "intent": "local_intent", "text": "where do students get haircuts in {city}?", "weight": 1.4, "persona": "student" },
-    { "query_id": "loc-13", "intent": "local_intent", "text": "barbershop near me", "weight": 1.2, "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)" },
-    { "query_id": "hyb-01", "intent": "hybrid", "text": "how much does a haircut cost in {city}?", "weight": 1.6 },
-    { "query_id": "hyb-02", "intent": "hybrid", "text": "average price of a men's fade in {city}", "weight": 1.5 },
-    { "query_id": "hyb-03", "intent": "hybrid", "text": "how much should you tip a barber in {city}?", "weight": 1.3 },
-    { "query_id": "hyb-04", "intent": "hybrid", "text": "do barbershops in {city} take appointments or walk-ins?", "weight": 1.4 },
-    { "query_id": "hyb-05", "intent": "hybrid", "text": "best value haircut in {city}", "weight": 1.4 },
-    { "query_id": "hyb-06", "intent": "hybrid", "text": "barbershop vs salon prices in {city}", "weight": 1.2 },
-    { "query_id": "inf-01", "intent": "informational", "text": "how often should men get a haircut?", "weight": 1.0 },
-    { "query_id": "inf-02", "intent": "informational", "text": "how to ask for a taper fade", "weight": 1.0 },
-    { "query_id": "inf-03", "intent": "informational", "text": "what haircut suits my face shape?", "weight": 1.0 },
-    { "query_id": "inf-04", "intent": "informational", "text": "how to grow out a beard properly", "weight": 0.9 },
-    { "query_id": "inf-05", "intent": "informational", "text": "barbershop vs salon: what's the difference?", "weight": 0.9 },
-    { "query_id": "inf-06", "intent": "informational", "text": "how to maintain a fade between cuts", "weight": 0.9 },
-    { "query_id": "brd-01", "intent": "brand", "text": "is {brand} a good barbershop?", "weight": 2.0 },
-    { "query_id": "brd-02", "intent": "brand", "text": "{brand} reviews", "weight": 2.0 },
-    { "query_id": "brd-03", "intent": "brand", "text": "what are {brand}'s prices and hours?", "weight": 1.8 }
+    {
+      "query_id": "loc-01",
+      "intent": "local_intent",
+      "text": "best barber in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-03",
+      "intent": "local_intent",
+      "text": "where to get a good haircut in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-04",
+      "intent": "local_intent",
+      "text": "top rated men's haircut in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-05",
+      "intent": "local_intent",
+      "text": "best fade barber in {city}",
+      "weight": 2.0
+    },
+    {
+      "query_id": "loc-06",
+      "intent": "local_intent",
+      "text": "barbershop that takes walk-ins in {city}",
+      "weight": 1.8
+    },
+    {
+      "query_id": "loc-07",
+      "intent": "local_intent",
+      "text": "best beard trim in {city}",
+      "weight": 1.6
+    },
+    {
+      "query_id": "loc-08",
+      "intent": "local_intent",
+      "text": "hot towel shave in {city}",
+      "weight": 1.5
+    },
+    {
+      "query_id": "loc-09",
+      "intent": "local_intent",
+      "text": "kids haircut in {city}",
+      "weight": 1.5,
+      "persona": "parent"
+    },
+    {
+      "query_id": "loc-10",
+      "intent": "local_intent",
+      "text": "barbershop open on Sunday in {city}",
+      "weight": 1.6
+    },
+    {
+      "query_id": "loc-11",
+      "intent": "local_intent",
+      "text": "best barber for curly hair in {city}",
+      "weight": 1.5
+    },
+    {
+      "query_id": "loc-13",
+      "intent": "local_intent",
+      "text": "barbershop near me",
+      "weight": 1.2,
+      "persona": "near-me cohort (noisier: ~2x less stable than explicit-city)"
+    },
+    {
+      "query_id": "hyb-01",
+      "intent": "hybrid",
+      "text": "how much does a haircut cost in {city}?",
+      "weight": 1.6
+    },
+    {
+      "query_id": "hyb-02",
+      "intent": "hybrid",
+      "text": "average price of a men's fade in {city}",
+      "weight": 1.5
+    },
+    {
+      "query_id": "hyb-03",
+      "intent": "hybrid",
+      "text": "how much should you tip a barber in {city}?",
+      "weight": 1.3
+    },
+    {
+      "query_id": "hyb-04",
+      "intent": "hybrid",
+      "text": "do barbershops in {city} take appointments or walk-ins?",
+      "weight": 1.4
+    },
+    {
+      "query_id": "hyb-05",
+      "intent": "hybrid",
+      "text": "best value haircut in {city}",
+      "weight": 1.4
+    },
+    {
+      "query_id": "hyb-06",
+      "intent": "hybrid",
+      "text": "barbershop vs salon prices in {city}",
+      "weight": 1.2
+    },
+    {
+      "query_id": "inf-01",
+      "intent": "informational",
+      "text": "how often should men get a haircut?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-02",
+      "intent": "informational",
+      "text": "how to ask for a taper fade",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-03",
+      "intent": "informational",
+      "text": "what haircut suits my face shape?",
+      "weight": 1.0
+    },
+    {
+      "query_id": "inf-04",
+      "intent": "informational",
+      "text": "how to grow out a beard properly",
+      "weight": 0.9
+    },
+    {
+      "query_id": "inf-06",
+      "intent": "informational",
+      "text": "how to maintain a fade between cuts",
+      "weight": 0.9
+    },
+    {
+      "query_id": "brd-01",
+      "intent": "brand",
+      "text": "is {brand} a good barbershop?",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-02",
+      "intent": "brand",
+      "text": "{brand} reviews",
+      "weight": 2.0
+    },
+    {
+      "query_id": "brd-03",
+      "intent": "brand",
+      "text": "what are {brand}'s prices and hours?",
+      "weight": 1.8
+    }
   ]
 }

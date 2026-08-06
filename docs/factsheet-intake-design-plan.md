@@ -837,8 +837,8 @@ mobile, with a fixed action bar.
 ┌─ REVIEW ─ Albert Nahman Plumbing v2 ──────────────────────────────┐
 │                                                                   │
 │  ┌─ THE SHEET ───────────────┐  ┌─ THE QUESTIONS ──────────────┐  │
-│  │ ▸ Identity          4     │  │  29 questions · 5 assistants │  │
-│  │ ▸ Contact           3     │  │  3 runs each · 435 calls     │  │
+│  │ ▸ Identity          4     │  │  25 questions · 5 assistants │  │
+│  │ ▸ Contact           3     │  │  3 runs each · 375 calls     │  │
 │  │ ▸ Hours             7     │  │  about $14                   │  │
 │  │ ▸ Service area      5     │  │                              │  │
 │  │ ▸ Licensing         3     │  │  [intent] [id] [text]  …     │  │
@@ -914,7 +914,7 @@ this is a good decision that produces a bad screen in three months.
 
 ### 6.4 The questions pane
 
-- Header: the run shape — `29 questions · 5 assistants · 3 runs each · 435 calls
+- Header: the run shape — `25 questions · 5 assistants · 3 runs each · 375 calls
   · about $14`. Cost from `src/pipeline/cost.py`. Owners deserve to see the size
   of the thing they're approving.
 - Table: intent chip · id · text · persona. The intent chip is the existing
@@ -984,7 +984,7 @@ sheet has a query set.
 ```
 READY TO RUN
 ┌─────────────────────────────────────────────────────────────────┐
-│  Albert Nahman Plumbing        29 questions · v2 · about $14     │
+│  Albert Nahman Plumbing        25 questions · v2 · about $12     │
 │  albertnahmanplumbing.com                       [ Run audit ]  ⋯ │
 └─────────────────────────────────────────────────────────────────┘
 [ or upload a CSV ↓ ]
