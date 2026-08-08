@@ -191,6 +191,16 @@ Other current defaults: OTP validity 1 hour · resend cooldown 60s per address �
 
 ### 3.2 The scanner-safe magic link
 
+> **SUPERSEDED 2026-08-07 — see LIC-T13.** We ship **email OTP only**: no clickable link, and so no
+> interstitial and no PKCE callback. Both defences below exist only to protect a *link* — the
+> interstitial from prefetch consumption, §3.3 from the browser-bound `code_verifier`. Neither
+> failure mode survives removing the link, so neither is built.
+>
+> §3.2–3.3 are kept as the reasoning record, not the plan. Read them before proposing a magic link
+> again: they are why the link is expensive, and they become live again the moment one is added.
+> What still applies from here: `/auth/confirm` idempotency (Supabase does not support
+> multi-redemption), and the email-change token-swap gotcha in §3.4.
+
 Corporate scanners (**Microsoft Defender Safe Links**, **Barracuda** are named in the Supabase issues; Proofpoint/Mimecast run the same class of defense) prefetch emailed URLs and burn single-use tokens. The user then sees "invalid or expired" with no explanation.
 
 **Supabase's official position** ([auth#1214](https://github.com/supabase/auth/issues/1214)): they won't fix `/verify`; build your own flow with `{{ .TokenHash }}` + a custom confirm page + `verifyOtp()`. Their own [email template docs](https://supabase.com/docs/guides/auth/auth-email-templates) recommend "a page where they can click a button to confirm the action."
@@ -245,7 +255,7 @@ The PKCE code is valid 5 minutes, single-use, and **must be exchanged on the sam
 | Templates | Stuck with Supabase's Go templates | Full control — React Email, conditionals, attachments |
 | Supabase throttle | Still applies (30/hr default) | Bypassed for transport |
 
-Since the flow *requires* the custom interstitial link and branded report emails, use the hook. Resend's own docs now steer Supabase users this way.
+Use the hook. The original argument — the flow *requires* a custom interstitial link — died with LIC-T13, but the conclusion did not: branded report emails still need full template control, and the throttle bypass is the reason launch isn't capped at 30/hr. Resend's own docs steer Supabase users this way.
 
 ```ts
 // supabase/functions/send-email/index.ts
@@ -260,11 +270,10 @@ Deno.serve(async (req) => {
   const wh = new Webhook(hookSecret);
   try {
     const { user, email_data } = wh.verify(payload, Object.fromEntries(req.headers)) as any;
-    const url = `${Deno.env.get('SITE_URL')}/auth/verify-interstitial`
-      + `?token_hash=${email_data.token_hash}&type=${email_data.email_action_type}`
-      + `&next=${encodeURIComponent(email_data.redirect_to ?? '/')}`;
-    await resend.emails.send({ from: '…', to: [user.email], subject: 'Confirm your email',
-                               react: ConfirmEmail({ url }) });
+    // LIC-T13: send the CODE, never a link. `email_data.token` is the 6-digit OTP;
+    // `token_hash` is the link half and must not be turned into a URL here.
+    await resend.emails.send({ from: '…', to: [user.email], subject: 'Your sign-in code',
+                               react: SignInCode({ code: email_data.token }) });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 401 });
   }
@@ -497,7 +506,7 @@ Store `plan_id` + a nullable `entitlement_overrides jsonb` on the account row �
 3. pgTAP + integration isolation tests that **assert emptiness** (§1.6)
 4. Migration Phases 0→2, RLS enabled last (§2)
 5. Resend Auth Hook + DNS + warm-up (§3.4–3.5) — **and raise the Supabase rate limit off 30/hr**
-6. Scanner-safe interstitial + OTP fallback (§3.2–3.3)
+6. Code-only sign-in — OTP, no link, no interstitial (LIC-T13; supersedes §3.2–3.3)
 7. Turnstile + rate limits + confirm-gated enqueue (§3.7)
 8. arq + polling status (§3.8)
 9. Report token table with revocation (§3.6)

@@ -1,3 +1,910 @@
+## Licensing L4/L5 — an agency can be onboarded — LIC-T18/T14/T19 — Completed 2026-08-07
+
+Provisioning, invitation binding and the console API are built and green at
+1,638 passed / 3 skipped, `mypy src/` and `ruff check src/` clean. **Two RLS
+bugs were found by testing the live database rather than by reading the DDL, and
+one of them was a cross-tenant write.**
+
+### The bug: `with check` on `companies` did nothing on UPDATE
+
+LIC-T10 gave `companies` a single `for all` policy with
+`using (has_company_access(id))` and the **same predicate** as `with check`. That
+predicate reads `companies` **by id**, and the function is `stable` — so on an
+UPDATE it runs against the statement's snapshot and sees the **old** row. It
+therefore re-answers `using` and cannot constrain the new state at all.
+
+Measured: an `AGENCY_OWNER` could reassign a company it manages to an
+organization it has no membership in — handing a client, and every audit, report
+and share link under it, to a third party. `using` still stopped it touching a
+company it did not already manage, so this is "give away your own client", not
+"steal someone else's". It is still a write no policy intended to allow.
+
+The same predicate is **impossible** as a `with check` on INSERT, for the mirror
+reason: the row being inserted is not visible to a `stable` function. So an
+agency could not create a client company at all — which quietly made LIC-T19's
+"adding a client is one INSERT" and LIC-T18's intake onboarding both undeliverable.
+
+The fix could not be an additional, narrower policy: permissive policies are
+OR'd, so the vacuous one would have kept admitting everything. `companies` now
+has explicit per-command policies (`data/schema_agency_client_writes.sql`) and
+`schema_tenancy_rls.sql` no longer includes it in its loop — with a test that
+fails if `tenant_access` ever comes back. The asymmetry worth remembering:
+`using` reading the table by id is correct precisely BECAUSE it means the old
+row; `with check` must test the incoming row's own columns and nothing else.
+
+`private.is_org_member()` is the new access function — "do I belong to this
+agency", which is the only question an INSERT can ask, since the company does not
+exist yet. Verified live: create under my agency ✅, under another agency ✗,
+unowned ✗, release my client ✅, hand it to a third party ✗, touch someone
+else's — zero rows.
+
+### LIC-T18 — intake under auth
+
+The DB half was already done by T1/T9/T10: all three intake tables carry
+`company_id` with RLS, `FORCE` and a policy. What was missing was that
+`db.ensure_company()` created companies with **no** agency, which the new insert
+policy correctly refuses — so an agency's first fact sheet would have failed at
+the policy. It now stamps the caller's organization, and returns None outside a
+request (the CLI, the founders), where the service-role client applies and a
+direct-owned company is what is wanted.
+
+`INTAKE_PREFIXES` names the surface (`/intake`, `/fact-sheets`) so "did we
+migrate all of intake" has one answer instead of depending on whoever wrote the
+deploy config. A test asserts every route on the intake router falls under it —
+a route outside the set would keep taking the shared key while the rest of the
+flow moved to per-user auth.
+
+### LIC-T14 — provisioning, and the atomic accept
+
+`public.invitations` plus `public.accept_invitation()`, a `security definer`
+plpgsql function. Keyed by EMAIL rather than a pending membership row, because
+`memberships` references `public.users` and an invited person has no identity
+until they confirm; a nullable `user_id` would then have to be excluded from
+every access check forever.
+
+The function is the whole point: it stamps the invitation and writes the
+membership **together**, because supabase-py speaks PostgREST and cannot hold a
+transaction across statements — and the skill's rule is that a confirmed email
+with no membership is a user who logs in and sees nothing. It is idempotent, so
+a scanner replaying the URL gets the same membership rather than "invalid", and
+it refuses an address other than the one invited, or a token leaked out of an
+inbox would bind the membership to whoever redeemed it.
+
+**Not granted to `authenticated`.** `security definer` plus that grant would let
+any signed-in user redeem any invitation whose token they could obtain. There is
+a test asserting the privilege is absent.
+
+### LIC-T19 — the console API
+
+`/admin/agencies` (platform admin, 404 not 403 — an agency user does not need the
+existence of that surface confirmed) and `/agency/*`. The organization always
+comes from the verified identity and never from the request body; a parameter
+would be an organization_id an attacker supplies.
+
+Slots are soft then hard, per LIC-T4: silent at or below, allowed with a warning
+inside the 20% band, **402** beyond it (a billing state the caller can resolve,
+not a permission they will never have) with the resolved limit named. Releasing a
+client is `managing_agency_id = null` — never a delete, so the client keeps their
+data and their own `COMPANY_ADMIN` logins and merely stops being managed.
+`AGENCY_OWNER` is deliberately not invitable from the console.
+
+### Service-role allowlist: 15 → 20
+
+All five additions are cases where **no policy could apply**, not cases where one
+was inconvenient: the organization does not exist yet, the invitee has no
+identity, the redeemer has no membership by definition, and the roster is read
+here because LIC-T10 deliberately refused to make `public.users` readable
+org-wide. Adding a client company is the tell — it runs as the **caller**, so
+`companies_agency_insert` is what decides.
+
+### NOT done, and why
+
+**No console UI.** The API is complete and tested; `web/` has no agency screens.
+Nothing blocks building them — it is scope, not a dependency.
+
+**LIC-T12/T13 and LIC-T15/T16 are untouched**, and deliberately so: all four need
+credentials and infrastructure that do not exist yet (a Resend sending domain
+with SPF/DKIM/DMARC, the Supabase email cap raised off 2/hour, a deployed public
+URL for the scanner-safe interstitial, Turnstile keys, a Redis endpoint). Writing
+them now would produce modules that cannot be exercised against anything real,
+which is the failure mode of looking done. `.env.example` and
+`src/config/settings.py` already carry `TURNSTILE_*` and `REDIS_URL` so the
+config surface is settled.
+
+### Up next
+
+The four blocked tasks, in dependency order once their accounts exist: T12 →
+T13 → T14's email delivery path (the provisioning endpoint currently returns the
+invite token in its response rather than mailing it) → T15 → T16. Then the
+console UI, and retiring `GEO_API_KEY` as an auth credential once
+`JWT_MIGRATED_ROUTES` covers every route.
+
+---
+
+## Licensing L4 — share links became rows — LIC-T17 — Completed 2026-08-07
+
+`report_share_tokens` is live with RLS + `FORCE` and its tenant policy, verified
+against the real database: agency A sees zero of agency B's tokens, its own count
+matches the unfiltered one, and a user with no membership sees nothing.
+`mypy src/` → `ruff check src/` → `pytest tests/` green at 1,611 passed /
+3 skipped, plus `npm run typecheck`.
+
+### The bug the acceptance test found
+
+`mint_share_token` derived `token_id` from `sha256(run_id + issued_second)`.
+**Two links minted for the same run inside the same second got the same id**, so
+revoking either revoked both — and "revoke one link without affecting the others"
+is the entire reason a per-token id exists. It had been true since P3-T4 and was
+invisible because nothing had ever minted two links for one run in the same
+second. The spec's own acceptance test ("revoking one link leaves others working
+across a redeploy") found it on the first run. The id is now
+`secrets.token_urlsafe(12)`. With `token_id` as the table's primary key the
+collision would additionally have failed the insert, so the migration would have
+surfaced it either way — but as a 500 at mint time rather than as a diagnosis.
+
+### What changed, and what deliberately did not
+
+The signature, the TTL, the optional password and the deny list all still work
+exactly as before. This is additive: **a token minted before today has no row and
+is still honoured.** That is not laziness, it is the same requirement LIC-T11
+had — every client report link already sitting in an inbox has to keep verifying,
+and the failure mode of getting it wrong is silent (nothing errors at deploy, the
+links just start returning 403).
+
+New on the row: `company_id`, which is what makes "this client's links stop when
+they are offboarded" expressible at all, plus `first_viewed_at` / `view_count`
+for the access log the design asked for. `first_viewed_at` is stamped once and
+never overwritten — "when did it land" and "how many times since" are different
+questions and one column cannot answer both.
+
+`revoke` now writes **both** stores. The row is the source of truth for anything
+minted since today and is what the console will read; the deny list still covers
+every older token, which has no row to flip. Writing one and not the other would
+leave a live link looking revoked in the UI, or a revoked link still serving.
+
+### The offboarding rule, written down because it is a judgement call
+
+`db.company_delivery_live()` decides whether a company's outstanding links are
+still honoured, and the rule is narrower than "does this company have an active
+membership":
+
+- A company **with** membership rows, all deactivated, is offboarded → links stop.
+  This is the spec's acceptance case.
+- A company whose **managing agency** is deactivated → links stop with it.
+- A company with **no memberships at all** is untouched. That is every company on
+  the platform today — the LIC-T1 backfill created tenants, not memberships — and
+  treating "no membership" as "offboarded" would have killed every live client
+  link the moment this shipped.
+
+On a storage failure it returns True. An outage must not silently revoke every
+client's report, and an unreadable database cannot tell us a relationship ended.
+The signature and the expiry still bound the risk.
+
+### Route hardening, and the CORS change it required
+
+`Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow, noarchive` and
+`Cache-Control: private, no-store` on the shared-report route. The first is the
+load-bearing one: while the token sits in the URL it *is* a working credential,
+and without the header the browser attaches it to every asset and outbound link
+the report page reaches, writing it into a third party's access log.
+
+The token is then exchanged for an httpOnly cookie on first load and the web page
+`replaceState`s to `/shared/view`, so the address bar, browser history and any
+screenshot stop carrying a live credential. **`/shared/view` had to become a real
+route**, not just a string passed to `replaceState` — the visitor will refresh,
+and a rewritten URL with no page behind it turns the security fix into a 404.
+
+This required `allow_credentials=True` on the CORS middleware, which is safe here
+specifically because `allow_origins` is an explicit list and never `*`. The usual
+objection is CSRF, which needs a cookie that AUTHORISES a state change; this API
+authenticates with `X-API-Key` or a bearer token, neither of which a browser
+attaches automatically, and the one cookie that now exists is read-only, scoped to
+`/shared`, and confers exactly the access its holder already had by holding the
+token.
+
+### Service-role allowlist: 12 → 15
+
+The drift alarm in `test_tenant_isolation.py` fired, which is what it is for. All
+four additions serve the anonymous visitor, who has no `auth.uid()` and can
+satisfy no policy: resolve the one token id presented, stamp its view, and read
+the two rows that say whether the client was offboarded. **Minting is deliberately
+NOT on the list** — it runs as the caller so the policy's `with check` half stops
+an agency stamping a link with another tenant's `company_id`.
+
+### Up next
+
+T18 (intake under auth), T14 (provision an agency, bind invite→membership), T19
+(the console). Then T12/T13 and T15/T16, which are blocked on external accounts:
+a Resend sending domain with SPF/DKIM/DMARC, the Supabase auth email cap raised
+off 2/hour, a deployed public URL for the interstitial, Turnstile keys and a
+Redis URL. Supabase's Send Email Hook is confirmed available on the **free**
+plan, so no Supabase upgrade is needed for T12.
+
+---
+
+## Licensing L3 — isolation is real — LIC-T9/T10 — Completed 2026-08-06
+
+Policies are written, `FORCE` is on, and cross-tenant isolation is **verified
+against the live database**: agency A sees 8 runs / 1,287 results / 5,137
+citations of its own and **zero** rows of agency B's, while the service role sees
+agency B's 2 runs — proving the rows exist and the policy is what hides them.
+`mypy src/` → `ruff check src/` → `pytest tests/` green at 1,599 passed /
+3 skipped.
+
+### LIC-T9 — and the gap that would have broken production
+
+The spec frames T9 as "verify zero NULLs, then SET NOT NULL". Applying it that way
+would have taken the platform down on the next audit.
+
+**The backfill only ever tenanted rows that already existed. Nothing in the write
+paths set `company_id`** — not `create_audit_run`, not `save_teaser`, not
+`save_query_results`, not one of them. Zero NULLs was a true statement about a
+snapshot, not an invariant. Adding NOT NULL to that is a constraint violation on
+the very next insert.
+
+So T9 grew a first half. `db.ensure_company(domain, name)` is a get-or-create
+keyed by the same `company_keys.key_for` the UI and the backfill use, so a run
+started for a domain that already has a project joins that project rather than
+minting a second tenant for one business. `_stamp_tenant(run_id, rows)` copies a
+run's tenant onto its child rows — one lookup per save call, not per row, because
+`save_query_results` writes ~1,500 rows that all share a tenant. Both are wired
+into `create_audit_run`, `save_teaser`, `save_query_results`, `save_judgments`,
+`save_local_pack_entities`, the three `site_audit_*` writers, `save_fact_sheet`
+(and its claims) and `create_intake_session`.
+
+`ensure_company` handles the concurrent case by reading the unique violation back
+rather than checking first: two runs starting for the same client at once is the
+ordinary outcome, and a read-then-write check loses that race by construction.
+`tests/test_tenanted_writes.py` covers every write path plus the race and the
+storage-failure degrade.
+
+`data/schema_tenancy_notnull.sql` then verifies zero NULLs **per table, naming the
+table and the count** before contracting — `SET NOT NULL` would fail on its own,
+but its error names a constraint rather than the problem. Applied; twelve tables
+are now NOT NULL.
+
+`audit_deliverables` stays nullable: its `run_id` is itself nullable (a deliverable
+can be built by hand from no run), so no path can guarantee a tenant. It holds zero
+rows. `client_configs` and `findings_registry` stay nullable because they do not
+exist in this project and are keyed by `client_name`, which a name shared by two
+companies matches ambiguously.
+
+**No `CHECK ... NOT VALID` + `VALIDATE CONSTRAINT` split.** The spec offers it for
+large tables; the largest here is `query_citations` at 8,969 rows, where a plain
+`SET NOT NULL` is milliseconds. Recorded so the decision is re-checkable rather
+than re-derived.
+
+### LIC-T10 — policies, and a pre-flight that mattered
+
+**Checked before applying:** `service_role` and `postgres` both carry `BYPASSRLS`;
+`authenticated` and `anon` do not. That is what made applying policies to a live
+database safe — the running API connects as `service_role`, so every policy below
+is invisible to it, while a per-user client (LIC-T7's anon key + caller token) is
+fully subject to them. `list_projects()` re-captured afterwards is byte-identical
+to the pre-migration baseline.
+
+One policy per tenant table, `FOR ALL`, `TO authenticated`, predicate
+`private.has_company_access(company_id)` — with `companies` checked on its own `id`,
+since it IS the tenant. **Both `using` and `with check`**, the same predicate: `using`
+governs what is visible, `with check` what may be written, and without the latter a
+member of tenant A could INSERT a row stamped with tenant B's `company_id` — writing
+into another tenant rather than reading from it. There is a test that tries exactly
+that and gets `InsufficientPrivilege`.
+
+`organizations`, `users` and `memberships` get narrower, read-only policies.
+`users` is deliberately NOT "everyone in my organization" — that would leak every
+staff member's email to every client user sharing a tenant; the console reads its
+own roster through the service role. The `memberships` policy is a plain column
+comparison, **not** a call to `has_company_access`: a policy on `memberships` that
+consulted a function which itself reads `memberships` is genuinely circular.
+
+Exactly one permissive policy per table per command, so there is nothing to OR
+with. `AS RESTRICTIVE` is held in reserve for a rule that must AND with everything
+else; using it as the default would make a later exception impossible to express.
+
+**Final posture: 17 tables with a policy and `FORCE`; 9 with RLS enabled and no
+policy.** The second group is not an oversight — it is the strongest possible
+setting. `judge_cache`, `content_judge_cache`, `factsheet_jobs`, `site_audit_phase`
+and the five dead Phase-1 tables are unreadable by any `authenticated` user at all,
+reachable only through the service-role allowlist in `db._execute`. Giving them a
+policy would be strictly weaker. `supabase db advisors` will keep reporting lint
+0007 for those nine; this entry is the record of why that is expected.
+
+### The xfail markers came off — LIC-T10's stated acceptance
+
+The isolation tests were `xfail(strict=True)` so the suite stayed green while
+guaranteeing a loud failure the day isolation began working. It works, so they are
+now ordinary tests — and better ones than the placeholders they replaced. Rather
+than env-provisioned tokens, they run as the `authenticated` role with
+`request.jwt.claims` set, which is precisely how PostgREST executes a per-user
+query, inside a rolled-back transaction over the REAL data.
+
+Three assertions per tenant table, because each catches a different broken policy:
+foreign rows visible = **zero**; own rows visible = the **unfiltered** count; a
+user with no membership sees nothing anywhere. The middle one is compared against
+the service-role count rather than asserted `> 0`, and that was a real bug in the
+first draft — `fort.cx` legitimately has no `local_pack_entities` (those are only
+captured for local-intent runs), so `> 0` failed on a perfectly correct policy.
+Equality is the actual invariant. A control test asserts the foreign rows exist at
+all, without which every "zero" could just mean "empty table".
+
+### Deliberately NOT done: retiring GEO_API_KEY
+
+LIC-T10 says to retire `GEO_API_KEY` as an authentication credential. **Not done,
+and doing it now would open the API completely.** `require_api_key` treats an unset
+key as "open mode", and `JWT_MIGRATED_ROUTES` is still empty because no route has
+migrated — the web UI has no sign-in yet. Retiring the key before the routes move
+would remove the only authentication the API has.
+
+LIC-T11 already did the part that had to happen first: share-link signing is off
+`GEO_API_KEY`, so retiring it will not invalidate a single outstanding client
+link. The retirement itself belongs with the frontend auth work in L4/L5, once
+`JWT_MIGRATED_ROUTES` covers every route.
+
+### Up next
+
+L4: T12 (Resend auth hook) and T13 (scanner-safe interstitial), T14 (provision an
+agency and bind the invite to a membership), T15 (abuse gates), T16 (queue), T17
+(report tokens as a table), T18 (intake under auth). Then T19, the console.
+
+Still manual and still blocking: `SUPABASE_ANON_KEY` into `.env`,
+`scripts/create_platform_admin.py` run with the founders' real addresses, and the
+Supabase auth email cap raised off 2/hour.
+
+---
+
+## Licensing L2 — auth before enforcement — LIC-T5/T6/T7/T8 — Completed 2026-08-05
+
+Per-user identity now exists end to end, and user-facing database reads no longer
+run on the service-role key. `mypy src/` → `ruff check src/` → `pytest tests/`
+green at 1,565 passed / 6 skipped.
+
+**Nothing is enforced yet, and that is the phase.** `JWT_MIGRATED_ROUTES` is
+empty by default, so the API behaves exactly as it did. RLS still has no
+policies. What changed is that the machinery to enforce isolation is in place and
+tested, so LIC-T10 becomes "write policies" rather than "write policies and hope
+the rest of the stack cooperates".
+
+### LIC-T5 — founder identities
+
+The `handle_new_user` trigger shipped with the LIC-T2 DDL, so this reduced to
+provisioning. `scripts/create_platform_admin.py --email …` creates the `auth.users`
+row (the trigger mirrors it into `public.users`) and sets `is_platform_admin`.
+Idempotent — an existing account is promoted, not duplicated — and `--demote`
+reverses it.
+
+A script rather than a migration because an email address is not schema:
+hard-coding the founders' addresses into `data/*.sql` puts personal data in the
+repo and makes the file unrunnable by anyone else, while leaving it to the
+dashboard makes it a step that gets skipped. No password is set; the founder signs
+in through the ordinary magic-link flow, because a script that mints passwords is
+a script that leaves them in a shell history.
+
+**Not run.** It needs the founders' actual addresses. `auth.users` is still empty.
+
+### LIC-T6 — JWT per route
+
+`src/api/auth.py` verifies a Supabase access token **locally, against the
+project's JWKS, with ES256** — the answer LIC-T0 established by reading the
+project's own `/.well-known/jwks.json`. `getUser()` would round-trip to the Auth
+server on every request; the signature is the proof and the public key is
+published precisely so we can check it ourselves. `JWKS_CACHE_SECONDS` bounds the
+key cache so a rotated signing key is picked up without a redeploy.
+
+**Accepted algorithms are pinned to a list, and the list is asymmetric-only.**
+Two attacks live there and both have tests: `alg: none`, and an HS256 token whose
+"secret" is the public key we publish. The second is hand-assembled in the test,
+because PyJWT refuses to *encode* an HMAC token from a PEM key — that refusal
+protects us from writing the bug, not from receiving the attack.
+
+Every rejection returns one generic message. Which of expired / wrong audience /
+bad signature occurred helps an attacker enumerate and helps a real caller not at
+all — they sign in again either way. A test asserts all three failure modes
+produce a byte-identical message.
+
+`authenticate` is the router dependency. **Exactly one credential per route:** a
+migrated route takes a JWT and refuses the shared key; an unmigrated route takes
+the shared key and refuses a bearer. Never both, so "which credential authorised
+this request" — the question an incident starts with — always has an answer.
+`/shared/{token}/report` still needs neither, and a test holds that property.
+
+**Roles are read from the database, never from the token.** The token proves who;
+`public.users.is_platform_admin` and an accepted org membership decide what.
+There is no first-party way to force-refresh a user's claims mid-session, so a
+role baked into a token outlives its own revocation. Two indexed reads per request
+buy revocation that bites on the next request instead of the next refresh. A test
+mints a token claiming `role: service_role` and `is_platform_admin: true` and
+asserts it gets exactly nothing for them.
+
+A storage failure during identity resolution degrades to the **least** privilege
+that still identifies the caller — a known user, no org, no admin flag — not to a
+platform admin. Failing open there would hand founder rights to anyone holding any
+valid token for the duration of an outage.
+
+`src/api/identity.py` grew from the LIC-T20 seam into the real thing: a ContextVar
+bound per request. **No explicit unbind, deliberately.** Starlette handles each
+request in its own task and a task copies the context at creation, so the `set` is
+confined to that request; sync handlers run in a threadpool that receives a copy
+and read it correctly. The symmetric-looking `reset()` in an HTTP middleware was
+written first and removed: `BaseHTTPMiddleware` runs `call_next` in a *separate*
+task, so the token belongs to a different context and the reset would raise.
+
+`PyJWT` and `cryptography` moved into `requirements.txt`. Both already arrived
+transitively via `supabase`, but `src/api/auth.py` imports them directly and that
+should not depend on another package's dependency graph staying still.
+
+### LIC-T7 — off the service-role key
+
+**The task without which none of the RLS work does anything.** Every read and
+write went through one process-wide client built from `SUPABASE_KEY` — the
+service-role key, which bypasses RLS entirely. Policies written while the API
+connects that way change nothing an attacker would notice.
+
+There are two clients now. `_service_client()` is the old one. `_user_client(token)`
+is built from the **anon** key with the caller's access token as the bearer.
+**Both halves are load-bearing and getting either wrong fails silently:** the anon
+key is what makes the connection subject to RLS at all, and the token is what
+gives `auth.uid()` a value. A service-role connection with a user's token attached
+looks authenticated and bypasses every policy. A test asserts the real supabase-py
+client comes back with `Authorization: Bearer <token>` and `apikey: <anon key>`,
+and that the service-role key appears in neither.
+
+`_execute(..., system=True)` selects the service-role client. **The complete
+allowlist, documented in the function and each marked at its call site:** the two
+judge caches (content-addressed, no tenant, and tenanting them would halve the hit
+rate and double judge spend), engine fingerprints (provenance about our own pins),
+the crawler's page cache and HTML blobs, and the fact-sheet job queue and its
+spend limiter. 15 marked call sites out of 80; a test fails if that grows past 12
+without a commit saying why.
+
+Everything else runs as the caller when a request has bound an identity, and as
+the service role when nothing has — the CLI, the orchestrator, the resume scan and
+the crawler have no user to attribute a query to.
+
+**A missing `SUPABASE_ANON_KEY` refuses rather than falls back.** A fallback would
+silently restore the bypass on every request and the system would look like it was
+enforcing isolation while enforcing nothing. That is the single most important
+line in the task and it has its own test.
+
+The design (§1.4) solves this for a raw Postgres connection with
+transaction-scoped `set_config`, and warns at length about a pooled connection
+inheriting the previous tenant's claims under transaction-mode pooling. **That
+recipe does not transfer and neither does the hazard.** This codebase talks to
+PostgREST, where identity rides in a request header rather than in session state,
+so nothing is ever set on a connection and there is nothing to leak between
+requests. What *can* still leak is a cached client shared across identities, so
+clients are keyed by token and a test asserts two callers never share one.
+
+### LIC-T8 — isolation tests
+
+Two layers, because they answer different questions.
+
+The routing tests run now and are the half that actually matters: which credential
+each operation runs under is decided in our code, not by the database. They cover
+a tenant read running as the caller, the judge cache still running as the service
+role, out-of-request work running as the service role, two callers never sharing a
+client, `use_identity` restoring the *previous* identity rather than the default,
+and the anon-key refusal.
+
+The end-to-end tests assert **zero rows** — never "different rows". RLS denies by
+returning nothing, so a completely broken policy looks exactly like "this tenant
+has no data yet", and "user A can see their own data" passes against a database
+that would hand every tenant's rows to anyone. They are
+`xfail(strict=True, reason="isolation not enforced until LIC-T10")`, so the suite
+stays green now and fails loudly the day they start passing — which is the day
+LIC-T10 removes the marker. That removal is LIC-T10's acceptance criterion. They
+also need two provisioned tenants in a Supabase branch, so they are skipped unless
+`RUN_ISOLATION_TESTS=1`.
+
+### Test-suite change
+
+Six call sites patching `db._client` with a zero-arg lambda became `lambda **_:`,
+because `_client` gained a keyword-only `system` parameter. Mechanical, and the
+40 failures it caused were the signature change announcing itself correctly.
+
+### Up next
+
+LIC-T9 (backfill is already at zero NULLs, so this is `SET NOT NULL` per table)
+then LIC-T10 (policies, `FORCE`, remove the xfail markers, retire `GEO_API_KEY` as
+an auth credential — LIC-T11 already made that safe for share links). Then L4:
+T12/T13 onboarding, T14 provisioning, T15 abuse gates, T16 queue, T17 report
+tokens, T18 intake, and T19 the console.
+
+Before LIC-T10 can be exercised end to end, three things need doing by hand:
+`SUPABASE_ANON_KEY` into `.env`, `scripts/create_platform_admin.py` run with the
+founders' real addresses, and the Supabase auth email rate limit raised off 2/hour.
+
+---
+
+## LIC-T1.1 — Patch: tenancy migrations applied, and a third identity source — 2026-08-05
+
+The four schema files and the backfill from the previous entry are now applied to
+the platform project (`hohveqgemavghcpfjdiy`). Applying them found a real gap in
+the backfill, which is the point of applying rather than assuming.
+
+**Applied, in order:** `schema_tenancy.sql` → `schema_memberships.sql` →
+`schema_tenancy_access.sql` → `schema_verdict_source.sql`, each via
+`scripts/apply_schema` (one transaction, all-or-nothing). `client_configs` and
+`findings_registry` were skipped by the guarded DO block exactly as designed —
+they are declared in `data/*.sql` but have never been applied to this project.
+
+**Backfill result: every tenant table is at zero NULLs.** 24 audit runs, 16
+teasers, 8,969 query citations, 1,923 query results, 1,774 judgments, 385 site
+audit checks, 150 local pack entities, 42 pages, 32 offsite findings, 2 fact
+sheets, 36 fact claims, 1 intake session. So LIC-T9 has no per-table judgement
+call left to make on THIS data: nothing is fixture-only, and a plain `SET NOT
+NULL` is available whenever T9 runs.
+
+**THE GAP: fact sheets are a third source of company identity, and the backfill
+only knew two.** The first run left `fact_sheets` (2), `fact_claims` (36) and
+`factsheet_intake_sessions` (1) untenanted. All three were `blackpropeller.com` —
+a business with a completed fact sheet and an open intake conversation but no
+audit run and no teaser, so `projects._collect()` had never derived a company for
+it and neither did a backfill written to mirror `_collect()`.
+
+Left alone, that is not cosmetic. LIC-T10 puts `has_company_access(company_id)`
+on `fact_sheets`; a row with a NULL tenant satisfies no policy, so the sheet
+becomes unreadable by everyone including the client it belongs to — and it is the
+same sheet whose claims were lost and recovered a day earlier. `derive()` now
+takes a third argument and mints a company from a fact-sheet or intake domain.
+The re-run tenanted all 39 rows.
+
+The new company has no runs and no teasers, so it stays out of `list_projects()`
+(which drops empties) while `get_project` still resolves it — which is exactly the
+case LIC-T18 needs when an agency onboards a client through intake before any
+measurement exists. Three regression tests cover it: a sheet-only domain becomes
+a company, a sheet for a domain we already measure does NOT mint a second tenant,
+and a sheet with no domain is skipped rather than name-keyed (a name-keyed company
+from a sheet could never be joined back to by a run).
+
+**Verified against the live database, not just the test suite:**
+
+- `list_projects()` re-captured after the migration and diffed against the
+  baseline taken before any of this work: **byte-identical**, including ordering.
+  Nine projects, same labels, same audit/teaser counts. `blackpropeller.com`
+  correctly absent.
+- `private.has_company_access` exercised on real rows inside a rolled-back
+  transaction: agency staff reach a managed `fort.cx` with **no per-company
+  membership row** (True), do not reach an unmanaged `calai.app` (False), a
+  stranger reaches nothing (False), and reparenting to `managing_agency_id = null`
+  revokes staff reach on the very next call (False) with no grant rows to clean
+  up. That last one is the "access is computed, never copied" property, confirmed
+  against the real schema rather than a fixture.
+- Both functions report `prosecdef = true` and `provolatile = 's'` — `security
+  definer` and `stable` survived the migration.
+- `company_id` present on 14 tables; `verdict_source` on `judge_cache` and
+  `judgments`, `verdict_sources` on `audit_runs`.
+
+**State of enforcement: still nothing.** `organizations`, `companies`,
+`memberships` and `users` all report `rls=True force=False policies=0`, matching
+every other table in the project. That is intended — LIC-T10 writes the policies —
+but it means the tenancy is currently SHAPE ONLY. The API still connects with the
+service-role key, so isolation remains exactly as strong as it was yesterday:
+none. LIC-T7 is the task that changes that, and no amount of policy-writing
+before it will.
+
+---
+
+## Licensing L1 + the two delivery gates — LIC-T1/T2/T3/T4/T11/T20/T21 — Completed 2026-08-05
+
+Seven tasks from `docs/licensing-spec.md`. Phase L1 in full (companies become
+rows, tenancy DDL, the access function, entitlements), the secret split that
+LIC-T10 is blocked on, and both gates the spec says must be green before the
+first agency-run audit reaches a client. `mypy src/` → `ruff check src/` →
+`pytest tests/` green at 1,534 passed / 3 skipped.
+
+**Nothing here is applied to the database yet.** Four new `data/*.sql` files and
+a backfill script are written and tested; running them against the live project
+is a separate, deliberate act.
+
+### LIC-T1 — companies stopped being a GROUP BY
+
+`projects._collect()` derived a project per request by bucketing `audit_runs` and
+`teasers` on registrable domain. A membership, a slot count and an RLS predicate
+cannot reference a groupby, so every later task was blocked on this one.
+
+`data/schema_tenancy.sql` creates `organizations` and `companies` in ONE
+migration — `companies.managing_agency_id` references `organizations(id)`, so
+splitting them leaves a dangling reference — and adds a nullable, defaultless
+`company_id` to fifteen tables via a `to_regclass`-guarded DO block. The guard is
+not defensive programming: `client_configs` and `findings_registry` are declared
+in `data/*.sql` but were never applied to this project, and `add column if not
+exists` still errors on a table that does not exist.
+
+**The four run-child tables carry `company_id` themselves rather than joining to
+`audit_runs`.** `query_results`, `query_citations`, `judgments` and
+`local_pack_entities` are the highest-volume tables here (`query_citations` is at
+8,969 rows) and are exactly the tables that already had RLS enabled. A policy
+that joins back to the parent to find the tenant re-introduces the per-row
+recursion `security definer` exists to avoid, on the worst possible tables.
+
+**Two decisions the design does not spell out.** `companies.slug` holds the
+project key VERBATIM — `fort.cx` or `name:oura` — because that string is already
+in `/projects/{key}` URLs, so a company row and a project key are the same
+identifier and no link breaks. And `companies.name` holds the LABEL, which is the
+domain when we have one; anything prettier would change a response shape the web
+UI renders. A separate `domain` column is denormalised out of the slug because
+`fact_sheets`, `factsheet_intake_sessions` and the crawler all key on domain and
+the backfill has to join on it.
+
+`src/api/company_keys.py` is new and holds `norm_domain` / `slugify` /
+`domains_of` / `key_for`, moved unchanged out of `projects.py`. Moved, not
+copied: the backfill must derive byte-identically to what the UI already shows,
+and a second normaliser would mint a second tenant for a client that already has
+one — which under RLS is a client who cannot see their own reports.
+
+`scripts/backfill_companies.py` reads runs and teasers, derives keys in Python
+via those functions, and writes companies plus every `company_id` in one
+transaction. It propagates run → children, domain → fact sheets and intake
+sessions, sheet → claims, and `client_name` → `client_configs`/
+`findings_registry` (only where `count(distinct company_id) = 1`, so an ambiguous
+name skips rather than picking a wrong tenant). It prints the still-NULL count per
+table, which is the input LIC-T9 reads.
+
+**It refuses a name-slug collision instead of merging.** Two businesses whose
+names slugify alike ("Acme Inc" / "ACME, Inc.") exit non-zero. While a project was
+a GROUP BY that merge was cosmetic; the moment it is a tenant with memberships
+attached it is one client reading another's reports. A DOMAIN bucket holding
+several names stays allowed — the domain identifies the business, so "FORT" and
+"Fort Security" on fort.cx are correctly one company.
+
+`projects.py` now leads with company rows and falls back to derivation for any row
+without a `company_id` — a live run not yet flushed, anything since the last
+backfill, or everything when storage is down. The fallback is not legacy code to
+delete; a run in flight has no persisted tenant.
+
+The load-bearing test is `test_company_rows_do_not_change_the_response`: the same
+fixture is run with company rows present and with `list_companies` raising, and
+the FULL serialized responses must be equal. Turning a groupby into a table is
+exactly the change that quietly renames a key or drops a bucket.
+
+### LIC-T2 / LIC-T3 — memberships, and the function every policy will call
+
+`data/schema_memberships.sql`: the `membership_role` enum, `public.users`
+mirroring `auth.users` with the `handle_new_user` trigger, `plan_id` /
+`entitlement_overrides` on organizations, and `memberships` with the exclusivity
+CHECK and both unique indexes — **partial** indexes, because without the WHERE
+clause Postgres treats NULL scopes as distinct and the constraint silently never
+fires for the other kind.
+
+`data/schema_tenancy_access.sql`: `private.is_platform_admin()` and
+`private.has_company_access(uuid)`, both `stable security definer set search_path
+= ''`, granted to `authenticated` only.
+
+**One deliberate departure from design §1.2:** both branches also require
+`accepted_at is not null`. The design checks only `deactivated_at`, which would
+grant a PENDING invitee full access the moment the row is written, before they
+have proved they control the invited mailbox. LIC-T14 writes `accepted_at` in the
+same transaction as the identity, so the invite flow is unaffected; what this
+closes is the agency console inviting staff.
+
+Testing is split by what each layer can actually prove.
+`tests/sql/tenancy.test.sql` is pgTAP (18 assertions: the CHECK rejects both-null
+and both-set, the unique indexes reject duplicates, and the four-user truth table
+— platform admin / agency staff on a managed company / agency staff on an
+unmanaged one / stranger — plus reparenting revoking staff reach on the next
+call). It needs a Supabase branch. `tests/test_tenancy_schema.py` is a grep-level
+lint that runs in CI with no database and asserts the load-bearing clauses are
+still THERE: drop `security definer` and a 12ms lookup becomes 178,000ms, drop
+`set search_path` and the function becomes shadowable, drop the CHECK and one row
+grants both scopes.
+
+**The spec asks for an EXPLAIN assertion that the index is used; that is
+deliberately not written.** On a four-row fixture the planner correctly chooses a
+sequential scan, so the assertion would either fail on a healthy schema or be
+rigged with `enable_seqscan=off` — testing the setting, not the schema. The
+indexes are asserted to EXIST; scan choice at real row counts belongs to the
+performance advisor.
+
+### LIC-T4 — entitlements
+
+`src/licensing/entitlements.py`. `agency` = 10 slots, `agencyPro` = 25,
+`resolve(plan_id, overrides)` merging overrides over the plan. Python, not the
+design's TypeScript, because the API is the boundary and the frontend gate is UX.
+
+Slot enforcement is the spec's soft-then-hard band: at or below the limit silent,
+inside a 20% grace band allowed with a warning, beyond it refused with the
+resolved limit named. The band is computed from the RESOLVED limit, so a
+negotiated 40 slots does not still refuse at 13.
+
+**An unknown override key raises.** A typo'd key that silently did nothing would
+look exactly like a deal that was agreed, recorded, invoiced and never applied —
+the agency hits the un-negotiated limit and nothing explains why. Override types
+are checked too, since they arrive from jsonb and `{"client_slots": "40"}` would
+otherwise compare as a string.
+
+### LIC-T11 — the credential doing two jobs
+
+`sharing._secret()` returned `settings.GEO_API_KEY`, so the API authentication
+credential and the share-link signing secret were one value. Retiring it as auth
+in LIC-T10 would have silently stopped every report link already in a client's
+inbox from verifying — nothing would error at deploy, the links would just start
+returning 403.
+
+`SHARE_SIGNING_KEY` is new, with `SHARE_ACCEPT_LEGACY_SIGNATURE` as the
+deprecation window. **The fallback resolves at CALL time, not seeded at import** —
+the first cut seeded it and eight existing tests failed, which was the mechanism
+telling the truth: a value frozen at import is wrong after a key rotation, not
+just in tests. `test_retiring_geo_api_key_alone_does_not_break_links` is the
+assertion that lets LIC-T10 proceed.
+
+One existing test changed: `test_minting_without_a_signing_key_is_refused` now
+clears both credentials and matches on "signing secret" rather than the old
+credential's name.
+
+### LIC-T20 — verdict provenance, and a hard delivery gate
+
+`verdict_source` appeared nowhere in `src/` or `data/`. The prejudge flow writes
+into the PRODUCTION cache keyspace — that is what makes "warm on the
+subscription, judge for $0" work at all — so a subscription verdict and an API
+verdict were the same table, the same shape, the same report. Fine while the only
+readers are two founders who know what they warmed; not fine the moment an agency
+pays for output from the held-constant temp-0 API judge.
+
+Tagged at write time, end to end: `JudgeCache.put_many(..., source=...)` with a
+`sources_for()` read, `judge_via_workflow.py inject` passing `prejudge`,
+`AnswerJudgment.verdict_source` per judgment (a run is routinely MIXED — a partly
+warm notebook means some answers come back from the subscription and the rest are
+judged live), and `audit_runs.verdict_sources` as the distinct sorted rollup,
+written by `save_judgments` alongside `judge_model` and for the same reason.
+
+**`verdict_source` is NOT in any cache key and must never be.** The key is a
+content address; adding provenance would split the keyspace and break the
+prejudge flow outright. No `_PROMPT_LAYOUT` bump — the parity tests in
+`tests/test_judge.py` are untouched and still pass.
+
+**UNKNOWN is refused, not assumed good.** A row written before tagging carries no
+source. The prejudge loop is the *normal* workflow here, so an untagged verdict is
+more likely than not a subscription verdict; for something a client pays for,
+"cannot prove it was API-judged" has to mean "not deliverable". The remedy is
+re-judging, which is non-destructive.
+
+**The gate keys on who the report is FOR, not only who is asking.**
+`app._require_deliverable` fires when the caller is not a platform admin OR the
+run belongs to a company with a `managing_agency_id`. That second half is what
+makes `/shared/{token}/report` work: the visitor there is anonymous by design, so
+there is no caller identity to reason about, and gating every anonymous read
+would have broken the founders' live client links on deploy for runs that predate
+tagging. It is checked on the READ as well as at mint, because a run can be
+re-judged from a warm notebook after its link has gone out. 409, not 403 — the
+caller is entitled to the run, and the request succeeds once it is re-judged.
+
+`src/api/identity.py` is new and is a genuine seam, not a stub: with only a shared
+`GEO_API_KEY` there is exactly one principal and it is a founder, so
+`current_identity()` says so honestly. LIC-T6 replaces its body with verified JWT
+claims and every gate already calling it starts discriminating the same day.
+
+### LIC-T21 — the rule that had nothing enforcing it
+
+"Never share a raw model-vendor API key with an agency or its clients" was a
+sentence in a document. `tests/test_no_vendor_key_leaks.py` sets every guarded
+secret to a traceable sentinel and asserts it appears in no response body, error
+payload, log line or OpenAPI schema under a non-platform identity.
+
+It **walks every registered GET route** rather than checking a fixed list, so a
+new endpoint is covered the day it is added. `SHARE_SIGNING_KEY` and
+`SUPABASE_KEY` are guarded alongside the vendor keys — forging the first mints a
+link to any client's confidential report, and the second is the service-role key
+that bypasses RLS entirely. The realistic leak is exercised directly: a
+`StorageError` carrying a key in its message, which is what an unwrapped provider
+error looks like.
+
+Two tests guard the guard. `test_settings_module_is_the_only_place_that_reads_the_environment`
+greps for `os.getenv` outside `settings.py`, because a stray one is a second door
+this file cannot see through. `test_the_canary_fixture_would_actually_catch_a_leak`
+asserts the sentinels are installed and that `_assert_clean` really fails on a
+planted leak — without it, every other assertion could pass vacuously.
+
+### Also
+
+`.github/workflows/ci.yml` is new — the repo had no CI at all. One job runs the
+standard gate, one runs `supabase db advisors --type security` (LIC-T0), skipping
+with a warning rather than failing when the repo has no Supabase credentials.
+
+### Known gap, recorded rather than fixed
+
+`src/api/intake.py:129` defines its own `_norm_domain`. It is a different
+function for a different job (intake domains) and predates this work, but it IS a
+second domain normaliser in a codebase where LIC-T1 just argued that two
+normalisers mint two tenants. It does not feed company keys today. Worth folding
+into `company_keys` when LIC-T18 brings intake under tenancy.
+
+### Up next
+
+LIC-T5 → T6 → T7 → T8, then T9/T10. The order matters: policies (T10) prove
+nothing until T7 gets user-facing reads off the service-role key, and T9/T10 need
+the backfill to have actually run. Applying the four new schema files and the
+backfill to the live project is the immediate next step and has not been done.
+
+---
+
+## LIC-T0 — licensing prerequisites verified against the real project — Completed 2026-08-05
+
+Every item in `docs/licensing-spec.md` §LIC-T0, checked against the live Supabase
+project (`hohveqgemavghcpfjdiy`) rather than against the design's assumptions.
+Two of the four blocking answers came back different from what the spec expected.
+
+**Asymmetric JWT signing keys: CONFIRMED, and the answer for LIC-T6 is
+`getClaims()`-equivalent local verification.** The project's public JWKS
+(`/auth/v1/.well-known/jwks.json`) returns one **ES256** key (EC P-256, kid
+`f64af885-5d8b-46a0-bae9-32f6c44e0c66`). Supabase's own guidance: with an
+asymmetric key the client verifies locally via the JWKS endpoint and never calls
+the Auth server, while `getUser()` always round-trips. So LIC-T6's FastAPI
+dependency verifies the token **locally against cached JWKS with ES256**, and a
+per-request Auth round-trip would be a bug, not a safety measure. This unblocks
+LIC-T6.
+
+**Supabase's email cap: CONFIRMED at 2/hour built-in, ~30/hour on custom SMTP,
+and it is NOT yet raised.** Both figures are current in Supabase's rate-limit
+docs. The cap is a dashboard setting, so it cannot be raised from code — it is
+the one genuinely manual prerequisite left for LIC-T12, and magic-link onboarding
+cannot launch before it is done.
+
+**Auth is already enabled; `auth.users` is empty.** Email provider on,
+`disable_signup=false`, `mailer_autoconfirm=false` (so confirmation mail really is
+sent — the scanner-safe interstitial in LIC-T13 is load-bearing, not theoretical).
+Zero accounts exist, which means LIC-T5's "backfill identities" is greenfield:
+there is nothing to migrate, only founders to create.
+
+**Correction to the spec: RLS is enabled on ALL 22 public tables, not the five
+`data/schema_ui.sql:152-156` names.** Survey of `pg_class.relrowsecurity` across
+`public`: 22 of 22 tables have RLS **enabled**, **zero** have any policy, and
+**zero** have `FORCE`. The spec's "RLS is already enabled on five tables" framing
+understates the work — LIC-T10 writes policies for far more than five tables, and
+the 0007 advisor ("RLS enabled, no policy") is currently true 22 times over. The
+no-op is total only because the API connects with the service-role key, which is
+exactly what LIC-T7 exists to end.
+
+**Correction to the spec: no large table exists, so LIC-T9 needs no lock dance.**
+Row counts: `query_citations` 8,969 · `query_results` 1,923 · `judgments` 1,774 ·
+`site_audit_check` 385 · `local_pack_entities` 150 · `content_judge_cache` 120 ·
+`judge_cache` 871 · `site_audit_page` 42 · `fact_claims` 36 · `site_audit_offsite_finding`
+32 · `audit_runs` 24 · `teasers` 16 · `site_audit_phase`/`fact_sheets`/`factsheet_jobs`/
+`factsheet_intake_sessions` ≤2. A plain `SET NOT NULL` is milliseconds at this size;
+the `CHECK ... NOT VALID` + `VALIDATE CONSTRAINT` split LIC-T9 offers is available
+but unnecessary. Re-check before assuming it stays that way.
+
+**Seven tables hold zero rows and are legacy, not customer data:**
+`prompt_runs`, `prompt_results`, `brand_mentions`, `citations`, `rubric_scores`
+(the Phase-1 schema, superseded by `audit_runs`/`query_results`), plus
+`audit_deliverables` and `site_audit_phase` (built, never written to). Recorded
+here because LIC-T1 requires the customer-data-vs-fixture call per table and
+LIC-T9 reads that call back: these seven get `company_id` for shape but stay
+nullable, because backfilling a tenant onto zero rows proves nothing.
+
+**Backfill sizing for LIC-T1:** 24 audit runs, 23 of which carry a domain — the
+one that does not is the `name:oura` bucket, i.e. the name-slug fallback path has
+exactly one real instance and it must survive. 16 teasers, all 16 with a
+`prospect_url`. `list_projects()` currently returns **9** projects:
+`albertnahmanplumbing.com`, `fort.cx`, `fitbod.me`, `calai.app`, `copilot.money`,
+`drafted.ai`, `anoria.com`, `acme-hq.io`, `name:oura`. That list is the golden
+baseline LIC-T1 must reproduce byte-identically.
+
+**No tenancy columns exist yet.** `information_schema` reports zero occurrences of
+`company_id`, `organization_id` or `verdict_source` anywhere in `public` —
+confirming both the spec's keystone premise and LIC-T20's.
+
+**Non-blocking checks:** stale `@supabase/auth-helpers-nextjs` imports — **none;**
+`web/` imports no Supabase package at all, so LIC-T13 starts clean on
+`@supabase/ssr` with no deprecation to unwind. Force-refreshing JWT claims
+mid-session — still no first-party mechanism, which is why the design keeps RLS
+DB-authoritative and roles out of the token; nothing to change. Vercel apex
+A-record, Storage `file_size_limit`/`allowed_mime_types` names, and US
+economic-nexus thresholds are deferred with the white-label and billing work that
+`docs/licensing-spec.md` puts out of scope.
+
+**`supabase db advisors` is now in CI.** The repo had **no** CI configuration at
+all, so `.github/workflows/ci.yml` is new: one job running the standard gate
+(`mypy src/` → `ruff check src/` → `pytest tests/`) and one running
+`supabase db advisors --type security`. The advisors job skips with a warning
+when `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_ID` are absent rather than failing
+— a permanently-red job is one people learn to ignore.
+
+**Still manual, and blocking LIC-T12:** raise the auth email rate limit in the
+Supabase dashboard once custom SMTP / the Resend hook is wired.
+
+---
+
 ## A product sheet's claims never persisted — Completed 2026-08-05
 
 **The symptom was total data loss, and nothing was lost.** A fully generated

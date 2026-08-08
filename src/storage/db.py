@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+import threading
 import uuid
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, TypeVar
@@ -24,6 +25,7 @@ from src.audit.factsheet import (
 )
 from src.config import settings
 from src.engines.local_pack import LocalPackCapture
+from src.licensing import verdict_source
 from src.pipeline.metrics import domain_of
 from src.storage.models import (
     AnswerJudgment,
@@ -100,6 +102,32 @@ __all__ = [
     "list_client_configs",
     "revoke_share_token",
     "revoked_share_ids",
+    "ShareTokenRow",
+    "create_share_token_row",
+    "get_share_token_row",
+    "record_share_view",
+    "revoke_share_token_row",
+    "list_share_tokens",
+    "company_delivery_live",
+    "Organization",
+    "create_organization",
+    "get_organization",
+    "create_invitation",
+    "accept_invitation",
+    "list_invitations",
+    "list_org_memberships",
+    "deactivate_membership",
+    "Company",
+    "list_companies",
+    "get_company",
+    "get_company_by_slug",
+    "create_company",
+    "count_companies_for_agency",
+    "set_company_agency",
+    "delete_company",
+    "CompanySlugTaken",
+    "UserProfile",
+    "get_user_profile",
 ]
 
 logger = logging.getLogger(__name__)
@@ -107,6 +135,13 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 # Query-level (intent-aware) audit tables.
+# Tenancy (see data/schema_tenancy.sql). A company is the audited brand and the
+# paying tenant; an organization is an agency that manages some of them.
+TABLE_COMPANIES = "companies"
+TABLE_ORGANIZATIONS = "organizations"
+TABLE_MEMBERSHIPS = "memberships"
+TABLE_USERS = "users"
+
 TABLE_AUDIT_RUNS = "audit_runs"
 TABLE_QUERY_RESULTS = "query_results"
 TABLE_QUERY_CITATIONS = "query_citations"
@@ -121,6 +156,10 @@ TABLE_REVIEW_RECORDS = "review_records"
 TABLE_ENGINE_FINGERPRINTS = "engine_fingerprints"
 TABLE_CLIENT_CONFIGS = "client_configs"
 TABLE_REVOKED_SHARES = "revoked_share_tokens"
+#: Issued report share links, as rows (LIC-T17). See data/schema_report_tokens.sql.
+TABLE_REPORT_SHARE_TOKENS = "report_share_tokens"
+#: Agency/staff invitations, bound to a membership on confirm (LIC-T14).
+TABLE_INVITATIONS = "invitations"
 
 # Fixed namespaces for deriving deterministic (idempotent) row ids from a row's
 # natural key, so a retried save upserts the same row rather than duplicating it.
@@ -175,19 +214,81 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _company_id_for(domains: list[str], name: str) -> str | None:
+    """Tenant id for a new run/teaser, from its first domain or its client name."""
+    company = ensure_company(domains[0] if domains else None, name)
+    return company.id if company else None
+
+
+def _stamp_tenant(run_id: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Copy the run's ``company_id`` onto each of its child rows (LIC-T1).
+
+    The four high-volume run children carry the tenant themselves rather than
+    reaching it by joining `audit_runs`, because an RLS policy that joins back to
+    the parent re-introduces per-row recursion on the largest tables in the
+    system. Denormalised columns have to be WRITTEN, though, and this is the one
+    place that does it — one lookup per save call, not per row.
+
+    A run whose tenant cannot be read leaves the rows unstamped rather than losing
+    them: the measurement is the expensive, irreplaceable part. LIC-T9's NOT NULL
+    then turns that into a loud failure at the constraint, which is the right place
+    for it once a tenant is mandatory.
+    """
+    if not rows:
+        return rows
+    company_id = company_id_for_run(run_id)
+    if company_id is None:
+        return rows
+    for row in rows:
+        row.setdefault("company_id", company_id)
+    return rows
+
+
 def _as_str_list(value: object) -> list[str]:
     """Coerce a JSON value to list[str] (narrows mypy on dict[str, object] rows)."""
     return [str(v) for v in value] if isinstance(value, list) else []
 
 
+# --- Which credential a query runs under (LIC-T7) -----------------------------
+#
+# THIS IS THE TASK WITHOUT WHICH NONE OF THE RLS WORK DOES ANYTHING. Every read
+# and write in the system used to go through one process-wide client built from
+# `SUPABASE_KEY` — the SERVICE-ROLE key, which bypasses RLS entirely. Policies
+# written while the API connects that way change nothing an attacker would
+# notice; the tables would still hand back every tenant's rows.
+#
+# So there are two clients now:
+#
+#   * the SERVICE-ROLE client, for genuinely system-level work (the allowlist
+#     below), and for everything running outside a request — the CLI, the
+#     orchestrator, the resume scan, a worker. Those run as us, on our machine,
+#     with no user to attribute the query to.
+#   * a PER-CALLER client carrying the request's access token, so PostgREST
+#     evaluates `auth.uid()` as that user and RLS actually applies.
+#
+# The design (§1.4) solves this for a raw Postgres connection with
+# transaction-scoped `set_config`. That recipe does not transfer: this codebase
+# talks to PostgREST through supabase-py, where the identity rides in the request
+# header rather than in session state. The good news is that the whole class of
+# bug the design warns about — a pooled connection inheriting the previous
+# tenant's claims under transaction-mode pooling — cannot occur here, because
+# nothing is ever set on a connection.
+
 _cached_client: Client | None = None
 
+#: Per-access-token clients. Bounded, and cleared wholesale when full: a token is
+#: session-scoped and rotates on refresh, so an unbounded map would grow with
+#: every sign-in for the life of the process.
+_user_clients: dict[str, Client] = {}
+_USER_CLIENT_MAX = 64
+_client_lock = threading.Lock()
 
-def _client() -> Client:
-    """Return a cached Supabase client, or raise StorageError if not configured.
 
-    The client (and its underlying HTTP session) is built once and reused for
-    every read and write rather than reconstructed per call.
+def _service_client() -> Client:
+    """The service-role client. Bypasses RLS — see the allowlist in `_execute`.
+
+    Built once and reused for every read and write rather than reconstructed per
+    call.
     """
     global _cached_client
     if _cached_client is not None:
@@ -205,8 +306,96 @@ def _client() -> Client:
     return _cached_client
 
 
-def _execute(op_label: str, operation: Callable[[Client], _T]) -> _T:
-    """Run a Supabase operation against the cached client, normalizing errors.
+def _user_client(access_token: str) -> Client:
+    """A client that queries AS the caller, so RLS applies to it.
+
+    Built from the ANON key with the caller's access token as the bearer. Both
+    halves matter: the anon key is what makes the connection subject to RLS at
+    all, and the token is what gives `auth.uid()` a value. Using the service key
+    with a user's token attached would still be service-role — the request would
+    look authenticated and bypass every policy, which is the exact failure this
+    function exists to prevent, and it would be invisible in testing.
+
+    Raises rather than falling back to service-role when the anon key is missing.
+    A fallback here would silently restore the bypass on every request, and the
+    system would look like it was enforcing isolation while enforcing nothing.
+    """
+    if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+        raise StorageError(
+            "Per-user database access needs SUPABASE_ANON_KEY (see .env.example). "
+            "Refusing to fall back to the service-role key, which would bypass RLS."
+        )
+    with _client_lock:
+        cached = _user_clients.get(access_token)
+        if cached is not None:
+            return cached
+    try:
+        client = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+        # PostgREST sends this as the Authorization header, so Postgres sees the
+        # user's claims and `auth.uid()` resolves.
+        client.postgrest.auth(access_token)
+    except Exception as exc:
+        logger.warning("Failed to create per-user Supabase client: %s", type(exc).__name__)
+        raise StorageError("Failed to create per-user Supabase client") from exc
+    with _client_lock:
+        if len(_user_clients) >= _USER_CLIENT_MAX:
+            _user_clients.clear()
+        _user_clients[access_token] = client
+    return client
+
+
+def _client(*, system: bool = False) -> Client:
+    """The client this operation should run under.
+
+    ``system=True`` forces the service-role client for work that is genuinely
+    ours rather than a tenant's — see `_execute`.
+
+    Otherwise: the caller's client when a request has bound an identity carrying
+    an access token, and the service-role client when nothing has. That fallback
+    is what makes the per-route migration possible — an unmigrated route still
+    authenticates with the shared key and has no token to pass — and it is also
+    correct for the CLI and the background workers, which have no user at all.
+    """
+    if not system:
+        token = _caller_access_token()
+        if token:
+            return _user_client(token)
+    return _service_client()
+
+
+def _caller_access_token() -> str:
+    """The current request's access token, or "" outside a request.
+
+    Imported lazily: `src.storage.db` is imported by the CLI and the pipeline,
+    neither of which should drag in the API layer, and `src.api.identity` is
+    dependency-free precisely so this import is cheap and acyclic.
+    """
+    try:
+        from src.api.identity import current_identity
+
+        return current_identity().access_token
+    except Exception:  # noqa: BLE001 - identity is optional; storage must not depend on it
+        return ""
+
+
+def _caller_organization_id() -> str | None:
+    """The agency behind the current request, or None outside one.
+
+    Same lazy import and same tolerance of a missing API layer as
+    `_caller_access_token` — storage must keep working for the CLI, which never
+    imports `src.api`.
+    """
+    try:
+        from src.api.identity import current_identity
+
+        identity = current_identity()
+        return identity.organization_id if identity.is_agency else None
+    except Exception:  # noqa: BLE001 - identity is optional; storage must not depend on it
+        return None
+
+
+def _execute(op_label: str, operation: Callable[[Client], _T], *, system: bool = False) -> _T:
+    """Run a Supabase operation, normalizing errors.
 
     Single owner of the storage try/except: on failure it logs only the
     exception **type** (a Supabase/Postgres message can echo back row values or
@@ -214,10 +403,40 @@ def _execute(op_label: str, operation: Callable[[Client], _T]) -> _T:
     chains via ``from exc`` for callers that want full detail. ``op_label`` is a
     caller-controlled string (never the exception), safe to log.
 
+    ``system=True`` runs the operation with the SERVICE-ROLE key, bypassing RLS.
+    THE COMPLETE ALLOWLIST, and why each one is on it:
+
+      * **the judge caches** (`judge_cache`, `content_judge_cache`) — content-
+        addressed caches keyed by a hash of (model, prompt, answer). They carry no
+        `company_id` and deliberately never will: two clients asking the same
+        question of the same engine SHOULD share a cached verdict, and tenanting
+        the cache would halve its hit rate and double judge spend for no isolation
+        gain. No user has, or should have, a policy on them.
+      * **engine fingerprints** — provenance about OUR engine pins, not about any
+        client.
+      * **the site-audit page cache and its HTML blobs** — written by the crawler,
+        which runs in a worker with no user context.
+      * **the fact-sheet job queue** — a worker queue, claimed and completed by a
+        background process; the SHEET it produces is tenanted, the queue row is
+        not.
+      * **the share-link report read** (LIC-T17) — an anonymous visitor holding a
+        valid token has no `auth.uid()` and can satisfy no policy. The token row
+        IS the authorisation; the read is scoped to the single `run_id` that token
+        names and must never widen into a general service-role read path.
+        Exactly four calls sit here, all on that one visitor's path and all
+        scoped to the single id they presented: `get_share_token_row` (resolve
+        the token), `record_share_view` (stamp the access log),
+        `company_delivery_live` (has this client been offboarded), and the report
+        read itself. MINTING a link is deliberately NOT on this list — it runs as
+        the caller so the policy's `with check` half stops an agency stamping a
+        link with another tenant's `company_id`.
+
+    Everything else is a tenant's data and runs as the caller.
+
     ``_client()`` is called outside the try so a "not configured" ``StorageError``
     propagates unchanged rather than being re-wrapped.
     """
-    client = _client()
+    client = _client(system=system)
     try:
         return operation(client)
     except Exception as exc:
@@ -306,6 +525,10 @@ def create_audit_run(
         # rather than silently absent (src/pipeline/preflight.py).
         "engine_probe": engine_probe or {},
         "engine_models": engine_models or {},
+        # The tenant this run belongs to (LIC-T1). Derived from the same key the
+        # UI groups projects by, so a run for a domain that already has a project
+        # joins it rather than minting a second company for the same business.
+        "company_id": _company_id_for(client_domains, client_name),
         "created_at": _now(),
         "updated_at": _now(),
         "archived_at": None,
@@ -443,6 +666,7 @@ def save_local_pack_entities(run_id: str, captures: list[LocalPackCapture]) -> N
             )
     if not rows:
         return
+    _stamp_tenant(run_id, rows)
     _execute(
         f"save_local_pack_entities for run {run_id} ({len(rows)} rows)",
         lambda c: c.table(TABLE_LOCAL_PACK).insert(rows).execute(),
@@ -522,8 +746,8 @@ def save_query_results(run_id: str, results: list[QueryResult]) -> None:
     whole pending set on a StorageError) can't create duplicate rows even though the
     two upserts below aren't one transaction.
     """
-    result_rows = _query_result_rows(run_id, results)
-    citation_rows = _query_citation_rows(run_id, results)
+    result_rows = _stamp_tenant(run_id, _query_result_rows(run_id, results))
+    citation_rows = _stamp_tenant(run_id, _query_citation_rows(run_id, results))
     if result_rows:
         _execute(
             f"save_query_results for run {run_id}",
@@ -628,9 +852,12 @@ _JUDGE_CACHE_CHUNK = 200
 
 def _cache_read_chunk(table: str, keys: list[str]) -> list[dict[str, object]]:
     # keys is a parameter (not a loop var), so the lambda closes over it cleanly.
+    # system=True: the judge caches are content-addressed and carry no tenant —
+    # see the allowlist in `_execute`.
     response = _execute(
         f"{table} read ({len(keys)} keys)",
         lambda c: c.table(table).select("key,value").in_("key", keys).execute(),
+        system=True,
     )
     return list(getattr(response, "data", None) or [])
 
@@ -639,6 +866,7 @@ def _cache_write_chunk(table: str, rows: list[dict[str, Any]]) -> None:
     _execute(
         f"{table} write ({len(rows)} rows)",
         lambda c: c.table(table).upsert(rows, on_conflict="key").execute(),
+        system=True,
     )
 
 
@@ -668,6 +896,30 @@ def judge_cache_put_many(rows: list[dict[str, Any]]) -> None:
     _cache_put_many(TABLE_JUDGE_CACHE, rows)
 
 
+def judge_cache_sources(keys: list[str]) -> list[dict[str, object]]:
+    """``{key, verdict_source}`` for the given keys — which judge produced each.
+
+    Separate from ``judge_cache_get_many`` rather than widening its select, because
+    the two have different callers and very different sizes: the verdict read
+    happens on every judge pass and pulls a fat ``value`` blob, while this is read
+    only by the LIC-T20 delivery gate and pulls one short string. Keeping them
+    apart means the gate does not drag every verdict body across the wire, and the
+    judge path is untouched by LIC-T20.
+    """
+    out: list[dict[str, object]] = []
+    for i in range(0, len(keys), _JUDGE_CACHE_CHUNK):
+        chunk = keys[i : i + _JUDGE_CACHE_CHUNK]
+        response = _execute(
+            f"judge_cache source read ({len(chunk)} keys)",
+            lambda c, ks=chunk: (  # type: ignore[misc]  # default arg pins the loop var
+                c.table(TABLE_JUDGE_CACHE).select("key,verdict_source").in_("key", ks).execute()
+            ),
+            system=True,  # the judge cache carries no tenant — see `_execute`
+        )
+        out.extend(getattr(response, "data", None) or [])
+    return out
+
+
 def content_judge_cache_get_many(keys: list[str]) -> list[dict[str, object]]:
     """Content-judge notebook rows for the given keys (chunked)."""
     return _cache_get_many(TABLE_CONTENT_JUDGE_CACHE, keys)
@@ -692,6 +944,7 @@ def upsert_site_audit_pages(run_id: str, rows: list[dict[str, Any]]) -> None:
     """
     if not rows:
         return
+    _stamp_tenant(run_id, rows)
     _execute(
         f"upsert_site_audit_pages for run {run_id}",
         lambda c: (
@@ -699,6 +952,7 @@ def upsert_site_audit_pages(run_id: str, rows: list[dict[str, Any]]) -> None:
             .upsert(rows, on_conflict="run_id,normalized_url")
             .execute()
         ),
+        system=True,
     )
 
 
@@ -729,6 +983,7 @@ def upload_site_audit_html(
             file=data,
             file_options={"content-type": "application/gzip", "upsert": "true"},
         ),
+        system=True,
     )
 
 
@@ -737,6 +992,7 @@ def download_site_audit_html(path: str, *, bucket: str = BUCKET_SITE_AUDIT_HTML)
     return _execute(
         f"download gzipped html from {bucket}/{path}",
         lambda c: c.storage.from_(bucket).download(path),
+        system=True,
     )
 
 
@@ -748,6 +1004,7 @@ def upsert_site_audit_checks(run_id: str, rows: list[dict[str, Any]]) -> None:
     """
     if not rows:
         return
+    _stamp_tenant(run_id, rows)
     _execute(
         f"upsert_site_audit_checks for run {run_id}",
         lambda c: (
@@ -774,6 +1031,7 @@ def replace_site_audit_findings(run_id: str, rows: list[dict[str, Any]]) -> None
         lambda c: c.table(TABLE_SITE_AUDIT_OFFSITE).delete().eq("run_id", run_id).execute(),
     )
     if rows:
+        _stamp_tenant(run_id, rows)
         _execute(
             f"insert site_audit findings for run {run_id}",
             lambda c: c.table(TABLE_SITE_AUDIT_OFFSITE).insert(rows).execute(),
@@ -898,6 +1156,7 @@ def _judgment_to_row(run_id: str, j: AnswerJudgment) -> dict[str, Any]:
         "assessed": j.assessed,
         "brands": [brand_to_dict(b) for b in j.brands],
         "accuracy_flags": [flag_to_dict(f) for f in j.accuracy_flags],
+        "verdict_source": j.verdict_source,
     }
 
 
@@ -950,6 +1209,11 @@ def _row_to_judgment(row: dict[str, object]) -> AnswerJudgment:
         assessed=bool(row.get("assessed", False)),
         brands=brands,
         accuracy_flags=flags,
+        # A row written before LIC-T20 has no source. It reads back as "unknown",
+        # NOT as the "api" default on the dataclass — an untagged verdict cannot
+        # be attested to, and the delivery gate must refuse it rather than assume
+        # the deliverable value.
+        verdict_source=verdict_source.normalize_source(row.get("verdict_source")),
     )
 
 
@@ -978,7 +1242,7 @@ def save_judgments(
     when it was created. ``None`` leaves any existing value alone — an unknown judge
     must not erase a known one.
     """
-    rows = [_judgment_to_row(run_id, j) for j in judgments]
+    rows = _stamp_tenant(run_id, [_judgment_to_row(run_id, j) for j in judgments])
     if not rows:
         return
     _execute(
@@ -989,6 +1253,37 @@ def save_judgments(
         f"save_judgments for run {run_id}",
         lambda c: c.table(TABLE_JUDGMENTS).insert(rows).execute(),
     )
+    # The run-level rollup the LIC-T20 delivery gate reads. Written here, with the
+    # verdicts, for exactly the reason `judge_model` is: a run is routinely judged
+    # later than it is created, so run-creation time knows nothing about this.
+    #
+    # Distinct + sorted, so the value answers "what is IN this report" rather than
+    # "what was the last thing written". A run judged half from a warm subscription
+    # notebook and half live on the API stores ["api", "prejudge"] and is correctly
+    # refused for a client — the mixture is the point, and a single scalar would
+    # have hidden it.
+    sources = sorted({j.verdict_source for j in judgments})
+    try:
+        _execute(
+            f"record verdict_sources for run {run_id}",
+            lambda c: c.table(TABLE_AUDIT_RUNS)
+            .update({"verdict_sources": sources, "updated_at": _now()})
+            .eq("id", run_id)
+            .execute(),
+        )
+    except StorageError:
+        # Same degrade-don't-raise trade as judge_model below: the verdicts are
+        # committed, and failing here would report a failure about a save that
+        # succeeded. The consequence is a run whose sources are unrecorded, which
+        # the gate reads as `unknown` and REFUSES — failing toward "cannot
+        # deliver", never toward "deliver something unattributable".
+        logger.warning(
+            "Judgments saved for run %s but verdict_sources was NOT recorded. Apply "
+            "data/schema_verdict_source.sql; until then this run cannot be delivered "
+            "to a client because its judge provenance cannot be attested.",
+            run_id,
+        )
+
     if judge_model:
         # Deliberately non-fatal, and the only place in this module that degrades rather
         # than raising: the verdicts are already committed above, so failing here would
@@ -1050,6 +1345,12 @@ def save_teaser(draft: dict[str, Any], html: str | None, teaser_id: str | None =
         "html": html,
         "status": "draft",
         "edited_fields": {},
+        # The tenant (LIC-T1). A teaser is usually the FIRST thing we do for a
+        # prospect, so this is often what creates the company the later audit
+        # joins — keyed on prospect_url so both land on one project.
+        "company_id": _company_id_for(
+            [str(draft.get("prospectUrl") or "")], str(draft.get("companyName") or "")
+        ),
         "created_at": _now(),
         "updated_at": _now(),
     }
@@ -1098,7 +1399,7 @@ def list_teasers_with_url(limit: int = 200) -> list[dict[str, object]]:
         "list_teasers_with_url",
         lambda c: (
             c.table(TABLE_TEASERS)
-            .select("id, company_name, status, created_at, prospect_url")
+            .select("id, company_name, status, created_at, prospect_url, company_id")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
@@ -1481,11 +1782,20 @@ def save_fact_sheet(
     row = _fact_sheet_to_row(
         sheet, sheet_id, state=FactSheetState.DRAFT, source_snapshot_prefix=prefix
     )
+    # The tenant (LIC-T1). A fact sheet can precede any run or teaser — that is
+    # how blackpropeller.com ended up untenanted in the first backfill — so this
+    # creates the company when the sheet is the first thing we have for a domain.
+    sheet_company = ensure_company(sheet.domain, sheet.business_name or sheet.domain)
+    if sheet_company is not None:
+        row["company_id"] = sheet_company.id
     _execute(
         f"save_fact_sheet for {sheet.domain} v{sheet.version}",
         lambda c: c.table(TABLE_FACT_SHEETS).insert(row).execute(),
     )
     claim_rows = [_fact_claim_to_row(sheet_id, claim) for claim in claims]
+    if sheet_company is not None:
+        for claim_row in claim_rows:
+            claim_row["company_id"] = sheet_company.id
     if claim_rows:
         _execute(
             f"save_fact_claims for {sheet.domain} v{sheet.version} ({len(claim_rows)} rows)",
@@ -1824,6 +2134,7 @@ def create_intake_session(
     check loses that race by construction because only Postgres sees both
     writers. ``None`` means "resume the existing one" — the caller looks it up.
     """
+    intake_company = ensure_company(domain, domain)
     row: dict[str, Any] = {
         "domain": domain,
         "business_kind": business_kind,
@@ -1831,6 +2142,9 @@ def create_intake_session(
         "prefill": prefill or {},
         "current_question_id": current_question_id,
         "state": "in_progress",
+        # The tenant (LIC-T1). An agency onboarding its own client starts HERE,
+        # before any run exists, so the intake is often what creates the company.
+        "company_id": intake_company.id if intake_company else None,
     }
     try:
         response = _execute(
@@ -1970,7 +2284,8 @@ def enqueue_factsheet_job(domain: str, lead_ref: str | None = None, tier: int = 
         _execute(
             f"enqueue_factsheet_job for {domain} (tier {tier})",
             lambda c: c.table(TABLE_FACTSHEET_JOBS).insert(row).execute(),
-        )
+        system=True,
+    )
     except StorageError as exc:
         if _is_duplicate_key(exc):
             return None
@@ -2030,7 +2345,9 @@ def claim_factsheet_job(tier: int | None = None) -> dict[str, object] | None:
             q = q.eq("tier", tier)
         return q.order("created_at").limit(_JOB_CLAIM_SCAN).execute()
 
-    response = _execute("claim_factsheet_job (scan)", _queued)
+    response = _execute("claim_factsheet_job (scan)", _queued,
+        system=True,
+    )
     for row in list(getattr(response, "data", None) or []):
         claimed = _claim_one_job(str(row.get("id", "")), int(str(row.get("attempts") or 0)))
         if claimed is not None:
@@ -2065,6 +2382,7 @@ def finish_factsheet_job(
     _execute(
         f"finish_factsheet_job {job_id} ({state.value})",
         lambda c: c.table(TABLE_FACTSHEET_JOBS).update(row).eq("id", job_id).execute(),
+        system=True,
     )
 
 
@@ -2080,9 +2398,11 @@ def factsheet_spend_today() -> dict[str, float]:
     ``running``/``done``, so a *failed* tier-2 job's spend is charged but not
     counted. Read the dollars, not the count, when the question is money.
     """
+    # system=True: the worker queue's spend limiter — our budget, not a tenant's.
     response = _execute(
         "factsheet_spend_today",
         lambda c: c.table(VIEW_FACTSHEET_SPEND_TODAY).select("*").limit(1).execute(),
+        system=True,
     )
     rows = list(getattr(response, "data", None) or [])
     row = rows[0] if rows else {}
@@ -2281,11 +2601,15 @@ def save_engine_fingerprints(
         }
         for f in fingerprints
     ]
+    # system=True: engine fingerprints are provenance about OUR engine pins —
+    # which model answered, how long, how many citations — not about any client.
+    # See the allowlist in `_execute`.
     _execute(
         f"save engine fingerprints ({run_id})",
         lambda c: c.table(TABLE_ENGINE_FINGERPRINTS)
         .upsert(rows, on_conflict="run_id,engine_name")
         .execute(),
+        system=True,
     )
 
 
@@ -2305,7 +2629,7 @@ def get_engine_fingerprints(
         )
         return (q.eq("engine_name", engine_name) if engine_name else q).execute()
 
-    response = _execute(f"read engine fingerprints ({client_name})", _query)
+    response = _execute(f"read engine fingerprints ({client_name})", _query, system=True)
     return list(getattr(response, "data", None) or [])
 
 
@@ -2372,6 +2696,252 @@ def revoked_share_ids() -> set[str]:
     return {str(r["jti"]) for r in (getattr(response, "data", None) or [])}
 
 
+# --- Report share tokens as rows (LIC-T17) -----------------------------------
+
+
+@dataclass(frozen=True)
+class ShareTokenRow:
+    """One issued share link, as a row rather than only a signature.
+
+    The signed token itself is never stored — only its id. See
+    `data/schema_report_tokens.sql` for why.
+    """
+
+    token_id: str
+    run_id: str
+    company_id: str
+    #: Unix seconds, normalised from the row's timestamptz so callers compare
+    #: against the same integer clock the signed payload carries.
+    expires_at: int
+    password_hash: str
+    revoked_at: str | None
+    first_viewed_at: str | None
+    view_count: int
+
+    @property
+    def revoked(self) -> bool:
+        return self.revoked_at is not None
+
+
+def _epoch(value: object) -> int:
+    """A timestamptz string to unix seconds, or 0 when it cannot be read.
+
+    0 rather than raising: a row whose expiry is unparseable is treated as
+    already expired by every caller, which is the safe direction for a
+    credential.
+    """
+    text = str(value or "")
+    if not text:
+        return 0
+    try:
+        return int(datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp())
+    except ValueError:
+        logger.warning("share token row has an unreadable expiry")
+        return 0
+
+
+def _share_token_from_row(row: dict[str, object]) -> ShareTokenRow:
+    revoked = row.get("revoked_at")
+    viewed = row.get("first_viewed_at")
+    return ShareTokenRow(
+        token_id=str(row.get("token_id", "")),
+        run_id=str(row.get("run_id", "")),
+        company_id=str(row.get("company_id", "")),
+        expires_at=_epoch(row.get("expires_at")),
+        password_hash=str(row.get("password_hash") or ""),
+        revoked_at=str(revoked) if revoked else None,
+        first_viewed_at=str(viewed) if viewed else None,
+        view_count=int(str(row.get("view_count") or 0)),
+    )
+
+
+def create_share_token_row(
+    token_id: str,
+    run_id: str,
+    company_id: str,
+    expires_at: int,
+    password_hash: str = "",
+    created_by: str | None = None,
+) -> None:
+    """Record an issued link. Runs as the CALLER, so RLS applies.
+
+    Deliberately not `system=True`: minting a link is a tenant action, and the
+    `with check` half of the policy is what stops an agency stamping a link with
+    another tenant's `company_id`. Routing this through the service role would
+    disable exactly the check that makes the column trustworthy.
+    """
+    _execute(
+        f"create share token row ({token_id[:8]})",
+        lambda c: c.table(TABLE_REPORT_SHARE_TOKENS)
+        .insert(
+            {
+                "token_id": token_id,
+                "run_id": run_id,
+                "company_id": company_id,
+                "expires_at": datetime.fromtimestamp(expires_at, tz=UTC).isoformat(),
+                "password_hash": password_hash,
+                "created_by": created_by,
+            }
+        )
+        .execute(),
+    )
+
+
+def get_share_token_row(token_id: str) -> ShareTokenRow | None:
+    """One share-token row by id, or None.
+
+    **On the service-role allowlist** (see `_execute`), and one of the few reads
+    that must be: the caller is an anonymous visitor with no `auth.uid()`, who
+    can satisfy no policy on this table. The token they presented IS the
+    authorisation, and this read is scoped to that single id — it must never
+    grow a variant that returns more than one row.
+    """
+    if not token_id:
+        return None
+    response = _execute(
+        f"get share token row ({token_id[:8]})",
+        lambda c: (
+            c.table(TABLE_REPORT_SHARE_TOKENS)
+            .select(
+                "token_id, run_id, company_id, expires_at, password_hash, "
+                "revoked_at, first_viewed_at, view_count"
+            )
+            .eq("token_id", token_id)
+            .limit(1)
+            .execute()
+        ),
+        system=True,
+    )
+    data = getattr(response, "data", None) or []
+    return _share_token_from_row(data[0]) if data else None
+
+
+def record_share_view(token_id: str, viewed_at: str | None = None) -> None:
+    """Stamp a view on the access log. Best-effort by design — never blocks a read.
+
+    Also on the service-role allowlist, for the same reason as the read above,
+    and scoped to the same single token id.
+
+    `first_viewed_at` is written only when it is still null, so it keeps meaning
+    "when did this land" rather than drifting to "most recent view" —
+    `view_count` is the column that answers the second question.
+    """
+    if not token_id:
+        return
+    stamp = viewed_at or datetime.now(tz=UTC).isoformat()
+    current = get_share_token_row(token_id)
+    if current is None:
+        return
+    patch: dict[str, Any] = {"view_count": current.view_count + 1}
+    if current.first_viewed_at is None:
+        patch["first_viewed_at"] = stamp
+    _execute(
+        f"record share view ({token_id[:8]})",
+        lambda c: c.table(TABLE_REPORT_SHARE_TOKENS)
+        .update(patch)
+        .eq("token_id", token_id)
+        .execute(),
+        system=True,
+    )
+
+
+def revoke_share_token_row(token_id: str, reason: str = "") -> bool:
+    """Flip `revoked_at` on one link. Returns whether a row was actually updated.
+
+    The boolean matters: a token minted before LIC-T17 has no row, and the caller
+    needs to know that the deny list is the only thing withdrawing it.
+    """
+    response = _execute(
+        f"revoke share token row ({token_id[:8]})",
+        lambda c: c.table(TABLE_REPORT_SHARE_TOKENS)
+        .update({"revoked_at": datetime.now(tz=UTC).isoformat(), "revoked_reason": reason})
+        .eq("token_id", token_id)
+        .is_("revoked_at", "null")
+        .execute(),
+    )
+    return bool(getattr(response, "data", None))
+
+
+def list_share_tokens(run_id: str) -> list[ShareTokenRow]:
+    """Every link issued for one run, newest first. Runs as the caller (RLS applies)."""
+    if not run_id:
+        return []
+    response = _execute(
+        f"list share tokens ({run_id})",
+        lambda c: (
+            c.table(TABLE_REPORT_SHARE_TOKENS)
+            .select(
+                "token_id, run_id, company_id, expires_at, password_hash, "
+                "revoked_at, first_viewed_at, view_count"
+            )
+            .eq("run_id", run_id)
+            .order("created_at", desc=True)
+            .execute()
+        ),
+    )
+    return [_share_token_from_row(r) for r in (getattr(response, "data", None) or [])]
+
+
+def company_delivery_live(company_id: str) -> bool:
+    """Whether a company's outstanding share links should still be honoured.
+
+    This is the question `company_id` on the token row exists to make askable,
+    and the rule is narrower than it first looks. A link goes dark when the
+    relationship behind it has been **actively withdrawn**, not merely when it is
+    absent:
+
+      * A company that has membership rows and whose every membership is
+        deactivated has been offboarded — its links stop. This is the spec's
+        acceptance case.
+      * A company managed by an agency whose organization is deactivated stops
+        too: the agency's contract ended, and its clients' links go with it.
+      * A company with NO memberships at all is untouched. That is every company
+        on the platform today — the LIC-T1 backfill created tenants, not
+        memberships — and treating "no membership" as "offboarded" would have
+        killed every live client link the moment this shipped.
+
+    On a storage failure this returns True. An outage must not silently revoke
+    every client's report; the deny list and the expiry still bound the risk, and
+    an unreadable database cannot tell us the relationship ended.
+    """
+    if not company_id:
+        return True
+    try:
+        memberships = _execute(
+            "read company memberships for delivery",
+            lambda c: (
+                c.table(TABLE_MEMBERSHIPS)
+                .select("id, deactivated_at")
+                .eq("company_id", company_id)
+                .execute()
+            ),
+            system=True,
+        )
+        rows = list(getattr(memberships, "data", None) or [])
+        if rows and all(r.get("deactivated_at") for r in rows):
+            return False
+
+        company = get_company(company_id)
+        if company is None or not company.managing_agency_id:
+            return True
+        agency = _execute(
+            "read managing agency for delivery",
+            lambda c: (
+                c.table(TABLE_ORGANIZATIONS)
+                .select("id, deactivated_at")
+                .eq("id", company.managing_agency_id)
+                .limit(1)
+                .execute()
+            ),
+            system=True,
+        )
+        org_rows = list(getattr(agency, "data", None) or [])
+    except StorageError:
+        logger.warning("share delivery check unavailable, honouring the link")
+        return True
+    return not (org_rows and org_rows[0].get("deactivated_at"))
+
+
 def supports_findings_registry() -> bool:
     """Whether the `findings_registry` table exists.
 
@@ -2432,6 +3002,574 @@ class SupabaseFindingRegistry:
             )
         except StorageError:
             self._degraded = True
+
+
+# --- Tenancy: companies and their managing agency (LIC-T1) -------------------
+#
+# A company is the audited brand AND the paying tenant. Until LIC-T1 it was not a
+# row at all — `src/api/projects.py` derived it per request by grouping runs and
+# teasers on domain. Everything downstream (memberships, slot counts, every RLS
+# predicate) needs an id to reference, and a GROUP BY has none.
+
+
+@dataclass(frozen=True)
+class Company:
+    """One tenant. ``slug`` is the project key the UI already routes on."""
+
+    id: str
+    name: str
+    slug: str
+    #: Registrable domain, or None for a company keyed by name slug.
+    domain: str | None
+    #: The agency that manages this company, or None when it buys direct.
+    #: Reassignable — a client going direct is one UPDATE (see set_company_agency).
+    managing_agency_id: str | None
+
+
+def _company_from_row(row: dict[str, object]) -> Company:
+    """Narrow an untyped PostgREST row to :class:`Company`.
+
+    Read defensively: `domain` and `managing_agency_id` are nullable, and an
+    empty string is normalised to None so callers have exactly one "no domain"
+    value to test rather than two.
+    """
+    domain = row.get("domain")
+    agency = row.get("managing_agency_id")
+    return Company(
+        id=str(row.get("id", "")),
+        name=str(row.get("name", "")),
+        slug=str(row.get("slug", "")),
+        domain=str(domain) if domain else None,
+        managing_agency_id=str(agency) if agency else None,
+    )
+
+
+#: Far above any realistic tenant count for a two-founder agency product, and
+#: cheap: the row is five short columns. Bounded anyway, so a runaway table
+#: cannot turn the projects dashboard into an unbounded read.
+_COMPANY_SCAN_LIMIT = 5_000
+
+
+def list_companies(limit: int = _COMPANY_SCAN_LIMIT) -> list[Company]:
+    """Every company, oldest first (stable order for a dashboard roll-up)."""
+    response = _execute(
+        "list_companies",
+        lambda c: (
+            c.table(TABLE_COMPANIES)
+            .select("id, name, slug, domain, managing_agency_id")
+            .order("created_at")
+            .limit(limit)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return [_company_from_row(row) for row in data]
+
+
+@dataclass(frozen=True)
+class UserProfile:
+    """What the API needs to know about a signed-in user, read live per request."""
+
+    user_id: str
+    is_platform_admin: bool
+    deactivated: bool
+    #: The agency this user is staff of, when they hold an ORG-scoped membership.
+    #: None for a client's own user, whose access comes from a company membership
+    #: and is resolved per company by `private.has_company_access`.
+    organization_id: str | None
+
+
+def get_user_profile(user_id: str) -> UserProfile | None:
+    """One user's platform-admin flag and agency membership, or None if unknown.
+
+    Read on every authenticated request rather than taken from JWT claims, and
+    that is the deliberate trade named in the design: there is no first-party way
+    to force-refresh a user's claims mid-session, so a role baked into a token
+    outlives its own revocation. Two small indexed reads buy revocation that takes
+    effect on the next request instead of the next token refresh.
+
+    Only ACCEPTED, non-deactivated org memberships count — a pending invitation is
+    not yet an agency staffer, matching `private.has_company_access`.
+    """
+    if not user_id:
+        return None
+    response = _execute(
+        "get_user_profile",
+        lambda c: (
+            c.table(TABLE_USERS)
+            .select("id, is_platform_admin, deactivated_at")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        ),
+    )
+    rows = getattr(response, "data", None) or []
+    if not rows:
+        return None
+    row = rows[0]
+
+    memberships = _execute(
+        "get_user_profile memberships",
+        lambda c: (
+            c.table(TABLE_MEMBERSHIPS)
+            .select("organization_id")
+            .eq("user_id", user_id)
+            .is_("deactivated_at", "null")
+            .not_.is_("accepted_at", "null")
+            .not_.is_("organization_id", "null")
+            .limit(1)
+            .execute()
+        ),
+    )
+    org_rows = getattr(memberships, "data", None) or []
+    organization_id = str(org_rows[0]["organization_id"]) if org_rows else None
+
+    return UserProfile(
+        user_id=str(row.get("id", "")),
+        is_platform_admin=bool(row.get("is_platform_admin", False)),
+        deactivated=bool(row.get("deactivated_at")),
+        organization_id=organization_id,
+    )
+
+
+def ensure_company(domain: str | None, name: object) -> Company | None:
+    """The company for this domain/name, creating it if it does not exist yet.
+
+    **This is what makes `company_id` NOT NULL survivable (LIC-T9).** The backfill
+    tenanted every existing row; without a get-or-create on the WRITE paths, the
+    very next audit would insert a row with no tenant and violate the constraint.
+
+    The key comes from `src/api/company_keys.key_for` — the same function the UI
+    and the backfill use — so a run started for a domain that already has a
+    project lands on that project's company rather than minting a second tenant
+    for the same business.
+
+    Returns None rather than raising when storage cannot answer. The caller then
+    writes a NULL `company_id`, which is exactly what happens today and is a
+    strictly better outcome than failing an audit that is otherwise fine. Once
+    LIC-T9's NOT NULL lands, that same case fails loudly at the constraint — which
+    is the right moment for it to fail, because by then a tenant is required.
+    """
+    # Imported here rather than at module scope: `src.api.company_keys` is a
+    # dependency-free pure-function module, but importing the api package from
+    # storage at import time would invert the layering for every CLI run.
+    from src.api.company_keys import key_for, norm_domain
+
+    key, label, resolved_domain = key_for(norm_domain(domain), name)
+    try:
+        existing = get_company_by_slug(key)
+        if existing is not None:
+            return existing
+        # A company created inside an AGENCY's request belongs to that agency
+        # (LIC-T18). Two reasons, and the second is not optional: an agency
+        # onboarding a client through intake must end up managing them, and the
+        # `companies_agency_insert` policy REFUSES a row with no
+        # `managing_agency_id` — so without this, the first fact sheet an agency
+        # created would fail at the policy rather than land untenanted.
+        #
+        # None outside a request (the CLI, the orchestrator, the founders on the
+        # shared key), which is correct: that work runs on the service-role
+        # client, where the policy does not apply and a direct-owned company is
+        # exactly what is wanted.
+        return create_company(label, key, resolved_domain, _caller_organization_id())
+    except CompanySlugTaken:
+        # Lost the race with a concurrent writer — which is the ordinary outcome
+        # of two runs starting for the same client at once, not an error. Read
+        # back what the winner wrote.
+        try:
+            return get_company_by_slug(key)
+        except StorageError:
+            return None
+    except StorageError:
+        logger.warning("could not resolve a company for this write; leaving it untenanted")
+        return None
+
+
+def company_id_for_run(run_id: str) -> str | None:
+    """The tenant of a run, for stamping its child rows.
+
+    One read per save call rather than per row: `save_query_results` writes ~1,500
+    rows for a single run and they all share a tenant.
+    """
+    if not run_id:
+        return None
+    try:
+        response = _execute(
+            "company_id_for_run",
+            lambda c: (
+                c.table(TABLE_AUDIT_RUNS).select("company_id").eq("id", run_id).limit(1).execute()
+            ),
+        )
+    except StorageError:
+        return None
+    rows = getattr(response, "data", None) or []
+    if not rows:
+        return None
+    value = rows[0].get("company_id")
+    return str(value) if value else None
+
+
+def get_company(company_id: str) -> Company | None:
+    """One company by id, or None."""
+    if not company_id:
+        return None
+    response = _execute(
+        "get_company",
+        lambda c: (
+            c.table(TABLE_COMPANIES)
+            .select("id, name, slug, domain, managing_agency_id")
+            .eq("id", company_id)
+            .limit(1)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return _company_from_row(data[0]) if data else None
+
+
+def get_company_by_slug(slug: str) -> Company | None:
+    """One company by project key, or None. The slug IS the key in /projects/{key}."""
+    if not slug:
+        return None
+    response = _execute(
+        "get_company_by_slug",
+        lambda c: (
+            c.table(TABLE_COMPANIES)
+            .select("id, name, slug, domain, managing_agency_id")
+            .eq("slug", slug)
+            .limit(1)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return _company_from_row(data[0]) if data else None
+
+
+class CompanySlugTaken(StorageError):
+    """A company already exists with this slug.
+
+    Its own type because the caller's response differs by a lot: LIC-T14/T19 turn
+    it into "that client is already on the platform" (a 409), while any other
+    StorageError is a 503. Silently reusing the existing row would attach a new
+    agency's client to another agency's tenant — the exact cross-tenant merge
+    LIC-T1's slug-collision test exists to prevent.
+    """
+
+
+def create_company(
+    name: str,
+    slug: str,
+    domain: str | None = None,
+    managing_agency_id: str | None = None,
+) -> Company:
+    """Insert one company. Raises :class:`CompanySlugTaken` if the slug is used.
+
+    Checking-then-inserting would be the race the unique constraint exists to
+    win, so this inserts and reads the violation back.
+    """
+    if not name or not slug:
+        raise StorageError("a company needs both a name and a slug")
+    payload: dict[str, Any] = {"name": name, "slug": slug}
+    if domain:
+        payload["domain"] = domain
+    if managing_agency_id:
+        payload["managing_agency_id"] = managing_agency_id
+    try:
+        response = _execute(
+            "create_company",
+            lambda c: c.table(TABLE_COMPANIES).insert(payload).execute(),
+        )
+    except StorageError as exc:
+        if _is_duplicate_key(exc):
+            raise CompanySlugTaken(f"a company already exists with slug {slug!r}") from exc
+        raise
+    data = getattr(response, "data", None) or []
+    if not data:
+        raise StorageError("create_company returned no row")
+    return _company_from_row(data[0])
+
+
+# --- Organizations, invitations and memberships (LIC-T14 / LIC-T19) ----------
+
+
+@dataclass(frozen=True)
+class Organization:
+    """One agency. ``entitlement_overrides`` is merged over the plan, never a plan."""
+
+    id: str
+    name: str
+    plan_id: str | None
+    entitlement_overrides: dict[str, Any] | None
+    deactivated_at: str | None
+
+
+def _organization_from_row(row: dict[str, object]) -> Organization:
+    overrides = row.get("entitlement_overrides")
+    deactivated = row.get("deactivated_at")
+    return Organization(
+        id=str(row.get("id", "")),
+        name=str(row.get("name", "")),
+        plan_id=str(row["plan_id"]) if row.get("plan_id") else None,
+        entitlement_overrides=dict(overrides) if isinstance(overrides, dict) else None,
+        deactivated_at=str(deactivated) if deactivated else None,
+    )
+
+
+def create_organization(
+    name: str,
+    plan_id: str,
+    entitlement_overrides: dict[str, Any] | None = None,
+) -> Organization:
+    """Provision an agency. Platform-admin action — runs on the service role.
+
+    `system=True` because nobody has a membership in an organization that does
+    not exist yet, so there is no policy any caller could satisfy. The API
+    boundary is what restricts this to a platform admin; see
+    `app.create_agency`.
+    """
+    if not name:
+        raise StorageError("an organization needs a name")
+    payload: dict[str, Any] = {"name": name, "plan_id": plan_id}
+    if entitlement_overrides:
+        payload["entitlement_overrides"] = entitlement_overrides
+    response = _execute(
+        "create_organization",
+        lambda c: c.table(TABLE_ORGANIZATIONS).insert(payload).execute(),
+        system=True,
+    )
+    data = getattr(response, "data", None) or []
+    if not data:
+        raise StorageError("create_organization returned no row")
+    return _organization_from_row(data[0])
+
+
+def get_organization(organization_id: str) -> Organization | None:
+    """One agency by id, or None. Runs as the caller — RLS applies."""
+    if not organization_id:
+        return None
+    response = _execute(
+        "get_organization",
+        lambda c: (
+            c.table(TABLE_ORGANIZATIONS)
+            .select("id, name, plan_id, entitlement_overrides, deactivated_at")
+            .eq("id", organization_id)
+            .limit(1)
+            .execute()
+        ),
+    )
+    data = getattr(response, "data", None) or []
+    return _organization_from_row(data[0]) if data else None
+
+
+def create_invitation(
+    email: str,
+    role: str,
+    token_hash: str,
+    expires_at: int,
+    organization_id: str | None = None,
+    company_id: str | None = None,
+    invited_by: str | None = None,
+) -> str:
+    """Issue one invitation and return its id.
+
+    `system=True`: `invitations` has a read policy and deliberately no INSERT
+    policy. Issuing is a platform-admin action (a new agency) or a console action
+    already bounded by an entitlement check, and both enforce their rule in code
+    before writing. A policy letting `authenticated` insert here would be a
+    second, weaker path to the same privilege.
+    """
+    if not email or not token_hash:
+        raise StorageError("an invitation needs an email and a token")
+    if bool(organization_id) == bool(company_id):
+        raise StorageError("an invitation needs exactly one of organization_id / company_id")
+    payload: dict[str, Any] = {
+        "email": email.strip().lower(),
+        "role": role,
+        "token_hash": token_hash,
+        "expires_at": datetime.fromtimestamp(expires_at, tz=UTC).isoformat(),
+        "organization_id": organization_id,
+        "company_id": company_id,
+        "invited_by": invited_by,
+    }
+    response = _execute(
+        "create_invitation",
+        lambda c: c.table(TABLE_INVITATIONS).insert(payload).execute(),
+        system=True,
+    )
+    data = getattr(response, "data", None) or []
+    if not data:
+        raise StorageError("create_invitation returned no row")
+    return str(data[0].get("id", ""))
+
+
+def accept_invitation(token_hash: str, user_id: str, email: str) -> str:
+    """Redeem an invitation, writing the membership ATOMICALLY with the stamp.
+
+    Delegates to the `public.accept_invitation` function rather than doing three
+    round trips, because supabase-py speaks PostgREST and cannot hold a
+    transaction across statements — and a confirmed email with no membership is a
+    user who logs in and sees nothing, which reads as a broken product.
+
+    `system=True` and the function is `security definer` for the same reason: the
+    caller is by construction a user with NO membership yet, who can satisfy no
+    policy on `memberships`. The invitation row is the authorisation.
+
+    Idempotent. A replayed confirm returns the same membership id.
+    """
+    response = _execute(
+        "accept_invitation",
+        lambda c: c.rpc(
+            "accept_invitation",
+            {
+                "invite_token_hash": token_hash,
+                "accepting_user_id": user_id,
+                "accepting_email": email,
+            },
+        ).execute(),
+        system=True,
+    )
+    return str(getattr(response, "data", None) or "")
+
+
+def list_invitations(organization_id: str, pending_only: bool = True) -> list[dict[str, object]]:
+    """Invitations issued into one agency. Runs as the caller — RLS applies."""
+    if not organization_id:
+        return []
+
+    def _query(c: Client) -> Any:
+        q = (
+            c.table(TABLE_INVITATIONS)
+            .select("id, email, role, invited_by, expires_at, accepted_at, created_at")
+            .eq("organization_id", organization_id)
+        )
+        if pending_only:
+            q = q.is_("accepted_at", "null")
+        return q.order("created_at", desc=True).execute()
+
+    response = _execute(f"list_invitations ({organization_id})", _query)
+    return list(getattr(response, "data", None) or [])
+
+
+def list_org_memberships(organization_id: str) -> list[dict[str, object]]:
+    """The agency's staff roster.
+
+    `system=True`, and that is a deliberate narrowing rather than a widening.
+    LIC-T10 gave `public.users` a policy that is NOT "everyone in my
+    organization" — that would leak every staff member's email to every client
+    user sharing a tenant. The console still has to show its own roster, so it
+    reads it here, scoped to one organization the API has already checked the
+    caller belongs to.
+    """
+    if not organization_id:
+        return []
+    response = _execute(
+        f"list_org_memberships ({organization_id})",
+        lambda c: (
+            c.table(TABLE_MEMBERSHIPS)
+            .select("id, user_id, role, accepted_at, deactivated_at, created_at")
+            .eq("organization_id", organization_id)
+            .order("created_at")
+            .execute()
+        ),
+        system=True,
+    )
+    return list(getattr(response, "data", None) or [])
+
+
+def deactivate_membership(membership_id: str) -> bool:
+    """Remove a staffer's reach. One UPDATE, and every managed company goes with it.
+
+    Access is COMPUTED from `memberships` on every query, so this takes effect on
+    the next call rather than on the next token refresh — which is exactly why
+    roles are not baked into the JWT. Storage stays create-only: this is a
+    timestamp, never a delete.
+    """
+    response = _execute(
+        f"deactivate_membership ({membership_id})",
+        lambda c: (
+            c.table(TABLE_MEMBERSHIPS)
+            .update({"deactivated_at": datetime.now(tz=UTC).isoformat()})
+            .eq("id", membership_id)
+            .is_("deactivated_at", "null")
+            .execute()
+        ),
+        system=True,
+    )
+    return bool(getattr(response, "data", None))
+
+
+def count_companies_for_agency(agency_id: str) -> int:
+    """How many companies this agency currently manages — the slot count.
+
+    Read live at the API boundary by the entitlement check (LIC-T4). Deliberately
+    NOT cached: a stale count is a slot limit that either blocks a customer who is
+    under it or admits one who is over it.
+    """
+    if not agency_id:
+        return 0
+    response = _execute(
+        "count_companies_for_agency",
+        lambda c: (
+            c.table(TABLE_COMPANIES)
+            .select("id")
+            .eq("managing_agency_id", agency_id)
+            .limit(_COMPANY_SCAN_LIMIT)
+            .execute()
+        ),
+    )
+    # Counting the returned ids rather than asking PostgREST for an exact count:
+    # a slot band tops out in the tens, so the row read is free, and it keeps this
+    # on the same select path every other read here uses.
+    return len(getattr(response, "data", None) or [])
+
+
+def delete_company(company_id: str) -> bool:
+    """Remove an empty company row. Best-effort; returns whether it went.
+
+    Called only from `projects.delete_project`, which is the one sanctioned
+    hard-delete path in the system — this does not open a second one. It runs
+    AFTER the runs and teasers are gone, so the row is normally unreferenced.
+
+    A foreign-key violation here is an ordinary outcome, not a failure: a fact
+    sheet or an intake session may still point at this tenant, and those outlive a
+    project deletion by design. In that case the company row stays, the tenant
+    keeps owning the artifacts that still reference it, and the caller's delete
+    still succeeded. Raising would turn a completed deletion into a 503.
+    """
+    if not company_id:
+        return False
+    try:
+        _execute(
+            "delete_company",
+            lambda c: c.table(TABLE_COMPANIES).delete().eq("id", company_id).execute(),
+        )
+    except StorageError:
+        # Logged as a type by `_execute` already.
+        logger.info("company row kept: other artifacts still reference it")
+        return False
+    return True
+
+
+def set_company_agency(company_id: str, agency_id: str | None) -> None:
+    """Reparent a company to an agency, or to None when it goes direct.
+
+    This one UPDATE is the whole "transfer a client" story, because access is
+    COMPUTED from `managing_agency_id` at query time rather than copied into
+    per-company grant rows: every one of the agency's staff reaches the client on
+    their next request, and dropping the agency removes all of them at once
+    without touching the client's own memberships.
+    """
+    if not company_id:
+        raise StorageError("set_company_agency needs a company id")
+    _execute(
+        "set_company_agency",
+        lambda c: (
+            c.table(TABLE_COMPANIES)
+            .update({"managing_agency_id": agency_id})
+            .eq("id", company_id)
+            .execute()
+        ),
+    )
 
 
 if __name__ == "__main__":

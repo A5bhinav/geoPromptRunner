@@ -16,6 +16,16 @@ PERPLEXITY_API_KEY: str | None = os.getenv("PERPLEXITY_API_KEY")
 GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
 SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
+# The ANON (publishable) key. Unlike SUPABASE_KEY — which is the service-role key
+# and bypasses RLS entirely — a connection made with this one is SUBJECT to RLS,
+# which is the whole point: per-user reads carry the caller's access token on top
+# of it so `auth.uid()` resolves and the policies apply (LIC-T7,
+# src/storage/db._user_client). Using the service key with a user's token attached
+# would still be service-role, and would look authenticated while bypassing every
+# policy.
+# Unset means per-user database access REFUSES rather than falling back — a
+# fallback would silently restore the bypass on every request.
+SUPABASE_ANON_KEY: str | None = os.getenv("SUPABASE_ANON_KEY")
 # Direct Postgres connection, used ONLY to apply the DDL in data/*.sql — SUPABASE_KEY is
 # a REST key and PostgREST cannot run `alter table`. Nothing in the runtime path reads
 # this: every application read/write goes through the Supabase client in
@@ -79,10 +89,84 @@ PAYLOAD_LOG_PATH: str | None = os.getenv("PAYLOAD_LOG_PATH")
 # Shared API key required on every endpoint via the X-API-Key header. Unset =
 # auth disabled (local dev only) — set GEO_API_KEY before exposing the API.
 GEO_API_KEY: str | None = os.getenv("GEO_API_KEY")
+# HMAC secret for share links (src/api/sharing.py). SEPARATE from GEO_API_KEY
+# since LIC-T11, and the split is the whole point: those were one value doing two
+# unrelated jobs — the API authentication credential AND the signature on every
+# outstanding client report link. Retiring GEO_API_KEY as auth (LIC-T10) while
+# they were the same value would have silently invalidated every link a client
+# had been sent.
+#
+# Unset falls back to GEO_API_KEY, so the split is a no-op on existing
+# deployments: links minted before it keep verifying and nothing has to be re-sent.
+# The fallback is applied at CALL time in `sharing._secret()`, not seeded here —
+# seeding at import would freeze whatever GEO_API_KEY happened to be when this
+# module was first imported, which is both wrong after a key rotation and wrong in
+# any test that swaps the credential.
+SHARE_SIGNING_KEY: str | None = os.getenv("SHARE_SIGNING_KEY")
+# Whether a token signed with the OLD secret (GEO_API_KEY) is still honoured on
+# verify. On by default: this is the deprecation window that lets links minted
+# before the split keep working. Set to 0 to close it — after which any link
+# still signed with the old secret stops verifying, which is the intended final
+# state and must be a deliberate act, not a side effect of a deploy.
+SHARE_ACCEPT_LEGACY_SIGNATURE: bool = os.getenv(
+    "SHARE_ACCEPT_LEGACY_SIGNATURE", "1"
+).strip().lower() in ("1", "true", "yes")
+# --- Per-user auth (LIC-T6). Migration is per ROUTE, on purpose. ---
+# Comma-separated path prefixes whose routes require a verified Supabase JWT
+# instead of GEO_API_KEY. Empty (the default) = nothing has migrated and the API
+# behaves exactly as it did before.
+#
+# Per-route rather than a global switch because this is where every "assumed
+# there is one tenant" bug surfaces, and it should surface loudly on one endpoint
+# at a time rather than silently across all of them at once. A migrated route
+# REFUSES the shared key and an unmigrated one refuses a JWT — no route accepts
+# both, so there is never an ambiguous "which credential authorised this".
+#
+# Example: JWT_MIGRATED_ROUTES=/projects,/companies
+JWT_MIGRATED_ROUTES: str = os.getenv("JWT_MIGRATED_ROUTES", "")
+# How long a fetched JWKS key set is reused before re-fetching. Bounded so a
+# ROTATED signing key is picked up without a redeploy — which is the reason keys
+# are published at a discovery endpoint at all. 10 minutes.
+JWKS_CACHE_SECONDS: int = int(os.getenv("JWKS_CACHE_SECONDS", "600"))
 # Comma-separated allowed CORS origins for the browser frontend. Default is the
 # local Next.js dev origin; set GEO_CORS_ORIGINS to your deployed frontend URL(s).
 # Never "*" in production — combined with the API key, only known origins script it.
 GEO_CORS_ORIGINS: str = os.getenv("GEO_CORS_ORIGINS", "http://localhost:3000")
+# --- Cloudflare Turnstile (LIC-T15, the cheapest abuse gate) ---
+# The site key is PUBLIC — it ships in the browser bundle, and the frontend reads
+# its own copy from NEXT_PUBLIC_TURNSTILE_SITE_KEY (web/.env.local). It lives here
+# too so the backend can serve it to a server-rendered form without a second
+# source of truth.
+# The SECRET key is server-side only: it is the credential for the siteverify call
+# and must never reach the browser, a response body or a log line.
+#
+# Both unset = the gate is OFF, which is correct for local dev and for any
+# environment that hasn't wired the widget yet. It must be SET before the public
+# lead form is exposed, since Turnstile is the check that runs before the per-IP
+# limits and the confirm-gated enqueue — i.e. before anything that costs money.
+#
+# For local testing use Cloudflare's dummy keys, which pass on any hostname and
+# consume no real challenge volume: site 1x00000000000000000000AA with secret
+# 1x0000000000000000000000000000000AA (always passes), or 2x00000000000000000000AB
+# with 2x0000000000000000000000000000000AA (always fails).
+TURNSTILE_SITE_KEY: str | None = os.getenv("TURNSTILE_SITE_KEY")
+TURNSTILE_SECRET_KEY: str | None = os.getenv("TURNSTILE_SECRET_KEY")
+
+# --- Redis (LIC-T15 rate limits + LIC-T16 job queue) ---
+# ONE instance serves both: the per-IP/per-domain sliding window that runs after
+# Turnstile and before anything that spends tokens, and the arq queue that moves a
+# multi-minute audit off the request thread.
+#
+# This MUST be the TCP endpoint (`rediss://…:6379`), not Upstash's REST URL/token
+# pair — arq speaks the Redis wire protocol and cannot use the HTTP API. Upstash
+# exposes both on every plan; they are separate credentials, not two spellings of
+# one.
+#
+# Unset = both features off, which is the current state (neither is built yet).
+# Note this holds NOTHING durable: rate-limit counters expire by design and a
+# queued job is transient. The system of record is always Postgres.
+REDIS_URL: str | None = os.getenv("REDIS_URL")
+
 # Hard ceilings on a single uploaded audit, enforced before any LLM call, so an
 # upload can't run an unbounded bill or OOM the server (financial/DoS guard).
 MAX_UPLOAD_BYTES: int = int(os.getenv("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))  # 5 MB

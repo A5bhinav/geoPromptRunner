@@ -213,7 +213,7 @@ class _FakeClient:
 
 
 def _install(monkeypatch: pytest.MonkeyPatch, client: _FakeClient) -> _FakeClient:
-    monkeypatch.setattr(db, "_client", lambda: client)
+    monkeypatch.setattr(db, "_client", lambda **_: client)
     return client
 
 

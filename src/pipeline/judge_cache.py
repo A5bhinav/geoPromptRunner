@@ -33,6 +33,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
 from src.config import settings
+from src.licensing import verdict_source
 from src.storage.models import (
     AccuracyFlag,
     BrandJudgment,
@@ -152,12 +153,34 @@ class JudgeCache(ABC):
         """Verdicts for the given keys (missing keys simply absent). Batched so a
         network-backed notebook does ONE round-trip instead of one-per-answer."""
 
-    def put(self, key: str, verdict: Verdict) -> None:
-        self.put_many([(key, verdict)])
+    def put(self, key: str, verdict: Verdict, source: str = verdict_source.API) -> None:
+        self.put_many([(key, verdict)], source=source)
 
     @abstractmethod
-    def put_many(self, items: Iterable[tuple[str, Verdict]]) -> None:
-        """Store many verdicts in one batch."""
+    def put_many(
+        self, items: Iterable[tuple[str, Verdict]], source: str = verdict_source.API
+    ) -> None:
+        """Store many verdicts in one batch, tagged with which judge produced them.
+
+        ``source`` is NOT part of the cache key and must never become part of it:
+        the key is the content address of (model, prompts, answer), and adding
+        provenance to it would split the keyspace and defeat the whole point of
+        the prejudge flow. It is metadata ABOUT the row, read back by
+        ``sources_for`` and used only by the LIC-T20 delivery gate.
+
+        Defaults to ``api`` because that is what an unqualified live judge call
+        is. The prejudge injector passes ``prejudge`` explicitly.
+        """
+
+    def sources_for(self, keys: Iterable[str]) -> dict[str, str]:
+        """Which judge produced each cached verdict (missing keys simply absent).
+
+        Backends that cannot record provenance return nothing, and the caller
+        treats an absent key as ``unknown`` — never as ``api``. Defaulting the
+        unknown to the deliverable value would silently reopen exactly the hole
+        LIC-T20 closes.
+        """
+        return {}
 
     def close(self) -> None:  # noqa: B027 - optional hook, most backends need nothing
         """Release any resources. No-op by default."""
@@ -169,7 +192,9 @@ class NoOpJudgeCache(JudgeCache):
     def get_many(self, keys: Iterable[str]) -> dict[str, Verdict]:
         return {}
 
-    def put_many(self, items: Iterable[tuple[str, Verdict]]) -> None:
+    def put_many(
+        self, items: Iterable[tuple[str, Verdict]], source: str = verdict_source.API
+    ) -> None:
         return None
 
 
@@ -179,16 +204,25 @@ class InMemoryJudgeCache(JudgeCache):
 
     def __init__(self) -> None:
         self._d: dict[str, Verdict] = {}
+        self._sources: dict[str, str] = {}
         self._lock = threading.Lock()
 
     def get_many(self, keys: Iterable[str]) -> dict[str, Verdict]:
         with self._lock:
             return {k: self._d[k] for k in keys if k in self._d}
 
-    def put_many(self, items: Iterable[tuple[str, Verdict]]) -> None:
+    def put_many(
+        self, items: Iterable[tuple[str, Verdict]], source: str = verdict_source.API
+    ) -> None:
+        tag = verdict_source.normalize_source(source)
         with self._lock:
             for key, verdict in items:
                 self._d[key] = verdict
+                self._sources[key] = tag
+
+    def sources_for(self, keys: Iterable[str]) -> dict[str, str]:
+        with self._lock:
+            return {k: self._sources[k] for k in keys if k in self._sources}
 
 
 class SupabaseJudgeCache(JudgeCache):
@@ -219,13 +253,37 @@ class SupabaseJudgeCache(JudgeCache):
                 logger.info("Judge cache entry corrupt (skipping one): %s", type(exc).__name__)
         return out
 
-    def put_many(self, items: Iterable[tuple[str, Verdict]]) -> None:
+    def sources_for(self, keys: Iterable[str]) -> dict[str, str]:
         from src.storage import db
 
+        wanted = [k for k in keys if k]
+        if not wanted:
+            return {}
+        try:
+            rows = db.judge_cache_sources(wanted)
+        except db.StorageError as exc:
+            # A read failure means we cannot ATTEST to provenance. Returning
+            # nothing makes every key `unknown` at the gate, which refuses
+            # delivery — the safe direction. Returning `api` here would turn a
+            # transient outage into a silently-sold subscription verdict.
+            logger.info("Judge cache source read failed: %s", type(exc).__name__)
+            return {}
+        return {
+            str(row["key"]): verdict_source.normalize_source(row.get("verdict_source"))
+            for row in rows
+            if row.get("key")
+        }
+
+    def put_many(
+        self, items: Iterable[tuple[str, Verdict]], source: str = verdict_source.API
+    ) -> None:
+        from src.storage import db
+
+        tag = verdict_source.normalize_source(source)
         rows: list[dict[str, object]] = []
         for key, verdict in items:
             try:
-                rows.append({"key": key, "value": _to_value(verdict)})
+                rows.append({"key": key, "value": _to_value(verdict), "verdict_source": tag})
             except (TypeError, ValueError) as exc:  # pragma: no cover - defensive
                 logger.info("Judge cache encode failed (skipping one): %s", type(exc).__name__)
         if not rows:

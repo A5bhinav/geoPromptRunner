@@ -13,17 +13,29 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from src.api import auth, console, intake, projects, runner, sharing
 from src.api import digest as digest_mod
-from src.api import intake, projects, runner, sharing
+from src.api import identity as identity_mod
 from src.audit.competitors import candidates_from_local_pack
 from src.audit.factsheet import FactSheet, suggested_run_inputs, to_markdown
 from src.config import settings
 from src.engines.local_pack import SOURCE_NONE, fetch_local_pack
+from src.licensing import verdict_source
 from src.pipeline import review
 from src.pipeline.cost import CostBudgetExceeded
 from src.pipeline.fixpack import render_fix_pack
@@ -98,7 +110,17 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.GEO_CORS_ORIGINS.split(",") if o.strip()],
-    allow_credentials=False,
+    # True since LIC-T17, so the browser will send the httpOnly share cookie back
+    # to `/shared/report` once the token has been cleaned out of the URL.
+    #
+    # Safe HERE specifically because `allow_origins` is an explicit list and never
+    # "*" — the spec forbids the combination, and so does the browser. The usual
+    # objection to credentialed CORS is CSRF, which needs a cookie that AUTHORISES
+    # a state change; this API authenticates with the `X-API-Key` header or a
+    # bearer token, neither of which a browser attaches automatically. The one
+    # cookie that exists is read-only, scoped to `/shared`, and confers exactly the
+    # access its holder already had by holding the token.
+    allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type", "X-API-Key"],
 )
@@ -119,9 +141,131 @@ def require_api_key(x_api_key: Annotated[str | None, Header(alias="X-API-Key")] 
         raise HTTPException(status_code=401, detail="missing or invalid X-API-Key")
 
 
+#: The fact-sheet intake surface, as route prefixes (LIC-T18). Named here rather
+#: than left as a string in a `.env` file so the set is testable and so "did we
+#: migrate all of intake" has one answer instead of depending on whoever wrote
+#: the deploy config. DoD #4 — an agency onboarding its own client — runs
+#: entirely through these two.
+INTAKE_PREFIXES = ("/intake", "/fact-sheets")
+
+#: The provisioning and console surface (LIC-T14 / LIC-T19). These are meaningless
+#: on the shared key — every handler resolves the caller's own organization from
+#: the verified identity and refuses to take it from the request — so they are
+#: listed here to be migrated together, and a test asserts every console route
+#: falls under them.
+CONSOLE_PREFIXES = ("/admin", "/agency")
+
+
+def _migrated_prefixes() -> tuple[str, ...]:
+    """Route prefixes that require a JWT (LIC-T6). Read live, not at import, so a
+    test or a deploy can move one route without restarting the process."""
+    raw = settings.JWT_MIGRATED_ROUTES or ""
+    return tuple(p.strip() for p in raw.split(",") if p.strip())
+
+
+def is_jwt_route(path: str) -> bool:
+    """Whether ``path`` has migrated to per-user auth.
+
+    Prefix matching on the PATH, so `/projects` covers `/projects/{key}/history`
+    and a route migrates with its whole subtree. Pure, so the gate is
+    unit-testable without a request.
+    """
+    return any(path == p or path.startswith(p.rstrip("/") + "/") for p in _migrated_prefixes())
+
+
+def _bearer(authorization: str | None) -> str:
+    if not authorization:
+        return ""
+    scheme, _, token = authorization.partition(" ")
+    return token.strip() if scheme.lower() == "bearer" else ""
+
+
+async def authenticate(
+    request: Request,
+    x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    """Authenticate one request and bind its identity for the handler (LIC-T6).
+
+    **Exactly one credential is accepted per route, and which one depends on
+    whether the route has migrated.** A migrated route takes a verified Supabase
+    JWT and REFUSES the shared key; an unmigrated route takes the shared key and
+    refuses a JWT. Never both — a route that accepted either would leave "which
+    credential authorised this request" unanswerable, which is exactly the
+    question an incident starts with.
+
+    The identity is bound into a ContextVar rather than returned, so every gate
+    already calling `current_identity()` starts discriminating with no signature
+    changes anywhere.
+
+    **No explicit unbind, and that is not an oversight.** Starlette handles each
+    request in its own task, and a task copies the context at creation — so a
+    `set()` here is confined to this request and cannot leak into the next one.
+    Sync handlers run in a threadpool that receives a copy of this context, so
+    they read the value correctly. The tempting symmetric `reset()` in an HTTP
+    middleware would in fact be a bug: `BaseHTTPMiddleware` runs `call_next` in a
+    separate task, so the token would belong to a different context and the reset
+    would raise.
+    """
+    if is_jwt_route(request.url.path):
+        if x_api_key:
+            raise HTTPException(
+                status_code=401,
+                detail="this endpoint uses per-user authentication; send a bearer token",
+            )
+        try:
+            claims = auth.verify_access_token(_bearer(authorization))
+        except auth.AuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        identity = _identity_for(claims, _bearer(authorization))
+    else:
+        if _bearer(authorization) and not x_api_key:
+            raise HTTPException(
+                status_code=401,
+                detail="this endpoint has not migrated to per-user auth; send X-API-Key",
+            )
+        require_api_key(x_api_key)
+        identity = identity_mod.PLATFORM_ADMIN
+
+    identity_mod.bind(identity)
+
+
+def _identity_for(claims: auth.Claims, access_token: str) -> identity_mod.CallerIdentity:
+    """Resolve a verified token to an identity, reading roles from the DATABASE.
+
+    The token proves who; `memberships` and `users.is_platform_admin` decide what.
+    Deliberately not read from the token: there is no first-party way to
+    force-refresh a user's JWT claims mid-session, so a role baked into a token
+    outlives its own revocation. One indexed lookup per request buys revocation
+    that takes effect on the next request instead of the next refresh.
+
+    A storage failure degrades to the LEAST privilege that still identifies the
+    caller — a known user with no org and no admin flag — rather than to a
+    platform admin. Failing open here would hand founder rights to anyone holding
+    any valid token during an outage.
+    """
+    try:
+        profile = db.get_user_profile(claims.subject)
+    except db.StorageError:
+        logger.warning("identity lookup failed; degrading to least privilege")
+        return identity_mod.CallerIdentity(
+            user_id=claims.subject, is_platform_admin=False, access_token=access_token
+        )
+    if profile is None:
+        raise HTTPException(status_code=403, detail="this account is not provisioned")
+    if profile.deactivated:
+        raise HTTPException(status_code=403, detail="this account has been deactivated")
+    return identity_mod.CallerIdentity(
+        user_id=claims.subject,
+        is_platform_admin=profile.is_platform_admin,
+        organization_id=profile.organization_id,
+        access_token=access_token,
+    )
+
+
 # All data routes live on this router so a single dependency gates them; the
 # health check below stays open for load-balancer probes.
-api = APIRouter(dependencies=[Depends(require_api_key)])
+api = APIRouter(dependencies=[Depends(authenticate)])
 
 
 # The UI previews an upload then runs it — the same bytes parsed twice. Cache the
@@ -496,6 +640,7 @@ def audit_status(run_id: str) -> dict[str, object]:
 
 @api.get("/audits/{run_id}/report")
 def audit_report(run_id: str) -> dict[str, object]:
+    _require_deliverable(run_id)
     report = runner.get_report(run_id)
     if report is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
@@ -679,38 +824,257 @@ def audit_report_pdf(run_id: str, base_url: str = "http://localhost:3000") -> Re
     )
 
 
+def _require_deliverable(run_id: str, *, anonymous_visitor: bool = False) -> None:
+    """Refuse to deliver a run whose verdicts were not produced by the API judge.
+
+    LIC-T20's hard gate. It sits on the places a report LEAVES us — minting a
+    share link, rendering a report, and the shared-link read itself — rather than
+    on the judge, because warming the notebook on the subscription is a
+    legitimate and encouraged dev loop. What must never happen is that output
+    reaching a paying client while looking indistinguishable from the API-judged
+    product they bought.
+
+    **It keys on who OWNS the run, not only on who is asking.** The spec's rule is
+    that a non-`api` verdict may not be rendered for or shared with a non-platform
+    ORGANIZATION. So the gate fires when either side of that is true: the caller
+    is not a platform admin, or the run belongs to a company managed by an agency.
+    The second half matters for `/shared/{token}/report`, where the visitor is
+    anonymous by design and there is no caller identity to reason about — an
+    agency's client link is gated, while the founders' own manually-delivered
+    client links (no managing agency) keep working exactly as before. Gating every
+    anonymous read regardless of ownership would have broken live client links on
+    deploy, for runs that predate verdict tagging.
+
+    When storage is unreachable the gate opens rather than 503s: taking the whole
+    report surface down because one metadata read failed trades a real outage for
+    a hypothetical one, and an agency-run audit cannot exist without the storage
+    that just failed.
+    """
+    identity = identity_mod.current_identity()
+    try:
+        row = db.get_audit_run(run_id)
+    except db.StorageError:
+        logger.warning("verdict-source gate: could not read run %s, allowing", run_id)
+        return
+    if row is None:
+        return
+
+    agency_owned = False
+    company_id = row.get("company_id")
+    if company_id:
+        try:
+            company = db.get_company(str(company_id))
+            agency_owned = company is not None and company.managing_agency_id is not None
+        except db.StorageError:
+            logger.warning("verdict-source gate: could not read company, allowing")
+            return
+
+    # A platform admin reading a run nobody else owns is the dev loop; leave it be.
+    if identity.is_platform_admin and not agency_owned and not anonymous_visitor:
+        return
+    if not agency_owned and anonymous_visitor:
+        # A founder-delivered client link on an untenanted or direct-owned run.
+        # Unchanged behaviour, deliberately — see the docstring.
+        return
+
+    decision = verdict_source.check_delivery(row.get("verdict_sources"), is_platform=False)
+    if not decision.allowed:
+        # 409, not 403: the caller is entitled to this run, and the request will
+        # succeed once the run is re-judged. A 403 would read as "you may not see
+        # your own client's report", which is both wrong and alarming.
+        raise HTTPException(status_code=409, detail=decision.reason)
+
+
 @api.post("/audits/{run_id}/share")
 def create_share_link(run_id: str, body: ShareRequest) -> dict[str, object]:
-    """Mint a signed, expiring read-only link (P3-T4).
+    """Mint a signed, expiring read-only link (P3-T4, made durable by LIC-T17).
 
     A login wall is what kills forwardability, and forwardability is the one thing
     a PDF has over a dashboard. Requires the API key to MINT; the link itself does
     not, which is the point.
+
+    Since LIC-T17 the link is also a ROW, carrying the tenant it belongs to. The
+    signature is unchanged, so this is additive — but ``persistent`` in the
+    response says which guarantee the caller actually got. A run that is not
+    persisted, or not tenanted, cannot have a row written for it; the link still
+    works and is still revocable through the deny list, but per-client revocation
+    and the access log need a `company_id` that does not exist for it. Saying so
+    beats reporting success and quietly delivering less.
     """
     if runner.get_status(run_id) is None and runner.get_report(run_id) is None:
         raise HTTPException(status_code=404, detail=f"run {run_id} not found")
+    _require_deliverable(run_id)
     try:
         token = sharing.mint_share_token(run_id, body.ttl_seconds, body.password)
+        parsed = sharing.verify_share_token(token, body.password, frozenset())
     except sharing.ShareError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    return {"token": token, "path": f"/shared/{token}", "expires_in": body.ttl_seconds}
+
+    persistent = _record_share_token(parsed, body.password)
+    return {
+        "token": token,
+        "path": f"/shared/{token}",
+        "expires_in": body.ttl_seconds,
+        "token_id": parsed.token_id,
+        "persistent": persistent,
+    }
 
 
-# Deliberately on `app`, NOT `api`: a shared link that required the API key would
-# be a login wall with extra steps.
-@app.get("/shared/{token}/report")
-def shared_report(token: str, password: str = "") -> dict[str, object]:
-    """Read-only report behind a signed link. No API key; the token IS the auth."""
+def _record_share_token(parsed: sharing.ShareToken, password: str) -> bool:
+    """Write the token row, returning whether it was actually recorded.
+
+    Degrades rather than fails: a storage error here would turn "your link is
+    minted" into a 500 for a link that is already cryptographically valid and
+    would work. The caller learns the truth through ``persistent``.
+    """
+    try:
+        row = db.get_audit_run(parsed.run_id)
+    except db.StorageError:
+        logger.warning("share token not recorded: run lookup failed")
+        return False
+    company_id = str((row or {}).get("company_id") or "")
+    if not company_id:
+        logger.info("share token not recorded: run has no tenant")
+        return False
+    identity = identity_mod.current_identity()
+    try:
+        db.create_share_token_row(
+            token_id=parsed.token_id,
+            run_id=parsed.run_id,
+            company_id=company_id,
+            expires_at=parsed.expires_at,
+            password_hash=sharing.hash_password(password),
+            created_by=identity.user_id or None,
+        )
+    except db.StorageError:
+        logger.warning("share token not recorded: storage unavailable")
+        return False
+    return True
+
+
+#: How long the exchanged share cookie outlives the first view, capped. The
+#: cookie is a bearer credential for one report, so it expires with the link
+#: rather than persisting as a long-lived session.
+_SHARE_COOKIE = "geo_share"
+
+
+def _harden_share_response(response: Response) -> None:
+    """Headers a confidential report route must carry (design §3.6).
+
+    `no-referrer` stops the token travelling to any origin the report links or
+    embeds reach — without it the URL, which IS the credential, ends up in
+    another host's access log. `noindex` keeps a forwarded link out of search
+    results; different crawlers honour the header and the meta tag, so the web
+    layer sets the tag too.
+    """
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    # A shared report is per-token content; a shared cache holding it would serve
+    # one client's report to the next visitor of the same URL.
+    response.headers["Cache-Control"] = "private, no-store"
+
+
+def _serve_shared_report(token: str, password: str, response: Response) -> dict[str, object]:
+    """Verify a share token and return its report. The one anonymous read path.
+
+    Order is deliberate and unchanged from P3-T4: signature FIRST, then the
+    stateless deny list, then expiry, then password — checking expiry before the
+    signature would let a visitor learn which run ids exist by reading the
+    different error messages.
+
+    LIC-T17 adds the row checks AFTER all of that, because they cost a database
+    round trip and an unsigned token deserves none.
+    """
     try:
         parsed = sharing.verify_share_token(token, password, _revoked_share_ids())
     except sharing.ShareError as exc:
         # 403 for every failure mode, with the reason in the body: a 404-vs-403
         # split would let a visitor enumerate which run ids exist.
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    row = None
+    try:
+        row = db.get_share_token_row(parsed.token_id)
+    except db.StorageError:
+        # The link is validly signed and not on the deny list. Refusing here would
+        # take every client report down on a storage blip, for a check that only
+        # ever NARROWS what the signature already allowed.
+        logger.warning("share token row unavailable, falling back to the signature")
+
+    if row is not None:
+        if row.revoked:
+            raise HTTPException(status_code=403, detail="this link has been revoked")
+        if not db.company_delivery_live(row.company_id):
+            # Not "revoked": nobody withdrew this link, the relationship behind it
+            # ended. The distinction is what the client's own support call needs.
+            raise HTTPException(
+                status_code=403, detail="this report is no longer available"
+            )
+    # A validly-signed token with NO row is a link minted before LIC-T17, or one
+    # for an untenanted run. Honoured deliberately — every client link already in
+    # an inbox has to keep working, the same requirement LIC-T11 had.
+
+    # Checked on the READ, not only when the link was minted: a run can be
+    # re-judged from a warm subscription notebook after its link went out, and the
+    # link would otherwise keep serving the newer, non-deliverable verdicts.
+    _require_deliverable(parsed.run_id, anonymous_visitor=True)
     report = runner.get_report(parsed.run_id)
     if report is None:
         raise HTTPException(status_code=404, detail="report not found")
+
+    if row is not None:
+        try:
+            db.record_share_view(parsed.token_id)
+        except db.StorageError:
+            # The access log is an audit convenience, not an access control. It
+            # must never be the reason a client cannot read their report.
+            logger.warning("share view not recorded: storage unavailable")
+
+    _harden_share_response(response)
     return dict(report)
+
+
+# Deliberately on `app`, NOT `api`: a shared link that required the API key would
+# be a login wall with extra steps.
+@app.get("/shared/{token}/report")
+def shared_report(token: str, response: Response, password: str = "") -> dict[str, object]:
+    """Read-only report behind a signed link. No API key; the token IS the auth.
+
+    Sets the token as an httpOnly cookie on the way out so the browser can drop
+    it from the URL (design §3.6). While the token sits in the address bar it
+    leaks through history and — absent the `no-referrer` header above — through
+    the `Referer` of anything the page loads. The cookie is scoped, httpOnly and
+    unreadable to script; `/shared/report` below is how the page reads the report
+    once the URL has been cleaned.
+    """
+    payload = _serve_shared_report(token, password, response)
+    response.set_cookie(
+        _SHARE_COOKIE,
+        token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=sharing.DEFAULT_TTL_SECONDS,
+        path="/shared",
+    )
+    return payload
+
+
+@app.get("/shared/report")
+def shared_report_by_cookie(
+    request: Request, response: Response, password: str = ""
+) -> dict[str, object]:
+    """The same report, read from the exchanged cookie instead of the URL.
+
+    Declared as a separate path rather than an optional parameter so there is no
+    ambiguity with `/shared/{token}/report`: a token always contains a `.`, but
+    relying on that to disambiguate a route is the kind of cleverness that breaks
+    the day a token format changes.
+    """
+    token = request.cookies.get(_SHARE_COOKIE, "")
+    if not token:
+        raise HTTPException(status_code=403, detail="this link is not valid")
+    return _serve_shared_report(token, password, response)
 
 
 # In-process mirror of the revocation deny list.
@@ -749,12 +1113,19 @@ def revoke_share(token_id: str) -> dict[str, object]:
     than reporting success either way.
     """
     _REVOKED_SHARES.add(token_id)
+    row_revoked = False
     try:
+        # BOTH stores, deliberately. The row is the source of truth for a link
+        # minted since LIC-T17 and is what the agency console reads; the deny list
+        # still covers every token minted before it, which has no row to flip.
+        # Writing only one of them would leave a live link looking revoked in the
+        # UI, or a revoked link still serving.
+        row_revoked = db.revoke_share_token_row(token_id, reason="revoked via API")
         db.revoke_share_token(token_id, reason="revoked via API")
     except db.StorageError:
         logger.warning("share revocation not persisted: storage unavailable")
         return {"revoked": token_id, "persistent": False}
-    return {"revoked": token_id, "persistent": True}
+    return {"revoked": token_id, "persistent": True, "row_revoked": row_revoked}
 
 
 @api.post("/audits/{run_id}/cancel")
@@ -1271,7 +1642,18 @@ def reject_fact_sheet(sheet_id: str, body: RejectFactSheetBody) -> dict[str, obj
     return {"id": sheet_id, "state": db.FactSheetState.REJECTED.value}
 
 
-# The intake routes carry no auth of their own — they ride the same
-# `require_api_key` dependency every other route does.
+# The intake routes carry no auth of their own — they ride the `authenticate`
+# dependency every other route on `api` does, which since LIC-T6 means they
+# migrate to per-user auth by PREFIX rather than by code change.
+#
+# LIC-T18: the two prefixes to migrate are `/intake` and `/fact-sheets` (see
+# INTAKE_PREFIXES). Their three tables — `factsheet_intake_sessions`,
+# `fact_sheets`, `fact_claims` — already carry `company_id` with RLS, FORCE and a
+# policy, and `db.ensure_company()` stamps the caller's agency on a company it
+# creates, so an agency onboarding its own client lands in its own tenant.
 api.include_router(intake.router)
+# LIC-T14 provisioning and LIC-T19's console. On `api`, so both ride the same
+# `authenticate` dependency: `/admin` and `/agency` are meaningless without a
+# per-user identity, so migrate them with `JWT_MIGRATED_ROUTES=/admin,/agency`.
+api.include_router(console.router)
 app.include_router(api)

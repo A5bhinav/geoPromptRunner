@@ -186,10 +186,30 @@ filter — don't build on it. SQL schemas live in `data/schema_*.sql`.
 
 ## Docs map (docs/ — trust levels)
 
+**Normative build specs — these are what you execute from.** Each has a standing-rules
+skill that must be loaded alongside it:
+
+| Spec | Skill to load with it | Covers |
+|---|---|---|
+| `audit-packaging-spec.md` | `audit-packaging` | The client-facing report: findings, severity, charts, copy, print. Phases P0–P5 and Phase T (the Track report contract). |
+| `licensing-spec.md` | `licensing` | Multi-tenancy, auth, RLS, agency organizations, entitlements, share links. Tasks LIC-T0–T21. |
+
+Both specs **supersede their own design docs on any disagreement** — they were written
+against the code, the designs were not. Read the design for the reasoning and the code
+samples the spec cites by section but does not reproduce:
+`audit-packaging-implementation.md` and `licensing-implementation.md`. The research
+behind each (`audit-packaging-research.md`, `licensing-and-packaging-research.md`) is
+for when a rule's rationale matters, not for building. `audit-packaging-status.md` is
+the packaging checklist — update it in the same commit as the work.
+
+> `audit-packaging-research.md` §6 (report architecture) and §7.6 (print CSS) carry
+> explicit SUPERSEDED/CORRECTED banners. Follow the banner, not the surrounding text.
+
 **Live references:** `subscription-judge-plan.md` (prejudge design, shipped),
 `auditGenerator.md` (paid deliverable, built), `judge-accuracy-plan.md`
 (cascade/verify, built), `fact-sheet-template.md` + `labeling-guide.md` +
 `grade-calibration-guide.md` (how client sheets and gold labels get made),
+`gtm-legal-readiness.md` (API-surface and resale audit; P0-T0 cleared 2026-08-02),
 `project-queue.md` (living what's-left snapshot), `build-log.md` (append-only
 history; has drifted — resume it with milestone entries).
 
@@ -197,7 +217,9 @@ history; has drifted — resume it with milestone entries).
 original Phase-1 build guide; its file map and 12-chunk plan no longer match
 the code), `left.md`, `ui-plan.md`, `site-audit-*-plan/guide.md`,
 `isolation-determinism-plan.md`, `query-generation-plan.md`,
-`showcase-session-core-build.md` (curated transcript).
+`showcase-session-core-build.md` (curated transcript), `audit-deliverable-fix-plan.md`
+(an older, unstarted plan targeting `teaser/` — **not** superseded by
+`audit-packaging-spec.md` and not part of that work; do not merge the two).
 
 **Per-client artifacts:** `fact-sheet-*.md`, `*-labeling-sheet.md`,
 `grade-sheet-*.md`, `fort-competitors.md`, `answers.md`, `report.md` (Oura

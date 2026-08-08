@@ -274,9 +274,15 @@ def test_revocation_is_per_token_not_per_run() -> None:
 
 
 def test_minting_without_a_signing_key_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A signature over an empty key is forgeable by anyone who reads the file."""
+    """A signature over an empty key is forgeable by anyone who reads the file.
+
+    Both credentials have to be cleared since LIC-T11: signing moved to
+    SHARE_SIGNING_KEY, which falls back to GEO_API_KEY so that links minted before
+    the split keep verifying. See tests/test_share_signing_split.py.
+    """
     monkeypatch.setattr(settings, "GEO_API_KEY", "")
-    with pytest.raises(ShareError, match="GEO_API_KEY"):
+    monkeypatch.setattr(settings, "SHARE_SIGNING_KEY", "")
+    with pytest.raises(ShareError, match="signing secret"):
         mint_share_token("run-1")
 
 
@@ -457,9 +463,18 @@ def test_the_shared_link_has_a_page_a_human_can_open() -> None:
     """A shareable link nobody can click is not a shareable link."""
     from pathlib import Path
 
-    page = Path(__file__).resolve().parents[1] / "web" / "app" / "shared" / "[token]" / "page.tsx"
+    root = Path(__file__).resolve().parents[1] / "web"
+    page = root / "app" / "shared" / "[token]" / "page.tsx"
     assert page.exists(), "there is no /shared/[token] route"
-    source = page.read_text()
+    # LIC-T17 split the rendering out of the route: the token is exchanged for an
+    # httpOnly cookie on first load and the URL is rewritten to /shared/view, so
+    # BOTH routes render the same component and that route has to exist too — a
+    # rewritten URL with no page behind it turns the security fix into a 404 the
+    # first time the visitor hits reload.
+    assert (root / "app" / "shared" / "view" / "page.tsx").exists(), (
+        "the cleaned URL /shared/view has no route; refreshing a shared report 404s"
+    )
+    source = (root / "components" / "shared-report.tsx").read_text()
     assert "getSharedReport(" in source
     # No `runId` PROP: the Judge / re-judge / export controls are gated on it, so
     # a shared viewer cannot reach anything that spends money. Asserted on the

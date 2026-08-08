@@ -103,7 +103,7 @@ class _FakeClient:
 @pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch) -> _FakeClient:
     fake = _FakeClient()
-    monkeypatch.setattr(db, "_client", lambda: fake)
+    monkeypatch.setattr(db, "_client", lambda **_: fake)
     return fake
 
 

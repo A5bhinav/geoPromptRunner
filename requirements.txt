@@ -16,6 +16,15 @@ httpx>=0.27.0
 # Storage
 supabase>=2.5.0
 
+# Per-user auth (LIC-T6). Both arrive transitively via supabase today, but
+# src/api/auth.py imports them DIRECTLY, so they are pinned here rather than
+# relying on another package's dependency graph not to change.
+# PyJWT's PyJWKClient fetches and caches the project's JWKS; `cryptography`
+# provides the ES256 (EC P-256) verification — this project is on asymmetric
+# signing keys, so tokens are verified locally and never round-trip to Auth.
+PyJWT>=2.8.0
+cryptography>=42.0.0
+
 # API layer (UI backend) — thin FastAPI wrapper over the pipeline
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0

@@ -925,16 +925,24 @@ export async function getAnswerCell(
 }
 
 /** Read-only report behind a signed link. Deliberately sends NO API key — the
- * token is the auth, and a login wall is what kills forwardability. */
+ * token is the auth, and a login wall is what kills forwardability.
+ *
+ * `credentials: "include"` is what makes the LIC-T17 cookie exchange work. The
+ * first load presents the token from the URL and the API sets it as an httpOnly
+ * cookie; every later read passes `token = ""` and rides that cookie, so the
+ * page can strip the token out of the address bar. While the token sits in the
+ * URL it is a working credential leaking into browser history and — absent the
+ * `no-referrer` header the API sets — into the `Referer` of anything the report
+ * page loads. */
 export async function getSharedReport(
   token: string,
   password = "",
 ): Promise<ReportPayload> {
   const query = password ? `?password=${encodeURIComponent(password)}` : "";
-  const res = await fetch(
-    `${API_BASE}/shared/${encodeURIComponent(token)}/report${query}`,
-    { cache: "no-store" },
-  );
+  const path = token
+    ? `${API_BASE}/shared/${encodeURIComponent(token)}/report${query}`
+    : `${API_BASE}/shared/report${query}`;
+  const res = await fetch(path, { cache: "no-store", credentials: "include" });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({ detail: "this link is not valid" }));
     throw new Error(detail.detail ?? `shared report failed (${res.status})`);

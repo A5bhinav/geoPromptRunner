@@ -275,6 +275,19 @@ class AnswerJudgment:
     assessed: bool  # False = judge failed -> "not assessed", never crashes
     brands: list[BrandJudgment]
     accuracy_flags: list[AccuracyFlag]  # client only; empty without a fact sheet
+    # WHICH judge produced this verdict: "api" | "prejudge" | "opus_dev" |
+    # "unknown" (see src/licensing/verdict_source.py). Carried per judgment
+    # rather than per run because a single run is routinely MIXED — a partly
+    # pre-warmed notebook means some answers come back from the subscription and
+    # the rest are judged live on the API. LIC-T20's delivery gate refuses a
+    # report containing any non-"api" verdict for a non-platform organization,
+    # and it can only do that if the mix is visible per answer.
+    #
+    # Defaulted to "api" so every existing constructor keeps working and an
+    # unqualified live judge call is tagged correctly without ceremony. Note the
+    # default is safe here and NOT safe on the read path: a stored row with no
+    # source reads back as "unknown", never as "api".
+    verdict_source: str = "api"
 
 
 # Canonical (de)serialization for the two judgment value types — one source of

@@ -362,6 +362,7 @@ def _inject(in_path: str, verdicts_path: str, offset: int) -> int:
     verdict's key comes from the in file at that index, so it always matches what
     the real judge will look up. Only well-formed verdicts are stored; a null/bad
     one is skipped, leaving that answer to be judged normally later."""
+    from src.licensing import verdict_source
     from src.pipeline.judge import _parse_brands, _parse_flags
     from src.pipeline.judge_cache import Verdict, make_judge_cache
 
@@ -388,7 +389,12 @@ def _inject(in_path: str, verdicts_path: str, offset: int) -> int:
             flags = _parse_flags(raw) if has_fact_sheet else []
             verdict: Verdict = (brands, flags, True)
             stored.append((str(items[i]["key"]), verdict))
-        cache.put_many(stored)
+        # Tagged `prejudge`, NOT `api` (LIC-T20). These verdicts came from an Opus
+        # subagent on the Claude subscription, not from the held-constant temp-0
+        # API judge — they are for dev iteration, they never feed calibration or
+        # gold labels, and a report containing one cannot be delivered to a client.
+        # The tag is what makes that enforceable instead of a convention.
+        cache.put_many(stored, source=verdict_source.PREJUDGE)
     finally:
         cache.close()
     print(f"Injected {len(stored)} verdict(s) into the judge cache ({skipped} skipped).")

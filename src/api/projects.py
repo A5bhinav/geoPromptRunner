@@ -1,15 +1,25 @@
-"""Projects: a domain-keyed view over audit runs and teasers.
+"""Projects: the UI's view of a company and everything done for it.
 
-A "project" is not a stored entity — it is derived on the fly by grouping the
-existing ``audit_runs`` and ``teasers`` by the prospect domain (e.g. every run
-and teaser for ``fort.cx`` rolls up into one FORT project). This gives the UI a
-dashboard of "everything we've done for this prospect" with zero schema change.
+A project IS a company row (``public.companies``), and ``ProjectSummary.key`` is
+that row's ``slug``. Before LIC-T1 a project was not stored at all — it was
+derived per request by grouping ``audit_runs`` and ``teasers`` on domain — and
+that is why this module owns the reconciliation between the two.
 
-Grouping key:
+Grouping key (unchanged, and still the company's slug):
   * If we know a domain (an audit's ``client_domains[0]`` or a teaser's
     ``prospect_url``) the key IS the normalized domain.
   * Otherwise we fall back to ``name:<slug-of-client-name>`` so a domain-less
     run still gets its own bucket rather than colliding with unrelated work.
+
+**Rows lead, derivation fills the gaps.** A row that carries ``company_id`` is
+bucketed by it, which is what makes a project a thing memberships and RLS
+policies can reference. A row that does not — a live run that has not been
+flushed, anything created since the last backfill, or every row when storage is
+unreachable — falls back to deriving its key exactly as before, via
+``src/api/company_keys.py``. Both paths produce the same key by construction,
+because both call the same functions. The fallback is not legacy code to delete
+later: a run in flight has no persisted tenant yet, and dropping it from the
+dashboard would be a worse bug than showing it.
 
 A teaser-generated audit carries the prospect domain, so it lands in the same
 bucket as the teaser. A manually-uploaded audit with no domain stays in its own
@@ -19,10 +29,16 @@ name bucket until/unless a domain is supplied.
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 
 from src.api import runner
+
+# Imported under their historical private names so existing callers keep working.
+# The definitions moved to `company_keys` when LIC-T1 needed the backfill to derive
+# byte-identical keys; there is still exactly one of each.
+from src.api.company_keys import domains_of as _domains_of
+from src.api.company_keys import key_for as _key_for
+from src.api.company_keys import norm_domain as _norm_domain
 from src.storage import db
 
 logger = logging.getLogger(__name__)
@@ -112,46 +128,17 @@ class _Acc:
     teasers: list[ProjectTeaser] = field(default_factory=list)
 
 
-def _norm_domain(raw: object) -> str:
-    """Bare host of a URL or domain string (lowercased, scheme/path/port/www stripped).
-
-    Accepts both ``https://www.fort.cx/pricing`` and a bare ``fort.cx`` so an
-    audit's domain and a teaser's prospect_url normalize to the same key.
-    """
-    s = str(raw or "").strip().lower()
-    if not s:
-        return ""
-    s = re.sub(r"^[a-z][a-z0-9+.-]*://", "", s)  # drop scheme
-    s = s.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
-    s = s.split("@")[-1]  # drop any userinfo
-    s = s.split(":", 1)[0]  # drop port
-    return s[4:] if s.startswith("www.") else s
-
-
-def _slugify(raw: object) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", str(raw or "").strip().lower()).strip("-")
-
-
-def _domains_of(raw: object) -> list[str]:
-    """A row's ``client_domains`` as a clean list of strings. DB row values are
-    typed ``object``, so guard the type: a non-list value (e.g. a bare string)
-    must yield ``[]`` rather than being iterated character-by-character."""
-    if not isinstance(raw, list):
-        return []
-    return [str(d) for d in raw if d]
-
-
-def _key_for(domain: str, name: object) -> tuple[str, str, str | None]:
-    """(key, label, domain) for a domain (preferred) or a client/company name."""
-    if domain:
-        return domain, domain, domain
-    slug = _slugify(name) or "untitled"
-    return f"name:{slug}", (str(name).strip() if name else "Untitled"), None
-
-
 def _collect() -> dict[str, _Acc]:
-    """Bucket every audit and teaser into a project accumulator keyed by domain."""
+    """Bucket every audit and teaser into a project accumulator keyed by company.
+
+    Companies are read first so a tenant with no activity yet — an agency that has
+    just added a client — still appears on the dashboard. Then each run and teaser
+    is placed by its ``company_id`` when it has one, and by the derived key when it
+    does not (see the module docstring for why both paths must stay).
+    """
     accs: dict[str, _Acc] = {}
+    #: company_id -> key, so a row carrying a tenant never has to re-derive one.
+    key_by_company: dict[str, str] = {}
 
     def ensure(key: str, label: str, domain: str | None) -> _Acc:
         acc = accs.get(key)
@@ -163,19 +150,42 @@ def _collect() -> dict[str, _Acc]:
             acc.domain, acc.label = domain, domain
         return acc
 
-    # Audit runs (in-memory state overlaid on storage). Domains come from the
-    # stored rows; in-memory-only runs (storage down) fall back to the name key.
+    # The companies themselves. Best-effort, like every other read here: if
+    # storage is unreachable we fall through to pure derivation and the dashboard
+    # still renders whatever is in memory.
+    try:
+        for company in db.list_companies():
+            key_by_company[company.id] = company.slug
+            ensure(company.slug, company.name, company.domain)
+    except db.StorageError:
+        pass
+
+    # Audit runs (in-memory state overlaid on storage). The stored row supplies
+    # the tenant and the domains; an in-memory-only run has neither and falls back
+    # to the name key.
+    company_by_run: dict[str, str] = {}
     domains_by_id: dict[str, list[str]] = {}
     try:
         for row in db.list_all_audit_runs():
-            domains_by_id[str(row.get("id", ""))] = _domains_of(row.get("client_domains"))
+            run_id = str(row.get("id", ""))
+            domains_by_id[run_id] = _domains_of(row.get("client_domains"))
+            company_id = row.get("company_id")
+            if company_id:
+                company_by_run[run_id] = str(company_id)
     except db.StorageError:
         pass
 
     for s in runner.list_runs():
-        doms = domains_by_id.get(s.run_id, [])
-        key, label, domain = _key_for(_norm_domain(doms[0]) if doms else "", s.client_name)
-        ensure(key, label, domain).audits.append(
+        key = key_by_company.get(company_by_run.get(s.run_id, ""), "")
+        if key:
+            acc = accs[key]
+        else:
+            doms = domains_by_id.get(s.run_id, [])
+            derived_key, label, domain = _key_for(
+                _norm_domain(doms[0]) if doms else "", s.client_name
+            )
+            acc = ensure(derived_key, label, domain)
+        acc.audits.append(
             ProjectAudit(
                 run_id=s.run_id,
                 client_name=s.client_name,
@@ -190,8 +200,13 @@ def _collect() -> dict[str, _Acc]:
     try:
         for row in db.list_teasers_with_url():
             name = row.get("company_name")
-            key, label, domain = _key_for(_norm_domain(row.get("prospect_url")), name)
-            ensure(key, label, domain).teasers.append(
+            key = key_by_company.get(str(row.get("company_id") or ""), "")
+            if key:
+                acc = accs[key]
+            else:
+                derived_key, label, domain = _key_for(_norm_domain(row.get("prospect_url")), name)
+                acc = ensure(derived_key, label, domain)
+            acc.teasers.append(
                 ProjectTeaser(
                     id=str(row.get("id", "")),
                     company_name=str(name) if name else None,
@@ -202,7 +217,12 @@ def _collect() -> dict[str, _Acc]:
     except db.StorageError:
         pass
 
-    return accs
+    # A company with no runs and no teasers yet is real (it was just created) but
+    # it is not what `list_projects` has ever meant, and an empty card on the
+    # dashboard reads as a bug. Drop the empties here rather than never creating
+    # them: `get_project(key)` below still resolves one directly, which is what the
+    # agency console needs after adding a client.
+    return {k: acc for k, acc in accs.items() if acc.audits or acc.teasers}
 
 
 def list_projects() -> list[ProjectSummary]:
@@ -229,10 +249,28 @@ def list_projects() -> list[ProjectSummary]:
 
 
 def get_project(key: str) -> ProjectDetail | None:
-    """Full audit + teaser history for one project, newest first, or None."""
+    """Full audit + teaser history for one project, newest first, or None.
+
+    A company that exists but has no work yet resolves to an EMPTY detail rather
+    than a 404 — `_collect()` drops empties so they do not litter the dashboard,
+    but an agency that has just added a client and clicked into it must land on
+    that client's (empty) page, not on "no such project".
+    """
     acc = _collect().get(key)
     if acc is None:
-        return None
+        try:
+            company = db.get_company_by_slug(key)
+        except db.StorageError:
+            company = None
+        if company is None:
+            return None
+        return ProjectDetail(
+            key=company.slug,
+            label=company.name,
+            domain=company.domain,
+            audits=[],
+            teasers=[],
+        )
     return ProjectDetail(
         key=acc.key,
         label=acc.label,
@@ -332,11 +370,24 @@ def delete_project(key: str) -> dict[str, object] | None:
     teaser_ids: set[str] = set()
     label: str | None = None
 
+    # The company id for this key, when the project has been tenanted. Matched in
+    # ADDITION to the derived key, never instead of it: a row written before the
+    # backfill still has a null `company_id`, and matching only on the id would
+    # leave it behind — a "deleted" project that still has rows is the one outcome
+    # a delete may not produce.
+    company_id: str | None = None
+    try:
+        company = db.get_company_by_slug(key)
+        if company is not None:
+            company_id, label = company.id, company.name
+    except db.StorageError:
+        pass
+
     try:
         for row in db.list_all_audit_runs(limit=_DELETE_SCAN_LIMIT):
             doms = _domains_of(row.get("client_domains"))
             k, lbl, _ = _key_for(_norm_domain(doms[0]) if doms else "", row.get("client_name"))
-            if k == key:
+            if k == key or (company_id and str(row.get("company_id") or "") == company_id):
                 run_ids.add(str(row.get("id", "")))
                 label = label or lbl
     except db.StorageError:
@@ -344,7 +395,7 @@ def delete_project(key: str) -> dict[str, object] | None:
     try:
         for row in db.list_teasers_with_url(limit=_DELETE_SCAN_LIMIT):
             k, lbl, _ = _key_for(_norm_domain(row.get("prospect_url")), row.get("company_name"))
-            if k == key:
+            if k == key or (company_id and str(row.get("company_id") or "") == company_id):
                 teaser_ids.add(str(row.get("id", "")))
                 label = label or lbl
     except db.StorageError:
@@ -378,6 +429,13 @@ def delete_project(key: str) -> dict[str, object] | None:
             db.delete_intake_sessions_for_domains([acc.domain])
         except db.StorageError:
             logger.warning("could not delete intake sessions for %s", acc.domain)
+    # Last, the tenant itself — otherwise a deleted project would keep resolving
+    # as an empty company and `get_project` would stop returning None. Best-effort
+    # by construction: if a fact sheet still references this company the row stays,
+    # which is correct (that artifact still belongs to someone) and does not fail
+    # the deletion that already happened.
+    if company_id:
+        db.delete_company(company_id)
     return {
         "key": key,
         "label": label or key,

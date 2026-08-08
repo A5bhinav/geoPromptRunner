@@ -19,6 +19,7 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from dataclasses import dataclass
 
@@ -53,12 +54,43 @@ class ShareToken:
 
 
 def _secret() -> bytes:
-    key = settings.GEO_API_KEY or ""
+    """The CURRENT signing secret. Everything minted from here on uses this.
+
+    Falls back to ``GEO_API_KEY`` when ``SHARE_SIGNING_KEY`` is unset, so an
+    existing deployment that has never heard of the new setting keeps signing and
+    verifying exactly as before. Resolved here rather than seeded at import, so a
+    rotated or swapped credential is picked up rather than frozen.
+    """
+    key = settings.SHARE_SIGNING_KEY or settings.GEO_API_KEY or ""
     if not key:
         # Refusing beats minting a link signed with an empty key: that signature
         # is forgeable by anyone who reads this file.
-        raise ShareError("GEO_API_KEY is not set — cannot sign a share link")
+        raise ShareError(
+            "no share-link signing secret is set — set SHARE_SIGNING_KEY "
+            "(or GEO_API_KEY) before minting a link"
+        )
     return key.encode("utf-8")
+
+
+def _legacy_secret() -> bytes | None:
+    """The OLD signing secret (``GEO_API_KEY``), or None when it does not apply.
+
+    Before LIC-T11 the API authentication credential and the share-link signing
+    key were the same value, so every link already in a client's inbox is signed
+    with `GEO_API_KEY`. This is the deprecation window that keeps those verifying
+    after the two are separated.
+
+    None once the window is closed (`SHARE_ACCEPT_LEGACY_SIGNATURE=0`), and None
+    when the two values are identical anyway — in which case `_secret()` has
+    already accepted or rejected the token and a second identical check would be
+    pure noise.
+    """
+    if not settings.SHARE_ACCEPT_LEGACY_SIGNATURE:
+        return None
+    legacy = settings.GEO_API_KEY or ""
+    if not legacy or legacy == (settings.SHARE_SIGNING_KEY or ""):
+        return None
+    return legacy.encode("utf-8")
 
 
 def _b64(raw: bytes) -> str:
@@ -71,6 +103,22 @@ def _unb64(text: str) -> bytes:
 
 def _sign(payload: bytes) -> str:
     return _b64(hmac.new(_secret(), payload, hashlib.sha256).digest())
+
+
+def _signature_ok(payload: bytes, signature: str) -> bool:
+    """Constant-time check against the current secret, then the legacy one.
+
+    Both branches use ``compare_digest``, and the legacy branch runs only when a
+    distinct old secret is still in its deprecation window — so the fallback
+    widens what verifies, never what a timing measurement can learn.
+    """
+    if hmac.compare_digest(signature, _sign(payload)):
+        return True
+    legacy = _legacy_secret()
+    if legacy is None:
+        return False
+    expected = _b64(hmac.new(legacy, payload, hashlib.sha256).digest())
+    return hmac.compare_digest(signature, expected)
 
 
 def hash_password(password: str) -> str:
@@ -93,7 +141,14 @@ def mint_share_token(
         run_id=run_id,
         expires_at=issued + max(1, ttl_seconds),
         password_hash=hash_password(password),
-        token_id=token_id or _b64(hashlib.sha256(f"{run_id}{issued}".encode()).digest()[:9]),
+        # RANDOM, not derived. This used to be sha256(run_id + issued_second),
+        # which is stable within a one-second window: two links minted for the
+        # same run in the same second got the SAME id, so revoking either revoked
+        # both — and "revoke one link without affecting the others" is the entire
+        # reason a per-token id exists. Since LIC-T17 the id is also the primary
+        # key of `report_share_tokens`, where the collision would additionally
+        # fail the insert. Found by the LIC-T17 revocation test.
+        token_id=token_id or secrets.token_urlsafe(12),
     )
     payload = json.dumps(token.__dict__, separators=(",", ":"), sort_keys=True).encode("utf-8")
     return f"{_b64(payload)}.{_sign(payload)}"
@@ -117,7 +172,7 @@ def verify_share_token(
     except (ValueError, TypeError) as exc:
         raise ShareError("this link is not valid") from exc
 
-    if not hmac.compare_digest(signature, _sign(payload)):
+    if not _signature_ok(payload, signature):
         raise ShareError("this link is not valid")
 
     try:

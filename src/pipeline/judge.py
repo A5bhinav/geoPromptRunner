@@ -19,6 +19,7 @@ from anthropic.types import (
 )
 
 from src.config import settings
+from src.licensing import verdict_source
 from src.pipeline.judge_cache import JudgeCache, Verdict
 from src.storage.models import (
     JUDGE_SEVERITIES,
@@ -948,6 +949,12 @@ class Judge:
                 unique_keys.append(key)
 
         verdicts: dict[tuple[str, str], tuple[list[BrandJudgment], list[AccuracyFlag], bool]] = {}
+        #: (prompt, answer) -> which judge produced it. Tracked in parallel with
+        #: `verdicts` rather than folded into the Verdict tuple, because that tuple
+        #: is the CACHED value and its shape is load-bearing for the cache-key
+        #: parity tests — provenance is metadata about the row, not part of the
+        #: content address.
+        sources: dict[tuple[str, str], str] = {}
         if unique_keys:
 
             def cache_key(prompt: str, answer: str) -> str | None:
@@ -968,8 +975,16 @@ class Judge:
             # round-trips, not one per answer.
             keyed = [(pair, cache_key(pair[0], pair[1])) for pair in unique_keys]
             prefetched: dict[str, Verdict] = {}
+            #: content key -> which judge produced the CACHED verdict. Read
+            #: alongside the prefetch so the LIC-T20 delivery gate can tell a
+            #: subscription-warmed verdict from an API one; a key absent here is
+            #: `unknown` (a row written before verdicts were tagged), never `api`.
+            cached_sources: dict[str, str] = {}
             if cache is not None:
-                prefetched = cache.get_many([ck for _, ck in keyed if ck is not None])
+                wanted = [ck for _, ck in keyed if ck is not None]
+                prefetched = cache.get_many(wanted)
+                if prefetched:
+                    cached_sources = cache.sources_for(list(prefetched))
 
             # Split into answers already judged (free reuse) and the rest. The
             # content key is carried alongside each to-judge entry so it isn't
@@ -980,6 +995,9 @@ class Judge:
                 hit = prefetched.get(ck) if ck is not None else None
                 if hit is not None:
                     verdicts[key] = hit
+                    sources[key] = verdict_source.normalize_source(
+                        cached_sources.get(ck or "")
+                    )
                     reused += 1
                 else:
                     to_judge.append((key, ck))
@@ -1010,6 +1028,10 @@ class Judge:
                 with ThreadPoolExecutor(max_workers=workers) as pool:
                     for key, ck, verdict in pool.map(judge_key, to_judge):
                         verdicts[key] = verdict
+                        # Judged right here, live, on settings.JUDGE_MODEL via the
+                        # Anthropic API. This is the one place a verdict is
+                        # legitimately tagged `api`.
+                        sources[key] = verdict_source.API
                         if cache is not None and ck is not None and verdict[2]:
                             to_store.append((ck, verdict))
                         done += 1
@@ -1052,6 +1074,9 @@ class Judge:
                         )
                         for f in flags
                     ],
+                    verdict_source=sources.get(
+                        (r["prompt"], answer), verdict_source.UNKNOWN
+                    ),
                 )
             )
         return judgments
